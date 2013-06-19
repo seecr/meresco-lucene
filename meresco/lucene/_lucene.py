@@ -23,9 +23,14 @@
 #
 ## end license ##
 
-from lucene import initVM
-VM = initVM()
+from luceneresponse import LuceneResponse
 
-from _lucene import Lucene
-from fields2lucenedoc import Fields2LuceneDoc
-from cqltolucenequery import CqlToLuceneQuery
+class Lucene(object):
+
+    def add(self, fields):
+        return
+        yield
+
+    def executeQuery(self, luceneQuery, **kwargs):
+        raise StopIteration(LuceneResponse(total=1, hits=['record:1']))
+        yield

@@ -23,9 +23,6 @@
 #
 ## end license ##
 
-from lucene import initVM
-VM = initVM()
-
-from _lucene import Lucene
-from fields2lucenedoc import Fields2LuceneDoc
-from cqltolucenequery import CqlToLuceneQuery
+class LuceneResponse(object):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)

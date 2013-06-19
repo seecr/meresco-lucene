@@ -23,13 +23,16 @@
 #
 ## end license ##
 
-from os.path import join, abspath, dirname
-from os import system
+from os.path import join, abspath, basename, dirname
+from os import system, listdir
 from traceback import print_exc
 from time import time
+from lxml.etree import parse, tostring
+from StringIO import StringIO
 
 from seecr.test.integrationtestcase import IntegrationState as SeecrIntegrationState
 from seecr.test.portnumbergenerator import PortNumberGenerator
+from seecr.test.utils import postRequest
 
 
 mydir = dirname(abspath(__file__))
@@ -43,9 +46,10 @@ class IntegrationState(SeecrIntegrationState):
             system('rm -rf ' + self.integrationTempdir)
             system('mkdir --parents '+ self.integrationTempdir)
         self.httpPort = PortNumberGenerator.next()
+        self.testdataDir = join(dirname(mydir), "data")
 
     def setUp(self):
-        self._startServer()
+        self.startServer()
         self._createDatabase()
 
     def binDir(self):
@@ -58,11 +62,31 @@ class IntegrationState(SeecrIntegrationState):
         start = time()
         print "Creating database in", self.integrationTempdir
         try:
+            uploadUpdateRequests(self.testdataDir, '/update', self.httpPort)
             print "Finished creating database in %s seconds" % (time() - start)
         except Exception:
             print 'Error received while creating database for', self.stateName
             print_exc()
             exit(1)
 
-    def _startServer(self):
-        self._startServer('meresco-lucene', self.binPath('start-server'), 'http://localhost:%s/' % self.httpPort, httpPort=self.httpPort)
+    def startServer(self):
+        self._startServer('meresco-lucene', self.binPath('start-server'), 'http://localhost:%s/' % self.httpPort, port=self.httpPort, stateDir=join(self.integrationTempdir, 'state'))
+
+#uploadHellpers
+def uploadUpdateRequests(datadir, uploadPath, uploadPort):
+    requests = (join(datadir, r) for r in sorted(listdir(datadir)) if r.endswith('.updateRequest'))
+    for filename in requests:
+        _uploadUpdateRequest(filename, uploadPath, uploadPort)
+
+def _uploadUpdateRequest(filename, uploadPath, uploadPort):
+    print 'http://localhost:%s%s' % (uploadPort, uploadPath), '<-', basename(filename)[:-len('.updateRequest')]
+    updateRequest = open(filename).read()
+    parse(StringIO(updateRequest))
+    header, body = postRequest(uploadPort, uploadPath, updateRequest)
+    print header, body
+    if '200 Ok' not in header:
+        print 'No 200 Ok response, but:\n', header
+        exit(123)
+    if "srw:diagnostics" in tostring(body):
+        print tostring(body)
+        exit(1234)

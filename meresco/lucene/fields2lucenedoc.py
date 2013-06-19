@@ -23,9 +23,32 @@
 #
 ## end license ##
 
-from lucene import initVM
-VM = initVM()
+from meresco.core import Observable
 
-from _lucene import Lucene
-from fields2lucenedoc import Fields2LuceneDoc
-from cqltolucenequery import CqlToLuceneQuery
+class Fields2LuceneDoc(Observable):
+    def __init__(self, transactionName):
+        Observable.__init__(self)
+        self._transactionName = transactionName
+
+    def begin(self, name):
+        if name != self._transactionName:
+            return
+        tx = self.ctx.tx
+        tx.join(self)
+
+    def addField(self, name, value):
+        tx = self.ctx.tx
+        valueList = tx.objectScope(self).setdefault(name, [])
+        valueList.append(value)
+
+    def commit(self, id):
+        tx = self.ctx.tx
+        fields = tx.objectScope(self)
+        if not fields:
+            return
+        recordIdentifier = tx.locals["id"]
+        specialFields = {
+            '__id__': [recordIdentifier],
+        }
+        fields.update(specialFields)
+        yield self.all.add(fields=fields)

@@ -23,15 +23,19 @@
 #
 ## end license ##
 
-from os.path import dirname, abspath, join
+from os.path import dirname, abspath, join, realpath
 from sys import stdout
 
 from seecr.html import DynamicHtml
-from meresco.core.processtools import setSignalHandlers
+
 from meresco.components.http import StringServer, ObservableHttpServer, BasicHttpHandler, ApacheLogger, PathFilter, PathRename, FileServer
 from meresco.components.http.utils import ContentTypePlainText
+from meresco.components.sru import SruRecordUpdate, SruParser, SruHandler
+from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml
+from meresco.core import Observable, TransactionScope
+from meresco.core.processtools import setSignalHandlers
 
-from meresco.core import Observable
+from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery
 
 from weightless.io import Reactor
 from weightless.core import compose, be
@@ -43,7 +47,9 @@ staticPath = join(myPath, 'html', 'static')
 
 VERSION = 'dev'
 
-def main(reactor, port):
+def main(reactor, port, databasePath):
+    lucene = Lucene()
+    storageComponent = StorageComponent(directory=join(databasePath, 'storage'))
     return \
     (Observable(),
         (ObservableHttpServer(reactor=reactor, port=port),
@@ -52,6 +58,8 @@ def main(reactor, port):
                     (PathFilter("/info", excluding=[
                             '/info/version',
                             '/info/name',
+                            '/update',
+                            '/sru',
                         ]),
                         (DynamicHtml(
                                 [dynamicPath],
@@ -74,6 +82,32 @@ def main(reactor, port):
                             (FileServer(staticPath),)
                         )
                     ),
+                    (PathFilter("/update"),
+                        (SruRecordUpdate(),
+                            (TransactionScope('record'),
+                                (Venturi(should=[{'partname': 'record', 'xpath': '/*'}]),
+                                    (Xml2Fields(),
+                                        (Fields2LuceneDoc('record'),
+                                            (lucene,)
+                                        )
+                                    ),
+                                    (XmlPrintLxml(fromKwarg='lxmlNode', toKwarg='data'),
+                                        (storageComponent,)
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    (PathFilter('/sru'),
+                        (SruParser(defaultRecordSchema='record'),
+                            (SruHandler(),
+                                (CqlToLuceneQuery([]),
+                                    (lucene,)
+                                ),
+                                (storageComponent,),
+                            )
+                        )
+                    )
                 )
             )
         )
@@ -82,13 +116,14 @@ def main(reactor, port):
 
 
 
-def startServer(port):
+def startServer(port, stateDir):
     setSignalHandlers()
     print 'Firing up Meresco Lucene Server.'
     reactor = Reactor()
+    databasePath = realpath(abspath(stateDir))
 
     #main
-    dna = main(reactor, port)
+    dna = main(reactor, port=port, databasePath=databasePath)
     #/main
 
     server = be(dna)

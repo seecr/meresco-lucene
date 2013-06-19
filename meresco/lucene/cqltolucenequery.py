@@ -23,9 +23,22 @@
 #
 ## end license ##
 
-from lucene import initVM
-VM = initVM()
+from meresco.core import Observable
 
-from _lucene import Lucene
-from fields2lucenedoc import Fields2LuceneDoc
-from cqltolucenequery import CqlToLuceneQuery
+from meresco.components.statistics import Logger
+from meresco.components.clausecollector import ClauseCollector
+from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
+
+
+class CqlToLuceneQuery(Observable, Logger):
+    def __init__(self, unqualifiedFields, name=None):
+        Observable.__init__(self, name=name)
+        self._cqlComposer = LuceneQueryComposer(unqualifiedFields)
+
+    def executeQuery(self, cqlAbstractSyntaxTree, *args, **kwargs):
+        response = yield self.any.executeQuery(luceneQuery=self._convert(cqlAbstractSyntaxTree), *args, **kwargs)
+        raise StopIteration(response)
+
+    def _convert(self, ast):
+        ClauseCollector(ast, self.log).visit()
+        return self._cqlComposer.compose(ast)

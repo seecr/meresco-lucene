@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/env python
 ## begin license ##
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
@@ -24,6 +24,16 @@
 #
 ## end license ##
 
+from os.path import abspath, dirname                              #DO_NOT_DISTRIBUTE
+from os import system                                             #DO_NOT_DISTRIBUTE
+from glob import glob                                             #DO_NOT_DISTRIBUTE
+from sys import path as systemPath                                #DO_NOT_DISTRIBUTE
+projectDir = dirname(dirname(abspath(__file__)))                  #DO_NOT_DISTRIBUTE
+system('find %s -name "*.pyc" | xargs rm -f' % projectDir)        #DO_NOT_DISTRIBUTE
+for path in glob(projectDir+'/deps.d/*'):                         #DO_NOT_DISTRIBUTE
+    systemPath.insert(0, path)                                    #DO_NOT_DISTRIBUTE
+systemPath.insert(0, projectDir)                                  #DO_NOT_DISTRIBUTE
+
 from meresco.components import ParseArguments
 
 if __name__ == '__main__':
@@ -32,6 +42,7 @@ if __name__ == '__main__':
         mandatory=True,
         type='int',
         help="Port at which webpages are served.")
+    parser.addOption('', '--stateDir', mandatory=True, type='str', help='Directory for state')
     options, arguments = parser.parse()
 
     from meresco.lucene.server import startServer

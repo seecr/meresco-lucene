@@ -23,9 +23,11 @@
 #
 ## end license ##
 
-from lucene import initVM
-VM = initVM()
+from org.apache.lucene.search import MatchAllDocsQuery
 
-from _lucene import Lucene
-from fields2lucenedoc import Fields2LuceneDoc
-from cqltolucenequery import CqlToLuceneQuery
+class LuceneQueryComposer(object):
+    def __init__(self, unqualifiedFields):
+        self._unqualifiedFields = unqualifiedFields
+
+    def compose(self, cqlAbstractSyntaxTree):
+        return MatchAllDocsQuery()

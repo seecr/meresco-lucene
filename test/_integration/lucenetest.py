@@ -23,9 +23,14 @@
 #
 ## end license ##
 
-from lucene import initVM
-VM = initVM()
+from seecr.test import IntegrationTestCase
+from seecr.test.utils import getRequest
+from meresco.xml.namespaces import xpathFirst
+from meresco.components import lxmltostring
 
-from _lucene import Lucene
-from fields2lucenedoc import Fields2LuceneDoc
-from cqltolucenequery import CqlToLuceneQuery
+class LuceneTest(IntegrationTestCase):
+
+    def testQuery(self):
+        header, body = getRequest(port=self.httpPort, path='/sru', arguments={'version': '1.2', 'operation': 'searchRetrieve', 'query': 'field1=value1'})
+        print lxmltostring(body)
+        self.assertEquals('1', xpathFirst(body, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))

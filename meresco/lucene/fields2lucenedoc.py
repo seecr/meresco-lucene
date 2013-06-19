@@ -24,6 +24,8 @@
 ## end license ##
 
 from meresco.core import Observable
+from org.apache.lucene.document import Document, Field, IntField
+from _lucene import IDFIELD
 
 class Fields2LuceneDoc(Observable):
     def __init__(self, transactionName):
@@ -48,7 +50,19 @@ class Fields2LuceneDoc(Observable):
             return
         recordIdentifier = tx.locals["id"]
         specialFields = {
-            '__id__': [recordIdentifier],
+            IDFIELD: [recordIdentifier],
         }
         fields.update(specialFields)
-        yield self.all.add(fields=fields)
+        document = self._createDocument(fields)
+        yield self.all.addDocument(document=document)
+
+    def _createDocument(self, fields):
+        doc = Document()
+        for field, values in fields.items():
+            for value in values:
+                if type(value) == int:
+                    f = IntField(field, value, Field.Store.NO)
+                else:
+                    f = Field(field, value, Field.Store.YES, Field.Index.ANALYZED)
+                doc.add(f)
+        return doc

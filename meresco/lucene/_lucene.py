@@ -23,14 +23,45 @@
 #
 ## end license ##
 
+from org.apache.lucene.search import TopScoreDocCollector, MultiCollector
+
+
 from luceneresponse import LuceneResponse
+from index import Index
+
+IDFIELD = '__id__'
 
 class Lucene(object):
 
-    def add(self, fields):
+    def __init__(self, path):
+        self._index = Index(path)
+
+    def addDocument(self, document):
+        self._index.addDocument(document)
         return
         yield
 
     def executeQuery(self, luceneQuery, **kwargs):
-        raise StopIteration(LuceneResponse(total=1, hits=['record:1']))
+        collectors = {}
+        collectors['query'] = _topScoreCollector()
+
+        self._index.search(
+                luceneQuery,
+                None,
+                MultiCollector.wrap([c for c in collectors.values() if c])
+            )
+        raise StopIteration(self._createResponse(collectors))
         yield
+
+    def _createResponse(self, collectors):
+        total, hits = self._topDocsResponse(collectors['query'])
+        response = LuceneResponse(total=total, hits=hits)
+        return response
+
+    def _topDocsResponse(self, collector):
+        hits = [self._index.getDocument(hit.doc).get(IDFIELD) for hit in collector.topDocs().scoreDocs]
+        return collector.getTotalHits(), hits
+
+
+def _topScoreCollector():
+    return TopScoreDocCollector.create(10, True)

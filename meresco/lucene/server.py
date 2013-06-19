@@ -48,7 +48,7 @@ staticPath = join(myPath, 'html', 'static')
 VERSION = 'dev'
 
 def main(reactor, port, databasePath):
-    lucene = Lucene()
+    lucene = Lucene(path=join(databasePath, 'lucene'))
     storageComponent = StorageComponent(directory=join(databasePath, 'storage'))
     return \
     (Observable(),

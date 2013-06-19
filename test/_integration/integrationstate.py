@@ -83,7 +83,6 @@ def _uploadUpdateRequest(filename, uploadPath, uploadPort):
     updateRequest = open(filename).read()
     parse(StringIO(updateRequest))
     header, body = postRequest(uploadPort, uploadPath, updateRequest)
-    print header, body
     if '200 Ok' not in header:
         print 'No 200 Ok response, but:\n', header
         exit(123)

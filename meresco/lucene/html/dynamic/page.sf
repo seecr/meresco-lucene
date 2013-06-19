@@ -1,0 +1,30 @@
+
+def header(title, **kwargs):
+    yield """<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="nl" >
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta name="author" content="Seecr" />
+        <title>%(title)s</title>
+        <link rel="stylesheet" type="text/css" href="/static/server.css"/>
+    </head>
+    <body>
+    <div id="header">
+        <div id="title">
+            <h1>%(title)s</h1>
+        </div>
+    </div>
+    <div id="content">
+""" % {
+        'title': escapeHtml(title)
+    }
+
+
+def footer(**kwargs):
+    yield """
+    </div>
+    </body>
+</html>"""
+
+def main(**kwargs):
+    yield http.redirect('/info')

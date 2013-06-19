@@ -1,0 +1,5 @@
+import page
+
+def main(**kwargs):
+    yield page.header(title='Meresco Lucene (%s) Info' % (VERSION),**kwargs)
+    yield page.footer(**kwargs)

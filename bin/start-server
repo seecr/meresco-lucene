@@ -1,0 +1,14 @@
+#! /usr/bin/python
+
+from meresco.components import ParseArguments
+
+if __name__ == '__main__':
+    parser = ParseArguments()
+    parser.addOption('', '--port',
+        mandatory=True,
+        type='int',
+        help="Port at which webpages are served.")
+    options, arguments = parser.parse()
+
+    from meresco.lucene.server import startServer
+    startServer(**vars(options))

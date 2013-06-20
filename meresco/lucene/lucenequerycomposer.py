@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery
+from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.analysis.standard import ClassicAnalyzer
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
@@ -98,6 +98,8 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         results = CqlVisitor.visitSEARCH_CLAUSE(self, node)
         if firstChild == 'SEARCH_TERM':
             (unqualifiedRhs,) = results
+            if unqualifiedRhs == '*':
+                return MatchAllDocsQuery()
             if len(self._unqualifiedTermFields) == 1:
                 fieldname, boost = self._unqualifiedTermFields[0]
                 query = _termOrPhraseQuery(fieldname, unqualifiedRhs)

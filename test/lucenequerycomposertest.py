@@ -29,7 +29,7 @@ from unittest import TestCase
 from cqlparser import parseString as parseCql, UnsupportedCQL
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery
+from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery
 from org.apache.lucene.index import Term
 
 class LuceneQueryComposerTest(TestCase):
@@ -163,9 +163,12 @@ class LuceneQueryComposerTest(TestCase):
         self.assertEquals(type(query), type(result))
         self.assertEquals(repr(query), repr(result))
 
+    def testMatchAllQuery(self):
+        self.assertConversion(MatchAllDocsQuery(), '*')
+
     def assertConversion(self, expected, input):
         result = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)]).compose(parseCql(input))
-        self.assertEquals(type(expected), type(result))
+        self.assertEquals(type(expected), type(result), "expected %s, but got %s" % (repr(expected), repr(result)))
         self.assertEquals(repr(expected), repr(result))
         # self.assertEquals(expected, result, "expected %s['%s'], but got %s['%s']" % (repr(expected), str(expected), repr(result), str(result)))
 

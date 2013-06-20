@@ -31,9 +31,15 @@ from meresco.components import lxmltostring
 class LuceneTest(IntegrationTestCase):
 
     def testQuery(self):
-        header, body = getRequest(port=self.httpPort, path='/sru', arguments={'version': '1.2', 'operation': 'searchRetrieve', 'query': 'field2=value2'})
-        self.assertEquals('1', xpathFirst(body, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))
+        self.assertEquals(10, self.numberOfRecords(query='field2=value2'))
+        self.assertEquals(2, self.numberOfRecords(query='field1=value1'))
+        self.assertEquals(100, self.numberOfRecords(query='*'))
 
-    def testOtherQuery(self):
-        header, body = getRequest(port=self.httpPort, path='/sru', arguments={'version': '1.2', 'operation': 'searchRetrieve', 'query': 'field1=value1'})
-        self.assertEquals('2', xpathFirst(body, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))
+    def doSruQuery(self, query):
+        header, body = getRequest(port=self.httpPort, path='/sru', arguments={'version': '1.2', 'operation': 'searchRetrieve', 'query': query})
+        return body
+
+    def numberOfRecords(self, query):
+        body = self.doSruQuery(query)
+        result = xpathFirst(body, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()')
+        return None if result is None else int(result)

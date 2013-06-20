@@ -85,7 +85,7 @@ def main(reactor, port, databasePath):
                     (PathFilter("/update"),
                         (SruRecordUpdate(),
                             (TransactionScope('record'),
-                                (Venturi(should=[{'partname': 'record', 'xpath': '/*'}]),
+                                (Venturi(should=[{'partname': 'record', 'xpath': '.'}], namespaceMap={'doc': 'http://meresco.org/namespace/example'}),
                                     (Xml2Fields(),
                                         (Fields2LuceneDoc('record'),
                                             (lucene,)

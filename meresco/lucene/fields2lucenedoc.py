@@ -40,7 +40,7 @@ class Fields2LuceneDoc(Observable):
 
     def addField(self, name, value):
         tx = self.ctx.tx
-        valueList = tx.objectScope(self).setdefault(name, [])
+        valueList = tx.objectScope(self).setdefault(name.split('.', 1)[-1], [])
         valueList.append(value)
 
     def commit(self, id):

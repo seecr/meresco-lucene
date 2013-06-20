@@ -25,7 +25,7 @@
 
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import getRequest
-from meresco.xml.namespaces import xpathFirst
+from meresco.xml.namespaces import xpathFirst, xpath
 from meresco.components import lxmltostring
 
 class LuceneTest(IntegrationTestCase):
@@ -35,8 +35,25 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(2, self.numberOfRecords(query='field1=value1'))
         self.assertEquals(100, self.numberOfRecords(query='*'))
 
-    def doSruQuery(self, query):
-        header, body = getRequest(port=self.httpPort, path='/sru', arguments={'version': '1.2', 'operation': 'searchRetrieve', 'query': query})
+    def testRecordIds(self):
+        body = self.doSruQuery('*')
+        records = xpath(body, '//srw:recordIdentifier/text()')
+        self.assertEquals(10, len(records))
+        self.assertEquals(set(['record:%s' % i for i in xrange(1,11)]), set(records))
+
+    def testMaximumRecords(self):
+        body = self.doSruQuery('*', maximumRecords=20)
+        records = xpath(body, '//srw:record')
+        self.assertEquals(20, len(records))
+
+    def testStartRecord(self):
+        body = self.doSruQuery('*', maximumRecords=100)
+        records = xpath(body, '//srw:recordIdentifier/text()')
+        body = self.doSruQuery('*', maximumRecords=10, startRecord=51)
+        self.assertEquals(records[50:60], xpath(body, '//srw:recordIdentifier/text()'))
+
+    def doSruQuery(self, query, maximumRecords=10, startRecord=1):
+        header, body = getRequest(port=self.httpPort, path='/sru', arguments={'version': '1.2', 'operation': 'searchRetrieve', 'query': query, 'maximumRecords': maximumRecords, 'startRecord': startRecord})
         return body
 
     def numberOfRecords(self, query):

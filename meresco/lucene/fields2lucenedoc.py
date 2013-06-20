@@ -24,7 +24,9 @@
 ## end license ##
 
 from meresco.core import Observable
-from org.apache.lucene.document import Document, TextField, IntField, StringField, Field
+from org.apache.lucene.document import Document, TextField, StringField, Field
+from org.apache.lucene.facet.taxonomy import CategoryPath
+
 from meresco.lucene import SORTED_PREFIX, UNTOKENIZED_PREFIX
 from _lucene import IDFIELD
 
@@ -41,7 +43,7 @@ class Fields2LuceneDoc(Observable):
 
     def addField(self, name, value):
         tx = self.ctx.tx
-        valueList = tx.objectScope(self).setdefault(name.split('.', 1)[-1], [])
+        valueList = tx.objectScope(self).setdefault(name, [])
         valueList.append(value)
 
     def commit(self, id):
@@ -55,7 +57,7 @@ class Fields2LuceneDoc(Observable):
         }
         fields.update(specialFields)
         document = self._createDocument(fields)
-        yield self.all.addDocument(document=document)
+        yield self.all.addDocument(document=document, categories=self._createFacetCategories(fields))
 
     def _createDocument(self, fields):
         doc = Document()
@@ -69,3 +71,6 @@ class Fields2LuceneDoc(Observable):
                     f = TextField(field, value, Field.Store.NO)
                 doc.add(f)
         return doc
+
+    def _createFacetCategories(self, fields):
+        return [CategoryPath([f, str(v)]) for f, vs in fields.items() for v in vs if f.startswith(UNTOKENIZED_PREFIX)]

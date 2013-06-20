@@ -65,6 +65,21 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         self.assertFalse(field4.fieldType().stored())
         self.assertFalse(field4.fieldType().tokenized())
 
+    def testCreateFacet(self):
+        fields = {
+            IDFIELD: ['record:1'],
+            'field1': ['value1'],
+            'sorted.field3': ['value3'],
+            'untokenized.field4': ['value4'],
+            'untokenized.field5': ['value5', 'value6'],
+        }
+        fields2LuceneDoc = Fields2LuceneDoc('tsname')
+        categories = fields2LuceneDoc._createFacetCategories(fields)
+        self.assertEquals(3, len(categories))
+        self.assertEquals(['untokenized.field5', 'value5'], categories[0].components)
+        self.assertEquals(['untokenized.field5', 'value6'], categories[1].components)
+        self.assertEquals(['untokenized.field4', 'value4'], categories[2].components)
+
     def testTODO(self):
         self.fail("TODO: stuff")
         #

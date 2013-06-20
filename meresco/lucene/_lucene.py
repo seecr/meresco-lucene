@@ -24,7 +24,11 @@
 ## end license ##
 
 from org.apache.lucene.search import TopScoreDocCollector, MultiCollector, TopFieldCollector, Sort, SortField
+from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
+from org.apache.lucene.facet.taxonomy import CategoryPath
+from org.apache.lucene.facet.params import FacetSearchParams
 
+from java.lang import Integer
 
 from luceneresponse import LuceneResponse
 from index import Index
@@ -36,14 +40,16 @@ class Lucene(object):
     def __init__(self, path):
         self._index = Index(path)
 
-    def addDocument(self, document):
-        self._index.addDocument(document)
+    def addDocument(self, *args, **kwargs):
+        self._index.addDocument(*args, **kwargs)
         return
         yield
 
-    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, **kwargs):
         collectors = {}
         collectors['query'] = _topScoreCollector(start=start, stop=stop, sortKeys=sortKeys)
+        if facets:
+            collectors['facet'] = self._facetCollector(facets)
 
         self._index.search(
                 luceneQuery,
@@ -56,12 +62,38 @@ class Lucene(object):
     def _createResponse(self, collectors, start):
         total, hits = self._topDocsResponse(collectors['query'], start=start)
         response = LuceneResponse(total=total, hits=hits)
+        if 'facet' in collectors:
+            response.drilldownData = self._facetResult(collectors['facet'])
         return response
 
     def _topDocsResponse(self, collector, start):
         hits = [self._index.getDocument(hit.doc).get(IDFIELD) for hit in collector.topDocs(start).scoreDocs]
         return collector.getTotalHits(), hits
 
+    def _facetResult(self, facetCollector):
+        facetResults = facetCollector.getFacetResults()
+        if facetResults.size() == 0:
+            return []
+        result = []
+        for facetResult in facetResults:
+            resultNode = facetResult.getFacetResultNode()
+            fieldname = resultNode.label.toString()
+            terms = []
+            for resultNode in resultNode.subResults.iterator():
+                resultNode = FacetResultNode.cast_(resultNode)
+                terms.append(dict(term=resultNode.label.components[-1], count=int(resultNode.value)))
+            result.append(dict(fieldname=fieldname, terms=terms))
+        return result
+
+    def _facetCollector(self, facets):
+        if not facets:
+            return
+        facetRequests = []
+        for f in facets:
+            maxTerms = f.get('maxTerms', Integer.MAX_VALUE)
+            facetRequests.append(CountFacetRequest(CategoryPath([f['fieldname']]), maxTerms))
+        facetSearchParams = FacetSearchParams(facetRequests)
+        return self._index.createFacetCollector(facetSearchParams)
 
 def _topScoreCollector(start, stop, sortKeys):
     if sortKeys:

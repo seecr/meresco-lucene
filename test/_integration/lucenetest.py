@@ -61,8 +61,27 @@ class LuceneTest(IntegrationTestCase):
         records = xpath(body, '//srw:recordIdentifier/text()')
         self.assertEquals(['record:%s' % i for i in xrange(100,90, -1)], records)
 
-    def doSruQuery(self, query, maximumRecords=10, startRecord=1, sortKeys=None):
-        header, body = getRequest(port=self.httpPort, path='/sru', arguments={'version': '1.2', 'operation': 'searchRetrieve', 'query': query, 'maximumRecords': maximumRecords, 'startRecord': startRecord, "sortKeys": sortKeys})
+    def testFacet(self):
+        body = self.doSruQuery('*', facet='untokenized.field2')
+        ddItems = xpath(body, "//drilldown:term-drilldown/drilldown:navigator[@name='untokenized.field2']/drilldown:item")
+        self.assertEquals(
+            set([('value0', '10'), ('value9', '10'), ('value8', '10'), ('value7', '10'), ('value6', '10'), ('value5', '10'), ('value4', '10'), ('value3', '10'), ('value2', '10'), ('value1', '9')]),
+            set([(i.attrib['value'], i.attrib['count']) for i in ddItems]))
+
+    def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None):
+        arguments={'version': '1.2', 
+            'operation': 'searchRetrieve',
+            'query': query,
+        }
+        if maximumRecords is not None:
+            arguments['maximumRecords'] = maximumRecords
+        if startRecord is not None:
+            arguments['startRecord'] = startRecord
+        if sortKeys is not None:
+            arguments["sortKeys"] =sortKeys
+        if facet is not None:
+            arguments["x-term-drilldown"] = facet
+        header, body = getRequest(port=self.httpPort, path='/sru', arguments=arguments )
         return body
 
     def numberOfRecords(self, query):

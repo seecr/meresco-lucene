@@ -52,8 +52,17 @@ class LuceneTest(IntegrationTestCase):
         body = self.doSruQuery('*', maximumRecords=10, startRecord=51)
         self.assertEquals(records[50:60], xpath(body, '//srw:recordIdentifier/text()'))
 
-    def doSruQuery(self, query, maximumRecords=10, startRecord=1):
-        header, body = getRequest(port=self.httpPort, path='/sru', arguments={'version': '1.2', 'operation': 'searchRetrieve', 'query': query, 'maximumRecords': maximumRecords, 'startRecord': startRecord})
+    def testSortKeys(self):
+        body = self.doSruQuery('*', sortKeys='intfield1,,0')
+        records = xpath(body, '//srw:recordIdentifier/text()')
+        self.assertEquals(['record:%s' % i for i in xrange(1,11)], records)
+
+        body = self.doSruQuery('*', sortKeys='intfield1,,1')
+        records = xpath(body, '//srw:recordIdentifier/text()')
+        self.assertEquals(['record:%s' % i for i in xrange(100,90, -1)], records)
+
+    def doSruQuery(self, query, maximumRecords=10, startRecord=1, sortKeys=None):
+        header, body = getRequest(port=self.httpPort, path='/sru', arguments={'version': '1.2', 'operation': 'searchRetrieve', 'query': query, 'maximumRecords': maximumRecords, 'startRecord': startRecord, "sortKeys": sortKeys})
         return body
 
     def numberOfRecords(self, query):

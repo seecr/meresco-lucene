@@ -24,7 +24,8 @@
 ## end license ##
 
 from meresco.core import Observable
-from org.apache.lucene.document import Document, Field, IntField
+from org.apache.lucene.document import Document, TextField, IntField, StringField, Field
+from meresco.lucene import SORTED_PREFIX, UNTOKENIZED_PREFIX
 from _lucene import IDFIELD
 
 class Fields2LuceneDoc(Observable):
@@ -60,9 +61,11 @@ class Fields2LuceneDoc(Observable):
         doc = Document()
         for field, values in fields.items():
             for value in values:
-                if type(value) == int:
-                    f = IntField(field, value, Field.Store.NO)
+                if field == IDFIELD:
+                    f = StringField(field, value, Field.Store.YES)
+                elif field.startswith(SORTED_PREFIX) or field.startswith(UNTOKENIZED_PREFIX):
+                    f = StringField(field, value, Field.Store.NO)
                 else:
-                    f = Field(field, value, Field.Store.YES, Field.Index.ANALYZED)
+                    f = TextField(field, value, Field.Store.NO)
                 doc.add(f)
         return doc

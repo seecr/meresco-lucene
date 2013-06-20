@@ -31,11 +31,11 @@ from seecr.html import DynamicHtml
 from meresco.components.http import StringServer, ObservableHttpServer, BasicHttpHandler, ApacheLogger, PathFilter, PathRename, FileServer
 from meresco.components.http.utils import ContentTypePlainText
 from meresco.components.sru import SruRecordUpdate, SruParser, SruHandler
-from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml
+from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml, FilterField, RenameField
 from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
-from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery
+from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX
 
 from weightless.io import Reactor
 from weightless.core import compose, be
@@ -50,6 +50,10 @@ VERSION = 'dev'
 def main(reactor, port, databasePath):
     lucene = Lucene(path=join(databasePath, 'lucene'))
     storageComponent = StorageComponent(directory=join(databasePath, 'storage'))
+    indexHelix = (Fields2LuceneDoc('record'),
+            (lucene,)
+        )
+
     return \
     (Observable(),
         (ObservableHttpServer(reactor=reactor, port=port),
@@ -87,9 +91,17 @@ def main(reactor, port, databasePath):
                             (TransactionScope('record'),
                                 (Venturi(should=[{'partname': 'record', 'xpath': '.'}], namespaceMap={'doc': 'http://meresco.org/namespace/example'}),
                                     (Xml2Fields(),
-                                        (Fields2LuceneDoc('record'),
-                                            (lucene,)
-                                        )
+                                        indexHelix,
+                                        (FilterField(lambda name: name == 'intfield1'),
+                                            (RenameField(lambda name: SORTED_PREFIX + name),
+                                                indexHelix,
+                                            )
+                                        ),
+                                        (FilterField(lambda name: name == 'field3'),
+                                            (RenameField(lambda name: UNTOKENIZED_PREFIX + name),
+                                                indexHelix,
+                                            )
+                                        ),
                                     ),
                                     (XmlPrintLxml(fromKwarg='lxmlNode', toKwarg='data'),
                                         (storageComponent,)

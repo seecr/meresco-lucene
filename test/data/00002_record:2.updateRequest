@@ -8,6 +8,10 @@
         <srw:recordData><document xmlns='http://meresco.org/namespace/example'>
     <field1>value1</field1>
     <field2>othervalue2</field2>
+<intfield1>1002</intfield1>
+<intfield2>143</intfield2>
+<intfield3>5004</intfield3>
+<field3>GvokBs0nuwp 8JCaXVdfum OoXyb cg1Gpb14 4IaL klnrxU1L MMgoKTzjvC mOnnmxXm bmWb DN3</field3>
 </document></srw:recordData>
     </srw:record>
 </ucp:updateRequest>

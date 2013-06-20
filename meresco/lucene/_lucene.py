@@ -41,11 +41,9 @@ class Lucene(object):
         return
         yield
 
-    def executeQuery(self, luceneQuery, start=0, stop=10, **kwargs):
-        print start, stop
-        from sys import stdout; stdout.flush()
+    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, **kwargs):
         collectors = {}
-        collectors['query'] = _topScoreCollector(start=start, stop=stop)
+        collectors['query'] = _topScoreCollector(start=start, stop=stop, sortKeys=sortKeys)
 
         self._index.search(
                 luceneQuery,
@@ -65,5 +63,17 @@ class Lucene(object):
         return collector.getTotalHits(), hits
 
 
-def _topScoreCollector(start, stop):
-    return TopScoreDocCollector.create(stop, True)
+def _topScoreCollector(start, stop, sortKeys):
+    if sortKeys:
+        sortFields = [
+            SortField(sortKey['sortBy'], SortField.Type.STRING, sortKey['sortDescending'])
+            for sortKey in sortKeys
+        ]
+        sort = Sort(sortFields)
+    else:
+        sort = Sort()
+    fillFields = True
+    trackDocScores = True
+    trackMaxScore = True
+    docsScoredInOrder = False
+    return TopFieldCollector.create(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)

@@ -39,6 +39,7 @@ simplefilter('default')
 import unittest
 
 from lucenequerycomposertest import LuceneQueryComposerTest
+from fields2lucenedoctest import Fields2LuceneDocTest
 
 if __name__ == '__main__':
     unittest.main()

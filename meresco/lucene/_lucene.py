@@ -24,6 +24,7 @@
 ## end license ##
 
 from org.apache.lucene.search import TopScoreDocCollector, MultiCollector, TopFieldCollector, Sort, SortField
+from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
@@ -45,18 +46,24 @@ class Lucene(object):
         return
         yield
 
+    def delete(self, identifier):
+        self._index.deleteDocument(Term(IDFIELD, identifier))
+        return
+        yield
+
     def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, **kwargs):
         collectors = {}
         collectors['query'] = _topScoreCollector(start=start, stop=stop, sortKeys=sortKeys)
         if facets:
             collectors['facet'] = self._facetCollector(facets)
 
-        self._index.search(
+        response = self._index.search(
+                lambda: self._createResponse(collectors, start=start),
                 luceneQuery,
                 None,
-                MultiCollector.wrap(collectors.values())
+                MultiCollector.wrap(collectors.values()),
             )
-        raise StopIteration(self._createResponse(collectors, start=start))
+        raise StopIteration(response)
         yield
 
     def prefixSearch(self, fieldname, prefix, limit=10):

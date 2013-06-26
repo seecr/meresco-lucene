@@ -32,7 +32,7 @@ from meresco.components.http import StringServer, ObservableHttpServer, BasicHtt
 from meresco.components.http.utils import ContentTypePlainText
 from meresco.components.sru import SruRecordUpdate, SruParser, SruHandler
 from meresco.components.drilldown import SRUTermDrilldown
-from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml, FilterField, RenameField
+from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml, FilterField, RenameField, FilterMessages
 from meresco.components.autocomplete import Autocomplete
 from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
@@ -92,20 +92,26 @@ def main(reactor, port, databasePath):
                         (SruRecordUpdate(),
                             (TransactionScope('record'),
                                 (Venturi(should=[{'partname': 'record', 'xpath': '.'}], namespaceMap={'doc': 'http://meresco.org/namespace/example'}),
-                                    (Xml2Fields(),
-                                        (RenameField(lambda name: name.split('.', 1)[-1]),
-                                            indexHelix,
-                                            (FilterField(lambda name: name == 'intfield1'),
-                                                (RenameField(lambda name: SORTED_PREFIX + name),
-                                                    indexHelix,
-                                                )
-                                            ),
-                                            (FilterField(lambda name: name in ['field2', 'field3']),
-                                                (RenameField(lambda name: UNTOKENIZED_PREFIX + name),
-                                                    indexHelix,
-                                                )
-                                            ),
-                                        )
+                                    (FilterMessages(allowed=['delete']),
+                                        (lucene,),
+                                        (storageComponent,)
+                                    ),
+                                    (FilterMessages(allowed=['add']),
+                                        (Xml2Fields(),
+                                            (RenameField(lambda name: name.split('.', 1)[-1]),
+                                                indexHelix,
+                                                (FilterField(lambda name: name == 'intfield1'),
+                                                    (RenameField(lambda name: SORTED_PREFIX + name),
+                                                        indexHelix,
+                                                    )
+                                                ),
+                                                (FilterField(lambda name: name in ['field2', 'field3']),
+                                                    (RenameField(lambda name: UNTOKENIZED_PREFIX + name),
+                                                        indexHelix,
+                                                    )
+                                                ),
+                                            )
+                                        ),
                                     ),
                                     (XmlPrintLxml(fromKwarg='lxmlNode', toKwarg='data'),
                                         (storageComponent,)

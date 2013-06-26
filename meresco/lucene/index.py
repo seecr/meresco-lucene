@@ -36,6 +36,10 @@ from org.apache.lucene.util import BytesRef, BytesRefIterator
 from java.io import File
 from java.util import Arrays
 
+from meresco.lucene import VM
+
+from threading import Thread
+
 from os.path import join
 
 class Index(object):
@@ -52,6 +56,7 @@ class Index(object):
         self._taxoWriter.commit()
         self._taxoReader = None
         self._openTaxonomyReader()
+        self._committing = False
 
     def addDocument(self, document, categories=None):
         if categories:
@@ -59,7 +64,11 @@ class Index(object):
         self._indexWriter.addDocument(document)
         self.commit()
 
-    def search(self, *args):
+    def deleteDocument(self, term):
+        self._indexWriter.deleteDocuments(term)
+        self.commit()
+
+    def search(self, responseBuilder, *args):
         searcher = self._searcher
         indexReader = searcher.getIndexReader()
         if indexReader.tryIncRef():
@@ -67,9 +76,10 @@ class Index(object):
             if taxoReader.tryIncRef():
                 try:
                     searcher.search(*args)
+                    return responseBuilder()
                 finally:
-                    taxoReader.decRef()
                     indexReader.decRef()
+                    taxoReader.decRef()
             else:
                 indexReader.decRef()
 
@@ -79,7 +89,12 @@ class Index(object):
         if reader != currentReader:
             self._searcher = IndexSearcher(reader)
             currentReader.decRef()
-        self._hardCommit()
+        thread = Thread(target=self._thread, kwargs={'target': self._hardCommit})
+        thread.start()
+
+    def _thread(self, target):
+        VM.attachCurrentThread()
+        target()
 
     def termsForField(self, field, prefix=None):
         indexReader = self._searcher.getIndexReader()
@@ -104,8 +119,14 @@ class Index(object):
                 indexReader.decRef()
 
     def _hardCommit(self):
-        self._indexWriter.commit()
-        self._commitFacet()
+        if self._committing:
+            return
+        self._committing = True
+        def _commit():
+            self._indexWriter.commit()
+            self._commitFacet()
+        _commit()
+        self._committing = False
 
     def _commitFacet(self):
         self._taxoWriter.commit()
@@ -117,9 +138,10 @@ class Index(object):
     def _openTaxonomyReader(self):
         taxonomyReader = DirectoryTaxonomyReader(self._taxoDirectory)
         if taxonomyReader != self._taxoReader:
-            if self._taxoReader:
-                self._taxoReader.decRef()
+            oldTaxonomyReader = self._taxoReader
             self._taxoReader = taxonomyReader
+            if oldTaxonomyReader:
+                oldTaxonomyReader.decRef()
 
     def createFacetCollector(self, facetSearchParams):
         if not self._taxoReader:

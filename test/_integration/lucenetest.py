@@ -24,12 +24,18 @@
 ## end license ##
 
 from seecr.test import IntegrationTestCase
-from seecr.test.utils import getRequest
+from seecr.test.utils import getRequest, postRequest
 from meresco.xml.namespaces import xpathFirst, xpath
 from meresco.components import lxmltostring
 from simplejson import loads
 
 class LuceneTest(IntegrationTestCase):
+
+    def testAddDelete(self):
+        postRequest(self.httpPort, '/update', ADD_RECORD, parse=False)
+        self.assertEquals(1, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
+        postRequest(self.httpPort, '/update', DELETE_RECORD, parse=False)
+        self.assertEquals(0, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
 
     def testQuery(self):
         self.assertEquals(10, self.numberOfRecords(query='field2=value2'))
@@ -63,6 +69,8 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(['record:%s' % i for i in xrange(100,90, -1)], records)
 
     def testFacet(self):
+        from time import sleep
+        # sleep(1)
         body = self.doSruQuery('*', facet='untokenized.field2')
         ddItems = xpath(body, "//drilldown:term-drilldown/drilldown:navigator[@name='untokenized.field2']/drilldown:item")
         self.assertEquals(
@@ -93,3 +101,31 @@ class LuceneTest(IntegrationTestCase):
         body = self.doSruQuery(query)
         result = xpathFirst(body, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()')
         return None if result is None else int(result)
+
+ADD_RECORD = """
+<ucp:updateRequest xmlns:ucp="info:lc/xmlns/update-v1">
+    <srw:version xmlns:srw="http://www.loc.gov/zing/srw/">1.0</srw:version>
+    <ucp:action>info:srw/action/1/replace</ucp:action>
+    <ucp:recordIdentifier>testrecord:1</ucp:recordIdentifier>
+    <srw:record xmlns:srw="http://www.loc.gov/zing/srw/">
+        <srw:recordPacking>xml</srw:recordPacking>
+        <srw:recordSchema>data</srw:recordSchema>
+        <srw:recordData><document xmlns='http://meresco.org/namespace/example'>
+    <field1>value1</field1>
+</document></srw:recordData>
+    </srw:record>
+</ucp:updateRequest>
+"""
+
+DELETE_RECORD = """
+<ucp:updateRequest xmlns:ucp="info:lc/xmlns/update-v1">
+    <srw:version xmlns:srw="http://www.loc.gov/zing/srw/">1.0</srw:version>
+    <ucp:action>info:srw/action/1/delete</ucp:action>
+    <ucp:recordIdentifier>testrecord:1</ucp:recordIdentifier>
+    <srw:record xmlns:srw="http://www.loc.gov/zing/srw/">
+        <srw:recordPacking>xml</srw:recordPacking>
+        <srw:recordSchema>data</srw:recordSchema>
+        <srw:recordData/>
+    </srw:record>
+</ucp:updateRequest>
+"""

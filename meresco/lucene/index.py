@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.index import IndexWriter, DirectoryReader, IndexWriterConfig
+from org.apache.lucene.index import IndexWriter, DirectoryReader, IndexWriterConfig, MultiFields
 from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.analysis.standard import StandardAnalyzer
@@ -31,6 +31,7 @@ from org.apache.lucene.util import Version
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter, DirectoryTaxonomyReader
 from org.apache.lucene.facet.index import FacetFields
 from org.apache.lucene.facet.search import FacetsCollector
+from org.apache.lucene.util import BytesRef, BytesRefIterator
 
 from java.io import File
 from java.util import Arrays
@@ -79,6 +80,28 @@ class Index(object):
             self._searcher = IndexSearcher(reader)
             currentReader.decRef()
         self._hardCommit()
+
+    def termsForField(self, field, prefix=None):
+        indexReader = self._searcher.getIndexReader()
+        if indexReader.tryIncRef():
+            terms = []
+            try:
+                iterator = MultiFields.getFields(indexReader).terms(field).iterator(None)
+                if prefix:
+                    iterator.seekCeil(BytesRef(prefix))
+                    terms.append(iterator.term().utf8ToString())
+                iterator = BytesRefIterator.cast_(iterator)
+                try:
+                    while True:
+                        term = iterator.next().utf8ToString()
+                        if prefix and not term.startswith(prefix):
+                            break
+                        terms.append(term)
+                except StopIteration:
+                    pass
+                return terms
+            finally:
+                indexReader.decRef()
 
     def _hardCommit(self):
         self._indexWriter.commit()

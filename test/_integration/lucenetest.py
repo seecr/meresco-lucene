@@ -68,6 +68,10 @@ class LuceneTest(IntegrationTestCase):
             set([('value0', '10'), ('value9', '10'), ('value8', '10'), ('value7', '10'), ('value6', '10'), ('value5', '10'), ('value4', '10'), ('value3', '10'), ('value2', '10'), ('value1', '9')]),
             set([(i.attrib['value'], i.attrib['count']) for i in ddItems]))
 
+    def testAutocomplete(self):
+        header, body = getRequest(port=self.httpPort, path='/autocomplete', arguments={'field': 'field2', 'prefix': 'va'}, parse=False)
+        print header, body
+
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None):
         arguments={'version': '1.2', 
             'operation': 'searchRetrieve',

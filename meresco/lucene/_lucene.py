@@ -54,9 +54,15 @@ class Lucene(object):
         self._index.search(
                 luceneQuery,
                 None,
-                MultiCollector.wrap([c for c in collectors.values() if c])
+                MultiCollector.wrap(collectors.values())
             )
         raise StopIteration(self._createResponse(collectors, start=start))
+        yield
+
+    def prefixSearch(self, fieldname, prefix, limit=10):
+        terms = self._index.termsForField(fieldname, prefix=prefix)
+        response = LuceneResponse(total=len(terms), hits=terms)
+        raise StopIteration(response)
         yield
 
     def _createResponse(self, collectors, start):

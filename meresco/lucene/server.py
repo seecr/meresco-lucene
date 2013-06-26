@@ -33,6 +33,7 @@ from meresco.components.http.utils import ContentTypePlainText
 from meresco.components.sru import SruRecordUpdate, SruParser, SruHandler
 from meresco.components.drilldown import SRUTermDrilldown
 from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml, FilterField, RenameField
+from meresco.components.autocomplete import Autocomplete
 from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
@@ -122,6 +123,11 @@ def main(reactor, port, databasePath):
                                 (SRUTermDrilldown(defaultFormat='xml'),),
                                 (storageComponent,),
                             )
+                        )
+                    ),
+                    (PathFilter('/autocomplete'),
+                        (Autocomplete('localhost', port, '/autocomplete', '__all__', '?', 5, '?', '?'),
+                            (lucene,),
                         )
                     )
                 )

@@ -69,8 +69,6 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(['record:%s' % i for i in xrange(100,90, -1)], records)
 
     def testFacet(self):
-        from time import sleep
-        # sleep(1)
         body = self.doSruQuery('*', facet='untokenized.field2')
         ddItems = xpath(body, "//drilldown:term-drilldown/drilldown:navigator[@name='untokenized.field2']/drilldown:item")
         self.assertEquals(

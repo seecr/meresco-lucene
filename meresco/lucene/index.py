@@ -118,6 +118,28 @@ class Index(object):
             finally:
                 indexReader.decRef()
 
+    def termsForField(self, field, prefix=None):
+        indexReader = self._searcher.getIndexReader()
+        if indexReader.tryIncRef():
+            terms = []
+            try:
+                iterator = MultiFields.getFields(indexReader).terms(field).iterator(None)
+                if prefix:
+                    iterator.seekCeil(BytesRef(prefix))
+                    terms.append(iterator.term().utf8ToString())
+                iterator = BytesRefIterator.cast_(iterator)
+                try:
+                    while True:
+                        term = iterator.next().utf8ToString()
+                        if prefix and not term.startswith(prefix):
+                            break
+                        terms.append(term)
+                except StopIteration:
+                    pass
+                return terms
+            finally:
+                indexReader.decRef()
+
     def _hardCommit(self):
         if self._committing:
             return

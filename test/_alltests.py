@@ -33,13 +33,16 @@ for path in glob(projectDir+'/deps.d/*'):                         #DO_NOT_DISTRI
     systemPath.insert(0, path)                                    #DO_NOT_DISTRIBUTE
 systemPath.insert(0, projectDir)                                  #DO_NOT_DISTRIBUTE
 
-from warnings import simplefilter
-simplefilter('default')
-
 import unittest
+from sys import version
+if version >= '2.7':
+    from warnings import simplefilter
+    simplefilter('default')
+
 
 from lucenequerycomposertest import LuceneQueryComposerTest
 from fields2lucenedoctest import Fields2LuceneDocTest
+from lucenetest import LuceneTest
 
 if __name__ == '__main__':
     unittest.main()

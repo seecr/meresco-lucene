@@ -26,13 +26,25 @@
 from seecr.test import SeecrTestCase
 
 from meresco.lucene import Lucene
+from meresco.lucene._lucene import IDFIELD
 from org.apache.lucene.search import MatchAllDocsQuery
+from org.apache.lucene.document import Document, TextField, StringField, Field
 
 class LuceneTest(SeecrTestCase):
     def testCreate(self):
         lucene = Lucene(self.tempdir)
         result = retval(lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(0, result.total)
+
+    def testAddDocument(self):
+        lucene = Lucene(self.tempdir)
+        document = Document()
+        f = StringField(IDFIELD, "identifier", Field.Store.YES)
+        document.add(f)
+        lucene.addDocument(document)
+        result = retval(lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(1, result.total)
+        self.assertEquals(['identifier'], result.hits)
 
 def retval(g):
     try:

@@ -80,6 +80,7 @@ class Lucene(object):
         return response
 
     def _topDocsResponse(self, collector, start):
+        # TODO: Probably use FieldCache iso document.get()
         hits = [self._index.getDocument(hit.doc).get(IDFIELD) for hit in collector.topDocs(start).scoreDocs]
         return collector.getTotalHits(), hits
 

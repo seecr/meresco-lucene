@@ -30,7 +30,6 @@ from meresco.lucene._lucene import IDFIELD
 class Fields2LuceneDocTest(IntegrationTestCase):
     def testCreateDocument(self):
         fields = {
-            IDFIELD: ['record:1'],
             'field1': ['value1'],
             'field2': ['value2', 'value2.1'],
             'sorted.field3': ['value3'],
@@ -38,12 +37,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         }
         fields2LuceneDoc = Fields2LuceneDoc('tsname')
         document = fields2LuceneDoc._createDocument(fields)
-        self.assertEquals(set([IDFIELD, 'field1', 'field2', 'sorted.field3', 'untokenized.field4']), set([f.name() for f in document.getFields()]))
-        idField = document.getField(IDFIELD)
-        self.assertEquals('record:1', idField.stringValue())
-        self.assertTrue(idField.fieldType().indexed())
-        self.assertTrue(idField.fieldType().stored())
-        self.assertFalse(idField.fieldType().tokenized())
+        self.assertEquals(set(['field1', 'field2', 'sorted.field3', 'untokenized.field4']), set([f.name() for f in document.getFields()]))
 
         field1 = document.getField("field1")
         self.assertEquals('value1', field1.stringValue())
@@ -67,7 +61,6 @@ class Fields2LuceneDocTest(IntegrationTestCase):
 
     def testCreateFacet(self):
         fields = {
-            IDFIELD: ['record:1'],
             'field1': ['value1'],
             'sorted.field3': ['value3'],
             'untokenized.field4': ['value4'],
@@ -76,9 +69,11 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc = Fields2LuceneDoc('tsname')
         categories = fields2LuceneDoc._createFacetCategories(fields)
         self.assertEquals(3, len(categories))
-        self.assertEquals(['untokenized.field5', 'value5'], categories[0].components)
-        self.assertEquals(['untokenized.field5', 'value6'], categories[1].components)
-        self.assertEquals(['untokenized.field4', 'value4'], categories[2].components)
+        self.assertEquals(set([
+                ('untokenized.field5', 'value5'),
+                ('untokenized.field5', 'value6'),
+                ('untokenized.field4', 'value4'),
+            ]), set(tuple(c.components) for c in categories))
 
     def testTODO(self):
         self.fail("TODO: stuff")
@@ -86,3 +81,5 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         # - copy isSingleValuedField from meresco.solr
         # - add more prefixes for special fields
         # - add more tests for transaction like stuff
+        # __id__ is forbidden, perhaps any __field__ ???
+        # - add test to cover call to Lucene(...)

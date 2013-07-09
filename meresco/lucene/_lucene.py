@@ -28,6 +28,7 @@ from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
+from org.apache.lucene.document import StringField, Field
 
 from java.lang import Integer
 
@@ -41,8 +42,9 @@ class Lucene(object):
     def __init__(self, path):
         self._index = Index(path)
 
-    def addDocument(self, *args, **kwargs):
-        self._index.addDocument(*args, **kwargs)
+    def addDocument(self, identifier, document):
+        document.add(StringField(IDFIELD, identifier, Field.Store.YES))
+        self._index.addDocument(document=document)
         return
         yield
 

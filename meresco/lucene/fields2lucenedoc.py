@@ -51,20 +51,19 @@ class Fields2LuceneDoc(Observable):
         fields = tx.objectScope(self)
         if not fields:
             return
-        recordIdentifier = tx.locals["id"]
-        specialFields = {
-            IDFIELD: [recordIdentifier],
-        }
-        fields.update(specialFields)
-        document = self._createDocument(fields)
-        yield self.all.addDocument(document=document, categories=self._createFacetCategories(fields))
+        yield self.all.addDocument(
+                identifier=tx.locals["id"],
+                document=self._createDocument(fields),
+                categories=self._createFacetCategories(fields)
+            )
 
     def _createDocument(self, fields):
         doc = Document()
         for field, values in fields.items():
             for value in values:
                 if field == IDFIELD:
-                    f = StringField(field, value, Field.Store.YES)
+                    # handled by Lucene(..)
+                    pass
                 elif field.startswith(SORTED_PREFIX) or field.startswith(UNTOKENIZED_PREFIX):
                     f = StringField(field, value, Field.Store.NO)
                 else:

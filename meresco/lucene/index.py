@@ -46,11 +46,12 @@ class Index(object):
 
     def __init__(self, path):
         ioContext = IOContext()
-        indexDirectory = CompoundFileDirectory(
-                SimpleFSDirectory(File(join(path, 'index'))),
-                "lucene", 
-                ioContext,
-                True)
+        #indexDirectory = CompoundFileDirectory(
+        #        SimpleFSDirectory(File(join(path, 'index'))),
+        #        "lucene", 
+        #        ioContext,
+        #        True)
+        indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
         analyzer = StandardAnalyzer(Version.LUCENE_43)
         conf = IndexWriterConfig(Version.LUCENE_43, analyzer);
         self._indexWriter = IndexWriter(indexDirectory, conf)
@@ -94,8 +95,8 @@ class Index(object):
         if reader != currentReader:
             self._searcher = IndexSearcher(reader)
             currentReader.decRef()
-        thread = Thread(target=self._thread, kwargs={'target': self._hardCommit})
-        thread.start()
+        #thread = Thread(target=self._thread, kwargs={'target': self._hardCommit})
+        #thread.start()
 
     def _thread(self, target):
         VM.attachCurrentThread()
@@ -123,29 +124,8 @@ class Index(object):
             finally:
                 indexReader.decRef()
 
-    def termsForField(self, field, prefix=None):
-        indexReader = self._searcher.getIndexReader()
-        if indexReader.tryIncRef():
-            terms = []
-            try:
-                iterator = MultiFields.getFields(indexReader).terms(field).iterator(None)
-                if prefix:
-                    iterator.seekCeil(BytesRef(prefix))
-                    terms.append(iterator.term().utf8ToString())
-                iterator = BytesRefIterator.cast_(iterator)
-                try:
-                    while True:
-                        term = iterator.next().utf8ToString()
-                        if prefix and not term.startswith(prefix):
-                            break
-                        terms.append(term)
-                except StopIteration:
-                    pass
-                return terms
-            finally:
-                indexReader.decRef()
-
     def _hardCommit(self):
+        print '_hardCommit', self
         if self._committing:
             return
         self._committing = True

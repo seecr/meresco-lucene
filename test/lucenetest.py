@@ -26,9 +26,10 @@
 from seecr.test import SeecrTestCase
 
 from meresco.lucene import Lucene
-from meresco.lucene._lucene import IDFIELD
 from org.apache.lucene.search import MatchAllDocsQuery
 from org.apache.lucene.document import Document, TextField, StringField, Field
+
+from time import sleep
 
 class LuceneTest(SeecrTestCase):
     def testCreate(self):
@@ -38,10 +39,7 @@ class LuceneTest(SeecrTestCase):
 
     def testAddDocument(self):
         lucene = Lucene(self.tempdir)
-        document = Document()
-        f = StringField(IDFIELD, "identifier", Field.Store.YES)
-        document.add(f)
-        lucene.addDocument(document)
+        retval(lucene.addDocument(identifier="identifier", document=Document()))
         result = retval(lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(1, result.total)
         self.assertEquals(['identifier'], result.hits)
@@ -50,4 +48,5 @@ def retval(g):
     try:
         g.next()
     except StopIteration, e:
-        return e.args[0]
+        if len(e.args):
+            return e.args[0]

@@ -32,17 +32,28 @@ from org.apache.lucene.document import Document, TextField, StringField, Field
 from time import sleep
 
 class LuceneTest(SeecrTestCase):
+    def setUp(self):
+        super(LuceneTest, self).setUp()
+        self.lucene = Lucene(self.tempdir)
+
     def testCreate(self):
-        lucene = Lucene(self.tempdir)
-        result = retval(lucene.executeQuery(MatchAllDocsQuery()))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(0, result.total)
 
-    def testAddDocument(self):
-        lucene = Lucene(self.tempdir)
-        retval(lucene.addDocument(identifier="identifier", document=Document()))
-        result = retval(lucene.executeQuery(MatchAllDocsQuery()))
+    def testAdd1Document(self):
+        retval(self.lucene.addDocument(identifier="identifier", document=Document()))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(1, result.total)
         self.assertEquals(['identifier'], result.hits)
+
+    def testAddAndDeleteDocument(self):
+        retval(self.lucene.addDocument(identifier="id:0", document=Document()))
+        retval(self.lucene.addDocument(identifier="id:1", document=Document()))
+        retval(self.lucene.addDocument(identifier="id:2", document=Document()))
+        retval(self.lucene.delete(identifier="id:1"))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(2, result.total)
+        self.assertEquals(set(['id:0', 'id:2']), set(result.hits))
 
 def retval(g):
     try:

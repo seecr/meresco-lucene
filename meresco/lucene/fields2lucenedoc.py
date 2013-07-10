@@ -62,8 +62,7 @@ class Fields2LuceneDoc(Observable):
         for field, values in fields.items():
             for value in values:
                 if field == IDFIELD:
-                    # handled by Lucene(..)
-                    pass
+                    raise ValueError("Field '%s' is protected and created by Lucene(..)")
                 elif field.startswith(SORTED_PREFIX) or field.startswith(UNTOKENIZED_PREFIX):
                     f = StringField(field, value, Field.Store.NO)
                 else:

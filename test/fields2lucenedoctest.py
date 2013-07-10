@@ -81,5 +81,4 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         # - copy isSingleValuedField from meresco.solr
         # - add more prefixes for special fields
         # - add more tests for transaction like stuff
-        # __id__ is forbidden, perhaps any __field__ ???
         # - add test to cover call to Lucene(...)

@@ -29,6 +29,7 @@ from meresco.lucene import Lucene
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery
 from org.apache.lucene.document import Document, TextField, StringField, Field
 from org.apache.lucene.index import Term
+from org.apache.lucene.facet.taxonomy import CategoryPath
 
 from time import sleep
 
@@ -36,6 +37,9 @@ class LuceneTest(SeecrTestCase):
     def setUp(self):
         super(LuceneTest, self).setUp()
         self.lucene = Lucene(self.tempdir)
+
+    def tearDown(self):
+        self.lucene.finish()
 
     def testCreate(self):
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
@@ -96,11 +100,42 @@ class LuceneTest(SeecrTestCase):
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), start=0, stop=2, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
         self.assertEquals(['id:0', 'id:1'], result.hits)
 
+    def testFacets(self):
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first item0'), ('field3', 'second item')])))
+        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')]), categories=createCategories([('field2', 'first item1'), ('field3', 'other value')])))
+        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')]), categories=createCategories([('field2', 'first item2'), ('field3', 'second item')])))
+        sleep(0.1)
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
+        self.assertEquals([{
+                'fieldname': 'field2',
+                'terms': [
+                    {'term': 'first item2', 'count': 1},
+                    {'term': 'first item1', 'count': 1},
+                    {'term': 'first item0', 'count': 1},
+                ],
+            }],result.drilldownData)
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field3')]))
+        self.assertEquals([{
+                'fieldname': 'field3',
+                'terms': [
+                    {'term': 'second item', 'count': 2},
+                    {'term': 'other value', 'count': 1},
+                ],
+            }],result.drilldownData)
+
+
 def createDocument(textfields):
     document = Document()
     for name, value in textfields:
         document.add(TextField(name, value, Field.Store.NO))
     return document
+
+def createCategories(fields):
+    result = []
+    for name, value in fields:
+        result.append(CategoryPath([name, str(value)]))
+    return result
+
 
 def retval(g):
     try:

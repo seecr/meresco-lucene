@@ -38,13 +38,15 @@ from index import Index
 IDFIELD = '__id__'
 
 class Lucene(object):
+    COUNT = 'count'
+    SUPPORTED_SORTBY_VALUES = [COUNT]
 
     def __init__(self, path):
         self._index = Index(path)
 
-    def addDocument(self, identifier, document):
+    def addDocument(self, identifier, document, categories=None):
         document.add(StringField(IDFIELD, identifier, Field.Store.YES))
-        self._index.addDocument(document=document)
+        self._index.addDocument(document=document, categories=categories)
         return
         yield
 
@@ -73,6 +75,9 @@ class Lucene(object):
         response = LuceneResponse(total=len(terms), hits=terms)
         raise StopIteration(response)
         yield
+
+    def finish(self):
+        self._index.finish()
 
     def _createResponse(self, collectors, start):
         total, hits = self._topDocsResponse(collectors['query'], start=start)
@@ -107,6 +112,9 @@ class Lucene(object):
         facetRequests = []
         for f in facets:
             maxTerms = f.get('maxTerms', Integer.MAX_VALUE)
+            sortBy = f.get('sortBy')
+            if not (sortBy is None or sortBy in self.SUPPORTED_SORTBY_VALUES):
+                raise ValueError('Value of "sortBy" should be in %s' % self.SUPPORTED_SORTBY_VALUES)
             facetRequests.append(CountFacetRequest(CategoryPath([f['fieldname']]), maxTerms))
         facetSearchParams = FacetSearchParams(facetRequests)
         return self._index.createFacetCollector(facetSearchParams)

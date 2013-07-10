@@ -61,7 +61,8 @@ class Index(object):
         self._taxoWriter.commit()
         self._taxoReader = None
         self._openTaxonomyReader()
-        self._committing = False
+        self._thread = None
+        self._dirty = False
 
     def addDocument(self, document, categories=None):
         if categories:
@@ -94,10 +95,19 @@ class Index(object):
         if reader != currentReader:
             self._searcher = IndexSearcher(reader)
             currentReader.decRef()
-        #thread = Thread(target=self._thread, kwargs={'target': self._hardCommit})
-        #thread.start()
+        if self._thread:
+            self._dirty = True
+            return
+        self._thread = Thread(target=self._runThread, kwargs={'target': self._hardCommit})
+        self._thread.start()
 
-    def _thread(self, target):
+    def finish(self):
+        try:
+            self._thread.join()
+        except AttributeError:
+            pass
+
+    def _runThread(self, target):
         VM.attachCurrentThread()
         target()
 
@@ -124,15 +134,14 @@ class Index(object):
                 indexReader.decRef()
 
     def _hardCommit(self):
-        print '_hardCommit', self
-        if self._committing:
-            return
-        self._committing = True
         def _commit():
+            self._dirty = False
             self._indexWriter.commit()
             self._commitFacet()
+            if self._dirty:
+                _commit()
         _commit()
-        self._committing = False
+        self._thread = None
 
     def _commitFacet(self):
         self._taxoWriter.commit()

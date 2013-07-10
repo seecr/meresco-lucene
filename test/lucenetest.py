@@ -26,8 +26,9 @@
 from seecr.test import SeecrTestCase
 
 from meresco.lucene import Lucene
-from org.apache.lucene.search import MatchAllDocsQuery
+from org.apache.lucene.search import MatchAllDocsQuery, TermQuery
 from org.apache.lucene.document import Document, TextField, StringField, Field
+from org.apache.lucene.index import Term
 
 from time import sleep
 
@@ -41,10 +42,16 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(0, result.total)
 
     def testAdd1Document(self):
-        retval(self.lucene.addDocument(identifier="identifier", document=Document()))
+        document = Document()
+        document.add(TextField('title', 'The title', Field.Store.NO))
+        retval(self.lucene.addDocument(identifier="identifier", document=document))
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(1, result.total)
         self.assertEquals(['identifier'], result.hits)
+        result = retval(self.lucene.executeQuery(TermQuery(Term("title", 'title'))))
+        self.assertEquals(1, result.total)
+        result = retval(self.lucene.executeQuery(TermQuery(Term("title", 'the'))))
+        self.assertEquals(1, result.total)
 
     def testAddAndDeleteDocument(self):
         retval(self.lucene.addDocument(identifier="id:0", document=Document()))
@@ -54,6 +61,46 @@ class LuceneTest(SeecrTestCase):
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(2, result.total)
         self.assertEquals(set(['id:0', 'id:2']), set(result.hits))
+
+    def testSorting(self):
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([
+                ('field0', 'AA'),
+                ('field1', 'ZZ'), 
+                ('field2', 'AA'),
+            ])))
+        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([
+                ('field0', 'BB'),
+                ('field1', 'AA'), 
+                ('field2', 'ZZ'),
+            ])))
+        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([
+                ('field0', 'CC'),
+                ('field1', 'ZZ'), 
+                ('field2', 'ZZ'),
+            ])))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field0', sortDescending=False)]))
+        self.assertEquals(3, result.total)
+        self.assertEquals(['id:0', 'id:1', 'id:2'], result.hits)
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field0', sortDescending=True)]))
+        self.assertEquals(['id:2', 'id:1', 'id:0'], result.hits)
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field1', sortDescending=True), dict(sortBy='field0', sortDescending=True)]))
+        self.assertEquals(['id:2', 'id:0', 'id:1'], result.hits)
+
+    def testStartStop(self):
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')])))
+        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')])))
+        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')])))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), start=1, stop=10, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
+        self.assertEquals(3, result.total)
+        self.assertEquals(['id:1', 'id:2'], result.hits)
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), start=0, stop=2, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
+        self.assertEquals(['id:0', 'id:1'], result.hits)
+
+def createDocument(textfields):
+    document = Document()
+    for name, value in textfields:
+        document.add(TextField(name, value, Field.Store.NO))
+    return document
 
 def retval(g):
     try:

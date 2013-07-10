@@ -23,10 +23,11 @@
 #
 ## end license ##
 
+from meresco.lucene import VM, createAnalyzer
+
 from org.apache.lucene.index import IndexWriter, DirectoryReader, IndexWriterConfig, MultiFields
 from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.store import CompoundFileDirectory, SimpleFSDirectory, IOContext
-from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.util import Version
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter, DirectoryTaxonomyReader
 from org.apache.lucene.facet.index import FacetFields
@@ -35,8 +36,6 @@ from org.apache.lucene.util import BytesRef, BytesRefIterator
 
 from java.io import File
 from java.util import Arrays
-
-from meresco.lucene import VM
 
 from threading import Thread
 
@@ -52,7 +51,7 @@ class Index(object):
         #        ioContext,
         #        True)
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
-        analyzer = StandardAnalyzer(Version.LUCENE_43)
+        analyzer = createAnalyzer()
         conf = IndexWriterConfig(Version.LUCENE_43, analyzer);
         self._indexWriter = IndexWriter(indexDirectory, conf)
         self._searcher = IndexSearcher(DirectoryReader.open(self._indexWriter, True))

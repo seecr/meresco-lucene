@@ -23,10 +23,10 @@
 #
 ## end license ##
 
+from meresco.lucene import createAnalyzer
+
 from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery
 from org.apache.lucene.index import Term
-from org.apache.lucene.analysis.standard import ClassicAnalyzer
-from org.apache.lucene.analysis.util import CharArraySet
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
 from org.apache.lucene.util import Version
 from java.io import StringReader
@@ -38,8 +38,7 @@ from re import compile
 def _analyzeToken(token):
     result = []
     reader = StringReader(unicode(token))
-    stopWords = CharArraySet(Version.LUCENE_43, 0, True)
-    stda = ClassicAnalyzer(Version.LUCENE_43, stopWords)
+    stda = createAnalyzer()
     ts = stda.tokenStream("dummy field name", reader)
     termAtt = ts.addAttribute(CharTermAttribute.class_)
     try:

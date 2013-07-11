@@ -29,6 +29,8 @@ VM = initVM()
 SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
 
+from luceneresponse import LuceneResponse
+from luceneremote import LuceneRemote
 from _analyzer import createAnalyzer
 from _lucene import Lucene
 from fields2lucenedoc import Fields2LuceneDoc

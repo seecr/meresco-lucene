@@ -23,15 +23,16 @@
 #
 ## end license ##
 
-from lucene import initVM
-VM = initVM()
+from seecr.test import SeecrTestCase
 
-SORTED_PREFIX = "sorted."
-UNTOKENIZED_PREFIX = "untokenized."
+from meresco.lucene import LuceneResponse
 
-from luceneresponse import LuceneResponse
-from _analyzer import createAnalyzer
-from _lucene import Lucene
-from fields2lucenedoc import Fields2LuceneDoc
-from cqltolucenequery import CqlToLuceneQuery
+class LuceneResponseTest(SeecrTestCase):
+    def testJson(self):
+        response = LuceneResponse(total=3, hits=['1','2','3'])
+        response.drilldownData = [{'terms':[], 'fieldname':'field'}]
+        response2 = LuceneResponse.fromJson(response.asJson())
+        self.assertEquals(3, response2.total)
+        self.assertEquals(['1','2','3'], response2.hits)
+        self.assertEquals([{'terms':[], 'fieldname':'field'}], response2.drilldownData)
 

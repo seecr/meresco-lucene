@@ -43,6 +43,8 @@ if version >= '2.7':
 from lucenequerycomposertest import LuceneQueryComposerTest
 from fields2lucenedoctest import Fields2LuceneDocTest
 from lucenetest import LuceneTest
+from luceneremotetest import LuceneRemoteTest
+from luceneresponsetest import LuceneResponseTest
 
 if __name__ == '__main__':
     unittest.main()

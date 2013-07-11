@@ -23,6 +23,15 @@
 #
 ## end license ##
 
+from simplejson import loads, dumps
+
 class LuceneResponse(object):
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
+    @classmethod
+    def fromJson(cls, json):
+        return cls(**loads(json))
+
+    def asJson(self):
+        return dumps(vars(self))

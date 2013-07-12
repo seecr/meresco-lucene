@@ -55,4 +55,6 @@ mv $mydir/root/usr/lib64/python2.6/site-packages/meresco_lucene $libDir/
 
 
 rm -rf $buildDir
+rm -rf $mydir/root
+rm -rf $mydir/meresco_lucene.egg-info
 

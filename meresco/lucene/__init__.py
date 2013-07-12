@@ -23,8 +23,25 @@
 #
 ## end license ##
 
+from os.path import dirname, abspath, join, isfile                               #DO_NOT_DISTRIBUTE
+from os import stat, system                                                      #DO_NOT_DISTRIBUTE
+from sys import exit, path as sysPath                                            #DO_NOT_DISTRIBUTE
+mydir = dirname(abspath(__file__))                                               #DO_NOT_DISTRIBUTE
+srcDir = join(dirname(dirname(mydir)), 'src')                                    #DO_NOT_DISTRIBUTE
+libDir = join(dirname(dirname(mydir)), 'lib')                                    #DO_NOT_DISTRIBUTE
+sofile = join(libDir, 'meresco_lucene', '_meresco_lucene.so')                    #DO_NOT_DISTRIBUTE
+javafile = join(srcDir, 'org','meresco','lucene','MerescoStandardAnalyzer.java') #DO_NOT_DISTRIBUTE
+if not isfile(sofile) or stat(sofile).st_mtime < stat(javafile).st_mtime:        #DO_NOT_DISTRIBUTE
+    result = system('cd %s; ./build.sh' % srcDir)                                #DO_NOT_DISTRIBUTE
+    if result:                                                                   #DO_NOT_DISTRIBUTE
+        exit(result)                                                             #DO_NOT_DISTRIBUTE
+sysPath.insert(0, libDir)                                                        #DO_NOT_DISTRIBUTE
+
+
 from lucene import initVM
 VM = initVM()
+from meresco_lucene import initVM
+VMM = initVM()
 
 SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."

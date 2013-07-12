@@ -79,8 +79,6 @@ class LuceneRemoteService(Observable):
         kwargs = messageDict['kwargs']
         if 'cqlQuery' in kwargs:
             kwargs['cqlAbstractSyntaxTree'] = parseString(kwargs.pop('cqlQuery'))
-        print 'self.any.unknown(message=', messageDict['message'], '**kwargs', kwargs, ')'
-        from sys import stdout; stdout.flush()
         response = yield self.any.unknown(message=messageDict['message'], **kwargs)
         yield Ok
         yield ContentTypeHeader + 'application/json' + CRLF

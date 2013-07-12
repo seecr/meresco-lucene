@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 ## begin license ##
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
@@ -68,6 +69,18 @@ class LuceneQueryComposerTest(TestCase):
             expected.add(Term("unqualified", term))
         self.assertConversion(expected, '"no is the only option"')
 
+    def testDiacritics(self):
+        self.assertConversion(TermQuery(Term('title', 'moree')), 'title=Moree')
+        self.assertConversion(TermQuery(Term('title', 'moree')), 'title=Morée')
+        self.assertConversion(TermQuery(Term('title', 'moree')), 'title=Morèe')
+
+    def testDiacriticsShouldBeNormalizedNFC(self):
+        pq = PhraseQuery()
+        pq.add(Term("title", "more"))
+        pq.add(Term("title", "e"))
+        self.assertConversion(pq, 'title=More\xcc\x81e') # Combined `
+        from unicodedata import normalize
+        self.assertConversion(TermQuery(Term('title', 'moree')), normalize('NFC', unicode('title=More\xcc\x81e')))
 
     def testIndexRelationTermOutput(self):
         self.assertConversion(TermQuery(Term("animal", "cats")), 'animal=cats')

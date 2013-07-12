@@ -23,10 +23,8 @@
 #
 ## end license ##
 
-from org.apache.lucene.analysis.standard import ClassicAnalyzer
-from org.apache.lucene.analysis.util import CharArraySet
 from org.apache.lucene.util import Version
+from org.meresco.lucene import MerescoStandardAnalyzer
 
 def createAnalyzer():
-    stopWords = CharArraySet(Version.LUCENE_43, 0, True)
-    return ClassicAnalyzer(Version.LUCENE_43, stopWords)
+    return MerescoStandardAnalyzer(Version.LUCENE_43)

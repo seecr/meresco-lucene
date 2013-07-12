@@ -27,8 +27,10 @@
 from seecr.test import SeecrTestCase
 
 from meresco.lucene import Lucene
+from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
+from cqlparser import parseString as parseCql
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery
-from org.apache.lucene.document import Document, TextField, StringField, Field
+from org.apache.lucene.document import Document, TextField, Field
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from seecr.utils.generatorutils import returnValueFromGenerator
@@ -128,9 +130,10 @@ class LuceneTest(SeecrTestCase):
     def testDiacritics(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier='hendrik', document=createDocument([('title', 'Waar is Morée vandaag?')])))
         sleep(0.1)
-        result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('title', 'morée'))))
-        self.assertEquals(1, result.total)
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('title', 'moree'))))
+        self.assertEquals(1, result.total)
+        query = LuceneQueryComposer(unqualifiedTermFields=[]).compose(parseCql("title=morée"))
+        result = returnValueFromGenerator(self.lucene.executeQuery(query))
         self.assertEquals(1, result.total)
 
 

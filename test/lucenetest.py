@@ -136,6 +136,26 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.lucene.executeQuery(query))
         self.assertEquals(1, result.total)
 
+    def testFilterQueries(self):
+        for i in xrange(10):
+            returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([
+                    ('mod2', 'v%s' % (i % 2)), 
+                    ('mod3', 'v%s' % (i % 3))
+                ])))
+        # id     0  1  2  3  4  5  6  7  8  9  
+        # mod2  v0 v1 v0 v1 v0 v1 v0 v1 v0 v1
+        # mod3  v0 v1 v2 v0 v1 v2 v0 v1 v2 v0
+        sleep(0.1)
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), filterQueries=[TermQuery(Term('mod2', 'v0'))]))
+        self.assertEquals(5, result.total)
+        self.assertEquals(['id:0', 'id:2', 'id:4', 'id:6', 'id:8'], result.hits)
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), filterQueries=[
+                TermQuery(Term('mod2', 'v0')),
+                TermQuery(Term('mod3', 'v0')),
+            ]))
+        self.assertEquals(2, result.total)
+        self.assertEquals(['id:0', 'id:6'], result.hits)
+
 
 def createDocument(textfields):
     document = Document()

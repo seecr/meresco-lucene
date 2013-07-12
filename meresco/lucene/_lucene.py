@@ -23,12 +23,13 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import TopScoreDocCollector, MultiCollector, TopFieldCollector, Sort, SortField
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, SortField, CachingWrapperFilter, QueryWrapperFilter
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
 from org.apache.lucene.document import StringField, Field
+from org.apache.lucene.queries import ChainedFilter
 
 from java.lang import Integer
 
@@ -55,16 +56,20 @@ class Lucene(object):
         return
         yield
 
-    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, **kwargs):
         collectors = {}
         collectors['query'] = _topScoreCollector(start=start, stop=stop, sortKeys=sortKeys)
         if facets:
             collectors['facet'] = self._facetCollector(facets)
 
+        filters = None
+        if filterQueries:
+            filters = ChainedFilter([CachingWrapperFilter(QueryWrapperFilter(fq)) for fq in filterQueries], ChainedFilter.AND)
+
         response = self._index.search(
                 lambda: self._createResponse(collectors, start=start),
                 luceneQuery,
-                None,
+                filters,
                 MultiCollector.wrap(collectors.values()),
             )
         raise StopIteration(response)

@@ -60,11 +60,11 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(records[50:60], xpath(body, '//srw:recordIdentifier/text()'))
 
     def testSortKeys(self):
-        body = self.doSruQuery('*', sortKeys='intfield1,,0')
+        body = self.doSruQuery('*', sortKeys='intfield1,,1')
         records = xpath(body, '//srw:recordIdentifier/text()')
         self.assertEquals(['record:%s' % i for i in xrange(1,11)], records)
 
-        body = self.doSruQuery('*', sortKeys='intfield1,,1')
+        body = self.doSruQuery('*', sortKeys='intfield1,,0')
         records = xpath(body, '//srw:recordIdentifier/text()')
         self.assertEquals(['record:%s' % i for i in xrange(100,90, -1)], records)
 

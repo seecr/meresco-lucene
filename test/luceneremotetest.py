@@ -32,7 +32,7 @@ from seecr.utils.generatorutils import returnValueFromGenerator
 from simplejson import loads, dumps
 
 class LuceneRemoteTest(SeecrTestCase):
-    def testRemote(self):
+    def testRemoteExecuteQuery(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
             raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=["1", "2", "3", "4", "5"]).asJson())
@@ -61,7 +61,30 @@ class LuceneRemoteTest(SeecrTestCase):
                 }
             }, loads(m.kwargs['body']))
 
-    def testService(self):
+    def testRemotePrefixSearch(self):
+        http = CallTrace('http')
+        def httppost(*args, **kwargs):
+            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=["1", "2", "3", "4", "5"]).asJson())
+            yield
+        http.methods['httppost'] = httppost
+        remote = LuceneRemote(host='host', port=1234, path='/path')
+        remote._httppost = http.httppost
+
+        result = returnValueFromGenerator(remote.prefixSearch(prefix='aap', fieldname='field', limit=10))
+        self.assertEquals(5, result.total)
+        self.assertEquals(['httppost'], http.calledMethodNames())
+        m = http.calledMethods[0]
+        self.assertEquals('host', m.kwargs['host'])
+        self.assertEquals({
+                'message': 'prefixSearch',
+                'kwargs':{
+                    'prefix':'aap',
+                    'fieldname': 'field',
+                    'limit': 10,
+                }
+            }, loads(m.kwargs['body']))
+
+    def testServiceExecuteQuery(self):
         observer = CallTrace('lucene')
         def executeQuery(**kwargs):
             raise StopIteration(LuceneResponse(total=2, hits=['aap','noot']))
@@ -84,7 +107,40 @@ class LuceneRemoteTest(SeecrTestCase):
         response = LuceneResponse.fromJson(body)
         self.assertEquals(2, response.total)
         self.assertEquals(['aap', 'noot'], response.hits)
+        self.assertEquals(['executeQuery'], observer.calledMethodNames())
+        m = observer.calledMethods[0]
+        self.assertEquals(parseString('query AND field=value'), m.kwargs['cqlAbstractSyntaxTree'])
+        self.assertEquals(0, m.kwargs['start'])
+        self.assertEquals(10, m.kwargs['stop'])
+        self.assertEquals([{'fieldname': 'field', 'maxTerms':5}], m.kwargs['facets'])
 
+    def testServicePrefixSearch(self):
+        observer = CallTrace('lucene')
+        def prefixSearch(**kwargs):
+            raise StopIteration(LuceneResponse(total=2, hits=['aap','noot']))
+            yield
+        observer.methods['prefixSearch'] = prefixSearch
+        service = LuceneRemoteService()
+        service.addObserver(observer)
+        body = dumps({
+                'message': 'prefixSearch',
+                'kwargs':{
+                    'prefix':'aap',
+                    'fieldname': 'field',
+                    'limit': 10,
+                }
+            })
+        result = ''.join(compose(service.handleRequest(Body=body)))
+        header, body = result.split('\r\n'*2)
+        self.assertTrue('Content-Type: application/json' in header, header)
+        response = LuceneResponse.fromJson(body)
+        self.assertEquals(2, response.total)
+        self.assertEquals(['aap', 'noot'], response.hits)
+        self.assertEquals(['prefixSearch'], observer.calledMethodNames())
+        m = observer.calledMethods[0]
+        self.assertEquals('aap', m.kwargs['prefix'])
+        self.assertEquals(10, m.kwargs['limit'])
+        self.assertEquals('field', m.kwargs['fieldname'])
 
 
 

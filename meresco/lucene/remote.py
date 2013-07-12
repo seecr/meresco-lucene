@@ -45,24 +45,24 @@ class LuceneRemote(Observable):
 
     # def executeQuery(self, cqlAbstractSyntaxTree, start=0, stop=10, sortKeys=None, suggestionsCount=0, suggestionsQuery=None, filterQueries=None, joinQueries=None, facets=None, joinFacets=None, **kwargs):
     def executeQuery(self, cqlAbstractSyntaxTree, **kwargs):
-        kwargDict = kwargs.copy()
-        kwargDict["cqlQuery"] = cql2string(cqlAbstractSyntaxTree)
-        messageDict = dict(message="executeQuery", kwargs=kwargDict)
-        remoteResponse = yield self._send(dumps(messageDict))
-        raise StopIteration(LuceneResponse.fromJson(remoteResponse))
+        result = yield self._send(message='executeQuery', cqlQuery=cql2string(cqlAbstractSyntaxTree), **kwargs)
+        raise StopIteration(result)
+
+    def prefixSearch(self, **kwargs):
+        result = yield self._send(message='prefixSearch', **kwargs)
+        raise StopIteration(result)
 
     def _luceneRemoteServer(self):
         return (self._host, self._port) if self._host else self.call.luceneRemoteServer()
 
-    def _send(self, body, contentType="application/json"):
-        headers = None
-        if body:
-             headers={'Content-Type': contentType, 'Content-Length': len(body)}
+    def _send(self, message, **kwargs):
+        body = dumps(dict(message=message, kwargs=kwargs))
+        headers={'Content-Type': 'application/json', 'Content-Length': len(body)}
         host, port = self._luceneRemoteServer() # WARNING: can return a different server each time.
         response = yield self._httppost(host=host, port=port, request=self._path, body=body, headers=headers)
-        header, body = response.split("\r\n\r\n", 1)
+        header, responseBody = response.split("\r\n\r\n", 1)
         self._verify200(header, response)
-        raise StopIteration(body)
+        raise StopIteration(LuceneResponse.fromJson(responseBody))
 
     def _httppost(self, **kwargs):
         return httppost(**kwargs)
@@ -73,12 +73,15 @@ class LuceneRemote(Observable):
 
 class LuceneRemoteService(Observable):
     def handleRequest(self, Body, **kwargs):
-        messasgeDict = loads(Body)
-        if messasgeDict['message'] != 'executeQuery':
-            raise ValueError('Expected "executeQuery"')
-        kwargs = messasgeDict['kwargs']
-        kwargs['cqlAbstractSyntaxTree'] = parseString(kwargs.pop('cqlQuery'))
-        response = yield self.any.executeQuery(**kwargs)
+        messageDict = loads(Body)
+        if messageDict['message'] not in ['executeQuery', 'prefixSearch']:
+            raise ValueError('Expected "executeQuery" or "prefixSearch"')
+        kwargs = messageDict['kwargs']
+        if 'cqlQuery' in kwargs:
+            kwargs['cqlAbstractSyntaxTree'] = parseString(kwargs.pop('cqlQuery'))
+        print 'self.any.unknown(message=', messageDict['message'], '**kwargs', kwargs, ')'
+        from sys import stdout; stdout.flush()
+        response = yield self.any.unknown(message=messageDict['message'], **kwargs)
         yield Ok
         yield ContentTypeHeader + 'application/json' + CRLF
         yield CRLF

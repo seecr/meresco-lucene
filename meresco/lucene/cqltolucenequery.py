@@ -23,16 +23,16 @@
 #
 ## end license ##
 
-from meresco.core import Observable
+from meresco.core import Transparent
 
 from meresco.components.statistics import Logger
 from meresco.components.clausecollector import ClauseCollector
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 
-class CqlToLuceneQuery(Observable, Logger):
+class CqlToLuceneQuery(Transparent, Logger):
     def __init__(self, unqualifiedFields, name=None):
-        Observable.__init__(self, name=name)
+        Transparent.__init__(self, name=name)
         self._cqlComposer = LuceneQueryComposer(unqualifiedFields)
 
     def executeQuery(self, cqlAbstractSyntaxTree, *args, **kwargs):

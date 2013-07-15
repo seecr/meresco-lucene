@@ -127,6 +127,15 @@ class LuceneTest(SeecrTestCase):
                 ],
             }],result.drilldownData)
 
+    def testEscapeFacets(self):
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first/item0')])))
+        sleep(0.1)
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
+        self.assertEquals([{
+                'terms': [{'count': 1, 'term': u'first/item0'}],
+                'fieldname': u'field2'
+            }],result.drilldownData)
+
     def testDiacritics(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier='hendrik', document=createDocument([('title', 'Waar is Morée vandaag?')])))
         sleep(0.1)

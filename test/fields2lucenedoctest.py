@@ -65,14 +65,16 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             'sorted.field3': ['value3'],
             'untokenized.field4': ['value4'],
             'untokenized.field5': ['value5', 'value6'],
+            'untokenized.field6': ['value5/value6'],
         }
         fields2LuceneDoc = Fields2LuceneDoc('tsname')
         categories = fields2LuceneDoc._createFacetCategories(fields)
-        self.assertEquals(3, len(categories))
+        self.assertEquals(4, len(categories))
         self.assertEquals(set([
                 ('untokenized.field5', 'value5'),
                 ('untokenized.field5', 'value6'),
                 ('untokenized.field4', 'value4'),
+                ('untokenized.field6', 'value5/value6'),
             ]), set(tuple(c.components) for c in categories))
 
     def testAddTimeStamp(self):

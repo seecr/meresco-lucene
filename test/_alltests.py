@@ -40,6 +40,7 @@ if version >= '2.7':
     simplefilter('default')
 
 
+from cqltolucenequerytest import CqlToLuceneQueryTest
 from lucenequerycomposertest import LuceneQueryComposerTest
 from fields2lucenedoctest import Fields2LuceneDocTest
 from lucenetest import LuceneTest

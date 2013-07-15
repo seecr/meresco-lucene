@@ -77,7 +77,8 @@ class Lucene(object):
 
     def prefixSearch(self, fieldname, prefix, limit=10):
         terms = self._index.termsForField(fieldname, prefix=prefix)
-        response = LuceneResponse(total=len(terms), hits=terms)
+        hits = [term for count, term in sorted(terms, reverse=True)]
+        response = LuceneResponse(total=len(terms), hits=hits)
         raise StopIteration(response)
         yield
 

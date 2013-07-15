@@ -156,6 +156,13 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals(['id:0', 'id:6'], result.hits)
 
+    def testPrefixSearch(self):
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value1')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value1')])))
+        response = returnValueFromGenerator(self.lucene.prefixSearch(fieldname='field1', prefix='valu'))
+        print response.hits
+
 
 def createDocument(textfields):
     document = Document()

@@ -75,6 +75,19 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                 ('untokenized.field4', 'value4'),
             ]), set(tuple(c.components) for c in categories))
 
+    def testAddTimeStamp(self):
+        fields = {'field1': ['value1']}
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', addTimestamp=True)
+        fields2LuceneDoc._time = lambda: 123456789
+        document = fields2LuceneDoc._createDocument(fields)
+        self.assertEquals(set(['field1', '__timestamp__']), set([f.name() for f in document.getFields()]))
+        timestampField = document.getField("__timestamp__")
+        self.assertEquals(123456789, timestampField.numericValue().intValue())
+        self.assertTrue(timestampField.fieldType().indexed())
+        self.assertFalse(timestampField.fieldType().stored())
+        self.assertTrue(timestampField.fieldType().tokenized())
+
+
     def testTODO(self):
         self.fail("TODO: stuff")
         #

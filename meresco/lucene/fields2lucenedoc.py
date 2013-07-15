@@ -24,16 +24,19 @@
 ## end license ##
 
 from meresco.core import Observable
-from org.apache.lucene.document import Document, TextField, StringField, Field
+from org.apache.lucene.document import Document, TextField, StringField, Field, IntField
 from org.apache.lucene.facet.taxonomy import CategoryPath
+
+from time import time
 
 from meresco.lucene import SORTED_PREFIX, UNTOKENIZED_PREFIX
 from _lucene import IDFIELD
 
 class Fields2LuceneDoc(Observable):
-    def __init__(self, transactionName):
+    def __init__(self, transactionName, addTimestamp=False):
         Observable.__init__(self)
         self._transactionName = transactionName
+        self._addTimestamp = addTimestamp
 
     def begin(self, name):
         if name != self._transactionName:
@@ -68,7 +71,12 @@ class Fields2LuceneDoc(Observable):
                 else:
                     f = TextField(field, value, Field.Store.NO)
                 doc.add(f)
+        if self._addTimestamp:
+            doc.add(IntField('__timestamp__', self._time(), Field.Store.NO))
         return doc
+
+    def _time(self):
+        return int(time()*1000000)
 
     def _createFacetCategories(self, fields):
         return [CategoryPath([f, str(v)]) for f, vs in fields.items() for v in vs if f.startswith(UNTOKENIZED_PREFIX)]

@@ -44,8 +44,10 @@ class LuceneRemote(Observable):
         self._path = '' if path is None else path
 
     # def executeQuery(self, cqlAbstractSyntaxTree, start=0, stop=10, sortKeys=None, suggestionsCount=0, suggestionsQuery=None, filterQueries=None, joinQueries=None, facets=None, joinFacets=None, **kwargs):
-    def executeQuery(self, cqlAbstractSyntaxTree, **kwargs):
-        result = yield self._send(message='executeQuery', cqlQuery=cql2string(cqlAbstractSyntaxTree), **kwargs)
+    def executeQuery(self, cqlAbstractSyntaxTree, filterQueries=None, **kwargs):
+        if filterQueries:
+            filterQueries = [cql2string(ast) for ast in filterQueries]
+        result = yield self._send(message='executeQuery', cqlQuery=cql2string(cqlAbstractSyntaxTree), filterQueries=filterQueries, **kwargs)
         raise StopIteration(result)
 
     def prefixSearch(self, **kwargs):
@@ -79,6 +81,8 @@ class LuceneRemoteService(Observable):
         kwargs = messageDict['kwargs']
         if 'cqlQuery' in kwargs:
             kwargs['cqlAbstractSyntaxTree'] = parseString(kwargs.pop('cqlQuery'))
+        if 'filterQueries' in kwargs and kwargs['filterQueries'] is not None:
+            kwargs['filterQueries'] = [parseString(cqlstring) for cqlstring in kwargs['filterQueries']]
         response = yield self.any.unknown(message=messageDict['message'], **kwargs)
         yield Ok
         yield ContentTypeHeader + 'application/json' + CRLF

@@ -41,7 +41,14 @@ class LuceneRemoteTest(SeecrTestCase):
         remote = LuceneRemote(host='host', port=1234, path='/path')
         remote._httppost = http.httppost
 
-        result = returnValueFromGenerator(remote.executeQuery(cqlAbstractSyntaxTree=parseString('query AND  field=value'), start=0, stop=10, facets=[{'fieldname': 'field', 'maxTerms':5}]))
+        result = returnValueFromGenerator(remote.executeQuery(
+                cqlAbstractSyntaxTree=parseString('query AND  field=value'),
+                start=0,
+                stop=10,
+                facets=[{'fieldname': 'field', 'maxTerms':5}],
+                filterQueries=[parseString('query=fiets')]
+            )
+        )
         self.assertEquals(5, result.total)
         self.assertEquals(["1", "2", "3", "4", "5"], result.hits)
 
@@ -58,6 +65,7 @@ class LuceneRemoteTest(SeecrTestCase):
                     'start':0,
                     'stop': 10,
                     'facets': [{'fieldname': 'field', 'maxTerms':5}],
+                    'filterQueries': ['query=fiets']
                 }
             }, loads(m.kwargs['body']))
 
@@ -99,6 +107,7 @@ class LuceneRemoteTest(SeecrTestCase):
                     'start':0,
                     'stop': 10,
                     'facets': [{'fieldname': 'field', 'maxTerms':5}],
+                    'filterQueries': ['query=fiets']
                 }
             })
         result = ''.join(compose(service.handleRequest(Body=body)))
@@ -113,6 +122,7 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(0, m.kwargs['start'])
         self.assertEquals(10, m.kwargs['stop'])
         self.assertEquals([{'fieldname': 'field', 'maxTerms':5}], m.kwargs['facets'])
+        self.assertEquals([parseString('query=fiets')], m.kwargs['filterQueries'])
 
     def testServicePrefixSearch(self):
         observer = CallTrace('lucene')

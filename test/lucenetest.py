@@ -33,6 +33,7 @@ from org.apache.lucene.search import MatchAllDocsQuery, TermQuery
 from org.apache.lucene.document import Document, TextField, Field
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.taxonomy import CategoryPath
+from org.apache.lucene.search.join import TermsCollector
 from seecr.utils.generatorutils import returnValueFromGenerator
 
 from time import sleep
@@ -173,17 +174,19 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(['value1', 'value0'], response.hits)
 
     def testJoin(self):
-        lucene2 = Lucene(join(self.tempdir, 'lucene2'))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('joinid', '1'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('joinid', '2'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
-        returnValueFromGenerator(lucene2.addDocument(identifier="id:2", document=createDocument([('joinid', '1'), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
-        returnValueFromGenerator(lucene2.addDocument(identifier="id:3", document=createDocument([('joinid', '2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3')])))
+        luceneB = Lucene(join(self.tempdir, 'luceneB'))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('A.joinid', '1'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('A.joinid', '2'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
+        returnValueFromGenerator(luceneB.addDocument(identifier="id:2", document=createDocument([('B.joinid', '1'), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
+        returnValueFromGenerator(luceneB.addDocument(identifier="id:3", document=createDocument([('B.joinid', '2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3')])))
 
         sleep(0.5)
 
-        joinCollector, joinFilter = lucene2.joinSearch(TermQuery(Term("field2", "value1")), 'joinid', 'joinid')
+        joinFilter = luceneB.createJoinFilter(TermQuery(Term("field2", "value1")), fromField='B.joinid', toField='A.joinid')
+        joinCollector = TermsCollector.create('A.joinid', False)
         response = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field1', 'value0')), facets=[dict(maxTerms=10, fieldname='field1')], collectors={'joinfacet': joinCollector}, filters=[joinFilter]))
-        lucene2.joinFacet(termsCollector=joinCollector, fromField='joinid', facets=[dict(maxTerms=10, fieldname='field2')], response=response)
+        joinDrilldownData = luceneB.joinFacet(termsCollector=joinCollector, fromField='B.joinid', facets=[dict(maxTerms=10, fieldname='field2')])
+        response.drilldownData.extend(joinDrilldownData)
 
         self.assertEquals(1, response.total)
         self.assertEquals(['id:0'], response.hits)

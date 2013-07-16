@@ -43,8 +43,10 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path):
+    def __init__(self, path, name=None):
         self._index = Index(path)
+        if name is not None:
+            self.observable_name = lambda: name
 
     def addDocument(self, identifier, document, categories=None):
         document.add(StringField(IDFIELD, identifier, Field.Store.YES))
@@ -89,22 +91,18 @@ class Lucene(object):
     def finish(self):
         self._index.finish()
 
-    def joinSearch(self, luceneQuery, fromField, toField):
+    def createJoinFilter(self, luceneQuery, fromField, toField):
         multipleValuesPerDocument = False
         fromTermsCollector = TermsCollector.create(fromField, multipleValuesPerDocument)
         self._index.search(lambda: None, luceneQuery, None, fromTermsCollector)
-        fromFilter = QueryWrapperFilter(TermsQuery(toField, None, fromTermsCollector.getCollectorTerms()))
-        return TermsCollector.create(toField, multipleValuesPerDocument), fromFilter
+        return QueryWrapperFilter(TermsQuery(toField, None, fromTermsCollector.getCollectorTerms()))
 
-    def joinFacet(self, termsCollector, fromField, facets, response):
-        if not hasattr(response, 'drilldownData'):
-            response.drilldownData = []
-        for facet in facets:
-            facetCollector = self._facetCollector([facet])
-            if not facetCollector:
-                continue
-            self._index.search(lambda: None, TermsQuery(fromField, None, termsCollector.getCollectorTerms()), None, facetCollector)
-            response.drilldownData.extend(self._facetResult(facetCollector))
+    def joinFacet(self, termsCollector, fromField, facets):
+        facetCollector = self._facetCollector(facets)
+        if not facetCollector:
+            return []
+        self._index.search(lambda: None, TermsQuery(fromField, None, termsCollector.getCollectorTerms()), None, facetCollector)
+        return self._facetResult(facetCollector)
 
     def _createResponse(self, collectors, start):
         total, hits = self._topDocsResponse(collectors['query'], start=start)

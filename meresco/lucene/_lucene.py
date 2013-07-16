@@ -23,13 +23,14 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, SortField, CachingWrapperFilter, QueryWrapperFilter
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, SortField, CachingWrapperFilter, QueryWrapperFilter, MatchAllDocsQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
 from org.apache.lucene.document import StringField, Field
 from org.apache.lucene.queries import ChainedFilter
+from org.apache.lucene.search.join import TermsCollector, TermsQuery
 
 from java.lang import Integer
 
@@ -56,20 +57,23 @@ class Lucene(object):
         return
         yield
 
-    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, **kwargs):
-        collectors = {}
+    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, joinFacets=None, collectors=None, filters=None, **kwargs):
+        collectors = defaults(collectors, {})
         collectors['query'] = _topScoreCollector(start=start, stop=stop, sortKeys=sortKeys)
         if facets:
             collectors['facet'] = self._facetCollector(facets)
 
-        filters = None
-        if filterQueries:
-            filters = ChainedFilter([CachingWrapperFilter(QueryWrapperFilter(fq)) for fq in filterQueries], ChainedFilter.AND)
+        filters = defaults(filters, [])
+        filterQueries = defaults(filterQueries, [])
+        filters = [CachingWrapperFilter(QueryWrapperFilter(fq)) for fq in filterQueries] + filters
+        chainedFilter = None
+        if filters:
+            chainedFilter = ChainedFilter(filters, ChainedFilter.AND)
 
         response = self._index.search(
                 lambda: self._createResponse(collectors, start=start),
                 luceneQuery,
-                filters,
+                chainedFilter,
                 MultiCollector.wrap(collectors.values()),
             )
         raise StopIteration(response)
@@ -84,6 +88,23 @@ class Lucene(object):
 
     def finish(self):
         self._index.finish()
+
+    def joinSearch(self, luceneQuery, fromField, toField):
+        multipleValuesPerDocument = False
+        fromTermsCollector = TermsCollector.create(fromField, multipleValuesPerDocument)
+        self._index.search(lambda: None, luceneQuery, None, fromTermsCollector)
+        fromFilter = QueryWrapperFilter(TermsQuery(toField, None, fromTermsCollector.getCollectorTerms()))
+        return TermsCollector.create(toField, multipleValuesPerDocument), fromFilter
+
+    def joinFacet(self, termsCollector, fromField, facets, response):
+        if not hasattr(response, 'drilldownData'):
+            response.drilldownData = []
+        for facet in facets:
+            facetCollector = self._facetCollector([facet])
+            if not facetCollector:
+                continue
+            self._index.search(lambda: None, TermsQuery(fromField, None, termsCollector.getCollectorTerms()), None, facetCollector)
+            response.drilldownData.extend(self._facetResult(facetCollector))
 
     def _createResponse(self, collectors, start):
         total, hits = self._topDocsResponse(collectors['query'], start=start)
@@ -124,6 +145,9 @@ class Lucene(object):
             facetRequests.append(CountFacetRequest(CategoryPath([f['fieldname']]), maxTerms))
         facetSearchParams = FacetSearchParams(facetRequests)
         return self._index.createFacetCollector(facetSearchParams)
+
+def defaults(parameter, default):
+    return default if parameter is None else parameter
 
 def _topScoreCollector(start, stop, sortKeys):
     if sortKeys:

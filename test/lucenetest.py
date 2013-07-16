@@ -25,7 +25,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-
+from os.path import join
 from meresco.lucene import Lucene
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from cqlparser import parseString as parseCql
@@ -40,7 +40,7 @@ from time import sleep
 class LuceneTest(SeecrTestCase):
     def setUp(self):
         super(LuceneTest, self).setUp()
-        self.lucene = Lucene(self.tempdir)
+        self.lucene = Lucene(join(self.tempdir, 'lucene'))
 
     def tearDown(self):
         self.lucene.finish()
@@ -170,7 +170,30 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value1')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value1')])))
         response = returnValueFromGenerator(self.lucene.prefixSearch(fieldname='field1', prefix='valu'))
-        print response.hits
+        self.assertEquals(['value1', 'value0'], response.hits)
+
+    def testJoin(self):
+        lucene2 = Lucene(join(self.tempdir, 'lucene2'))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('joinid', '1'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('joinid', '2'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
+        returnValueFromGenerator(lucene2.addDocument(identifier="id:2", document=createDocument([('joinid', '1'), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
+        returnValueFromGenerator(lucene2.addDocument(identifier="id:3", document=createDocument([('joinid', '2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3')])))
+
+        sleep(0.5)
+
+        joinCollector, joinFilter = lucene2.joinSearch(TermQuery(Term("field2", "value1")), 'joinid', 'joinid')
+        response = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field1', 'value0')), facets=[dict(maxTerms=10, fieldname='field1')], collectors={'joinfacet': joinCollector}, filters=[joinFilter]))
+        lucene2.joinFacet(termsCollector=joinCollector, fromField='joinid', facets=[dict(maxTerms=10, fieldname='field2')], response=response)
+
+        self.assertEquals(1, response.total)
+        self.assertEquals(['id:0'], response.hits)
+        self.assertEquals([{'terms': [{'count': 1, 'term': u'first item0'}], 'fieldname': u'field1'}, {'terms': [{'count': 1, 'term': u'first item2'}], 'fieldname': u'field2'}], response.drilldownData)
+
+    def testSuggestions(self):
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field3', 'valeu2')])))
+        response = returnValueFromGenerator(self.lucene.executeQuery(query=parseCql("value0 AND valeu2"), suggestionsCount=2, suggestionsQuery="value0 and valeu"))
+        self.assertEquals(['id:0'], response.hits)
+        self.assertEquals({'aap': (0, 3, ['aapje', 'raap']), 'bo': (8, 10, ['bio', 'bon'])}, response.suggestions)
 
 
 def createDocument(textfields):

@@ -46,7 +46,15 @@ class LuceneRemoteTest(SeecrTestCase):
                 start=0,
                 stop=10,
                 facets=[{'fieldname': 'field', 'maxTerms':5}],
-                filterQueries=[parseString('query=fiets')]
+                filterQueries=[parseString('query=fiets')],
+                joinQueries=[
+                    {
+                        "core": 'core1',
+                        "fromField": 'A.joinfield',
+                        "toField": 'B.joinfield',
+                        "query": parseString('query=test')
+                    }
+                ]
             )
         )
         self.assertEquals(5, result.total)
@@ -65,7 +73,15 @@ class LuceneRemoteTest(SeecrTestCase):
                     'start':0,
                     'stop': 10,
                     'facets': [{'fieldname': 'field', 'maxTerms':5}],
-                    'filterQueries': ['query=fiets']
+                    'filterQueries': ['query=fiets'],
+                    'joinQueries': [
+                        {
+                            "core": 'core1',
+                            "fromField": 'A.joinfield',
+                            "toField": 'B.joinfield',
+                            "query": 'query=test'
+                        }
+                    ]
                 }
             }, loads(m.kwargs['body']))
 
@@ -107,7 +123,15 @@ class LuceneRemoteTest(SeecrTestCase):
                     'start':0,
                     'stop': 10,
                     'facets': [{'fieldname': 'field', 'maxTerms':5}],
-                    'filterQueries': ['query=fiets']
+                    'filterQueries': ['query=fiets'],
+                    'joinQueries': [
+                        {
+                            "core": 'core1',
+                            "fromField": 'A.joinfield',
+                            "toField": 'B.joinfield',
+                            "query": 'query=test'
+                        }
+                    ]
                 }
             })
         result = ''.join(compose(service.handleRequest(Body=body)))
@@ -123,6 +147,14 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(10, m.kwargs['stop'])
         self.assertEquals([{'fieldname': 'field', 'maxTerms':5}], m.kwargs['facets'])
         self.assertEquals([parseString('query=fiets')], m.kwargs['filterQueries'])
+        self.assertEquals([
+                {
+                    "core": 'core1',
+                    "fromField": 'A.joinfield',
+                    "toField": 'B.joinfield',
+                    "query": parseString('query=test')
+                }
+            ], m.kwargs['joinQueries'])
 
     def testServicePrefixSearch(self):
         observer = CallTrace('lucene')

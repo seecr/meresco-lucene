@@ -44,10 +44,12 @@ class LuceneRemote(Observable):
         self._path = '' if path is None else path
 
     # def executeQuery(self, cqlAbstractSyntaxTree, start=0, stop=10, sortKeys=None, suggestionsCount=0, suggestionsQuery=None, filterQueries=None, joinQueries=None, facets=None, joinFacets=None, **kwargs):
-    def executeQuery(self, cqlAbstractSyntaxTree, filterQueries=None, **kwargs):
+    def executeQuery(self, cqlAbstractSyntaxTree, filterQueries=None, joinQueries=None, **kwargs):
         if filterQueries:
             filterQueries = [cql2string(ast) for ast in filterQueries]
-        result = yield self._send(message='executeQuery', cqlQuery=cql2string(cqlAbstractSyntaxTree), filterQueries=filterQueries, **kwargs)
+        if joinQueries:
+            joinQueries = [dict(joinQuery, query=cql2string(joinQuery['query'])) for joinQuery in joinQueries]
+        result = yield self._send(message='executeQuery', cqlQuery=cql2string(cqlAbstractSyntaxTree), filterQueries=filterQueries, joinQueries=joinQueries, **kwargs)
         raise StopIteration(result)
 
     def prefixSearch(self, **kwargs):
@@ -75,6 +77,8 @@ class LuceneRemote(Observable):
 
 class LuceneRemoteService(Observable):
     def handleRequest(self, Body, **kwargs):
+        print Body
+        from sys import stdout; stdout.flush()
         messageDict = loads(Body)
         if messageDict['message'] not in ['executeQuery', 'prefixSearch']:
             raise ValueError('Expected "executeQuery" or "prefixSearch"')
@@ -83,6 +87,8 @@ class LuceneRemoteService(Observable):
             kwargs['cqlAbstractSyntaxTree'] = parseString(kwargs.pop('cqlQuery'))
         if 'filterQueries' in kwargs and kwargs['filterQueries'] is not None:
             kwargs['filterQueries'] = [parseString(cqlstring) for cqlstring in kwargs['filterQueries']]
+        if 'joinQueries' in kwargs and kwargs['joinQueries'] is not None:
+            kwargs['joinQueries'] = [dict(joinQuery, query=parseString(joinQuery['query'])) for joinQuery in kwargs['joinQueries']]
         response = yield self.any.unknown(message=messageDict['message'], **kwargs)
         yield Ok
         yield ContentTypeHeader + 'application/json' + CRLF

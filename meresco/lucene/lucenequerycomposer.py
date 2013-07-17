@@ -25,7 +25,7 @@
 
 from meresco.lucene import createAnalyzer
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery
+from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
 from org.apache.lucene.util import Version
@@ -62,6 +62,15 @@ def _termOrPhraseQuery(index, termString):
     for term in listOfTermStrings:
         result.add(Term(index, term))
     return result
+
+def _termRangeQuery(index, relation, termString):
+    field = index
+    if '<' in relation:
+        lowerTerm, upperTerm = None, termString
+    else:
+        lowerTerm, upperTerm = termString, None
+    includeLower, includeUpper = relation == '>=', relation == '<='
+    return TermRangeQuery.newStringRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
 
 LHS_OCCUR = {
     "AND": BooleanClause.Occur.MUST,
@@ -118,8 +127,10 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
                 query = TermQuery(Term(left, right))
             elif relation == '=':
                 query = _termOrPhraseQuery(left, right)
+            elif relation in ['<','<=','>=','>']:
+                query = _termRangeQuery(left, relation, right)
             else:
-                raise UnsupportedCQL("Only =, == and exact are supported for the field '%s'" % left)
+                raise UnsupportedCQL("'%s' not supported for the field '%s'" % (relation, left))
 
             query.setBoost(boost)
             return query

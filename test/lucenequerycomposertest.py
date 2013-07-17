@@ -30,7 +30,7 @@ from unittest import TestCase
 from cqlparser import parseString as parseCql, UnsupportedCQL
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery
+from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery
 from org.apache.lucene.index import Term
 
 class LuceneQueryComposerTest(TestCase):
@@ -187,6 +187,13 @@ class LuceneQueryComposerTest(TestCase):
     def testMatchAllQuery(self):
         self.assertConversion(MatchAllDocsQuery(), '*')
 
+    def testTextRangeQuery(self):
+        # (field, lowerTerm, upperTerm, includeLower, includeUpper)
+        self.assertConversion(TermRangeQuery.newStringRange('field', 'value', None, False, False), 'field > value')
+        self.assertConversion(TermRangeQuery.newStringRange('field', 'value', None, True, False), 'field >= value')
+        self.assertConversion(TermRangeQuery.newStringRange('field', None, 'value', False, False), 'field < value')
+        self.assertConversion(TermRangeQuery.newStringRange('field', None, 'value', False, True), 'field <= value')
+
     def assertConversion(self, expected, input):
         result = self.composer.compose(parseCql(input))
         self.assertEquals(type(expected), type(result), "expected %s, but got %s" % (repr(expected), repr(result)))
@@ -194,7 +201,7 @@ class LuceneQueryComposerTest(TestCase):
         # self.assertEquals(expected, result, "expected %s['%s'], but got %s['%s']" % (repr(expected), str(expected), repr(result), str(result)))
 
     def testUnsupportedCQL(self):
-        for relation in ['>','<', '>=', '<=']:
+        for relation in ['<>']:
             try:
                 LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)]).compose(parseCql('index %(relation)s term' % locals()))
                 self.fail()

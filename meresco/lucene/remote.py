@@ -77,8 +77,6 @@ class LuceneRemote(Observable):
 
 class LuceneRemoteService(Observable):
     def handleRequest(self, Body, **kwargs):
-        print Body
-        from sys import stdout; stdout.flush()
         messageDict = loads(Body)
         if messageDict['message'] not in ['executeQuery', 'prefixSearch']:
             raise ValueError('Expected "executeQuery" or "prefixSearch"')

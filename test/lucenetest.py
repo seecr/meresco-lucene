@@ -29,7 +29,7 @@ from os.path import join
 from meresco.lucene import Lucene
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from cqlparser import parseString as parseCql
-from org.apache.lucene.search import MatchAllDocsQuery, TermQuery
+from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery
 from org.apache.lucene.document import Document, TextField, Field
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.taxonomy import CategoryPath
@@ -197,6 +197,23 @@ class LuceneTest(SeecrTestCase):
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), suggestionRequest=dict(count=2, query="value0 and valeu", field="field3")))
         self.assertEquals(['id:0'], response.hits)
         self.assertEquals({'value0': (0, 6, ['value2']), 'valeu': (11, 16, ['value2'])}, response.suggestions)
+
+    def testRangeQuery(self):
+        for f in ['aap', 'noot', 'mies', 'vis', 'vuur', 'boom']:
+            returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % f, document=createDocument([('field', f)])))
+        # (field, lowerTerm, upperTerm, includeLower, includeUpper)
+        luceneQuery = TermRangeQuery.newStringRange('field', None, 'mies', False, False) # <
+        response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
+        self.assertEquals(set(['id:aap', 'id:boom']), set(response.hits))
+        luceneQuery = TermRangeQuery.newStringRange('field', None, 'mies', False, True) # <=
+        response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
+        self.assertEquals(set(['id:aap', 'id:boom', 'id:mies']), set(response.hits))
+        luceneQuery = TermRangeQuery.newStringRange('field', 'mies', None, False, True) # >
+        response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
+        self.assertEquals(set(['id:noot', 'id:vis', 'id:vuur']), set(response.hits))
+        luceneQuery = LuceneQueryComposer([]).compose(parseCql('field >= mies'))
+        response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
+        self.assertEquals(set(['id:mies', 'id:noot', 'id:vis', 'id:vuur']), set(response.hits))
 
 
 def createDocument(textfields):

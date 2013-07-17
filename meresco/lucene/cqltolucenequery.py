@@ -31,9 +31,9 @@ from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 
 class CqlToLuceneQuery(Transparent, Logger):
-    def __init__(self, unqualifiedFields, name=None):
+    def __init__(self, unqualifiedFields, name=None, **kwargs):
         Transparent.__init__(self, name=name)
-        self._cqlComposer = LuceneQueryComposer(unqualifiedFields)
+        self._cqlComposer = LuceneQueryComposer(unqualifiedFields, **kwargs)
 
     def executeQuery(self, cqlAbstractSyntaxTree, filterQueries=None, joinQueries=None, *args, **kwargs):
         if filterQueries:

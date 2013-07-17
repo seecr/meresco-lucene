@@ -34,6 +34,9 @@ from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, Pre
 from org.apache.lucene.index import Term
 
 class LuceneQueryComposerTest(TestCase):
+    def setUp(self):
+        super(LuceneQueryComposerTest, self).setUp()
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)])
 
     def testOneTermOutput(self):
         self.assertConversion(TermQuery(Term("unqualified", "cat")), "cat")
@@ -176,15 +179,19 @@ class LuceneQueryComposerTest(TestCase):
         self.assertEquals(type(query), type(result))
         self.assertEquals(repr(query), repr(result))
 
+    def testMagicExact(self):
+        exactResult = self.composer.compose(parseCql('untokenized.animal exact "cats dogs"'))
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], isUntokenizedMethod=lambda name: name.startswith('untokenized.'))
+        self.assertConversion(exactResult, 'untokenized.animal = "cats dogs"')
+
     def testMatchAllQuery(self):
         self.assertConversion(MatchAllDocsQuery(), '*')
 
     def assertConversion(self, expected, input):
-        result = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)]).compose(parseCql(input))
+        result = self.composer.compose(parseCql(input))
         self.assertEquals(type(expected), type(result), "expected %s, but got %s" % (repr(expected), repr(result)))
         self.assertEquals(repr(expected), repr(result))
         # self.assertEquals(expected, result, "expected %s['%s'], but got %s['%s']" % (repr(expected), str(expected), repr(result), str(result)))
-
 
     def testUnsupportedCQL(self):
         for relation in ['>','<', '>=', '<=']:

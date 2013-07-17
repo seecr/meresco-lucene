@@ -75,9 +75,10 @@ RHS_OCCUR = {
 }
 
 class _Cql2LuceneQueryVisitor(CqlVisitor):
-    def __init__(self, unqualifiedTermFields, node):
+    def __init__(self, unqualifiedTermFields, node, isUntokenized):
         CqlVisitor.__init__(self, node)
         self._unqualifiedTermFields = unqualifiedTermFields
+        self._isUntokenized = isUntokenized
 
     def visitSCOPED_CLAUSE(self, node):
         clause = CqlVisitor.visitSCOPED_CLAUSE(self, node)
@@ -113,7 +114,7 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
             return query
         elif firstChild == 'INDEX':
             (left, (relation, boost), right) = results
-            if relation in ['==', 'exact']:
+            if relation in ['==', 'exact'] or (relation == '=' and self._isUntokenized(left)):
                 query = TermQuery(Term(left, right))
             elif relation == '=':
                 query = _termOrPhraseQuery(left, right)
@@ -137,10 +138,11 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         return relation, boost
 
 class LuceneQueryComposer(object):
-    def __init__(self, unqualifiedTermFields):
+    def __init__(self, unqualifiedTermFields, isUntokenizedMethod=None):
         self._unqualifiedTermFields = unqualifiedTermFields
+        self._isUntokenized = (lambda name: False) if isUntokenizedMethod is None else isUntokenizedMethod
 
     def compose(self, ast):
-        (result, ) = _Cql2LuceneQueryVisitor(self._unqualifiedTermFields, ast).visit()
+        (result, ) = _Cql2LuceneQueryVisitor(unqualifiedTermFields=self._unqualifiedTermFields, node=ast, isUntokenized=self._isUntokenized).visit()
         return result
 

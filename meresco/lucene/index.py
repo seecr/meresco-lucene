@@ -25,7 +25,7 @@
 
 from meresco.lucene import VM, createAnalyzer
 
-from org.apache.lucene.index import IndexWriter, DirectoryReader, IndexWriterConfig, MultiFields
+from org.apache.lucene.index import IndexWriter, DirectoryReader, IndexWriterConfig, MultiFields, Term
 from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.store import CompoundFileDirectory, SimpleFSDirectory, IOContext
 from org.apache.lucene.util import Version
@@ -33,8 +33,10 @@ from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter, 
 from org.apache.lucene.facet.index import FacetFields
 from org.apache.lucene.facet.search import FacetsCollector
 from org.apache.lucene.util import BytesRef, BytesRefIterator
+from org.apache.lucene.search.spell import DirectSpellChecker
+from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
 
-from java.io import File
+from java.io import File, StringReader
 from java.util import Arrays
 
 from threading import Thread
@@ -44,17 +46,19 @@ from os.path import join
 class Index(object):
 
     def __init__(self, path):
-        ioContext = IOContext()
+        # ioContext = IOContext()
         #indexDirectory = CompoundFileDirectory(
         #        SimpleFSDirectory(File(join(path, 'index'))),
         #        "lucene", 
         #        ioContext,
         #        True)
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
-        analyzer = createAnalyzer()
-        conf = IndexWriterConfig(Version.LUCENE_43, analyzer);
+        self._analyzer = createAnalyzer()
+        conf = IndexWriterConfig(Version.LUCENE_43, self._analyzer);
         self._indexWriter = IndexWriter(indexDirectory, conf)
         self._searcher = IndexSearcher(DirectoryReader.open(self._indexWriter, True))
+        self._checker = DirectSpellChecker()
+
 
         self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory)
@@ -88,6 +92,14 @@ class Index(object):
                     taxoReader.decRef()
             else:
                 indexReader.decRef()
+
+    def suggest(self, query, count, field):
+        suggestions = {}
+        for token, startOffset, endOffset in self._analyzeToken(query):
+            suggestWords = self._checker.suggestSimilar(Term(field, token), count, self._searcher.getIndexReader())
+            if suggestWords:
+                suggestions[token] = (startOffset, endOffset, [suggestWord.string for suggestWord in suggestWords])
+        return suggestions
 
     def commit(self):
         reader = DirectoryReader.open(self._indexWriter, True)
@@ -162,3 +174,19 @@ class Index(object):
         if not self._taxoReader:
             return
         return FacetsCollector.create(facetSearchParams, self._searcher.getIndexReader(), self._taxoReader)
+
+    def _analyzeToken(self, token):
+        result = []
+        reader = StringReader(unicode(token))
+        stda = self._analyzer
+        ts = stda.tokenStream("dummy field name", reader)
+        termAtt = ts.addAttribute(CharTermAttribute.class_)
+        offsetAtt = ts.addAttribute(OffsetAttribute.class_)
+        try:
+            ts.reset()
+            while ts.incrementToken():
+                result.append((termAtt.toString(), offsetAtt.startOffset(), offsetAtt.endOffset()))
+            ts.end()
+        finally:
+            ts.close()
+        return result

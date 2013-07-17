@@ -193,10 +193,10 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals([{'terms': [{'count': 1, 'term': u'first item0'}], 'fieldname': u'field1'}, {'terms': [{'count': 1, 'term': u'first item2'}], 'fieldname': u'field2'}], response.drilldownData)
 
     def testSuggestions(self):
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field3', 'valeu2')])))
-        response = returnValueFromGenerator(self.lucene.executeQuery(query=parseCql("value0 AND valeu2"), suggestionsCount=2, suggestionsQuery="value0 and valeu"))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field3', 'value2')])))
+        response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), suggestionRequest=dict(count=2, query="value0 and valeu", field="field3")))
         self.assertEquals(['id:0'], response.hits)
-        self.assertEquals({'aap': (0, 3, ['aapje', 'raap']), 'bo': (8, 10, ['bio', 'bon'])}, response.suggestions)
+        self.assertEquals({'value0': (0, 6, ['value2']), 'valeu': (11, 16, ['value2'])}, response.suggestions)
 
 
 def createDocument(textfields):

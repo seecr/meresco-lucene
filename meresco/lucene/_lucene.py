@@ -59,7 +59,7 @@ class Lucene(object):
         return
         yield
 
-    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, joinFacets=None, collectors=None, filters=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, joinFacets=None, collectors=None, filters=None, suggestionRequest=None, **kwargs):
         collectors = defaults(collectors, {})
         collectors['query'] = _topScoreCollector(start=start, stop=stop, sortKeys=sortKeys)
         if facets:
@@ -78,6 +78,8 @@ class Lucene(object):
                 chainedFilter,
                 MultiCollector.wrap(collectors.values()),
             )
+        if suggestionRequest:
+            response.suggestions = self._index.suggest(**suggestionRequest)
         raise StopIteration(response)
         yield
 

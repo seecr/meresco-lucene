@@ -26,8 +26,10 @@
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import getRequest, postRequest
 from meresco.xml.namespaces import xpathFirst, xpath
-from meresco.components import lxmltostring
+from meresco.lucene.synchronousremote import SynchronousRemote
+from cqlparser import parseString as parseCql
 from simplejson import loads
+from seecr.utils.generatorutils import returnValueFromGenerator
 
 class LuceneTest(IntegrationTestCase):
 
@@ -82,6 +84,11 @@ class LuceneTest(IntegrationTestCase):
 
         self.assertEquals(set(["value0", "value2", "value3", "value4", "value5", "value6", "value7", "value8", "value9"]), set(completions[:-1]))
         self.assertEquals('value1', completions[-1])
+
+    def testRemoteService(self):
+        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
+        response = remote.executeQuery(parseCql('*'))
+        self.assertEquals(100, response.total)
 
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None):
         arguments={'version': '1.2', 

@@ -50,7 +50,7 @@ class Lucene(object):
 
     def addDocument(self, identifier, document, categories=None):
         document.add(StringField(IDFIELD, identifier, Field.Store.YES))
-        self._index.addDocument(document=document, categories=categories)
+        self._index.addDocument(term=Term(IDFIELD, identifier), document=document, categories=categories)
         return
         yield
 

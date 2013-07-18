@@ -27,7 +27,7 @@ from meresco.lucene import VM, createAnalyzer
 
 from org.apache.lucene.index import IndexWriter, DirectoryReader, IndexWriterConfig, MultiFields, Term
 from org.apache.lucene.search import IndexSearcher
-from org.apache.lucene.store import CompoundFileDirectory, SimpleFSDirectory, IOContext
+from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter, DirectoryTaxonomyReader
 from org.apache.lucene.facet.index import FacetFields
@@ -68,10 +68,10 @@ class Index(object):
         self._thread = None
         self._dirty = False
 
-    def addDocument(self, document, categories=None):
+    def addDocument(self, term, document, categories=None):
         if categories:
             FacetFields(self._taxoWriter).addFields(document, Arrays.asList(categories))
-        self._indexWriter.addDocument(document)
+        self._indexWriter.updateDocument(term, document)
         self.commit()
 
     def deleteDocument(self, term):

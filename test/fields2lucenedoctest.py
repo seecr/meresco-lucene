@@ -89,11 +89,8 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         self.assertFalse(timestampField.fieldType().stored())
         self.assertTrue(timestampField.fieldType().tokenized())
 
-
-    def testTODO(self):
-        self.fail("TODO: stuff")
-        #
-        # - copy isSingleValuedField from meresco.solr
-        # - add more prefixes for special fields
-        # - add more tests for transaction like stuff
-        # - add test to cover call to Lucene(...)
+# TODO
+#
+# - copy isSingleValuedField from meresco.solr
+# - add more prefixes for special fields
+# - add more tests for transaction like stuff

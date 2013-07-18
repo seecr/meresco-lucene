@@ -71,6 +71,19 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals(set(['id:0', 'id:2']), set(result.hits))
 
+    def testAddTwiceUpdatesDocument(self):
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([
+            ('field0', 'value0'),
+            ('field1', 'value1'),
+            ])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([
+            ('field1', 'value1'),
+            ])))
+        result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field1', 'value1'))))
+        self.assertEquals(1, result.total)
+        result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field0', 'value0'))))
+        self.assertEquals(0, result.total)
+
     def testSorting(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([
                 ('field0', 'AA'),

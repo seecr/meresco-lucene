@@ -77,7 +77,11 @@ class LuceneTest(IntegrationTestCase):
 
     def testAutocomplete(self):
         header, body = getRequest(port=self.httpPort, path='/autocomplete', arguments={'field': 'field2', 'prefix': 'va'}, parse=False)
-        self.assertEquals(["va", ["value0", "value1", "value2", "value3", "value4", "value5", "value6", "value7", "value8", "value9"]], loads(body))
+        prefix, completions = loads(body)
+        self.assertEquals("va", prefix)
+
+        self.assertEquals(set(["value0", "value2", "value3", "value4", "value5", "value6", "value7", "value8", "value9"]), set(completions[:-1]))
+        self.assertEquals('value1', completions[-1])
 
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None):
         arguments={'version': '1.2', 

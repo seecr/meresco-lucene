@@ -26,6 +26,7 @@
 
 from seecr.test import SeecrTestCase
 from os.path import join
+from time import sleep
 from meresco.lucene import Lucene
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from cqlparser import parseString as parseCql
@@ -36,7 +37,6 @@ from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.search.join import TermsCollector
 from seecr.utils.generatorutils import returnValueFromGenerator
 
-from time import sleep
 
 class LuceneTest(SeecrTestCase):
     def setUp(self):
@@ -180,6 +180,8 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(['id:0', 'id:6'], result.hits)
 
     def testPrefixSearch(self):
+        response = returnValueFromGenerator(self.lucene.prefixSearch(fieldname='field1', prefix='valu'))
+        self.assertEquals([], response.hits)
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value1')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value1')])))

@@ -37,7 +37,6 @@ from java.lang import Integer
 from luceneresponse import LuceneResponse
 from index import Index
 
-IDFIELD = '__id__'
 
 class Lucene(object):
     COUNT = 'count'
@@ -163,3 +162,6 @@ def _topScoreCollector(start, stop, sortKeys):
     trackMaxScore = True
     docsScoredInOrder = False
     return TopFieldCollector.create(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)
+
+
+IDFIELD = '__id__'

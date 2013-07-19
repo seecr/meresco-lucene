@@ -43,8 +43,8 @@ from threading import Thread
 
 from os.path import join
 
-class Index(object):
 
+class Index(object):
     def __init__(self, path):
         # ioContext = IOContext()
         #indexDirectory = CompoundFileDirectory(
@@ -128,7 +128,10 @@ class Index(object):
         if indexReader.tryIncRef():
             terms = []
             try:
-                iterator = MultiFields.getFields(indexReader).terms(field).iterator(None)
+                fields = MultiFields.getFields(indexReader)
+                if fields is None:
+                    return terms
+                iterator = fields.terms(field).iterator(None)
                 if prefix:
                     iterator.seekCeil(BytesRef(prefix))
                     terms.append((iterator.docFreq(), iterator.term().utf8ToString()))

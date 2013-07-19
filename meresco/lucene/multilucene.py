@@ -27,6 +27,7 @@ from meresco.core import Observable
 from itertools import groupby
 from org.apache.lucene.search.join import TermsCollector
 
+
 class MultiLucene(Observable):
     def __init__(self, defaultCore):
         Observable.__init__(self)

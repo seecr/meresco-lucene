@@ -25,15 +25,11 @@
 
 
 from meresco.core import Observable
-from cqlparser import cql2string, parseString
-from meresco.xml import xpathFirst, xpath
-from lxml.etree import XML
-from urllib import urlencode
+from cqlparser import cql2string
 from weightless.http import httppost
-from simplejson import loads, dumps
+from simplejson import dumps
 
 from meresco.lucene import LuceneResponse
-from meresco.components.http.utils import Ok, CRLF, ContentTypeHeader
 
 
 class LuceneRemote(Observable):
@@ -42,6 +38,7 @@ class LuceneRemote(Observable):
         self._host = host
         self._port = port
         self._path = '' if path is None else path
+        self._path += '/__lucene_remote__'
 
     # def executeQuery(self, cqlAbstractSyntaxTree, start=0, stop=10, sortKeys=None, suggestionsCount=0, suggestionsQuery=None, filterQueries=None, joinQueries=None, facets=None, joinFacets=None, **kwargs):
     def executeQuery(self, cqlAbstractSyntaxTree, filterQueries=None, joinQueries=None, **kwargs):
@@ -74,21 +71,3 @@ class LuceneRemote(Observable):
     def _verify200(self, header, response):
         if not header.startswith('HTTP/1.0 200'):
             raise IOError("Expected status '200' from LuceneRemoteService, but got: " + response)
-
-class LuceneRemoteService(Observable):
-    def handleRequest(self, Body, **kwargs):
-        messageDict = loads(Body)
-        if messageDict['message'] not in ['executeQuery', 'prefixSearch']:
-            raise ValueError('Expected "executeQuery" or "prefixSearch"')
-        kwargs = messageDict['kwargs']
-        if 'cqlQuery' in kwargs:
-            kwargs['cqlAbstractSyntaxTree'] = parseString(kwargs.pop('cqlQuery'))
-        if 'filterQueries' in kwargs and kwargs['filterQueries'] is not None:
-            kwargs['filterQueries'] = [parseString(cqlstring) for cqlstring in kwargs['filterQueries']]
-        if 'joinQueries' in kwargs and kwargs['joinQueries'] is not None:
-            kwargs['joinQueries'] = [dict(joinQuery, query=parseString(joinQuery['query'])) for joinQuery in kwargs['joinQueries']]
-        response = yield self.any.unknown(message=messageDict['message'], **kwargs)
-        yield Ok
-        yield ContentTypeHeader + 'application/json' + CRLF
-        yield CRLF
-        yield response.asJson()

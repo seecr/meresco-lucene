@@ -64,7 +64,7 @@ class LuceneRemoteTest(SeecrTestCase):
         m = http.calledMethods[0]
         self.assertEquals('host', m.kwargs['host'])
         self.assertEquals(1234, m.kwargs['port'])
-        self.assertEquals('/path', m.kwargs['request'])
+        self.assertEquals('/path/__lucene_remote__', m.kwargs['request'])
         self.assertEquals('application/json', m.kwargs['headers']['Content-Type'])
         self.assertEquals({
                 'message': 'executeQuery',
@@ -134,7 +134,7 @@ class LuceneRemoteTest(SeecrTestCase):
                     ]
                 }
             })
-        result = ''.join(compose(service.handleRequest(Body=body)))
+        result = ''.join(compose(service.handleRequest(path='/__lucene_remote__', Method="POST", Body=body)))
         header, body = result.split('\r\n'*2)
         self.assertTrue('Content-Type: application/json' in header, header)
         response = LuceneResponse.fromJson(body)
@@ -172,7 +172,7 @@ class LuceneRemoteTest(SeecrTestCase):
                     'limit': 10,
                 }
             })
-        result = ''.join(compose(service.handleRequest(Body=body)))
+        result = ''.join(compose(service.handleRequest(path='/__lucene_remote__', Method="POST", Body=body)))
         header, body = result.split('\r\n'*2)
         self.assertTrue('Content-Type: application/json' in header, header)
         response = LuceneResponse.fromJson(body)

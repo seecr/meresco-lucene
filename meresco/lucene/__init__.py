@@ -46,6 +46,7 @@ VMM = initVM()
 SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
 
+from _version import version
 from luceneresponse import LuceneResponse
 from _analyzer import createAnalyzer
 from _lucene import Lucene

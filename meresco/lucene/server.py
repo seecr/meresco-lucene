@@ -93,7 +93,7 @@ def main(reactor, port, databasePath):
                     (PathFilter("/update"),
                         (SruRecordUpdate(),
                             (TransactionScope('record'),
-                                (Venturi(should=[{'partname': 'record', 'xpath': '.'}], namespaceMap={'doc': 'http://meresco.org/namespace/example'}),
+                                (Venturi(should=[{'partname': 'record', 'xpath': '.'}], namespaces={'doc': 'http://meresco.org/namespace/example'}),
                                     (FilterMessages(allowed=['delete']),
                                         (lucene,),
                                         (storageComponent,)

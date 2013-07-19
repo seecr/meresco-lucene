@@ -141,6 +141,21 @@ class LuceneTest(SeecrTestCase):
                 ],
             }],result.drilldownData)
 
+    def testFacetsWithIllegalCharacters(self):
+        categories = createCategories([('field', 'a/b')])
+        # The following print statement causes an error to be printed to stderr.
+        # It keeps on working.
+        self.assertEquals('[<CategoryPath: class org.apache.lucene.facet.taxonomy.CategoryPath>]', str(categories))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([]), categories=categories))
+        sleep(0.1)
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field')]))
+        self.assertEquals([{
+                'fieldname': 'field',
+                'terms': [
+                    {'term': 'a/b', 'count': 1},
+                ],
+            }],result.drilldownData)
+
     def testEscapeFacets(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first/item0')])))
         sleep(0.1)

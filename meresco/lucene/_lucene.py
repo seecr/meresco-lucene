@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, SortField, CachingWrapperFilter, QueryWrapperFilter, MatchAllDocsQuery
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, SortField, CachingWrapperFilter, QueryWrapperFilter
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath

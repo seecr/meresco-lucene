@@ -30,21 +30,36 @@
 #
 ## end license ##
 
+version = '$Version: trunk$'[9:-1].strip()
+
 from distutils.core import setup
 from distutils.extension import Extension
+from os import walk
+from os.path import join
+
+scripts = []
+for path, dirs, files in walk('bin'):
+    for file in files:
+        scripts.append(join(path, file))
+packages = []
+for path, dirs, files in walk('meresco'):
+    if '__init__.py' in files and path != 'meresco':
+        packages.append(path.replace('/', '.'))
+
 
 setup(
     name = 'meresco-lucene',
     packages = [
-        'meresco.lucene',
-    ],
+        'meresco',                      #DO_NOT_DISTRIBUTE
+    ] + packages,
+    scripts=scripts,
     package_data={},
-    version = '%VERSION%',
+    version = version,
     url = 'http://seecr.nl',
     author = 'Seecr (Seek You Too B.V.)',
     author_email = 'info@seecr.nl',
-    description = '',
-    long_description = '',
+    description = 'A set of components and tools to integrate Lucene into Meresco',
+    long_description = '"Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco',
     license = 'GPLv2',
     platforms = 'all',
 )

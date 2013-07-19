@@ -27,7 +27,10 @@
 set -o errexit
 mydir=$(cd $(dirname $0); pwd)
 buildDir=$mydir/build
-libDir=$(dirname $mydir)/lib
+libDir=$1
+if [ -z "$libDir" ]; then
+    libDir=$(dirname $mydir)/lib
+fi
 
 rm -rf $buildDir
 mkdir $buildDir

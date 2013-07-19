@@ -39,15 +39,15 @@ VERSION="x.y.z"
 for pyversion in $pyversions; do
     definePythonVars $pyversion
     echo "###### $pyversion, $PYTHON"
+    (cd $mydir/src; ./build.sh ${SITEPACKAGES}/meresco/lucene)
     ${PYTHON} setup.py install --root tmp
 done
 cp -r test tmp/test
 removeDoNotDistribute tmp
 find tmp -name '*.py' -exec sed -r -e "
-    s/\\\$Version:[^\\\$]*\\\$/\\\$Version: 0.6.14${VERSION}\\\$/;
+    s/\\\$Version:[^\\\$]*\\\$/\\\$Version: ${VERSION}\\\$/;
     " -i '{}' \;
 
-cp -r test tmp/test
 runtests "$@"
 rm -rf tmp build
 

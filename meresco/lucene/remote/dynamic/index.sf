@@ -1,0 +1,16 @@
+
+
+def main(**kwargs):
+    yield '<html>'
+    yield '<head><title>Lucene info</title></head>'
+    yield '<body>\n'
+    yield '<h3>Info</h3>\n'
+    yield '<dl>\n'
+    yield '<dt>version</dt><dd>%s</dd>\n' % VERSION
+    yield '</dl>\n'
+    yield '<ul>\n'
+    for coreInfo in allCoreInfo():
+        yield '<li>%s</li>\n' % coreInfo.name
+    yield '</ul>'
+    yield '</body>'
+    yield '</html>'

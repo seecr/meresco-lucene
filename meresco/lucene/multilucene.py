@@ -69,6 +69,12 @@ class MultiLucene(Observable):
         multipleValuesPerDocument = False
         return TermsCollector.create(toField, multipleValuesPerDocument)
 
+    def retrieveInfo(self, infoContainer):
+        self.do.retrieveInfo(infoContainer)
+        for coreInfo in infoContainer:
+            if coreInfo.name == self._defaultCore:
+                coreInfo.defaultCore = True
+
     @staticmethod
     def groupJoinFacets(separateJoinFacets):
         groupedJoinFacets = groupby(

@@ -37,7 +37,7 @@ from meresco.components.autocomplete import Autocomplete
 from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
-from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX
+from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene
 from meresco.lucene.remote import LuceneRemoteService 
 
 from weightless.io import Reactor
@@ -48,10 +48,8 @@ myPath = abspath(dirname(__file__))
 dynamicPath = join(myPath, 'html', 'dynamic')
 staticPath = join(myPath, 'html', 'static')
 
-VERSION = 'dev'
-
 def main(reactor, port, databasePath):
-    lucene = Lucene(path=join(databasePath, 'lucene'))
+    lucene = Lucene(path=join(databasePath, 'lucene'), name='main')
     storageComponent = StorageComponent(directory=join(databasePath, 'storage'))
     indexHelix = (Fields2LuceneDoc('record'),
             (lucene,)
@@ -74,13 +72,13 @@ def main(reactor, port, databasePath):
                                 reactor=reactor,
                                 indexPage='/info',
                                 additionalGlobals={
-                                    'VERSION': VERSION,
+                                    'VERSION': version,
                                 }
                             ),
                         )
                     ),
                     (PathFilter("/info/version"),
-                        (StringServer(VERSION, ContentTypePlainText), )
+                        (StringServer(version, ContentTypePlainText), )
                     ),
                     (PathFilter("/info/name"),
                         (StringServer('Meresco Lucene', ContentTypePlainText),)
@@ -126,7 +124,10 @@ def main(reactor, port, databasePath):
                         (SruParser(defaultRecordSchema='record'),
                             (SruHandler(),
                                 (CqlToLuceneQuery([]),
-                                    (lucene,)
+                                    (MultiLucene(defaultCore='main'),
+                                        (lucene,),
+                                        (Lucene(path=join(databasePath, 'lucene-empty'), name='empty-core'),),
+                                    )
                                 ),
                                 (SRUTermDrilldown(defaultFormat='xml'),),
                                 (storageComponent,),
@@ -134,7 +135,7 @@ def main(reactor, port, databasePath):
                         )
                     ),
                     (PathFilter('/remote'),
-                        (LuceneRemoteService(),
+                        (LuceneRemoteService(reactor=reactor),
                             (CqlToLuceneQuery([]),
                                 (lucene,),
                             )

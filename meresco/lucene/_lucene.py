@@ -32,6 +32,7 @@ from org.apache.lucene.document import StringField, Field
 from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search.join import TermsCollector, TermsQuery
 
+from os.path import basename
 from java.lang import Integer
 
 from luceneresponse import LuceneResponse
@@ -46,6 +47,7 @@ class Lucene(object):
         self._index = Index(path)
         if name is not None:
             self.observable_name = lambda: name
+        self.coreName = name or basename(path)
 
     def addDocument(self, identifier, document, categories=None):
         document.add(StringField(IDFIELD, identifier, Field.Store.YES))
@@ -144,6 +146,16 @@ class Lucene(object):
             facetRequests.append(CountFacetRequest(CategoryPath([f['fieldname']]), maxTerms))
         facetSearchParams = FacetSearchParams(facetRequests)
         return self._index.createFacetCollector(facetSearchParams)
+
+    def retrieveInfo(self, infoContainer):
+        print self.coreName
+        from sys import stdout; stdout.flush()
+        infoContainer.append(self.LuceneInfo(self))
+
+    class LuceneInfo(object):
+        def __init__(inner, self):
+            inner._lucene = self
+            inner.name = self.coreName
 
 def defaults(parameter, default):
     return default if parameter is None else parameter

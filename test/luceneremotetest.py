@@ -114,7 +114,7 @@ class LuceneRemoteTest(SeecrTestCase):
             raise StopIteration(LuceneResponse(total=2, hits=['aap','noot']))
             yield
         observer.methods['executeQuery'] = executeQuery
-        service = LuceneRemoteService()
+        service = LuceneRemoteService(CallTrace('reactor'))
         service.addObserver(observer)
         body = dumps({
                 'message': 'executeQuery',
@@ -162,7 +162,7 @@ class LuceneRemoteTest(SeecrTestCase):
             raise StopIteration(LuceneResponse(total=2, hits=['aap','noot']))
             yield
         observer.methods['prefixSearch'] = prefixSearch
-        service = LuceneRemoteService()
+        service = LuceneRemoteService(CallTrace('reactor'))
         service.addObserver(observer)
         body = dumps({
                 'message': 'prefixSearch',

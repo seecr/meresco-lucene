@@ -27,7 +27,7 @@ from seecr.test import SeecrTestCase
 from seecr.utils.generatorutils import returnValueFromGenerator
 
 from meresco.core import Observable
-from weightless.core import be
+from weightless.core import be, compose
 
 from meresco.lucene import Lucene
 from meresco.lucene.multilucene import MultiLucene
@@ -143,3 +143,7 @@ class MultiLuceneTest(SeecrTestCase):
         # self.assertEquals(1, response.total)
         # self.assertEquals(['id:0'], response.hits)
         # self.assertEquals([{'terms': [{'count': 1, 'term': u'first item0'}], 'fieldname': u'field1'}, {'terms': [{'count': 1, 'term': u'first item2'}], 'fieldname': u'field2'}], response.drilldownData)
+
+    def testCoreInfo(self):
+        infos = list(compose(self.dna.all.coreInfo()))
+        self.assertEquals(2, len(infos))            

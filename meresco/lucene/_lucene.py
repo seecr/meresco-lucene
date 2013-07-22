@@ -147,10 +147,8 @@ class Lucene(object):
         facetSearchParams = FacetSearchParams(facetRequests)
         return self._index.createFacetCollector(facetSearchParams)
 
-    def retrieveInfo(self, infoContainer):
-        print self.coreName
-        from sys import stdout; stdout.flush()
-        infoContainer.append(self.LuceneInfo(self))
+    def coreInfo(self):
+        yield self.LuceneInfo(self)
 
     class LuceneInfo(object):
         def __init__(inner, self):

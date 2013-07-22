@@ -90,6 +90,11 @@ class LuceneTest(IntegrationTestCase):
         response = remote.executeQuery(parseCql('*'))
         self.assertEquals(100, response.total)
 
+    def testRemoteInfo(self):
+        header, body = getRequest(port=self.httpPort, path='/remote/info/index', parse=False)
+        self.assertTrue('main' in body, body)
+        self.assertTrue('empty-core' in body, body)
+
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None):
         arguments={'version': '1.2', 
             'operation': 'searchRetrieve',

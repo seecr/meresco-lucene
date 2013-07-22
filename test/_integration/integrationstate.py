@@ -32,7 +32,7 @@ from StringIO import StringIO
 
 from seecr.test.integrationtestcase import IntegrationState as SeecrIntegrationState
 from seecr.test.portnumbergenerator import PortNumberGenerator
-from seecr.test.utils import postRequest
+from seecr.test.utils import postRequest, sleepWheel
 
 
 mydir = dirname(abspath(__file__))
@@ -63,6 +63,7 @@ class IntegrationState(SeecrIntegrationState):
         print "Creating database in", self.integrationTempdir
         try:
             uploadUpdateRequests(self.testdataDir, '/update', self.httpPort)
+            sleepWheel(3)
             print "Finished creating database in %s seconds" % (time() - start)
         except Exception:
             print 'Error received while creating database for', self.stateName

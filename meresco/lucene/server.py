@@ -50,6 +50,10 @@ staticPath = join(myPath, 'html', 'static')
 
 def main(reactor, port, databasePath):
     lucene = Lucene(path=join(databasePath, 'lucene'), name='main')
+    multiLuceneHelix = (MultiLucene(defaultCore='main'),
+            (Lucene(path=join(databasePath, 'lucene-empty'), name='empty-core'),),
+            (lucene,),
+        )
     storageComponent = StorageComponent(directory=join(databasePath, 'storage'))
     indexHelix = (Fields2LuceneDoc('record'),
             (lucene,)
@@ -124,10 +128,7 @@ def main(reactor, port, databasePath):
                         (SruParser(defaultRecordSchema='record'),
                             (SruHandler(),
                                 (CqlToLuceneQuery([]),
-                                    (MultiLucene(defaultCore='main'),
-                                        (lucene,),
-                                        (Lucene(path=join(databasePath, 'lucene-empty'), name='empty-core'),),
-                                    )
+                                    (lucene,)
                                 ),
                                 (SRUTermDrilldown(defaultFormat='xml'),),
                                 (storageComponent,),
@@ -137,7 +138,7 @@ def main(reactor, port, databasePath):
                     (PathFilter('/remote'),
                         (LuceneRemoteService(reactor=reactor),
                             (CqlToLuceneQuery([]),
-                                (lucene,),
+                                multiLuceneHelix,
                             )
                         )
                     ),

@@ -43,6 +43,7 @@ from threading import Thread
 
 from os.path import join
 
+# Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html#concurrent_indexing_search
 
 class Index(object):
     def __init__(self, path):
@@ -88,8 +89,8 @@ class Index(object):
                     searcher.search(*args)
                     return responseBuilder()
                 finally:
-                    indexReader.decRef()
                     taxoReader.decRef()
+                    indexReader.decRef()
             else:
                 indexReader.decRef()
 
@@ -102,9 +103,9 @@ class Index(object):
         return suggestions
 
     def commit(self):
-        reader = DirectoryReader.open(self._indexWriter, True)
         currentReader = self._searcher.getIndexReader()
-        if reader != currentReader:
+        reader = DirectoryReader.openIfChanged(currentReader)
+        if reader is not None:
             self._searcher = IndexSearcher(reader)
             currentReader.decRef()
         if self._thread:
@@ -151,8 +152,8 @@ class Index(object):
     def _hardCommit(self):
         def _commit():
             self._dirty = False
-            self._indexWriter.commit()
             self._commitFacet()
+            self._indexWriter.commit()
             if self._dirty:
                 _commit()
         _commit()
@@ -166,8 +167,11 @@ class Index(object):
         return self._searcher.doc(docId)
 
     def _openTaxonomyReader(self):
-        taxonomyReader = DirectoryTaxonomyReader(self._taxoDirectory)
-        if taxonomyReader != self._taxoReader:
+        if self._taxoReader:
+            taxonomyReader = DirectoryTaxonomyReader.openIfChanged(self._taxoReader)
+        else:
+            taxonomyReader = DirectoryTaxonomyReader(self._taxoDirectory)
+        if taxonomyReader is not None:
             oldTaxonomyReader = self._taxoReader
             self._taxoReader = taxonomyReader
             if oldTaxonomyReader:

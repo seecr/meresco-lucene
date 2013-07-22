@@ -63,7 +63,7 @@ class IntegrationState(SeecrIntegrationState):
         print "Creating database in", self.integrationTempdir
         try:
             uploadUpdateRequests(self.testdataDir, '/update', self.httpPort)
-            sleepWheel(3)
+            sleepWheel(5)
             print "Finished creating database in %s seconds" % (time() - start)
         except Exception:
             print 'Error received while creating database for', self.stateName

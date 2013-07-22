@@ -95,6 +95,10 @@ class LuceneTest(IntegrationTestCase):
         self.assertTrue('main' in body, body)
         self.assertTrue('empty-core' in body, body)
 
+    def testRemoteInfoStatic(self):
+        header, body = getRequest(port=self.httpPort, path='/remote/info/static/lucene-remote.css', parse=False)
+        self.assertTrue('200' in header, header)
+
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None):
         arguments={'version': '1.2', 
             'operation': 'searchRetrieve',

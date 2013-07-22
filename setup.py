@@ -31,6 +31,7 @@
 ## end license ##
 
 version = '$Version: trunk$'[9:-1].strip()
+name='meresco-lucene'
 
 from distutils.core import setup
 from distutils.extension import Extension
@@ -45,15 +46,28 @@ packages = []
 for path, dirs, files in walk('meresco'):
     if '__init__.py' in files and path != 'meresco':
         packages.append(path.replace('/', '.'))
+data_files = []
+for path, dirs, files in walk('usr-share'):
+    if files:
+        data_files.append((path.replace('usr-share', '/usr/share/%s' % name, 1), [join(path, f) for f in files]))
+for path, dirs, files in walk('doc'):
+    files = [f for f in files if f != 'license.conf']
+    if files:
+        data_files.append((path.replace('doc', '/usr/share/doc/%s' % name, 1), [join(path, f) for f in files]))
 
 
 setup(
-    name = 'meresco-lucene',
-    packages = [
+    name=name,
+    packages=[
         'meresco',                      #DO_NOT_DISTRIBUTE
     ] + packages,
     scripts=scripts,
-    package_data={},
+    data_files=data_files,
+    package_data={
+        'meresco.lucene.remote': [
+            'dynamic/*.sf'
+        ]
+    },
     version = version,
     url = 'http://seecr.nl',
     author = 'Seecr (Seek You Too B.V.)',

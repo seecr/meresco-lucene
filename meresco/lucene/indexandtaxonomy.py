@@ -55,9 +55,16 @@ class IndexAndTaxonomy(object):
         currentReader = currentIndexAndTaxonomy.searcher.getIndexReader()
         reader = DirectoryReader.openIfChanged(currentReader)
         if reader is None:
-            return
+            return currentIndexAndTaxonomy
         searcher = IndexSearcher(reader)
         taxoReader = DirectoryTaxonomyReader.openIfChanged(currentIndexAndTaxonomy.taxoReader)
         if taxoReader is None:
             taxoReader = currentIndexAndTaxonomy.taxoReader
-        return IndexAndTaxonomy(copied=dict(searcher=searcher, taxoReader=taxoReader))
+            taxoReader.incRef()
+        result = IndexAndTaxonomy(copied=dict(searcher=searcher, taxoReader=taxoReader))
+        return result
+
+    def __del__(self):
+        self.decRef()
+        self.searcher = None
+        self.taxoReader = None

@@ -48,10 +48,10 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(100, self.numberOfRecords(query='*'))
 
     def testRecordIds(self):
-        body = self.doSruQuery('*')
+        body = self.doSruQuery('*', maximumRecords=100)
         records = xpath(body, '//srw:recordIdentifier/text()')
-        self.assertEquals(10, len(records))
-        self.assertEquals(set(['record:%s' % i for i in xrange(1,11)]), set(records))
+        self.assertEquals(100, len(records))
+        self.assertEquals(set(['record:%s' % i for i in xrange(1,101)]), set(records))
 
     def testMaximumRecords(self):
         body = self.doSruQuery('*', maximumRecords=20)

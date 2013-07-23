@@ -78,20 +78,23 @@ class Index(object):
         self.commit()
 
     def search(self, responseBuilder, *args):
-        indexAndTaxonomy = self._indexAndTaxonomy
-        if indexAndTaxonomy.tryIncRef():
-            try:
-                indexAndTaxonomy.searcher.search(*args)
-                return responseBuilder()
-            finally:
-                indexAndTaxonomy.decRef()
+        indexAndTaxonomy = self._getIndexAndTaxonomyAndIncRef()
+        try:
+            indexAndTaxonomy.searcher.search(*args)
+            return responseBuilder()
+        finally:
+            indexAndTaxonomy.decRef()
 
     def suggest(self, query, count, field):
         suggestions = {}
-        for token, startOffset, endOffset in self._analyzeToken(query):
-            suggestWords = self._checker.suggestSimilar(Term(field, token), count, self._searcher.getIndexReader())
-            if suggestWords:
-                suggestions[token] = (startOffset, endOffset, [suggestWord.string for suggestWord in suggestWords])
+        indexAndTaxonomy = self._getIndexAndTaxonomyAndIncRef()
+        try:
+            for token, startOffset, endOffset in self._analyzeToken(query):
+                suggestWords = self._checker.suggestSimilar(Term(field, token), count, indexAndTaxonomy.searcher.getIndexReader())
+                if suggestWords:
+                    suggestions[token] = (startOffset, endOffset, [suggestWord.string for suggestWord in suggestWords])
+        finally:
+            indexAndTaxonomy.decRef()
         return suggestions
 
     def finish(self):
@@ -101,29 +104,28 @@ class Index(object):
             pass
 
     def termsForField(self, field, prefix=None):
-        indexReader = self._searcher.getIndexReader()
-        if indexReader.tryIncRef():
-            terms = []
-            try:
-                fields = MultiFields.getFields(indexReader)
-                if fields is None:
-                    return terms
-                iterator = fields.terms(field).iterator(None)
-                if prefix:
-                    iterator.seekCeil(BytesRef(prefix))
-                    terms.append((iterator.docFreq(), iterator.term().utf8ToString()))
-                bytesIterator = BytesRefIterator.cast_(iterator)
-                try:
-                    while True:
-                        term = bytesIterator.next().utf8ToString()
-                        if prefix and not term.startswith(prefix):
-                            break
-                        terms.append((iterator.docFreq(), term))
-                except StopIteration:
-                    pass
+        indexAndTaxonomy = self._getIndexAndTaxonomyAndIncRef()
+        terms = []
+        try:
+            fields = MultiFields.getFields(indexAndTaxonomy.searcher.getIndexReader())
+            if fields is None:
                 return terms
-            finally:
-                indexReader.decRef()
+            iterator = fields.terms(field).iterator(None)
+            if prefix:
+                iterator.seekCeil(BytesRef(prefix))
+                terms.append((iterator.docFreq(), iterator.term().utf8ToString()))
+            bytesIterator = BytesRefIterator.cast_(iterator)
+            try:
+                while True:
+                    term = bytesIterator.next().utf8ToString()
+                    if prefix and not term.startswith(prefix):
+                        break
+                    terms.append((iterator.docFreq(), term))
+            except StopIteration:
+                pass
+            return terms
+        finally:
+            indexAndTaxonomy.decRef()
 
     def commit(self):
         if self._thread:
@@ -149,12 +151,27 @@ class Index(object):
             self._indexAndTaxonomy = indexAndTaxonomy
         self._thread = None
 
+    def _getIndexAndTaxonomyAndIncRef(self):
+        while True:
+            indexAndTaxonomy = self._indexAndTaxonomy
+            if indexAndTaxonomy.tryIncRef():
+                return indexAndTaxonomy
+
+
+
     def getDocument(self, docId):
-        return self._indexAndTaxonomy.searcher.doc(docId)
+        indexAndTaxonomy = self._getIndexAndTaxonomyAndIncRef()
+        try:
+            return self._indexAndTaxonomy.searcher.doc(docId)
+        except:
+            indexAndTaxonomy.decRef()
 
     def createFacetCollector(self, facetSearchParams):
-        indexAndTaxonomy = self._indexAndTaxonomy
-        return FacetsCollector.create(facetSearchParams, indexAndTaxonomy.searcher.getIndexReader(), indexAndTaxonomy.taxoReader)
+        indexAndTaxonomy = self._getIndexAndTaxonomyAndIncRef()
+        try:
+            return FacetsCollector.create(facetSearchParams, indexAndTaxonomy.searcher.getIndexReader(), indexAndTaxonomy.taxoReader)
+        except:
+            indexAndTaxonomy.decRef()
 
     def _analyzeToken(self, token):
         result = []

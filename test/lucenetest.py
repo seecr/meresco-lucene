@@ -27,8 +27,9 @@
 from seecr.test import SeecrTestCase
 from os.path import join
 from time import sleep
-from meresco.lucene import Lucene
+from meresco.lucene import Lucene, VM
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
+from meresco.lucene.indexandtaxonomy import IndexAndTaxonomy
 from cqlparser import parseString as parseCql
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery
 from org.apache.lucene.document import Document, TextField, Field
@@ -36,15 +37,24 @@ from org.apache.lucene.index import Term
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.search.join import TermsCollector
 from seecr.utils.generatorutils import returnValueFromGenerator
-
+import gc
 
 class LuceneTest(SeecrTestCase):
     def setUp(self):
         super(LuceneTest, self).setUp()
+        self._javaObjects = self._getJavaObjects()
         self.lucene = Lucene(join(self.tempdir, 'lucene'))
 
     def tearDown(self):
         self.lucene.finish()
+        self.lucene = None
+        gc.collect()
+        diff = self._getJavaObjects() - self._javaObjects
+        self.assertEquals(0, len(diff), diff)
+
+    def _getJavaObjects(self):
+        refs = VM._dumpRefs(classes=True)
+        return set([(c, refs[c]) for c in refs.keys() if c != 'class java.lang.Class'])
 
     def testCreate(self):
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
@@ -131,6 +141,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
+        
         self.assertEquals([{
                 'fieldname': 'field2',
                 'terms': [
@@ -207,6 +218,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value1')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value1')])))
+        sleep(0.1)
         response = returnValueFromGenerator(self.lucene.prefixSearch(fieldname='field1', prefix='valu'))
         self.assertEquals(['value1', 'value0'], response.hits)
 
@@ -231,6 +243,7 @@ class LuceneTest(SeecrTestCase):
 
     def testSuggestions(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field3', 'value2')])))
+        sleep(0.1)
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), suggestionRequest=dict(count=2, query="value0 and valeu", field="field3")))
         self.assertEquals(['id:0'], response.hits)
         self.assertEquals({'value0': (0, 6, ['value2']), 'valeu': (11, 16, ['value2'])}, response.suggestions)

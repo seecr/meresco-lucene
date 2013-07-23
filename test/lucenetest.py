@@ -54,6 +54,7 @@ class LuceneTest(SeecrTestCase):
         document = Document()
         document.add(TextField('title', 'The title', Field.Store.NO))
         returnValueFromGenerator(self.lucene.addDocument(identifier="identifier", document=document))
+        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(1, result.total)
         self.assertEquals(['identifier'], result.hits)
@@ -67,6 +68,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=Document()))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=Document()))
         returnValueFromGenerator(self.lucene.delete(identifier="id:1"))
+        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(2, result.total)
         self.assertEquals(set(['id:0', 'id:2']), set(result.hits))
@@ -79,6 +81,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([
             ('field1', 'value1'),
             ])))
+        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field1', 'value1'))))
         self.assertEquals(1, result.total)
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field0', 'value0'))))
@@ -100,6 +103,7 @@ class LuceneTest(SeecrTestCase):
                 ('field1', 'ZZ'), 
                 ('field2', 'ZZ'),
             ])))
+        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field0', sortDescending=False)]))
         self.assertEquals(3, result.total)
         self.assertEquals(['id:0', 'id:1', 'id:2'], result.hits)
@@ -112,6 +116,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')])))
+        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), start=1, stop=10, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
         self.assertEquals(3, result.total)
         self.assertEquals(['id:1', 'id:2'], result.hits)
@@ -122,6 +127,8 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first item0'), ('field3', 'second item')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')]), categories=createCategories([('field2', 'first item1'), ('field3', 'other value')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')]), categories=createCategories([('field2', 'first item2'), ('field3', 'second item')])))
+        # does not crash!!!
+        returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         self.assertEquals([{
@@ -231,6 +238,7 @@ class LuceneTest(SeecrTestCase):
     def testRangeQuery(self):
         for f in ['aap', 'noot', 'mies', 'vis', 'vuur', 'boom']:
             returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % f, document=createDocument([('field', f)])))
+        sleep(0.1)
         # (field, lowerTerm, upperTerm, includeLower, includeUpper)
         luceneQuery = TermRangeQuery.newStringRange('field', None, 'mies', False, False) # <
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))

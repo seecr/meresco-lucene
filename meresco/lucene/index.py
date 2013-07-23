@@ -43,7 +43,9 @@ from threading import Thread
 
 from os.path import join
 
-# Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html#concurrent_indexing_search
+from indexandtaxonomy import IndexAndTaxonomy
+
+# Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html
 
 class Index(object):
     def __init__(self, path):
@@ -53,21 +55,17 @@ class Index(object):
         #        "lucene", 
         #        ioContext,
         #        True)
+        self._checker = DirectSpellChecker()
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
+        self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
         self._analyzer = createAnalyzer()
         conf = IndexWriterConfig(Version.LUCENE_43, self._analyzer);
         self._indexWriter = IndexWriter(indexDirectory, conf)
-        self._searcher = IndexSearcher(DirectoryReader.open(self._indexWriter, True))
-        self._checker = DirectSpellChecker()
-
-
-        self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory)
         self._taxoWriter.commit()
-        self._taxoReader = None
-        self._openTaxonomyReader()
+
+        self._indexAndTaxonomy = IndexAndTaxonomy(self._indexWriter, self._taxoDirectory)
         self._thread = None
-        self._dirty = False
 
     def addDocument(self, term, document, categories=None):
         if categories:
@@ -80,19 +78,13 @@ class Index(object):
         self.commit()
 
     def search(self, responseBuilder, *args):
-        searcher = self._searcher
-        indexReader = searcher.getIndexReader()
-        if indexReader.tryIncRef():
-            taxoReader = self._taxoReader
-            if taxoReader.tryIncRef():
-                try:
-                    searcher.search(*args)
-                    return responseBuilder()
-                finally:
-                    taxoReader.decRef()
-                    indexReader.decRef()
-            else:
-                indexReader.decRef()
+        indexAndTaxonomy = self._indexAndTaxonomy
+        if indexAndTaxonomy.tryIncRef():
+            try:
+                indexAndTaxonomy.searcher.search(*args)
+                return responseBuilder()
+            finally:
+                indexAndTaxonomy.decRef()
 
     def suggest(self, query, count, field):
         suggestions = {}
@@ -102,27 +94,11 @@ class Index(object):
                 suggestions[token] = (startOffset, endOffset, [suggestWord.string for suggestWord in suggestWords])
         return suggestions
 
-    def commit(self):
-        currentReader = self._searcher.getIndexReader()
-        reader = DirectoryReader.openIfChanged(currentReader)
-        if reader is not None:
-            self._searcher = IndexSearcher(reader)
-            currentReader.decRef()
-        if self._thread:
-            self._dirty = True
-            return
-        self._thread = Thread(target=self._runThread, kwargs={'target': self._hardCommit})
-        self._thread.start()
-
     def finish(self):
         try:
             self._thread.join()
         except AttributeError:
             pass
-
-    def _runThread(self, target):
-        VM.attachCurrentThread()
-        target()
 
     def termsForField(self, field, prefix=None):
         indexReader = self._searcher.getIndexReader()
@@ -149,38 +125,36 @@ class Index(object):
             finally:
                 indexReader.decRef()
 
+    def commit(self):
+        if self._thread:
+            self._dirty = True
+            return
+        self._thread = Thread(target=self._runThread, kwargs={'target': self._hardCommit})
+        self._thread.start()
+
+    def _runThread(self, target):
+        VM.attachCurrentThread()
+        target()
+
     def _hardCommit(self):
         def _commit():
             self._dirty = False
-            self._commitFacet()
+            self._taxoWriter.commit()
             self._indexWriter.commit()
             if self._dirty:
                 _commit()
         _commit()
+        indexAndTaxonomy = self._indexAndTaxonomy.refreshIfNeeded()
+        if indexAndTaxonomy:
+            self._indexAndTaxonomy = indexAndTaxonomy
         self._thread = None
 
-    def _commitFacet(self):
-        self._taxoWriter.commit()
-        self._openTaxonomyReader()
-
     def getDocument(self, docId):
-        return self._searcher.doc(docId)
-
-    def _openTaxonomyReader(self):
-        if self._taxoReader:
-            taxonomyReader = DirectoryTaxonomyReader.openIfChanged(self._taxoReader)
-        else:
-            taxonomyReader = DirectoryTaxonomyReader(self._taxoDirectory)
-        if taxonomyReader is not None:
-            oldTaxonomyReader = self._taxoReader
-            self._taxoReader = taxonomyReader
-            if oldTaxonomyReader:
-                oldTaxonomyReader.decRef()
+        return self._indexAndTaxonomy.searcher.doc(docId)
 
     def createFacetCollector(self, facetSearchParams):
-        if not self._taxoReader:
-            return
-        return FacetsCollector.create(facetSearchParams, self._searcher.getIndexReader(), self._taxoReader)
+        indexAndTaxonomy = self._indexAndTaxonomy
+        return FacetsCollector.create(facetSearchParams, indexAndTaxonomy.searcher.getIndexReader(), indexAndTaxonomy.taxoReader)
 
     def _analyzeToken(self, token):
         result = []

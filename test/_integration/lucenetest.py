@@ -36,10 +36,10 @@ class LuceneTest(IntegrationTestCase):
 
     def testAddDelete(self):
         postRequest(self.httpPort, '/update', ADD_RECORD, parse=False)
-        sleep(0.5)
+        sleep(0.1)
         self.assertEquals(1, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
         postRequest(self.httpPort, '/update', DELETE_RECORD, parse=False)
-        sleep(0.5)
+        sleep(0.1)
         self.assertEquals(0, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
 
     def testQuery(self):
@@ -92,6 +92,14 @@ class LuceneTest(IntegrationTestCase):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
         response = remote.executeQuery(parseCql('*'))
         self.assertEquals(100, response.total)
+
+    def testRemoteServiceOnBadPath(self):
+        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/does/not/exist')
+        self.assertRaises(IOError, lambda: remote.executeQuery(parseCql('*')))
+
+    def testRemoteServiceWithBadCore(self):
+        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
+        self.assertRaises(IOError, lambda: remote.executeQuery(parseCql('*'), core='doesnotexist'))
 
     def testRemoteInfo(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/index', parse=False)

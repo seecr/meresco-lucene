@@ -25,12 +25,13 @@
 
 from meresco.lucene import version
 from meresco.core import Observable
-from meresco.components.http.utils import Ok, CRLF, ContentTypeHeader, ContentTypePlainText
+from meresco.components.http.utils import Ok, CRLF, ContentTypeHeader, ContentTypePlainText, serverErrorPlainText
 from meresco.components.http import PathFilter, PathRename, FileServer, StringServer
 from simplejson import loads
 from cqlparser import parseString
 from weightless.core import be, compose
 from seecr.html import DynamicHtml
+from traceback import format_exc
 
 from os.path import join, dirname, abspath
 myPath = dirname(abspath(__file__))
@@ -80,17 +81,22 @@ class LuceneRemoteService(Observable):
             yield self._internalTree.all.handleRequest(path=path, Method=Method, Body=Body, **kwargs)
 
     def _handleQuery(self, Body):
-        messageDict = loads(Body)
-        if messageDict['message'] not in ['executeQuery', 'prefixSearch']:
-            raise ValueError('Expected "executeQuery" or "prefixSearch"')
-        messageKwargs = messageDict['kwargs']
-        if 'cqlQuery' in messageKwargs:
-            messageKwargs['cqlAbstractSyntaxTree'] = parseString(messageKwargs.pop('cqlQuery'))
-        if 'filterQueries' in messageKwargs and messageKwargs['filterQueries'] is not None:
-            messageKwargs['filterQueries'] = [parseString(cqlstring) for cqlstring in messageKwargs['filterQueries']]
-        if 'joinQueries' in messageKwargs and messageKwargs['joinQueries'] is not None:
-            messageKwargs['joinQueries'] = [dict(joinQuery, query=parseString(joinQuery['query'])) for joinQuery in messageKwargs['joinQueries']]
-        response = yield self.any.unknown(message=messageDict['message'], **messageKwargs)
+        try:
+            messageDict = loads(Body)
+            if messageDict['message'] not in ['executeQuery', 'prefixSearch']:
+                raise ValueError('Expected "executeQuery" or "prefixSearch"')
+            messageKwargs = messageDict['kwargs']
+            if 'cqlQuery' in messageKwargs:
+                messageKwargs['cqlAbstractSyntaxTree'] = parseString(messageKwargs.pop('cqlQuery'))
+            if 'filterQueries' in messageKwargs and messageKwargs['filterQueries'] is not None:
+                messageKwargs['filterQueries'] = [parseString(cqlstring) for cqlstring in messageKwargs['filterQueries']]
+            if 'joinQueries' in messageKwargs and messageKwargs['joinQueries'] is not None:
+                messageKwargs['joinQueries'] = [dict(joinQuery, query=parseString(joinQuery['query'])) for joinQuery in messageKwargs['joinQueries']]
+            response = yield self.any.unknown(message=messageDict['message'], **messageKwargs)
+        except:
+            yield serverErrorPlainText
+            yield format_exc()
+            return
         yield Ok
         yield ContentTypeHeader + 'application/json' + CRLF
         yield CRLF

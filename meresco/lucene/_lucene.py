@@ -84,12 +84,19 @@ class Lucene(object):
         raise StopIteration(response)
         yield
 
-    def prefixSearch(self, fieldname, prefix, limit=10):
-        terms = self._index.termsForField(fieldname, prefix=prefix)
+    def prefixSearch(self, fieldname, prefix, limit=None):
+        terms = self._index.termsForField(fieldname, prefix=prefix, limit=limit)
         hits = [term for count, term in sorted(terms, reverse=True)]
         response = LuceneResponse(total=len(terms), hits=hits)
         raise StopIteration(response)
         yield
+
+    def fieldnames(self):
+        fieldnames = self._index.fieldnames()
+        response = LuceneResponse(total=len(fieldnames), hits=fieldnames)
+        raise StopIteration(response)
+        yield
+
 
     def finish(self):
         self._index.finish()

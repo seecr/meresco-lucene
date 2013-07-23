@@ -83,8 +83,8 @@ class LuceneRemoteService(Observable):
     def _handleQuery(self, Body):
         try:
             messageDict = loads(Body)
-            if messageDict['message'] not in ['executeQuery', 'prefixSearch']:
-                raise ValueError('Expected "executeQuery" or "prefixSearch"')
+            if messageDict['message'] not in _ALLOWED_METHODS:
+                raise ValueError('Expected %s' % (' or '.join('"%s"' % m for m in _ALLOWED_METHODS)))
             messageKwargs = messageDict['kwargs']
             if 'cqlQuery' in messageKwargs:
                 messageKwargs['cqlAbstractSyntaxTree'] = parseString(messageKwargs.pop('cqlQuery'))
@@ -104,3 +104,5 @@ class LuceneRemoteService(Observable):
 
     def _allCoreInfo(self):
         return list(compose(self.all.coreInfo()))
+
+_ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames']

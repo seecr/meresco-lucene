@@ -103,7 +103,8 @@ class Index(object):
         except AttributeError:
             pass
 
-    def termsForField(self, field, prefix=None):
+    def termsForField(self, field, prefix=None, limit=None):
+        limit = 10 if limit is None else limit
         indexAndTaxonomy = self._getIndexAndTaxonomyAndIncRef()
         terms = []
         try:
@@ -116,7 +117,7 @@ class Index(object):
                 terms.append((iterator.docFreq(), iterator.term().utf8ToString()))
             bytesIterator = BytesRefIterator.cast_(iterator)
             try:
-                while True:
+                while len(terms) < limit:
                     term = bytesIterator.next().utf8ToString()
                     if prefix and not term.startswith(prefix):
                         break
@@ -124,6 +125,20 @@ class Index(object):
             except StopIteration:
                 pass
             return terms
+        finally:
+            indexAndTaxonomy.decRef()
+
+    def fieldnames(self):
+        indexAndTaxonomy = self._getIndexAndTaxonomyAndIncRef()
+        fieldnames = []
+        try:
+            fields = MultiFields.getFields(indexAndTaxonomy.searcher.getIndexReader())
+            if fields is None:
+                return fieldnames
+            iterator = fields.iterator()
+            while iterator.hasNext():
+                fieldnames.append(iterator.next())
+            return fieldnames
         finally:
             indexAndTaxonomy.decRef()
 

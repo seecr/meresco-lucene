@@ -28,6 +28,7 @@ from seecr.test import SeecrTestCase
 from os.path import join
 from time import sleep
 from meresco.lucene import Lucene, VM
+from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from meresco.lucene.indexandtaxonomy import IndexAndTaxonomy
 from cqlparser import parseString as parseCql
@@ -265,6 +266,15 @@ class LuceneTest(SeecrTestCase):
         luceneQuery = LuceneQueryComposer([]).compose(parseCql('field >= mies'))
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
         self.assertEquals(set(['id:mies', 'id:noot', 'id:vis', 'id:vuur']), set(response.hits))
+
+    def testFieldnames(self):
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field0', 'value0')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value0')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value0')])))
+        sleep(0.1)
+        response = returnValueFromGenerator(self.lucene.fieldnames())
+        self.assertEquals(set([IDFIELD, 'field0', 'field1']), set(response.hits))
+        self.assertEquals(3, response.total)
 
 
 def createDocument(textfields):

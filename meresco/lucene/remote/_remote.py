@@ -40,18 +40,11 @@ class LuceneRemote(Observable):
         self._path = '' if path is None else path
         self._path += '/__lucene_remote__'
 
-    # def executeQuery(self, cqlAbstractSyntaxTree, start=0, stop=10, sortKeys=None, suggestionsCount=0, suggestionsQuery=None, filterQueries=None, joinQueries=None, facets=None, joinFacets=None, **kwargs):
-    def executeQuery(self, cqlAbstractSyntaxTree, filterQueries=None, joinQueries=None, **kwargs):
-        if filterQueries:
-            filterQueries = [cql2string(ast) for ast in filterQueries]
-        if joinQueries:
-            joinQueries = [dict(joinQuery, query=cql2string(joinQuery['query'])) for joinQuery in joinQueries]
-        result = yield self._send(message='executeQuery', cqlQuery=cql2string(cqlAbstractSyntaxTree), filterQueries=filterQueries, joinQueries=joinQueries, **kwargs)
-        raise StopIteration(result)
-
-    def prefixSearch(self, **kwargs):
-        result = yield self._send(message='prefixSearch', **kwargs)
-        raise StopIteration(result)
+    def any_unknown(self, message, **kwargs):
+        if message in self._ALLOWED_METHODS:
+            newKwargs = dict(_convert(k,v) for k,v in kwargs.items())
+            result = yield self._send(message=message, **newKwargs)
+            raise StopIteration(result)
 
     def _luceneRemoteServer(self):
         return (self._host, self._port) if self._host else self.call.luceneRemoteServer()
@@ -71,3 +64,16 @@ class LuceneRemote(Observable):
     def _verify200(self, header, response):
         if not header.startswith('HTTP/1.0 200'):
             raise IOError("Expected status '200' from LuceneRemoteService, but got: " + response)
+
+    _ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames']
+
+_converters = {
+    'filterQueries': lambda key, value: (key, [cql2string(ast) for ast in value]),
+    'joinQueries': lambda key, value: (key, [dict(joinQuery, query=cql2string(joinQuery['query'])) for joinQuery in value]),
+    'cqlAbstractSyntaxTree': lambda key, value: ('cqlQuery', cql2string(value)) 
+}
+
+_defaultConvert = lambda key, value: (key, value)
+
+def _convert(key, value):
+    return _converters.get(key, _defaultConvert)(key, value)

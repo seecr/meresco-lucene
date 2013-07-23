@@ -85,7 +85,7 @@ class LuceneTest(IntegrationTestCase):
         prefix, completions = loads(body)
         self.assertEquals("va", prefix)
 
-        self.assertEquals(set(["value0", "value2", "value3", "value4", "value5", "value6", "value7", "value8", "value9"]), set(completions[:-1]))
+        self.assertEquals(set(["value0", "value2", "value3", "value4", "value1"]), set(completions))
         self.assertEquals('value1', completions[-1])
 
     def testRemoteService(self):

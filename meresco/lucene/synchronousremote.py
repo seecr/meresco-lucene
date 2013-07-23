@@ -24,6 +24,7 @@
 ## end license ##
 
 from remote import LuceneRemote
+from meresco.core import Observable
 from luceneresponse import LuceneResponse
 from simplejson import dumps
 from socket import socket
@@ -32,8 +33,10 @@ from seecr.utils.generatorutils import returnValueFromGenerator
 
 class SynchronousRemote(object):
     def __init__(self, **kwargs):
+        self._observable = Observable()
         self._remote = LuceneRemote(**kwargs)
         self._remote._send = self._send
+        self._observable.addObserver(self._remote)
 
     def _send(self, message, **kwargs):
         body = dumps(dict(message=message, kwargs=kwargs))
@@ -44,11 +47,16 @@ class SynchronousRemote(object):
         self._remote._verify200(header, response)
         raise StopIteration(LuceneResponse.fromJson(responseBody))
 
-    def prefixSearch(self, *args, **kwargs):
-        return returnValueFromGenerator(self._remote.prefixSearch(*args, **kwargs))
+    def prefixSearch(self, **kwargs):
+        return returnValueFromGenerator(self._observable.any.unknown(message='prefixSearch', **kwargs))
+
+    def fieldnames(self, **kwargs):
+        return returnValueFromGenerator(self._observable.any.unknown(message='fieldnames', **kwargs))
 
     def executeQuery(self, *args, **kwargs):
-        return returnValueFromGenerator(self._remote.executeQuery(*args, **kwargs))
+        if len(args) == 1:
+            kwargs['cqlAbstractSyntaxTree'] = args[0]
+        return returnValueFromGenerator(self._observable.any.unknown(message='executeQuery', **kwargs))
 
     def _httppost(self, host, port, request, body, headers):
         sok = _socket(host, port)

@@ -25,6 +25,7 @@
 
 from meresco.lucene.remote import LuceneRemote, LuceneRemoteService
 from meresco.lucene import LuceneResponse
+from meresco.core import Observable
 from seecr.test import SeecrTestCase, CallTrace
 from cqlparser import parseString
 from weightless.core import compose
@@ -39,9 +40,11 @@ class LuceneRemoteTest(SeecrTestCase):
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
+        observable = Observable()
+        observable.addObserver(remote)
         remote._httppost = http.httppost
 
-        result = returnValueFromGenerator(remote.executeQuery(
+        result = returnValueFromGenerator(observable.any.executeQuery(
                 cqlAbstractSyntaxTree=parseString('query AND  field=value'),
                 start=0,
                 stop=10,
@@ -66,7 +69,7 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(1234, m.kwargs['port'])
         self.assertEquals('/path/__lucene_remote__', m.kwargs['request'])
         self.assertEquals('application/json', m.kwargs['headers']['Content-Type'])
-        self.assertEquals({
+        self.assertDictEquals({
                 'message': 'executeQuery',
                 'kwargs':{
                     'cqlQuery': 'query AND field=value',
@@ -92,9 +95,11 @@ class LuceneRemoteTest(SeecrTestCase):
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
+        observable = Observable()
+        observable.addObserver(remote)
         remote._httppost = http.httppost
 
-        result = returnValueFromGenerator(remote.prefixSearch(prefix='aap', fieldname='field', limit=10))
+        result = returnValueFromGenerator(observable.any.prefixSearch(prefix='aap', fieldname='field', limit=10))
         self.assertEquals(5, result.total)
         self.assertEquals(['httppost'], http.calledMethodNames())
         m = http.calledMethods[0]
@@ -107,6 +112,29 @@ class LuceneRemoteTest(SeecrTestCase):
                     'limit': 10,
                 }
             }, loads(m.kwargs['body']))
+
+    def testRemoteFieldnames(self):
+        http = CallTrace('http')
+        def httppost(*args, **kwargs):
+            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=2, hits=["field0", "field1"]).asJson())
+            yield
+        http.methods['httppost'] = httppost
+        remote = LuceneRemote(host='host', port=1234, path='/path')
+        observable = Observable()
+        observable.addObserver(remote)
+        remote._httppost = http.httppost
+
+        result = returnValueFromGenerator(observable.any.fieldnames())
+        self.assertEquals(2, result.total)
+        self.assertEquals(['httppost'], http.calledMethodNames())
+        m = http.calledMethods[0]
+        self.assertEquals('host', m.kwargs['host'])
+        self.assertEquals({
+                'message': 'fieldnames',
+                'kwargs':{
+                }
+            }, loads(m.kwargs['body']))
+
 
     def testServiceExecuteQuery(self):
         observer = CallTrace('lucene')
@@ -184,5 +212,26 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(10, m.kwargs['limit'])
         self.assertEquals('field', m.kwargs['fieldname'])
 
+    def testServiceFieldnames(self):
+        observer = CallTrace('lucene')
+        def fieldnames(**kwargs):
+            raise StopIteration(LuceneResponse(total=2, hits=['aap','noot']))
+            yield
+        observer.methods['fieldnames'] = fieldnames
+        service = LuceneRemoteService(CallTrace('reactor'))
+        service.addObserver(observer)
+        body = dumps({
+                'message': 'fieldnames',
+                'kwargs':{
+                }
+            })
+        result = ''.join(compose(service.handleRequest(path='/__lucene_remote__', Method="POST", Body=body)))
+        header, body = result.split('\r\n'*2)
+        self.assertTrue('Content-Type: application/json' in header, header)
+        response = LuceneResponse.fromJson(body)
+        self.assertEquals(2, response.total)
+        self.assertEquals(['aap', 'noot'], response.hits)
+        self.assertEquals(['fieldnames'], observer.calledMethodNames())
+        m = observer.calledMethods[0]
 
 

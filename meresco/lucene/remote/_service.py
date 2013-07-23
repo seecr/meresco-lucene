@@ -45,10 +45,11 @@ class LuceneRemoteService(Observable):
         Observable.__init__(self, **kwargs)
         self._dynamicHtml = DynamicHtml([dynamicPath],
                 reactor=reactor,
-                indexPage='/index.sf',
+                indexPage='index.sf',
                 additionalGlobals={
                     'VERSION': version,
                     'allCoreInfo': self._allCoreInfo,
+                    'parseCql': parseString,
                 }
             )
         self._internalTree = be((Observable(),

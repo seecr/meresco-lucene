@@ -34,7 +34,9 @@ def main(**kwargs):
     yield '</dl>\n'
     yield '<ul>\n'
     for coreInfo in allCoreInfo():
-        yield '<li>%s</li>\n' % coreInfo.name
+        response = yield observable.any.executeQuery(cqlAbstractSyntaxTree=parseCql('*'), stop=1, core=coreInfo.name)
+        yield '<li>%s %s</li>\n' % (coreInfo.name, response.total)
+
     yield '</ul>'
     yield '</body>'
     yield '</html>'

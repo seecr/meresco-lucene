@@ -30,7 +30,6 @@ from time import sleep
 from meresco.lucene import Lucene, VM
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
-from meresco.lucene.indexandtaxonomy import IndexAndTaxonomy
 from cqlparser import parseString as parseCql
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery
 from org.apache.lucene.document import Document, TextField, Field
@@ -133,6 +132,12 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(['id:1', 'id:2'], result.hits)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), start=0, stop=2, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
         self.assertEquals(['id:0', 'id:1'], result.hits)
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), start=0, stop=0))
+        self.assertEquals(3, result.total)
+        self.assertEquals([], result.hits)
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), start=2, stop=2))
+        self.assertEquals(3, result.total)
+        self.assertEquals([], result.hits)
 
     def testFacets(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first item0'), ('field3', 'second item')])))

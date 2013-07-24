@@ -95,9 +95,9 @@ class LuceneRemoteService(Observable):
             if 'joinQueries' in messageKwargs and messageKwargs['joinQueries'] is not None:
                 messageKwargs['joinQueries'] = [dict(joinQuery, query=parseString(joinQuery['query'])) for joinQuery in messageKwargs['joinQueries']]
             response = yield self.any.unknown(message=messageDict['message'], **messageKwargs)
-        except:
+        except Exception, e:
             yield serverErrorPlainText
-            yield format_exc()
+            yield str(e)
             return
         yield Ok
         yield ContentTypeHeader + 'application/json' + CRLF

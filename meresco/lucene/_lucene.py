@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, SortField, CachingWrapperFilter, QueryWrapperFilter
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, SortField, CachingWrapperFilter, QueryWrapperFilter, TotalHitCountCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
@@ -74,10 +74,10 @@ class Lucene(object):
             chainedFilter = ChainedFilter(filters, ChainedFilter.AND)
 
         response = self._index.search(
-                lambda: self._createResponse(collectors, start=start),
+                lambda: self._createResponse(collectors, start=start, stop=stop),
                 luceneQuery,
                 chainedFilter,
-                MultiCollector.wrap(collectors.values()),
+                MultiCollector.wrap(collectors.values()) if collectors else None,
             )
         if suggestionRequest:
             response.suggestions = self._index.suggest(**suggestionRequest)
@@ -114,16 +114,18 @@ class Lucene(object):
         self._index.search(lambda: None, TermsQuery(fromField, None, termsCollector.getCollectorTerms()), None, facetCollector)
         return self._facetResult(facetCollector)
 
-    def _createResponse(self, collectors, start):
-        total, hits = self._topDocsResponse(collectors['query'], start=start)
+    def _createResponse(self, collectors, start, stop):
+        total, hits = self._topDocsResponse(collectors['query'], start=start, stop=stop)
         response = LuceneResponse(total=total, hits=hits)
         if 'facet' in collectors:
             response.drilldownData = self._facetResult(collectors['facet'])
         return response
 
-    def _topDocsResponse(self, collector, start):
+    def _topDocsResponse(self, collector, start, stop):
         # TODO: Probably use FieldCache iso document.get()
-        hits = [self._index.getDocument(hit.doc).get(IDFIELD) for hit in collector.topDocs(start).scoreDocs]
+        hits = []
+        if stop > start:
+            hits = [self._index.getDocument(hit.doc).get(IDFIELD) for hit in collector.topDocs(start).scoreDocs]
         return collector.getTotalHits(), hits
 
     def _facetResult(self, facetCollector):
@@ -166,6 +168,8 @@ def defaults(parameter, default):
     return default if parameter is None else parameter
 
 def _topScoreCollector(start, stop, sortKeys):
+    if stop <= start:
+        return TotalHitCountCollector()
     if sortKeys:
         sortFields = [
             SortField(sortKey['sortBy'], SortField.Type.STRING, sortKey['sortDescending'])

@@ -38,7 +38,7 @@ from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
 from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene
-from meresco.lucene.remote import LuceneRemoteService 
+from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 
 from weightless.io import Reactor
 from weightless.core import compose, be
@@ -70,6 +70,7 @@ def main(reactor, port, databasePath):
                             '/update',
                             '/sru',
                             '/remote',
+                            '/via-remote-sru',
                         ]),
                         (DynamicHtml(
                                 [dynamicPath],
@@ -130,6 +131,15 @@ def main(reactor, port, databasePath):
                                 (CqlToLuceneQuery([]),
                                     (lucene,)
                                 ),
+                                (SRUTermDrilldown(defaultFormat='xml'),),
+                                (storageComponent,),
+                            )
+                        )
+                    ),
+                    (PathFilter('/via-remote-sru'),
+                        (SruParser(defaultRecordSchema='record'),
+                            (SruHandler(),
+                                (LuceneRemote(host='localhost', port=port, path='/remote'),),
                                 (SRUTermDrilldown(defaultFormat='xml'),),
                                 (storageComponent,),
                             )

@@ -44,6 +44,11 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(2, self.numberOfRecords(query='field1=value1'))
         self.assertEquals(100, self.numberOfRecords(query='*'))
 
+    def testQueryViaRemote(self):
+        self.assertEquals(10, self.numberOfRecords(query='field2=value2', path='/via-remote-sru'))
+        self.assertEquals(2, self.numberOfRecords(query='field1=value1', path='/via-remote-sru'))
+        self.assertEquals(100, self.numberOfRecords(query='*', path='/via-remote-sru'))
+
     def testRecordIds(self):
         body = self.doSruQuery('*', maximumRecords=100)
         records = xpath(body, '//srw:recordIdentifier/text()')
@@ -54,6 +59,12 @@ class LuceneTest(IntegrationTestCase):
         body = self.doSruQuery('*', maximumRecords=20)
         records = xpath(body, '//srw:record')
         self.assertEquals(20, len(records))
+
+        body = self.doSruQuery('*', maximumRecords=0, path='/via-remote-sru')
+        records = xpath(body, '//srw:record')
+        self.assertEquals(0, len(records))
+        diag = xpathFirst(body, '//diag:diagnostic/diag:details/text()')
+        self.assertEquals(None, diag)
 
     def testStartRecord(self):
         body = self.doSruQuery('*', maximumRecords=100)
@@ -85,7 +96,7 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(set(["value0", "value2", "value3", "value4", "value1"]), set(completions))
         self.assertEquals('value1', completions[-1])
 
-    def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None):
+    def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru'):
         arguments={'version': '1.2', 
             'operation': 'searchRetrieve',
             'query': query,
@@ -98,11 +109,11 @@ class LuceneTest(IntegrationTestCase):
             arguments["sortKeys"] =sortKeys
         if facet is not None:
             arguments["x-term-drilldown"] = facet
-        header, body = getRequest(port=self.httpPort, path='/sru', arguments=arguments )
+        header, body = getRequest(port=self.httpPort, path=path, arguments=arguments )
         return body
 
-    def numberOfRecords(self, query):
-        body = self.doSruQuery(query)
+    def numberOfRecords(self, query, path='/sru'):
+        body = self.doSruQuery(query, path=path)
         result = xpathFirst(body, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()')
         return None if result is None else int(result)
 

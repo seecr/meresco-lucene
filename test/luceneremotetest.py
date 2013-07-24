@@ -126,6 +126,18 @@ class LuceneRemoteTest(SeecrTestCase):
                 }
             }, loads(m.kwargs['body']))
 
+    def testDeclineOtherMessages(self):
+        class Other(object):
+            def aMessage(self):
+                raise StopIteration('Thanks')
+                yield
+        remote = LuceneRemote(host='host', port=1234, path='/path')
+        observable = Observable()
+        observable.addObserver(remote)
+        observable.addObserver(Other())
+        result = returnValueFromGenerator(observable.any.aMessage())
+        self.assertEquals('Thanks', result)
+
     def testRemotePrefixSearch(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):

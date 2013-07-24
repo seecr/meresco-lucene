@@ -26,6 +26,7 @@
 from meresco.core import Observable
 from itertools import groupby
 from org.apache.lucene.search.join import TermsCollector
+from weightless.core import DeclineMessage
 
 
 class MultiLucene(Observable):
@@ -65,6 +66,7 @@ class MultiLucene(Observable):
             core = self._defaultCore if core is None else core
             result = yield self.any[core].unknown(message=message, **kwargs)
             raise StopIteration(result)
+        raise DeclineMessage()
 
     def _createJoinCollector(self, toField):
         multipleValuesPerDocument = False

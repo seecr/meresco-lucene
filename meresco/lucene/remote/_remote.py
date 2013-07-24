@@ -27,6 +27,7 @@
 from meresco.core import Observable
 from cqlparser import cql2string
 from weightless.http import httppost
+from weightless.core import DeclineMessage
 from simplejson import dumps
 
 from meresco.lucene import LuceneResponse
@@ -45,6 +46,7 @@ class LuceneRemote(Observable):
             newKwargs = dict(_convert(k,v) for k,v in kwargs.items() if v is not None)
             result = yield self._send(message=message, **newKwargs)
             raise StopIteration(result)
+        raise DeclineMessage()
 
     def _luceneRemoteServer(self):
         return (self._host, self._port) if self._host else self.call.luceneRemoteServer()

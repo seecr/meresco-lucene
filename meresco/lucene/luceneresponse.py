@@ -33,5 +33,5 @@ class LuceneResponse(object):
     def fromJson(cls, json):
         return cls(**loads(json))
 
-    def asJson(self):
-        return dumps(vars(self))
+    def asJson(self, **kwargs):
+        return dumps(vars(self), **kwargs)

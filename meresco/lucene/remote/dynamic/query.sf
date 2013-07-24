@@ -1,0 +1,89 @@
+## begin license ##
+#
+# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+#
+# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+#
+# This file is part of "Meresco Lucene"
+#
+# "Meresco Lucene" is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# "Meresco Lucene" is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with "Meresco Lucene"; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+## end license ##
+
+import page
+
+def niceFormat(response, qKwargs):
+    yield '<h3>Result</h3>\n'
+    yield 'Total records: %s' % response.total
+    yield '<ul>'
+    yield '\n'.join('<li>%s</li>' % h for h in response.hits)
+    yield '</ul>'
+
+def jsonFormat(response, qKwargs):
+    yield '<h3>Result</h3>\n'
+    yield '<pre>'
+    yield response.asJson(indent=4)
+    yield '</pre>'
+    yield '<h3>Query</h3>\n'
+    yield '<pre>'
+    q = dict(qKwargs)
+    q['cqlQuery'] = cql2string(q.pop('cqlAbstractSyntaxTree'))
+    yield dumps(q, indent=4)
+    yield '</pre>'
+
+def main(arguments, Body=None, **kwargs):
+    yield page.header(arguments=arguments, **kwargs)
+    name = arguments['name'][0]
+
+    queryArgs = {}
+    if Body:
+        queryArgs = parse_qs(Body, keep_blank_values=True)
+
+    query = queryArgs.get('query', [''])[0]
+    start = queryArgs.get('start', [''])[0]
+    stop = queryArgs.get('stop', [''])[0]
+    facetfields = queryArgs.get('facetfields', [''])[0].split()
+
+    yield '<h2>Query <em>"%s"</em></h2>\n' % escapeHtml(name)
+
+    yield '<form method="POST" action="">\n'
+    yield '<dl>\n'
+    yield '<dt>Query (CQL):</dt><dd><textarea name="query">%s</textarea></dd>\n' % escapeHtml(query)
+    yield '<dt>Start:</dt><dd><input name="start" value="%s" type="text"/></dd>\n' % escapeHtml(start)
+    yield '<dt>Stop:</dt><dd><input name="stop" value="%s" type="text"/></dd>\n' % escapeHtml(stop)
+    yield '<dt>FacetFields:</dt><dd><textarea name="facetfields">%s</textarea></dd>\n' % escapeHtml('\n'.join(facetfields))
+    yield '</dl>'
+    yield '<input type="submit" value="Execute"/>'
+    yield '</form>\n'
+    yield '<p></p>'
+
+    if queryArgs:
+        qKwargs = dict(cqlAbstractSyntaxTree=parseCql(query))
+        if start:
+            qKwargs['start'] = int(start)
+        if stop:
+            qKwargs['stop'] = int(stop)
+        if facetfields:
+            qKwargs['facets'] = [dict(fieldname=f, maxTerms=10) for f in facetfields]
+        response = yield observable.any.executeQuery(core=name, **qKwargs)
+
+        formatMethod = niceFormat if queryArgs.get('format') == 'nice' else jsonFormat
+        yield formatMethod(response, qKwargs)
+
+
+
+        
+    yield page.footer(arguments=arguments, **kwargs)

@@ -60,7 +60,7 @@ class Lucene(object):
         return
         yield
 
-    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, joinFacets=None, collectors=None, filters=None, suggestionRequest=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, collectors=None, filters=None, suggestionRequest=None, **kwargs):
         collectors = defaults(collectors, {})
         collectors['query'] = _topScoreCollector(start=start, stop=stop, sortKeys=sortKeys)
         if facets:
@@ -148,11 +148,10 @@ class Lucene(object):
             return
         facetRequests = []
         for f in facets:
-            maxTerms = f.get('maxTerms', Integer.MAX_VALUE)
             sortBy = f.get('sortBy')
             if not (sortBy is None or sortBy in self.SUPPORTED_SORTBY_VALUES):
                 raise ValueError('Value of "sortBy" should be in %s' % self.SUPPORTED_SORTBY_VALUES)
-            facetRequests.append(CountFacetRequest(CategoryPath([f['fieldname']]), maxTerms))
+            facetRequests.append(CountFacetRequest(CategoryPath([f['fieldname']]), f['maxTerms']))
         facetSearchParams = FacetSearchParams(facetRequests)
         return self._index.createFacetCollector(facetSearchParams)
 

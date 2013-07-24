@@ -50,7 +50,7 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         self.assertTrue('empty-core' in body, body)
 
     def testRemoteInfoStatic(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info/static/lucene-remote.css', parse=False)
+        header, body = getRequest(port=self.httpPort, path='/remote/info/static/lucene-info.css', parse=False)
         self.assertTrue('200' in header, header)
 
     def testRemoteInfoRedirect(self):

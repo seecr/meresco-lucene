@@ -28,10 +28,11 @@ from meresco.core import Observable
 from meresco.components.http.utils import Ok, CRLF, ContentTypeHeader, ContentTypePlainText, serverErrorPlainText
 from meresco.components.http import PathFilter, PathRename, FileServer, StringServer
 from simplejson import loads
-from cqlparser import parseString
+from cqlparser import parseString, cql2string
 from weightless.core import be, compose
 from seecr.html import DynamicHtml
 from traceback import format_exc
+from simplejson import dumps
 
 from os.path import join, dirname, abspath
 myPath = dirname(abspath(__file__))
@@ -50,6 +51,8 @@ class LuceneRemoteService(Observable):
                     'VERSION': version,
                     'allCoreInfo': self._allCoreInfo,
                     'parseCql': parseString,
+                    'cql2string': cql2string,
+                    'dumps': dumps,
                 }
             )
         self._internalTree = be((Observable(),

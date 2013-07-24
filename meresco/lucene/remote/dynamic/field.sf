@@ -30,7 +30,7 @@ def main(arguments, **kwargs):
     name = arguments['name'][0]
     fieldname = arguments['fieldname'][0]
     limit = int(arguments.get('limit', ['50'])[0])
-    yield '<h2>Contents field: <i>"%s"</i></h2>' % escapeHtml(fieldname)
+    yield '<h2>Contents field: <em>"%s"</em></h2>' % escapeHtml(fieldname)
     response = yield observable.any.prefixSearch(prefix='', core=name, fieldname=fieldname, limit=limit)
     yield '<pre>'
     yield '\n'.join(response.hits)

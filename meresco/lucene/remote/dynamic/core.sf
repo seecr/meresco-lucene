@@ -29,10 +29,13 @@ def main(arguments, **kwargs):
     yield page.header(arguments=arguments, **kwargs)
     name = arguments['name'][0]
     coreInfo = [info for info in allCoreInfo() if info.name == name][0]
-    yield '<h2>Index: <i>"%s"</i></h2>\n' % name
+    yield '<h2>Index: <em>"%s"</em></h2>\n' % name
     yield '<dl>\n'
     yield '<dt>Name</dt><dd>%s</dd>\n' % name
     yield '<dt>Number of documents</dt><dd>%s</dd>\n' % page.formatInt(coreInfo.numDocs())
+    yield '</dl>\n'
+    yield '''<p><a href="query?%s">Query</a></p>\n''' % escapeHtml(urlencode(dict(name=name))) 
+    yield '<dl>\n'
     yield '<dt>Fields</dt><dd>'
     yield '<ul>'
     for field in (yield observable.any.fieldnames(core=name)).hits:

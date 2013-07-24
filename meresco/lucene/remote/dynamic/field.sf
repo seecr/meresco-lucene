@@ -25,15 +25,16 @@
 
 import page
 
-def main(originalPath, **kwargs):
-    prefix, info, path = originalPath.partition('/info')
-    if path in ['/', '']:
-        yield http.redirect('%s/info/index' % prefix)
-        return
-    yield "HTTP/1.0 404 Not Found\r\nContent-Type: text/html; charset=utf-8\r\n\r\n"
-    yield page.header(originalPath=originalPath, **kwargs)
-    yield '<h1>Not Found</h1>'
-    yield '<p>The requested page "%s" does not exist. Please goto <a href="%s/info/index">Lucene Info page.</a></p>' % (escapeHtml(originalPath), prefix)   
-    yield page.footer(**kwargs)
+def main(arguments, **kwargs):
+    yield page.header(arguments=arguments, **kwargs)
+    name = arguments['name'][0]
+    fieldname = arguments['fieldname'][0]
+    limit = int(arguments.get('limit', ['50'])[0])
+    yield '<h2>Contents field: <i>"%s"</i></h2>' % escapeHtml(fieldname)
+    response = yield observable.any.prefixSearch(prefix='', core=name, fieldname=fieldname, limit=limit)
+    yield '<pre>'
+    yield '\n'.join(response.hits)
+    yield '</pre>'
+    yield page.footer(arguments=arguments, **kwargs)
 
-
+    

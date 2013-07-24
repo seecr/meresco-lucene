@@ -84,14 +84,14 @@ class Lucene(object):
         raise StopIteration(response)
         yield
 
-    def prefixSearch(self, fieldname, prefix, limit=None):
-        terms = self._index.termsForField(fieldname, prefix=prefix, limit=limit)
+    def prefixSearch(self, fieldname, prefix, **kwargs):
+        terms = self._index.termsForField(fieldname, prefix=prefix, **kwargs)
         hits = [term for count, term in sorted(terms, reverse=True)]
         response = LuceneResponse(total=len(terms), hits=hits)
         raise StopIteration(response)
         yield
 
-    def fieldnames(self):
+    def fieldnames(self, **kwargs):
         fieldnames = self._index.fieldnames()
         response = LuceneResponse(total=len(fieldnames), hits=fieldnames)
         raise StopIteration(response)
@@ -163,6 +163,7 @@ class Lucene(object):
         def __init__(inner, self):
             inner._lucene = self
             inner.name = self.coreName
+            inner.numDocs = self._index.numDocs
 
 def defaults(parameter, default):
     return default if parameter is None else parameter

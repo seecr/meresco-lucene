@@ -103,8 +103,7 @@ class Index(object):
         except AttributeError:
             pass
 
-    def termsForField(self, field, prefix=None, limit=None):
-        limit = 10 if limit is None else limit
+    def termsForField(self, field, prefix=None, limit=10, **kwargs):
         indexAndTaxonomy = self._getIndexAndTaxonomyAndIncRef()
         terms = []
         try:
@@ -141,6 +140,14 @@ class Index(object):
             return fieldnames
         finally:
             indexAndTaxonomy.decRef()
+
+    def numDocs(self):
+        indexAndTaxonomy = self._getIndexAndTaxonomyAndIncRef()
+        try:
+            return indexAndTaxonomy.searcher.getIndexReader().numDocs()
+        finally:
+            indexAndTaxonomy.decRef()
+
 
     def commit(self):
         if self._thread:

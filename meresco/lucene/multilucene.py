@@ -60,10 +60,11 @@ class MultiLucene(Observable):
                 )
         raise StopIteration(result)
 
-    def prefixSearch(self, core=None, **kwargs):
-        core = self._defaultCore if core is None else core
-        result = yield self.any[core].prefixSearch(**kwargs)
-        raise StopIteration(result)
+    def any_unknown(self, message, core=None, **kwargs):
+        if message in ['prefixSearch', 'fieldnames']:
+            core = self._defaultCore if core is None else core
+            result = yield self.any[core].unknown(message=message, **kwargs)
+            raise StopIteration(result)
 
     def _createJoinCollector(self, toField):
         multipleValuesPerDocument = False

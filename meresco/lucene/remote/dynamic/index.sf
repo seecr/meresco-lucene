@@ -23,20 +23,22 @@
 #
 ## end license ##
 
+import page
 
 def main(**kwargs):
-    yield '<html>'
-    yield '<head><title>Lucene info</title></head>'
-    yield '<body>\n'
-    yield '<h3>Info</h3>\n'
+    yield page.header(**kwargs)
+    yield '<h2>Info</h2>\n'
     yield '<dl>\n'
     yield '<dt>version</dt><dd>%s</dd>\n' % VERSION
     yield '</dl>\n'
+    yield '<h3>Indexes</h3>'
     yield '<ul>\n'
     for coreInfo in allCoreInfo():
-        response = yield observable.any.executeQuery(cqlAbstractSyntaxTree=parseCql('*'), stop=1, core=coreInfo.name)
-        yield '<li>%s %s</li>\n' % (coreInfo.name, response.total)
+        yield """<li>Index: <a href="core?%s">'%s'</a> (%s documents)</li>\n""" % (
+                escapeHtml(urlencode(dict(name=coreInfo.name))),
+                coreInfo.name, 
+                page.formatInt(coreInfo.numDocs()),
+            )
 
     yield '</ul>'
-    yield '</body>'
-    yield '</html>'
+    yield page.footer(**kwargs)

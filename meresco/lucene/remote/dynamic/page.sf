@@ -1,0 +1,73 @@
+## begin license ##
+#
+# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+#
+# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+#
+# This file is part of "Meresco Lucene"
+#
+# "Meresco Lucene" is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# "Meresco Lucene" is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with "Meresco Lucene"; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+## end license ##
+
+def header(originalPath, **kwargs):
+    prefix, info, path = originalPath.partition('/info')
+
+    yield """<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="author" content="Seecr" />
+    <title>Lucene Info</title>
+    <link rel="stylesheet" href="http://seecr.nl/static/css/seecr-banner.css"/>
+    <link rel="stylesheet" href="https://cdn.seecr.nl/css/seecr-view.css"/>
+    <link rel="stylesheet" href="%s/info/static/lucene-info.css"/>
+    <link rel="shortcut icon" href="http://seecr.nl/favicon.ico" />
+    <link rel="apple-touch-icon" href="http://seecr.nl/apple-touch-icon.png"/>
+</head>
+<body>""" % prefix
+
+    yield """
+   <!-- ~~~~~ SEECR BANNER ~~~~~ -->
+<div id="seecr-banner" class="vcard">
+    <div class="wrap">
+        <h2>By <span class="org">Seecr</span></h2>
+        <p class="note">Software Craftsmanship</p>
+        <p>
+            <a class="url" href="http://seecr.nl" rel="me" title="Visit the Seecr website">Seecr - Software Craftsmanship</a>
+            A service by <span class="fn">Seecr</span>, <a href="mailto:info@seecr.nl" class="email">info@seecr.nl</a><br/>
+            This was updated for version: %s</p>
+        </p>
+    </div>
+</div>
+   <!-- ~~~~~ / SEECR BANNER ~~~~~ -->
+    """ % VERSION
+    yield '<div id="main-content">\n'
+    yield '<h1><a href="%s/info/index">Meresco Lucene Info</a></h1>\n' % prefix
+
+def footer(**kwargs):
+    yield '</div></body></html>'
+
+def formatInt(integer):
+    prefix = integer
+    tails = []
+    while prefix > 1000:
+        prefix, tail = prefix // 1000, prefix % 1000
+        tails.insert(0, tail)
+    if tails:
+        return '%s.%s' % (prefix, '.'.join('%03d' % t for t in tails))
+    return '%s' % prefix
+

@@ -45,7 +45,7 @@ class LuceneRemoteService(Observable):
         Observable.__init__(self, **kwargs)
         self._dynamicHtml = DynamicHtml([dynamicPath],
                 reactor=reactor,
-                indexPage='index.sf',
+                notFoundPage='notFound',
                 additionalGlobals={
                     'VERSION': version,
                     'allCoreInfo': self._allCoreInfo,
@@ -78,8 +78,9 @@ class LuceneRemoteService(Observable):
         if Method == 'POST' and path.endswith('/__lucene_remote__'):
             yield self._handleQuery(Body)
         elif '/info' in path:
+            originalPath = path
             _, _, path = path.partition('/info')
-            yield self._internalTree.all.handleRequest(path=path, Method=Method, Body=Body, **kwargs)
+            yield self._internalTree.all.handleRequest(path=path or '/', originalPath=originalPath, Method=Method, Body=Body, **kwargs)
 
     def _handleQuery(self, Body):
         try:

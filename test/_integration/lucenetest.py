@@ -26,10 +26,7 @@
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import getRequest, postRequest
 from meresco.xml.namespaces import xpathFirst, xpath
-from meresco.lucene.synchronousremote import SynchronousRemote
-from cqlparser import parseString as parseCql
 from simplejson import loads
-from seecr.utils.generatorutils import returnValueFromGenerator
 from time import sleep
 
 class LuceneTest(IntegrationTestCase):
@@ -87,28 +84,6 @@ class LuceneTest(IntegrationTestCase):
 
         self.assertEquals(set(["value0", "value2", "value3", "value4", "value1"]), set(completions))
         self.assertEquals('value1', completions[-1])
-
-    def testRemoteService(self):
-        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        response = remote.executeQuery(parseCql('*'))
-        self.assertEquals(100, response.total)
-
-    def testRemoteServiceOnBadPath(self):
-        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/does/not/exist')
-        self.assertRaises(IOError, lambda: remote.executeQuery(parseCql('*')))
-
-    def testRemoteServiceWithBadCore(self):
-        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        self.assertRaises(IOError, lambda: remote.executeQuery(parseCql('*'), core='doesnotexist'))
-
-    def testRemoteInfo(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info/index', parse=False)
-        self.assertTrue('main' in body, body)
-        self.assertTrue('empty-core' in body, body)
-
-    def testRemoteInfoStatic(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info/static/lucene-remote.css', parse=False)
-        self.assertTrue('200' in header, header)
 
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None):
         arguments={'version': '1.2', 

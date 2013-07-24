@@ -46,6 +46,7 @@ cp -r test tmp/test
 removeDoNotDistribute tmp
 find tmp -name '*.py' -exec sed -r -e "
     s/\\\$Version:[^\\\$]*\\\$/\\\$Version: ${VERSION}\\\$/;
+    sX^usrSharePath.*=.*XusrSharePath = '${mydir}/tmp/usr/share/meresco-lucene'X;
     " -i '{}' \;
 
 runtests "$@"

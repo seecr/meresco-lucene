@@ -87,6 +87,44 @@ class LuceneRemoteTest(SeecrTestCase):
                     ]
                 }
             }, loads(m.kwargs['body']))
+    
+    def testRemoteExecuteQueryWithNoneValues(self):
+        http = CallTrace('http')
+        def httppost(*args, **kwargs):
+            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=["1", "2", "3", "4", "5"]).asJson())
+            yield
+        http.methods['httppost'] = httppost
+        remote = LuceneRemote(host='host', port=1234, path='/path')
+        observable = Observable()
+        observable.addObserver(remote)
+        remote._httppost = http.httppost
+
+        result = returnValueFromGenerator(observable.any.executeQuery(
+                cqlAbstractSyntaxTree=parseString('query AND  field=value'),
+                start=0,
+                stop=10,
+                facets=None,
+                filterQueries=None,
+                joinQueries=None,
+            )
+        )
+        self.assertEquals(5, result.total)
+        self.assertEquals(["1", "2", "3", "4", "5"], result.hits)
+
+        self.assertEquals(['httppost'], http.calledMethodNames())
+        m = http.calledMethods[0]
+        self.assertEquals('host', m.kwargs['host'])
+        self.assertEquals(1234, m.kwargs['port'])
+        self.assertEquals('/path/__lucene_remote__', m.kwargs['request'])
+        self.assertEquals('application/json', m.kwargs['headers']['Content-Type'])
+        self.assertDictEquals({
+                'message': 'executeQuery',
+                'kwargs':{
+                    'cqlQuery': 'query AND field=value',
+                    'start':0,
+                    'stop': 10,
+                }
+            }, loads(m.kwargs['body']))
 
     def testRemotePrefixSearch(self):
         http = CallTrace('http')
@@ -232,6 +270,5 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(2, response.total)
         self.assertEquals(['aap', 'noot'], response.hits)
         self.assertEquals(['fieldnames'], observer.calledMethodNames())
-        m = observer.calledMethods[0]
 
 

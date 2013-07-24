@@ -99,8 +99,9 @@ class LuceneRemoteService(Observable):
                 messageKwargs['joinQueries'] = [dict(joinQuery, query=parseString(joinQuery['query'])) for joinQuery in messageKwargs['joinQueries']]
             response = yield self.any.unknown(message=messageDict['message'], **messageKwargs)
         except Exception, e:
+            x = format_exc() # returns 'None' if e is a Java Error
             yield serverErrorPlainText
-            yield str(e)
+            yield x if x and x.strip() != 'None' else repr(e)
             return
         yield Ok
         yield ContentTypeHeader + 'application/json' + CRLF

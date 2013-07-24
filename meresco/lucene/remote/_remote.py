@@ -42,7 +42,7 @@ class LuceneRemote(Observable):
 
     def any_unknown(self, message, **kwargs):
         if message in self._ALLOWED_METHODS:
-            newKwargs = dict(_convert(k,v) for k,v in kwargs.items())
+            newKwargs = dict(_convert(k,v) for k,v in kwargs.items() if v is not None)
             result = yield self._send(message=message, **newKwargs)
             raise StopIteration(result)
 

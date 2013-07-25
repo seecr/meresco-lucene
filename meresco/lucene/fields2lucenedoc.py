@@ -24,13 +24,12 @@
 ## end license ##
 
 from meresco.core import Observable
-from org.apache.lucene.document import Document, TextField, StringField, Field, IntField
+from org.apache.lucene.document import Document
 from org.apache.lucene.facet.taxonomy import CategoryPath
 
 from time import time
 
-from meresco.lucene import SORTED_PREFIX, UNTOKENIZED_PREFIX
-from _lucene import IDFIELD
+from utils import createField, createTimestampField, IDFIELD, UNTOKENIZED_PREFIX
 
 class Fields2LuceneDoc(Observable):
     def __init__(self, transactionName, addTimestamp=False):
@@ -66,13 +65,11 @@ class Fields2LuceneDoc(Observable):
             for value in values:
                 if field == IDFIELD:
                     raise ValueError("Field '%s' is protected and created by Lucene(..)")
-                elif field.startswith(SORTED_PREFIX) or field.startswith(UNTOKENIZED_PREFIX):
-                    f = StringField(field, value, Field.Store.NO)
                 else:
-                    f = TextField(field, value, Field.Store.NO)
+                    f = createField(field, value)
                 doc.add(f)
         if self._addTimestamp:
-            doc.add(IntField('__timestamp__', self._time(), Field.Store.NO))
+            doc.add(createTimestampField(self._time()))
         return doc
 
     def _time(self):

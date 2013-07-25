@@ -23,20 +23,19 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, SortField, CachingWrapperFilter, QueryWrapperFilter, TotalHitCountCollector
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, CachingWrapperFilter, QueryWrapperFilter, TotalHitCountCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
-from org.apache.lucene.document import StringField, Field
 from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search.join import TermsCollector, TermsQuery
 
 from os.path import basename
-from java.lang import Integer
 
 from luceneresponse import LuceneResponse
 from index import Index
+from utils import IDFIELD, createIdField, sortField
 
 
 class Lucene(object):
@@ -50,7 +49,7 @@ class Lucene(object):
         self.coreName = name or basename(path)
 
     def addDocument(self, identifier, document, categories=None):
-        document.add(StringField(IDFIELD, identifier, Field.Store.YES))
+        document.add(createIdField(identifier))
         self._index.addDocument(term=Term(IDFIELD, identifier), document=document, categories=categories)
         return
         yield
@@ -172,8 +171,8 @@ def _topScoreCollector(start, stop, sortKeys):
         return TotalHitCountCollector()
     if sortKeys:
         sortFields = [
-            SortField(sortKey['sortBy'], SortField.Type.STRING, sortKey['sortDescending'])
-            for sortKey in sortKeys
+            sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending'])
+                for sortKey in sortKeys
         ]
         sort = Sort(sortFields)
     else:
@@ -183,6 +182,3 @@ def _topScoreCollector(start, stop, sortKeys):
     trackMaxScore = True
     docsScoredInOrder = False
     return TopFieldCollector.create(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)
-
-
-IDFIELD = '__id__'

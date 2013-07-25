@@ -55,7 +55,7 @@ def main(reactor, port, databasePath):
             (lucene,),
         )
     storageComponent = StorageComponent(directory=join(databasePath, 'storage'))
-    indexHelix = (Fields2LuceneDoc('record'),
+    indexHelix = (Fields2LuceneDoc('record', addTimestamp=True),
             (lucene,)
         )
 

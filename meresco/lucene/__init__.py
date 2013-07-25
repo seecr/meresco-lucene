@@ -43,9 +43,7 @@ VM = initVM()
 from meresco_lucene import initVM
 VMM = initVM()
 
-SORTED_PREFIX = "sorted."
-UNTOKENIZED_PREFIX = "untokenized."
-
+from utils import SORTED_PREFIX, UNTOKENIZED_PREFIX
 from _version import version
 from luceneresponse import LuceneResponse
 from _analyzer import createAnalyzer

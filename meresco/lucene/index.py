@@ -46,13 +46,13 @@ from indexandtaxonomy import IndexAndTaxonomy
 # Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html
 
 class Index(object):
-    def __init__(self, path):
-        # ioContext = IOContext()
-        #indexDirectory = CompoundFileDirectory(
-        #        SimpleFSDirectory(File(join(path, 'index'))),
-        #        "lucene", 
-        #        ioContext,
-        #        True)
+    def __init__(self, path, reactor, commitTimeout=None, commitCount=None):
+        self._reactor = reactor
+        self._maxCommitCount = commitCount or 1000
+        self._commitCount = 0
+        self._commitTimeout = commitTimeout or 1
+        self._commitTimerToken = None
+
         self._checker = DirectSpellChecker()
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
         self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
@@ -125,6 +125,20 @@ class Index(object):
         return indexAndTaxonomy.searcher.getIndexReader().numDocs()
 
     def commit(self):
+        self._commitCount += 1
+        if self._commitTimerToken is None:
+            self._commitTimerToken = self._reactor.addTimer(
+                    seconds=self._commitTimeout,
+                    callback=lambda: self._realCommit(removeTimer=False)
+                )
+        if self._commitCount >= self._maxCommitCount:
+            self._realCommit()
+            self._commitCount = 0
+
+    def _realCommit(self, removeTimer=True):
+        self._commitTimerToken, token = None, self._commitTimerToken
+        if removeTimer:
+            self._reactor.removeTimer(token=token)
         self._taxoWriter.commit()
         self._indexWriter.commit()
         self._indexAndTaxonomy.reopen()
@@ -137,6 +151,8 @@ class Index(object):
         return FacetsCollector.create(facetSearchParams, indexAndTaxonomy.searcher.getIndexReader(), indexAndTaxonomy.taxoReader)
 
     def finish(self):
+        if self._commitTimerToken is not None:
+            self._reactor.removeTimer(self._commitTimerToken)
         self._indexAndTaxonomy.close()
         self._taxoWriter.close()
         self._indexWriter.close()

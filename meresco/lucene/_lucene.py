@@ -42,8 +42,8 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, name=None):
-        self._index = Index(path)
+    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, name=None):
+        self._index = Index(path, reactor=reactor, commitCount=commitCount, commitTimeout=commitTimeout)
         if name is not None:
             self.observable_name = lambda: name
         self.coreName = name or basename(path)

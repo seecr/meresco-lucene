@@ -24,7 +24,7 @@
 #
 ## end license ##
 
-from seecr.test import SeecrTestCase
+from seecr.test import SeecrTestCase, CallTrace
 from os.path import join
 from time import sleep
 from meresco.lucene import Lucene, VM
@@ -43,9 +43,11 @@ class LuceneTest(SeecrTestCase):
     def setUp(self):
         super(LuceneTest, self).setUp()
         self._javaObjects = self._getJavaObjects()
-        self.lucene = Lucene(join(self.tempdir, 'lucene'))
+        self._reactor = CallTrace('reactor')
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor)
 
     def tearDown(self):
+        self._reactor.calledMethods.reset() # don't keep any references.
         self.lucene.finish()
         self.lucene = None
         gc.collect()
@@ -83,6 +85,37 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals(set(['id:0', 'id:2']), set(result.hits))
 
+    def testAddCommitAddsTimer(self):
+        self.lucene.finish()
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3)
+        token = object()
+        self._reactor.returnValues['addTimer'] = token
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
+        self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
+        self.assertEquals(42, self._reactor.calledMethods[0].kwargs['seconds'])
+        commit = self._reactor.calledMethods[0].kwargs['callback']
+        self._reactor.calledMethods.reset()
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(0, result.total)
+        commit()
+        self.assertEquals(['removeTimer'], self._reactor.calledMethodNames())
+        self.assertEquals(token, self._reactor.calledMethods[0].kwargs['token'])
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(1, result.total)
+
+    def testAddAndCommitCount3(self):
+        self.lucene.finish()
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3)
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(0, result.total)
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=Document()))
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(0, result.total)
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=Document()))
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(3, result.total)
+
     def testAddTwiceUpdatesDocument(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([
             ('field0', 'value0'),
@@ -100,17 +133,17 @@ class LuceneTest(SeecrTestCase):
     def testSorting(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([
                 ('field0', 'AA'),
-                ('field1', 'ZZ'), 
+                ('field1', 'ZZ'),
                 ('field2', 'AA'),
             ])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([
                 ('field0', 'BB'),
-                ('field1', 'AA'), 
+                ('field1', 'AA'),
                 ('field2', 'ZZ'),
             ])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([
                 ('field0', 'CC'),
-                ('field1', 'ZZ'), 
+                ('field1', 'ZZ'),
                 ('field2', 'ZZ'),
             ])))
         sleep(0.1)
@@ -229,7 +262,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(['value1', 'value0'], response.hits)
 
     def testJoin(self):
-        luceneB = Lucene(join(self.tempdir, 'luceneB'))
+        luceneB = Lucene(join(self.tempdir, 'luceneB'), reactor=self._reactor, commitTimeout=42, commitCount=1)
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('A.joinid', '1'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('A.joinid', '2'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
         returnValueFromGenerator(luceneB.addDocument(identifier="id:2", document=createDocument([('B.joinid', '1'), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))

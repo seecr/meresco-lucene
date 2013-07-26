@@ -49,9 +49,9 @@ dynamicPath = join(myPath, 'html', 'dynamic')
 staticPath = join(myPath, 'html', 'static')
 
 def main(reactor, port, databasePath):
-    lucene = Lucene(path=join(databasePath, 'lucene'), name='main')
+    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, commitCount=53, name='main')
     multiLuceneHelix = (MultiLucene(defaultCore='main'),
-            (Lucene(path=join(databasePath, 'lucene-empty'), name='empty-core'),),
+            (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, name='empty-core'),),
             (lucene,),
         )
     storageComponent = StorageComponent(directory=join(databasePath, 'storage'))

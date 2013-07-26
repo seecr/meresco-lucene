@@ -33,10 +33,10 @@ class LuceneTest(IntegrationTestCase):
 
     def testAddDelete(self):
         postRequest(self.httpPort, '/update', ADD_RECORD, parse=False)
-        sleep(0.1)
+        sleep(1.1)
         self.assertEquals(1, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
         postRequest(self.httpPort, '/update', DELETE_RECORD, parse=False)
-        sleep(0.1)
+        sleep(1.1)
         self.assertEquals(0, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
 
     def testQuery(self):

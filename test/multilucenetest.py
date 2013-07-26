@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from seecr.test import SeecrTestCase
+from seecr.test import SeecrTestCase, CallTrace
 from seecr.utils.generatorutils import returnValueFromGenerator
 
 from meresco.core import Observable
@@ -42,8 +42,8 @@ from time import sleep
 class MultiLuceneTest(SeecrTestCase):
     def setUp(self):
         SeecrTestCase.setUp(self)
-        self.luceneA = Lucene(join(self.tempdir, 'a'), name='A')
-        self.luceneB = Lucene(join(self.tempdir, 'b'), name='B')
+        self.luceneA = Lucene(join(self.tempdir, 'a'), name='A', reactor=CallTrace(), commitCount=1)
+        self.luceneB = Lucene(join(self.tempdir, 'b'), name='B', reactor=CallTrace(), commitCount=1)
         self.dna = be((Observable(),
             (MultiLucene(defaultCore='A'),
                 (self.luceneA,),

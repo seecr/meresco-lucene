@@ -26,7 +26,7 @@
 
 from os.path import dirname, abspath, join, basename
 from lxml.etree import XML, tostring
-from os import listdir
+from os import listdir, getpid
 from sys import argv, exit
 from seecr.test.utils import postRequest
 from optparse import OptionParser
@@ -56,9 +56,12 @@ def _uploadUpdateRequest(filename, uploadPath, uploadPort):
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-p", "--port", type=int)
+    parser.add_option("", "--pid", action="store_true", default=False)
     options, arguments = parser.parse_args()
     if options.port is None:
         print """Usage: %s --port <portnumber>
         This will upload all requests in this directory to the given server on localhost.""" % argv[0]
         exit(1)
+    if options.pid:
+        print '>> pid :', getpid()
     main(options.port)

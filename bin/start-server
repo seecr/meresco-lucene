@@ -35,6 +35,7 @@ for path in glob(projectDir+'/deps.d/*'):                         #DO_NOT_DISTRI
 systemPath.insert(0, projectDir)                                  #DO_NOT_DISTRIBUTE
 
 from meresco.components import ParseArguments
+from os import getpid
 
 if __name__ == '__main__':
     parser = ParseArguments()
@@ -42,8 +43,11 @@ if __name__ == '__main__':
         mandatory=True,
         type='int',
         help="Port at which webpages are served.")
+    parser.addOption('', '--pid', action="store_true", default=False)
     parser.addOption('', '--stateDir', mandatory=True, type='str', help='Directory for state')
     options, arguments = parser.parse()
 
     from meresco.lucene.server import startServer
+    if options.pid:
+        print '>> pid :', getpid()
     startServer(**vars(options))

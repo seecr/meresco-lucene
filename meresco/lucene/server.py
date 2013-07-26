@@ -165,7 +165,7 @@ def main(reactor, port, databasePath):
 
 
 
-def startServer(port, stateDir):
+def startServer(port, stateDir, **kwargs):
     setSignalHandlers()
     print 'Firing up Meresco Lucene Server.'
     reactor = Reactor()

@@ -75,23 +75,20 @@ class Index(object):
         self.commit()
 
     def search(self, responseBuilder, *args):
-        indexAndTaxonomy = self._indexAndTaxonomy
-        indexAndTaxonomy.searcher.search(*args)
+        self._indexAndTaxonomy.searcher.search(*args)
         return responseBuilder()
 
     def suggest(self, query, count, field):
         suggestions = {}
-        indexAndTaxonomy = self._indexAndTaxonomy
         for token, startOffset, endOffset in self._analyzeToken(query):
-            suggestWords = self._checker.suggestSimilar(Term(field, token), count, indexAndTaxonomy.searcher.getIndexReader())
+            suggestWords = self._checker.suggestSimilar(Term(field, token), count, self._indexAndTaxonomy.searcher.getIndexReader())
             if suggestWords:
                 suggestions[token] = (startOffset, endOffset, [suggestWord.string for suggestWord in suggestWords])
         return suggestions
 
     def termsForField(self, field, prefix=None, limit=10, **kwargs):
-        indexAndTaxonomy = self._indexAndTaxonomy
         terms = []
-        fields = MultiFields.getFields(indexAndTaxonomy.searcher.getIndexReader())
+        fields = MultiFields.getFields(self._indexAndTaxonomy.searcher.getIndexReader())
         if fields is None:
             return terms
         iterator = fields.terms(field).iterator(None)
@@ -121,8 +118,7 @@ class Index(object):
         return fieldnames
 
     def numDocs(self):
-        indexAndTaxonomy = self._indexAndTaxonomy
-        return indexAndTaxonomy.searcher.getIndexReader().numDocs()
+        return self._indexAndTaxonomy.searcher.getIndexReader().numDocs()
 
     def commit(self):
         self._commitCount += 1
@@ -147,8 +143,7 @@ class Index(object):
         return self._indexAndTaxonomy.searcher.doc(docId)
 
     def createFacetCollector(self, facetSearchParams):
-        indexAndTaxonomy = self._indexAndTaxonomy
-        return FacetsCollector.create(facetSearchParams, indexAndTaxonomy.searcher.getIndexReader(), indexAndTaxonomy.taxoReader)
+        return FacetsCollector.create(facetSearchParams, self._indexAndTaxonomy.searcher.getIndexReader(), self._indexAndTaxonomy.taxoReader)
 
     def finish(self):
         if self._commitTimerToken is not None:

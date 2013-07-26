@@ -30,41 +30,23 @@ from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyReader
 
 class IndexAndTaxonomy(object):
 
-    def __init__(self, indexWriter=None, taxoDirectory=None, copied=None):
-        if copied is not None:
-            self.searcher = copied['searcher']
-            self.taxoReader = copied['taxoReader']
-        else:
-            self.searcher = IndexSearcher(DirectoryReader.open(indexWriter, True))
-            self.taxoReader = DirectoryTaxonomyReader(taxoDirectory)
+    def __init__(self, indexWriter=None, taxoDirectory=None):
+        self.searcher = IndexSearcher(DirectoryReader.open(indexWriter, True))
+        self.taxoReader = DirectoryTaxonomyReader(taxoDirectory)
 
-    def tryIncRef(self):
-        indexReader = self.searcher.getIndexReader()
-        if indexReader.tryIncRef():
-            if self.taxoReader.tryIncRef():
-                return True
-            else:
-                indexReader.decRef()
-        return False
-
-    def decRef(self):
-        self.taxoReader.decRef()
-        self.searcher.getIndexReader().decRef()
-
-    def refreshIfNeeded(currentIndexAndTaxonomy):
-        currentReader = currentIndexAndTaxonomy.searcher.getIndexReader()
+    def reopen(self):
+        currentReader = self.searcher.getIndexReader()
         reader = DirectoryReader.openIfChanged(currentReader)
         if reader is None:
-            return currentIndexAndTaxonomy
-        searcher = IndexSearcher(reader)
-        taxoReader = DirectoryTaxonomyReader.openIfChanged(currentIndexAndTaxonomy.taxoReader)
+            return
+        currentReader.close()
+        self.searcher = IndexSearcher(reader)
+        taxoReader = DirectoryTaxonomyReader.openIfChanged(self.taxoReader)
         if taxoReader is None:
-            taxoReader = currentIndexAndTaxonomy.taxoReader
-            taxoReader.incRef()
-        result = IndexAndTaxonomy(copied=dict(searcher=searcher, taxoReader=taxoReader))
-        return result
+            return
+        self.taxoReader.close()
+        self.taxoReader = taxoReader
 
-    def __del__(self):
-        self.decRef()
-        self.searcher = None
-        self.taxoReader = None
+    def close(self):
+        self.taxoReader.close()
+        self.searcher.getIndexReader().close()

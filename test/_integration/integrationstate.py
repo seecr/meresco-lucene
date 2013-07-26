@@ -23,16 +23,14 @@
 #
 ## end license ##
 
-from os.path import join, abspath, basename, dirname
-from os import system, listdir
+from os.path import join, abspath, dirname
+from os import system
 from traceback import print_exc
 from time import time
-from lxml.etree import parse, tostring
-from StringIO import StringIO
 
 from seecr.test.integrationtestcase import IntegrationState as SeecrIntegrationState
 from seecr.test.portnumbergenerator import PortNumberGenerator
-from seecr.test.utils import postRequest, sleepWheel
+from seecr.test.utils import sleepWheel
 
 
 mydir = dirname(abspath(__file__))
@@ -62,7 +60,7 @@ class IntegrationState(SeecrIntegrationState):
         start = time()
         print "Creating database in", self.integrationTempdir
         try:
-            uploadUpdateRequests(self.testdataDir, '/update', self.httpPort)
+            self._runExecutable(join(self.testdataDir, 'upload.py'), processName='IntegrationUpload', cwd=self.testdataDir, port=self.httpPort, redirect=False)
             sleepWheel(5)
             print "Finished creating database in %s seconds" % (time() - start)
         except Exception:
@@ -72,21 +70,3 @@ class IntegrationState(SeecrIntegrationState):
 
     def startServer(self):
         self._startServer('meresco-lucene', self.binPath('start-server'), 'http://localhost:%s/' % self.httpPort, port=self.httpPort, stateDir=join(self.integrationTempdir, 'state'))
-
-#uploadHellpers
-def uploadUpdateRequests(datadir, uploadPath, uploadPort):
-    requests = (join(datadir, r) for r in sorted(listdir(datadir)) if r.endswith('.updateRequest'))
-    for filename in requests:
-        _uploadUpdateRequest(filename, uploadPath, uploadPort)
-
-def _uploadUpdateRequest(filename, uploadPath, uploadPort):
-    print 'http://localhost:%s%s' % (uploadPort, uploadPath), '<-', basename(filename)[:-len('.updateRequest')]
-    updateRequest = open(filename).read()
-    parse(StringIO(updateRequest))
-    header, body = postRequest(uploadPort, uploadPath, updateRequest)
-    if '200 Ok' not in header:
-        print 'No 200 Ok response, but:\n', header
-        exit(123)
-    if "srw:diagnostics" in tostring(body):
-        print tostring(body)
-        exit(1234)

@@ -43,7 +43,7 @@ from string import ascii_letters, digits
 randomWord = lambda length: ''.join(choice(ascii_letters + digits) for i in xrange(length))
 randomSentence = lambda words, maxlength: ' '.join(randomWord(randint(2,maxlength)) for w in xrange(words))
 
-for recordNumber in xrange(3, 101):
+def createRecord(recordNumber):
     identifier = 'record:%s' % recordNumber
     fields = '\n'.join([
         "<field1>%s</field1>" % randomWord(10),
@@ -53,7 +53,15 @@ for recordNumber in xrange(3, 101):
         "<intfield3>%s</intfield3>" % randint(5000, 5010),
         "<field3>%s</field3>" % randomSentence(10, 12),
         ])
-    filename = '%05d_record:%s.updateRequest' % (recordNumber, recordNumber)
-    with open(filename, 'w') as f:
-        print filename
-        f.write(TEMPLATE % locals())
+    return TEMPLATE % locals()
+
+def main():
+    for recordNumber in xrange(3, 101):
+        data = createRecord(recordNumber)
+        filename = '%05d_record:%s.updateRequest' % (recordNumber, recordNumber)
+        with open(filename, 'w') as f:
+            print filename
+            f.write(data)
+
+if __name__ == '__main__':
+    main()

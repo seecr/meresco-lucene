@@ -30,20 +30,34 @@ from os import listdir, getpid
 from sys import argv, exit
 from seecr.test.utils import postRequest
 from optparse import OptionParser
+from create import createRecord
+from time import time
 
 mypath = dirname(abspath(__file__))
 
-def main(port):
-    uploadUpdateRequests(mypath, '/update', port)
+def main(port, random, start, **kwargs):
+    t0 = time()
+    try:
+        if random <= 0:
+            uploadUpdateRequests(mypath, '/update', port)
+        else:
+            if start <= 0:
+                raise ValueError("Expected start > 0")
+            for recordNumber in xrange(start, start + random):
+                updateRequest = createRecord(recordNumber)
+                _uploadUpdateRequest(updateRequest, '/update', port)
+    finally:
+        t1 = time()
+        print 'Took %s seconds' % (t1 - t0)
 
 def uploadUpdateRequests(datadir, uploadPath, uploadPort):
     requests = (join(datadir, r) for r in sorted(listdir(datadir)) if r.endswith('.updateRequest'))
     for filename in requests:
-        _uploadUpdateRequest(filename, uploadPath, uploadPort)
+        print 'http://localhost:%s%s' % (uploadPort, uploadPath), '<-', basename(filename)[:-len('.updateRequest')]
+        updateRequest = open(filename).read()
+        _uploadUpdateRequest(updateRequest, uploadPath, uploadPort)
 
-def _uploadUpdateRequest(filename, uploadPath, uploadPort):
-    print 'http://localhost:%s%s' % (uploadPort, uploadPath), '<-', basename(filename)[:-len('.updateRequest')]
-    updateRequest = open(filename).read()
+def _uploadUpdateRequest(updateRequest, uploadPath, uploadPort):
     XML(updateRequest)
     header, body = postRequest(uploadPort, uploadPath, updateRequest)
     if '200 Ok' not in header:
@@ -56,12 +70,16 @@ def _uploadUpdateRequest(filename, uploadPath, uploadPort):
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-p", "--port", type=int)
+    parser.add_option('-n', '--random', type=int, default=0, help="Number of random created records to upload.")
+    parser.add_option('-s', '--start', type=int, default=1, help="Startrecord number.")
     parser.add_option("", "--pid", action="store_true", default=False)
     options, arguments = parser.parse_args()
     if options.port is None:
-        print """Usage: %s --port <portnumber>
-        This will upload all requests in this directory to the given server on localhost.""" % argv[0]
+        print """Usage: %s --port <portnumber> [--random <number> [--start <number>]]
+        This will upload all requests in this directory to the given server on localhost.
+        If used with random will create <number> new random records starting with start number (default 1)
+        """ % argv[0]
         exit(1)
     if options.pid:
         print '>> pid :', getpid()
-    main(options.port)
+    main(**vars(options))

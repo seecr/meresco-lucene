@@ -85,11 +85,9 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals(set(['id:0', 'id:2']), set(result.hits))
 
-    def testAddCommitAddsTimer(self):
+    def testAddCommitAfterTimeout(self):
         self.lucene.finish()
         self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3)
-        token = object()
-        self._reactor.returnValues['addTimer'] = token
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
         self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
         self.assertEquals(42, self._reactor.calledMethods[0].kwargs['seconds'])
@@ -98,23 +96,30 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(0, result.total)
         commit()
-        self.assertEquals(['removeTimer'], self._reactor.calledMethodNames())
-        self.assertEquals(token, self._reactor.calledMethods[0].kwargs['token'])
+        self.assertEquals([], self._reactor.calledMethodNames())
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(1, result.total)
 
     def testAddAndCommitCount3(self):
         self.lucene.finish()
         self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3)
+        token = object()
+        self._reactor.returnValues['addTimer'] = token
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(0, result.total)
+        self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
+        self.assertEquals(42, self._reactor.calledMethods[0].kwargs['seconds'])
+
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=Document()))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(0, result.total)
+        self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=Document()))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(3, result.total)
+        self.assertEquals(['addTimer', 'removeTimer'], self._reactor.calledMethodNames())
+        self.assertEquals(token, self._reactor.calledMethods[1].kwargs['token'])
 
     def testAddTwiceUpdatesDocument(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([

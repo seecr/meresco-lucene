@@ -30,6 +30,7 @@ from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
 from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search.join import TermsCollector, TermsQuery
+from time import time
 
 from os.path import basename
 
@@ -60,6 +61,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, collectors=None, filters=None, suggestionRequest=None, **kwargs):
+        t0 = time()
         collectors = defaults(collectors, {})
         collectors['query'] = _topScoreCollector(start=start, stop=stop, sortKeys=sortKeys)
         if facets:
@@ -80,13 +82,15 @@ class Lucene(object):
             )
         if suggestionRequest:
             response.suggestions = self._index.suggest(**suggestionRequest)
+        response.queryTime = time() - t0
         raise StopIteration(response)
         yield
 
     def prefixSearch(self, fieldname, prefix, **kwargs):
+        t0 = time()
         terms = self._index.termsForField(fieldname, prefix=prefix, **kwargs)
         hits = [term for count, term in sorted(terms, reverse=True)]
-        response = LuceneResponse(total=len(terms), hits=hits)
+        response = LuceneResponse(total=len(terms), hits=hits, queryTime=time() - t0)
         raise StopIteration(response)
         yield
 

@@ -38,8 +38,14 @@ if not isfile(sofile) or stat(sofile).st_mtime < stat(javafile).st_mtime:       
 sysPath.insert(0, libDir)                                                        #DO_NOT_DISTRIBUTE
 
 
+from os import getenv
+from warnings import warn
+maxheap = getenv('MERESCO_LUCENE_MAXHEAP')
+if not maxheap:
+    maxheap = '4g'
+    warn("Using '4g' as maxheap for lucene.initVM(). To override use MERESCO_LUCENE_MAXHEAP environment variable.")
 from lucene import initVM
-VM = initVM()
+VM = initVM(maxheap=maxheap)
 from meresco_lucene import initVM
 VMM = initVM()
 

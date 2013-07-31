@@ -266,7 +266,7 @@ class LuceneTest(SeecrTestCase):
         sleep(0.1)
         response = returnValueFromGenerator(self.lucene.prefixSearch(fieldname='field1', prefix='valu'))
         self.assertEquals(['value1', 'value0'], response.hits)
-        self.assertTrue(response.queryTime > 0.0001, response.asJson())
+        self.assertTrue(response.queryTime > 0, response.asJson())
 
     def testJoin(self):
         luceneB = Lucene(join(self.tempdir, 'luceneB'), reactor=self._reactor, commitTimeout=42, commitCount=1)

@@ -82,7 +82,7 @@ class Lucene(object):
             )
         if suggestionRequest:
             response.suggestions = self._index.suggest(**suggestionRequest)
-        response.queryTime = time() - t0
+        response.queryTime = millis(time() - t0)
         raise StopIteration(response)
         yield
 
@@ -90,7 +90,7 @@ class Lucene(object):
         t0 = time()
         terms = self._index.termsForField(fieldname, prefix=prefix, **kwargs)
         hits = [term for count, term in sorted(terms, reverse=True)]
-        response = LuceneResponse(total=len(terms), hits=hits, queryTime=time() - t0)
+        response = LuceneResponse(total=len(terms), hits=hits, queryTime=millis(time() - t0))
         raise StopIteration(response)
         yield
 
@@ -169,6 +169,8 @@ class Lucene(object):
 
 def defaults(parameter, default):
     return default if parameter is None else parameter
+
+millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 millisecs
 
 def _topScoreCollector(start, stop, sortKeys):
     if stop <= start:

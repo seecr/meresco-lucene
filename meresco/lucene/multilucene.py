@@ -79,7 +79,7 @@ class MultiLucene(Observable):
     def coreInfo(self):
         yield self.all.coreInfo()
 
-    def _joinQueryCreate(self, q):
+    def _joinFilterCreate(self, q):
         return self.call[q['core']].createJoinFilter(q['luceneQuery'], fromField=q['fromField'], toField=q['toField'])
 
     def _joinQueryCompare(self, q1, q2):

@@ -31,7 +31,7 @@ from meresco.lucene import Lucene, VM
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from cqlparser import parseString as parseCql
-from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery
+from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
 from org.apache.lucene.document import Document, TextField, Field
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.taxonomy import CategoryPath
@@ -321,6 +321,16 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(set([IDFIELD, 'field0', 'field1']), set(response.hits))
         self.assertEquals(3, response.total)
 
+    def testFilterCaching(self):
+        for i in range(10):
+            returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([('field%s' % i, 'value0')])))
+        sleep(0.1)
+        query = BooleanQuery()
+        [query.add(TermQuery(Term("field%s" % i, "value0")), BooleanClause.Occur.SHOULD) for i in range(100)]
+        response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
+        self.assertTrue(response.queryTime > 20, response.queryTime)
+        response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
+        self.assertTrue(response.queryTime < 2, response.queryTime)
 
 def createDocument(textfields):
     document = Document()

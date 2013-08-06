@@ -47,6 +47,7 @@ from lucenetest import LuceneTest
 from multilucenetest import MultiLuceneTest
 from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
+from filtercachetest import FilterCacheTest
 
 if __name__ == '__main__':
     unittest.main()

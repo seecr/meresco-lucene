@@ -32,7 +32,7 @@ from weightless.core import be, compose
 from meresco.lucene import Lucene
 from meresco.lucene.multilucene import MultiLucene
 from os.path import join
-from org.apache.lucene.search import TermQuery, MatchAllDocsQuery
+from org.apache.lucene.search import TermQuery, MatchAllDocsQuery, BooleanQuery, BooleanClause
 from org.apache.lucene.index import Term
 
 from lucenetest import createDocument, createCategories
@@ -88,6 +88,7 @@ class MultiLuceneTest(SeecrTestCase):
                 }]
             ))
         self.assertEquals(['id:0', 'id:1'], result.hits)
+        self.assertTrue(result.queryTime > 0, result.asJson())
 
     def testMultipleJoinQueries(self):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
@@ -106,6 +107,7 @@ class MultiLuceneTest(SeecrTestCase):
                 }]
             ))
         self.assertEquals(['id:1'], result.hits)
+        self.assertTrue(result.queryTime > 0, result.asJson())
 
     def testJoinFacet(self):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
@@ -136,14 +138,33 @@ class MultiLuceneTest(SeecrTestCase):
                 ],
                 'fieldname': u'field3'
             }], result.drilldownData)
-        # joinCollector, joinFilter = luceneB.joinSearch(TermQuery(Term("field2", "value1")), fromField='B.joinid', toField='A.joinid')
-        # response = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field1', 'value0')), facets=[dict(maxTerms=10, fieldname='field1')], collectors={'joinfacet': joinCollector}, filters=[joinFilter]))
-        # luceneB.joinFacet(termsCollector=joinCollector, fromField='B.joinid', facets=[dict(maxTerms=10, fieldname='field2')], response=response)
-
-        # self.assertEquals(1, response.total)
-        # self.assertEquals(['id:0'], response.hits)
-        # self.assertEquals([{'terms': [{'count': 1, 'term': u'first item0'}], 'fieldname': u'field1'}, {'terms': [{'count': 1, 'term': u'first item2'}], 'fieldname': u'field2'}], response.drilldownData)
 
     def testCoreInfo(self):
         infos = list(compose(self.dna.all.coreInfo()))
-        self.assertEquals(2, len(infos))            
+        self.assertEquals(2, len(infos))
+
+    def testJoinQueryIsCachedAsFilter(self):
+        query = BooleanQuery()
+        [query.add(TermQuery(Term("field%s" % i, "value0")), BooleanClause.Occur.SHOULD) for i in range(1000)]
+        result = returnValueFromGenerator(self.dna.any.executeQuery(
+                luceneQuery=TermQuery(Term("field1", "value0")),
+                core='A',
+                joinQueries=[{
+                    'core': 'B',
+                    'fromField': 'B.joinid',
+                    'toField': 'A.joinid',
+                    'luceneQuery': query,
+                }]
+            ))
+        self.assertTrue(result.queryTime > 20, result.asJson())
+        result = returnValueFromGenerator(self.dna.any.executeQuery(
+                luceneQuery=TermQuery(Term("field1", "value0")),
+                core='A',
+                joinQueries=[{
+                    'core': 'B',
+                    'fromField': 'B.joinid',
+                    'toField': 'A.joinid',
+                    'luceneQuery': query,
+                }]
+            ))
+        self.assertTrue(result.queryTime < 2, result.asJson())

@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, CachingWrapperFilter, QueryWrapperFilter, TotalHitCountCollector
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
@@ -36,6 +36,7 @@ from os.path import basename
 
 from luceneresponse import LuceneResponse
 from index import Index
+from filtercache import FilterCache
 from utils import IDFIELD, createIdField, sortField
 
 
@@ -48,6 +49,10 @@ class Lucene(object):
         if name is not None:
             self.observable_name = lambda: name
         self.coreName = name or basename(path)
+        self._filterCache = FilterCache(
+                compareFunction=lambda q1, q2: q1.equals(q2),
+                createFunction=lambda q: QueryWrapperFilter(q)
+            )
 
     def addDocument(self, identifier, document, categories=None):
         document.add(createIdField(identifier))
@@ -69,7 +74,8 @@ class Lucene(object):
 
         filters = defaults(filters, [])
         filterQueries = defaults(filterQueries, [])
-        filters = [CachingWrapperFilter(QueryWrapperFilter(fq)) for fq in filterQueries] + filters
+        for fq in filterQueries:
+            filters.append(self._filterCache.getFilter(query=fq))
         chainedFilter = None
         if filters:
             chainedFilter = ChainedFilter(filters, ChainedFilter.AND)
@@ -99,7 +105,6 @@ class Lucene(object):
         response = LuceneResponse(total=len(fieldnames), hits=fieldnames)
         raise StopIteration(response)
         yield
-
 
     def finish(self):
         self._index.finish()

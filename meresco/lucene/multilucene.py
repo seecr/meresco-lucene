@@ -48,7 +48,7 @@ class MultiLucene(Observable):
         collectors = None
         if joinFacets:
             collectors = {}
-            for toField in set([joinFacet.toField for joinFacet in joinFacets]):
+            for toField in set([joinFacet['toField'] for joinFacet in joinFacets]):
                 collectors['joinFacet.field.%s' % toField] = self._createJoinCollector(toField)
         response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, filters=filters, collectors=collectors, **kwargs)
         if joinFacets:
@@ -79,15 +79,21 @@ class MultiLucene(Observable):
     def coreInfo(self):
         yield self.all.coreInfo()
 
-    def _joinFilterCreate(self, q):
-        return self.call[q.core].createJoinFilter(q.luceneQuery, fromField=q.fromField, toField=q.toField)
+    def _joinQueryCreate(self, q):
+        return self.call[q['core']].createJoinFilter(q['luceneQuery'], fromField=q['fromField'], toField=q['toField'])
+
+    def _joinQueryCompare(self, q1, q2):
+        return q1['core'] == q2['core'] and \
+            q1['fromField'] == q2['fromField'] and \
+            q1['toField'] == q2['toField'] and \
+            q1['luceneQuery'].equals(q2['luceneQuery'])
 
     @staticmethod
     def groupJoinFacets(separateJoinFacets):
         groupedJoinFacets = groupby(
                 separateJoinFacets,
-                lambda jf:dict((key, getattr(jf, key)) for key in ['core', 'fromField', 'toField']
+                lambda jf:dict((key, jf[key]) for key in ['core', 'fromField', 'toField']
             ))
-        return [dict(joinFacetPart, facets=[jf.facet for jf in joinFacets]) \
+        return [dict(joinFacetPart, facets=[jf['facet'] for jf in joinFacets]) \
             for joinFacetPart, joinFacets in groupedJoinFacets]
 

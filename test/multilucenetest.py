@@ -29,7 +29,7 @@ from seecr.utils.generatorutils import returnValueFromGenerator
 from meresco.core import Observable
 from weightless.core import be, compose
 
-from meresco.lucene import Lucene, JoinQuery, JoinFacet
+from meresco.lucene import Lucene
 from meresco.lucene.multilucene import MultiLucene
 from os.path import join
 from org.apache.lucene.search import TermQuery, MatchAllDocsQuery, BooleanQuery, BooleanClause
@@ -80,9 +80,12 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
                 luceneQuery=TermQuery(Term("field1", "value0")),
                 core='A',
-                joinQueries=[
-                    JoinQuery(core='B', fromField='B.joinid', toField='A.joinid', luceneQuery=TermQuery(Term('field2', 'value1'))),
-                ]
+                joinQueries=[{
+                    'core': 'B',
+                    'fromField': 'B.joinid',
+                    'toField': 'A.joinid',
+                    'luceneQuery': TermQuery(Term('field2', 'value1')),
+                }]
             ))
         self.assertEquals(['id:0', 'id:1'], result.hits)
         self.assertTrue(result.queryTime > 0, result.asJson())
@@ -91,10 +94,17 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
                 luceneQuery=TermQuery(Term("field1", "value0")),
                 core='A',
-                joinQueries=[
-                    JoinQuery(core='B', fromField='B.joinid', toField='A.joinid', luceneQuery=TermQuery(Term('field2', 'value1'))),
-                    JoinQuery(core='B', fromField='B.joinid', toField='A.joinid', luceneQuery=TermQuery(Term('field3', 'value3')))
-                ]
+                joinQueries=[{
+                    'core': 'B',
+                    'fromField': 'B.joinid',
+                    'toField': 'A.joinid',
+                    'luceneQuery': TermQuery(Term('field2', 'value1')),
+                },{
+                    'core': 'B',
+                    'fromField': 'B.joinid',
+                    'toField': 'A.joinid',
+                    'luceneQuery': TermQuery(Term('field3', 'value3')),
+                }]
             ))
         self.assertEquals(['id:1'], result.hits)
         self.assertTrue(result.queryTime > 0, result.asJson())
@@ -103,10 +113,17 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
                 luceneQuery=TermQuery(Term("field1", "value0")),
                 core='A',
-                joinFacets=[
-                    JoinFacet(core='B', fromField='B.joinid', toField='A.joinid', facet=dict(fieldname='field2', maxTerms=10)),
-                    JoinFacet(core='B', fromField='B.joinid', toField='A.joinid', facet=dict(fieldname='field3', maxTerms=10)),
-                ]
+                joinFacets=[{
+                    'core': 'B',
+                    'fromField': 'B.joinid',
+                    'toField': 'A.joinid',
+                    'facet': dict(fieldname='field2', maxTerms=10)
+                }, {
+                    'core': 'B',
+                    'fromField': 'B.joinid',
+                    'toField': 'A.joinid',
+                    'facet': dict(fieldname='field3', maxTerms=10)
+                }]
             ))
         self.assertEquals([{
                 'terms': [
@@ -132,16 +149,22 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
                 luceneQuery=TermQuery(Term("field1", "value0")),
                 core='A',
-                joinQueries=[
-                    JoinQuery(core='B', fromField='B.joinid', toField='A.joinid', luceneQuery=query)
-                ]
+                joinQueries=[{
+                    'core': 'B',
+                    'fromField': 'B.joinid',
+                    'toField': 'A.joinid',
+                    'luceneQuery': query,
+                }]
             ))
         self.assertTrue(result.queryTime > 20, result.asJson())
         result = returnValueFromGenerator(self.dna.any.executeQuery(
                 luceneQuery=TermQuery(Term("field1", "value0")),
                 core='A',
-                joinQueries=[
-                    JoinQuery(core='B', fromField='B.joinid', toField='A.joinid', luceneQuery=query)
-                ]
+                joinQueries=[{
+                    'core': 'B',
+                    'fromField': 'B.joinid',
+                    'toField': 'A.joinid',
+                    'luceneQuery': query,
+                }]
             ))
         self.assertTrue(result.queryTime < 2, result.asJson())

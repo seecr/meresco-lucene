@@ -41,9 +41,8 @@ class MultiLucene(Observable):
     def executeQuery(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, **kwargs):
         t0 = time()
         core = self._defaultCore if core is None else core
-        filters = None
+        filters = []
         if joinQueries is not None:
-            filters = []
             for joinQuery in joinQueries:
                 filters.append(self._filterCache.getFilter(query=joinQuery))
         collectors = None

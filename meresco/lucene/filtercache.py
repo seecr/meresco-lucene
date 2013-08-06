@@ -26,18 +26,18 @@
 from org.apache.lucene.search import CachingWrapperFilter
 
 class FilterCache(object):
-    def __init__(self, compareFunction, createFunction, size=50):
+    def __init__(self, compareQueryFunction, createFilterFunction, size=50):
         self._filters = []
-        self._compareFunction = compareFunction
-        self._createFunction = createFunction
+        self._compareQueryFunction = compareQueryFunction
+        self._createFilterFunction = createFilterFunction
         self._size = size
 
     def getFilter(self, query):
         for i, (q, f) in enumerate(self._filters):
-            if self._compareFunction(query, q):
+            if self._compareQueryFunction(query, q):
                 self._filters.append(self._filters.pop(i))
                 return f
-        f = CachingWrapperFilter(self._createFunction(query))
+        f = CachingWrapperFilter(self._createFilterFunction(query))
         self._filters.append((query, f))
         if len(self._filters) > self._size:
             del self._filters[0]

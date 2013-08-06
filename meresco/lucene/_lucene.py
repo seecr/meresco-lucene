@@ -50,8 +50,8 @@ class Lucene(object):
             self.observable_name = lambda: name
         self.coreName = name or basename(path)
         self._filterCache = FilterCache(
-                compareFunction=lambda q1, q2: q1.equals(q2),
-                createFunction=lambda q: QueryWrapperFilter(q)
+                compareQueryFunction=lambda q1, q2: q1.equals(q2),
+                createFilterFunction=lambda q: QueryWrapperFilter(q)
             )
 
     def addDocument(self, identifier, document, categories=None):

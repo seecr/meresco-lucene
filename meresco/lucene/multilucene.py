@@ -36,7 +36,7 @@ class MultiLucene(Observable):
     def __init__(self, defaultCore):
         Observable.__init__(self)
         self._defaultCore = defaultCore
-        self._filterCache = FilterCache(compareFunction=self._joinQueryCompare, createFunction=self._joinQueryCreate)
+        self._filterCache = FilterCache(compareQueryFunction=lambda q1, q2: q1 == q2, createFilterFunction=self._joinFilterCreate)
 
     def executeQuery(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, **kwargs):
         t0 = time()

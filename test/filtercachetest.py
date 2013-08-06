@@ -32,7 +32,7 @@ from org.apache.lucene.index import Term
 class FilterCacheTest(SeecrTestCase):
 
     def testGetFilter(self):
-        cache = FilterCache(compareFunction=lambda q1, q2: q1.equals(q2), createFunction=lambda q: QueryWrapperFilter(q))
+        cache = FilterCache(compareQueryFunction=lambda q1, q2: q1.equals(q2), createFilterFunction=lambda q: QueryWrapperFilter(q))
         f1 = cache.getFilter(TermQuery(Term("field1", "value1")))
         f2 = cache.getFilter(TermQuery(Term("field1", "value1")))
         self.assertEquals(f1, f2)
@@ -40,7 +40,7 @@ class FilterCacheTest(SeecrTestCase):
         self.assertNotEquals(f1, f3)
 
     def testFilterCacheSize(self):
-        cache = FilterCache(compareFunction=lambda q1, q2: q1.equals(q2), createFunction=lambda q: QueryWrapperFilter(q), size=2)
+        cache = FilterCache(compareQueryFunction=lambda q1, q2: q1.equals(q2), createFilterFunction=lambda q: QueryWrapperFilter(q), size=2)
         f1 = cache.getFilter(TermQuery(Term("field1", "value1")))
         f2 = cache.getFilter(TermQuery(Term("field1", "value2")))
         self.assertNotEquals(f1, f2)

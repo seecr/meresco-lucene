@@ -32,7 +32,7 @@ from org.apache.lucene.util import Version
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter, DirectoryTaxonomyReader
 from org.apache.lucene.facet.index import FacetFields
 from org.apache.lucene.facet.search import FacetsCollector
-from org.apache.lucene.util import BytesRef, BytesRefIterator
+from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
 
@@ -42,6 +42,7 @@ from java.util import Arrays
 from os.path import join
 
 from indexandtaxonomy import IndexAndTaxonomy
+from meresco.lucene.utils import fieldType, LONGTYPE
 
 # Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html
 
@@ -87,18 +88,23 @@ class Index(object):
         return suggestions
 
     def termsForField(self, field, prefix=None, limit=10, **kwargs):
+        convert = lambda term: term.utf8ToString()
+        if fieldType(field) == LONGTYPE:
+            convert = lambda term: NumericUtils.prefixCodedToLong(term)
+            if prefix:
+                raise ValueError('No prefixSearch for number fields.')
         terms = []
-        fields = MultiFields.getFields(self._indexAndTaxonomy.searcher.getIndexReader())
-        if fields is None:
+        termsEnum = MultiFields.getTerms(self._indexAndTaxonomy.searcher.getIndexReader(), field)
+        if termsEnum is None:
             return terms
-        iterator = fields.terms(field).iterator(None)
+        iterator = termsEnum.iterator(None)
         if prefix:
             iterator.seekCeil(BytesRef(prefix))
-            terms.append((iterator.docFreq(), iterator.term().utf8ToString()))
+            terms.append((iterator.docFreq(), convert(iterator.term())))
         bytesIterator = BytesRefIterator.cast_(iterator)
         try:
             while len(terms) < limit:
-                term = bytesIterator.next().utf8ToString()
+                term = convert(bytesIterator.next())
                 if prefix and not term.startswith(prefix):
                     break
                 terms.append((iterator.docFreq(), term))

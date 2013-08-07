@@ -32,25 +32,29 @@ SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
 JOINHASH_PREFIX = "joinhash."
 
+LONGTYPE = 'long'
+TEXTTYPE = 'text'
+STRINGTYPE = 'string'
+
 typeToField = {
-    'long': lambda fieldname, value, store: LongField(fieldname, long(value), store),
-    'text': TextField,
-    'string': StringField
+    LONGTYPE: lambda fieldname, value, store: LongField(fieldname, long(value), store),
+    TEXTTYPE: TextField,
+    STRINGTYPE: StringField
 }
 typeToSortFieldType = {
-    'long': SortField.Type.LONG,
-    'text': SortField.Type.STRING,
-    'string': SortField.Type.STRING,
+    LONGTYPE: SortField.Type.LONG,
+    TEXTTYPE: SortField.Type.STRING,
+    STRINGTYPE: SortField.Type.STRING,
 }
 
 def fieldType(fieldname):
     if fieldname == IDFIELD:
-        return 'string'
+        return STRINGTYPE
     if fieldname == TIMESTAMPFIELD or fieldname.startswith(JOINHASH_PREFIX):
-        return 'long'
+        return LONGTYPE
     if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
-        return 'string'
-    return 'text'
+        return STRINGTYPE
+    return TEXTTYPE
 
 
 def createField(fieldname, value):

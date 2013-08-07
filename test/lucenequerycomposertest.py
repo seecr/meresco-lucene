@@ -29,8 +29,9 @@ from unittest import TestCase
 
 from cqlparser import parseString as parseCql, UnsupportedCQL
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
+from meresco.lucene.utils import TIMESTAMPFIELD
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery
+from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
 from org.apache.lucene.index import Term
 
 class LuceneQueryComposerTest(TestCase):
@@ -193,6 +194,10 @@ class LuceneQueryComposerTest(TestCase):
         self.assertConversion(TermRangeQuery.newStringRange('field', 'value', None, True, False), 'field >= value')
         self.assertConversion(TermRangeQuery.newStringRange('field', None, 'value', False, False), 'field < value')
         self.assertConversion(TermRangeQuery.newStringRange('field', None, 'value', False, True), 'field <= value')
+
+    def testLongField(self):
+        # field, min, max, minInclusive, maxInclusive
+        self.assertConversion(NumericRangeQuery.newLongRange(TIMESTAMPFIELD, 12345L, 12345L, True, True), "%s = 12345" % TIMESTAMPFIELD)
 
     def assertConversion(self, expected, input):
         result = self.composer.compose(parseCql(input))

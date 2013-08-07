@@ -24,11 +24,11 @@
 ## end license ##
 
 from meresco.lucene import createAnalyzer
+from meresco.lucene.utils import fieldType, LONGTYPE
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery
+from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
-from org.apache.lucene.util import Version
 from java.io import StringReader
 
 from cqlparser import CqlVisitor, UnsupportedCQL
@@ -53,6 +53,8 @@ def _analyzeToken(token):
 prefixRegexp = compile(r'^([\w-]{2,})\*$') # pr*, prefix* ....
 
 def _termOrPhraseQuery(index, termString):
+    if fieldType(index) == LONGTYPE:
+        return NumericRangeQuery.newLongRange(index, long(termString), long(termString), True, True)
     listOfTermStrings = _analyzeToken(termString.lower())
     if len(listOfTermStrings) == 1:
         if prefixRegexp.match(termString):

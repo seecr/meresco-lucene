@@ -30,6 +30,7 @@ from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
 from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search.join import TermsCollector, TermsQuery
+from org.meresco.lucene import HashCollector, HashCollectorFilter
 from time import time
 
 from os.path import basename
@@ -65,14 +66,14 @@ class Lucene(object):
         return
         yield
 
-    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, collectors=None, filters=None, suggestionRequest=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, collectors=None, joinCollectors=None, suggestionRequest=None, **kwargs):
         t0 = time()
         collectors = defaults(collectors, {})
         collectors['query'] = _topScoreCollector(start=start, stop=stop, sortKeys=sortKeys)
         if facets:
             collectors['facet'] = self._facetCollector(facets)
 
-        filters = defaults(filters, [])
+        filters = []
         filterQueries = defaults(filterQueries, [])
         for fq in filterQueries:
             filters.append(self._filterCache.getFilter(query=fq))
@@ -80,11 +81,19 @@ class Lucene(object):
         if filters:
             chainedFilter = ChainedFilter(filters, ChainedFilter.AND)
 
+        collector = MultiCollector.wrap(collectors.values())
+        joinCollectors = joinCollectors or []
+        for joinCollector in joinCollectors:
+            collector = HashCollectorFilter(
+                    joinCollector['collector'],
+                    collector,
+                    joinCollector['toField']
+                )
         response = self._index.search(
                 lambda: self._createResponse(collectors, start=start, stop=stop),
                 luceneQuery,
                 chainedFilter,
-                MultiCollector.wrap(collectors.values()) if collectors else None,
+                collector,
             )
         if suggestionRequest:
             response.suggestions = self._index.suggest(**suggestionRequest)
@@ -109,18 +118,18 @@ class Lucene(object):
     def finish(self):
         self._index.finish()
 
-    def createJoinFilter(self, luceneQuery, fromField, toField):
-        multipleValuesPerDocument = False
-        fromTermsCollector = TermsCollector.create(fromField, multipleValuesPerDocument)
-        self._index.search(lambda: None, luceneQuery, None, fromTermsCollector)
-        return QueryWrapperFilter(TermsQuery(toField, None, fromTermsCollector.getCollectorTerms()))
+    def createJoinCollector(self, luceneQuery, fromField, toField):
+        hashCollector = HashCollector(fromField)
+        self._index.search(lambda: None, luceneQuery, None, hashCollector)
+        return dict(collector=hashCollector, toField=toField)
 
     def joinFacet(self, termsCollector, fromField, facets):
         facetCollector = self._facetCollector(facets)
         if not facetCollector:
             return []
         self._index.search(lambda: None, TermsQuery(fromField, None, termsCollector.getCollectorTerms()), None, facetCollector)
-        return self._facetResult(facetCollector)
+        result = self._facetResult(facetCollector)
+        return result
 
     def _createResponse(self, collectors, start, stop):
         total, hits = self._topDocsResponse(collectors['query'], start=start, stop=stop)

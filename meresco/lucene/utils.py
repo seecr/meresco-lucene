@@ -30,6 +30,7 @@ TIMESTAMPFIELD = '__timestamp__'
 IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
+JOINHASH_PREFIX = "joinhash."
 
 typeToField = {
     'long': lambda fieldname, value, store: LongField(fieldname, long(value), store),
@@ -45,7 +46,7 @@ typeToSortFieldType = {
 def fieldType(fieldname):
     if fieldname == IDFIELD:
         return 'string'
-    if fieldname == TIMESTAMPFIELD:
+    if fieldname == TIMESTAMPFIELD or fieldname.startswith(JOINHASH_PREFIX):
         return 'long'
     if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
         return 'string'

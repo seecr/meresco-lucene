@@ -30,6 +30,7 @@ from meresco.core import Observable
 from weightless.core import be, compose
 
 from meresco.lucene import Lucene
+from meresco.lucene.utils import JOINHASH_PREFIX
 from meresco.lucene.multilucene import MultiLucene
 from os.path import join
 from org.apache.lucene.search import TermQuery, MatchAllDocsQuery, BooleanQuery, BooleanClause
@@ -50,12 +51,12 @@ class MultiLuceneTest(SeecrTestCase):
                 (self.luceneB,),
             )
         ))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:0", document=createDocument([('A.joinid', '1'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:1", document=createDocument([('A.joinid', '2'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:2", document=createDocument([('A.joinid', '3'), ('field1', 'value1')]), categories=createCategories([('field1', 'first item1')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:3", document=createDocument([('B.joinid', '1'), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:4", document=createDocument([('B.joinid', '2'), ('field2', 'value2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'first')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:5", document=createDocument([('B.joinid', '2'), ('field2', 'value1'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'second')])))
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:0", document=createDocument([(JOINHASH_PREFIX + 'A', '1'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:1", document=createDocument([(JOINHASH_PREFIX + 'A', '2'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:2", document=createDocument([(JOINHASH_PREFIX + 'A', '3'), ('field1', 'value1')]), categories=createCategories([('field1', 'first item1')])))
+        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:3", document=createDocument([(JOINHASH_PREFIX + 'B', '1'), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
+        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:4", document=createDocument([(JOINHASH_PREFIX + 'B', '2'), ('field2', 'value2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'first')])))
+        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:5", document=createDocument([(JOINHASH_PREFIX + 'B', '2'), ('field2', 'value1'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'second')])))
         sleep(0.2)
 
     def testQueryOneIndex(self):
@@ -82,8 +83,8 @@ class MultiLuceneTest(SeecrTestCase):
                 core='A',
                 joinQueries=[{
                     'core': 'B',
-                    'fromField': 'B.joinid',
-                    'toField': 'A.joinid',
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
                     'luceneQuery': TermQuery(Term('field2', 'value1')),
                 }]
             ))
@@ -96,13 +97,13 @@ class MultiLuceneTest(SeecrTestCase):
                 core='A',
                 joinQueries=[{
                     'core': 'B',
-                    'fromField': 'B.joinid',
-                    'toField': 'A.joinid',
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
                     'luceneQuery': TermQuery(Term('field2', 'value1')),
                 },{
                     'core': 'B',
-                    'fromField': 'B.joinid',
-                    'toField': 'A.joinid',
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
                     'luceneQuery': TermQuery(Term('field3', 'value3')),
                 }]
             ))
@@ -115,13 +116,13 @@ class MultiLuceneTest(SeecrTestCase):
                 core='A',
                 joinFacets=[{
                     'core': 'B',
-                    'fromField': 'B.joinid',
-                    'toField': 'A.joinid',
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
                     'facet': dict(fieldname='field2', maxTerms=10)
                 }, {
                     'core': 'B',
-                    'fromField': 'B.joinid',
-                    'toField': 'A.joinid',
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
                     'facet': dict(fieldname='field3', maxTerms=10)
                 }]
             ))
@@ -144,27 +145,53 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(2, len(infos))
 
     def testJoinQueryIsCachedAsFilter(self):
-        query = BooleanQuery()
-        [query.add(TermQuery(Term("field%s" % i, "value0")), BooleanClause.Occur.SHOULD) for i in range(1000)]
+        for i in range(1000):
+            fields = [(JOINHASH_PREFIX + 'B', '1')]
+            returnValueFromGenerator(self.luceneB.addDocument(identifier="id:%s" % i, document=createDocument(fields)))
+        query = MatchAllDocsQuery()
         result = returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=TermQuery(Term("field1", "value0")),
+                luceneQuery=MatchAllDocsQuery(),
                 core='A',
                 joinQueries=[{
                     'core': 'B',
-                    'fromField': 'B.joinid',
-                    'toField': 'A.joinid',
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
                     'luceneQuery': query,
                 }]
             ))
         self.assertTrue(result.queryTime > 20, result.asJson())
-        result = returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=TermQuery(Term("field1", "value0")),
+        for i in xrange(20):
+            result = returnValueFromGenerator(self.dna.any.executeQuery(
+                    luceneQuery=MatchAllDocsQuery(),
+                    core='A',
+                    joinQueries=[{
+                        'core': 'B',
+                        'fromField': JOINHASH_PREFIX + 'B',
+                        'toField': JOINHASH_PREFIX + 'A',
+                        'luceneQuery': query,
+                    }]
+                ))
+        self.assertTrue(result.queryTime < 2, result.asJson())
+
+    def testJoinFacetCached(self):
+        for i in range(1000):
+            fields = [(JOINHASH_PREFIX + 'B', '1'), ('field2', 'value%s' % i), ('field3', 'value%s' % i)]
+            returnValueFromGenerator(self.luceneB.addDocument(identifier="id:%s" % i, document=createDocument(fields), categories=createCategories(fields)))
+        sleep(0.1)
+
+        for i in range(100):
+            returnValueFromGenerator(self.dna.any.executeQuery(
+                luceneQuery=MatchAllDocsQuery(),
                 core='A',
-                joinQueries=[{
+                joinFacets=[{
                     'core': 'B',
-                    'fromField': 'B.joinid',
-                    'toField': 'A.joinid',
-                    'luceneQuery': query,
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
+                    'facet': dict(fieldname='field2', maxTerms=10)
+                }, {
+                    'core': 'B',
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
+                    'facet': dict(fieldname='field3', maxTerms=10)
                 }]
             ))
-        self.assertTrue(result.queryTime < 2, result.asJson())

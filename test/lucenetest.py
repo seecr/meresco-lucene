@@ -29,6 +29,7 @@ from os.path import join
 from time import sleep
 from meresco.lucene import Lucene, VM
 from meresco.lucene._lucene import IDFIELD
+from meresco.lucene.utils import createField
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from cqlparser import parseString as parseCql
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
@@ -186,7 +187,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
-        
+
         self.assertEquals([{
                 'fieldname': 'field2',
                 'terms': [
@@ -240,10 +241,10 @@ class LuceneTest(SeecrTestCase):
     def testFilterQueries(self):
         for i in xrange(10):
             returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([
-                    ('mod2', 'v%s' % (i % 2)), 
+                    ('mod2', 'v%s' % (i % 2)),
                     ('mod3', 'v%s' % (i % 3))
                 ])))
-        # id     0  1  2  3  4  5  6  7  8  9  
+        # id     0  1  2  3  4  5  6  7  8  9
         # mod2  v0 v1 v0 v1 v0 v1 v0 v1 v0 v1
         # mod3  v0 v1 v2 v0 v1 v2 v0 v1 v2 v0
         sleep(0.1)
@@ -267,25 +268,6 @@ class LuceneTest(SeecrTestCase):
         response = returnValueFromGenerator(self.lucene.prefixSearch(fieldname='field1', prefix='valu'))
         self.assertEquals(['value1', 'value0'], response.hits)
         self.assertTrue(response.queryTime > 0, response.asJson())
-
-    def testJoin(self):
-        luceneB = Lucene(join(self.tempdir, 'luceneB'), reactor=self._reactor, commitTimeout=42, commitCount=1)
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('A.joinid', '1'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('A.joinid', '2'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
-        returnValueFromGenerator(luceneB.addDocument(identifier="id:2", document=createDocument([('B.joinid', '1'), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
-        returnValueFromGenerator(luceneB.addDocument(identifier="id:3", document=createDocument([('B.joinid', '2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3')])))
-
-        sleep(0.5)
-
-        joinFilter = luceneB.createJoinFilter(TermQuery(Term("field2", "value1")), fromField='B.joinid', toField='A.joinid')
-        joinCollector = TermsCollector.create('A.joinid', False)
-        response = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field1', 'value0')), facets=[dict(maxTerms=10, fieldname='field1')], collectors={'joinfacet': joinCollector}, filters=[joinFilter]))
-        joinDrilldownData = luceneB.joinFacet(termsCollector=joinCollector, fromField='B.joinid', facets=[dict(maxTerms=10, fieldname='field2')])
-        response.drilldownData.extend(joinDrilldownData)
-
-        self.assertEquals(1, response.total)
-        self.assertEquals(['id:0'], response.hits)
-        self.assertEquals([{'terms': [{'count': 1, 'term': u'first item0'}], 'fieldname': u'field1'}, {'terms': [{'count': 1, 'term': u'first item2'}], 'fieldname': u'field2'}], response.drilldownData)
 
     def testSuggestions(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field3', 'value2')])))
@@ -335,7 +317,7 @@ class LuceneTest(SeecrTestCase):
 def createDocument(textfields):
     document = Document()
     for name, value in textfields:
-        document.add(TextField(name, value, Field.Store.NO))
+        document.add(createField(name, value))
     return document
 
 def createCategories(fields):

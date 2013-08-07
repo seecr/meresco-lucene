@@ -40,5 +40,5 @@ class FilterCache(object):
         f = CachingWrapperFilter(self._createFilterFunction(query))
         self._filters.append((query, f))
         if len(self._filters) > self._size:
-            del self._filters[0]
+            self._filters.pop(0)
         return f

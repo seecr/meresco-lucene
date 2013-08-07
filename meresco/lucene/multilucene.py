@@ -28,7 +28,6 @@ from itertools import groupby
 from org.apache.lucene.search.join import TermsCollector
 from weightless.core import DeclineMessage
 from _lucene import millis
-from filtercache import FilterCache
 from time import time
 
 
@@ -36,21 +35,26 @@ class MultiLucene(Observable):
     def __init__(self, defaultCore):
         Observable.__init__(self)
         self._defaultCore = defaultCore
-        self._filterCache = FilterCache(compareQueryFunction=lambda q1, q2: q1 == q2, createFilterFunction=self._joinFilterCreate)
 
     def executeQuery(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, **kwargs):
         t0 = time()
         core = self._defaultCore if core is None else core
-        filters = []
+        joinCollectors = []
         if joinQueries is not None:
             for joinQuery in joinQueries:
-                filters.append(self._filterCache.getFilter(query=joinQuery))
+                joinCollectors.append(
+                    self.call[joinQuery['core']].createJoinCollector(
+                        luceneQuery=joinQuery['luceneQuery'],
+                        fromField=joinQuery['fromField'],
+                        toField=joinQuery['toField']
+                    )
+                )
         collectors = None
         if joinFacets:
             collectors = {}
             for toField in set([joinFacet['toField'] for joinFacet in joinFacets]):
-                collectors['joinFacet.field.%s' % toField] = self._createJoinCollector(toField)
-        response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, filters=filters, collectors=collectors, **kwargs)
+                collectors['joinFacet.field.%s' % toField] = self._createJoinFacetCollector(toField)
+        response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, joinCollectors=joinCollectors, collectors=collectors, **kwargs)
         if joinFacets:
             if not hasattr(response, "drilldownData"):
                 response.drilldownData = []
@@ -72,7 +76,7 @@ class MultiLucene(Observable):
             raise StopIteration(result)
         raise DeclineMessage()
 
-    def _createJoinCollector(self, toField):
+    def _createJoinFacetCollector(self, toField):
         multipleValuesPerDocument = False
         return TermsCollector.create(toField, multipleValuesPerDocument)
 

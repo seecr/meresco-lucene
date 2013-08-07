@@ -30,13 +30,14 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.FieldCache;
-import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class HashCollector extends Collector {
 
     String fromField;
     FieldCache.Longs fromFieldValues;
-    ArrayList<Long> hashes = new ArrayList<Long>();
+    Set<Long> hashes = new HashSet<Long>();
 
     public HashCollector(String fromField) {
         this.fromField = fromField;

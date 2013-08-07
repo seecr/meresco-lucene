@@ -51,7 +51,7 @@ VM = initVM(maxheap=maxheap)
 from meresco_lucene import initVM
 VMM = initVM()
 
-from utils import SORTED_PREFIX, UNTOKENIZED_PREFIX
+from utils import SORTED_PREFIX, UNTOKENIZED_PREFIX, JOINHASH_PREFIX
 from _version import version
 from luceneresponse import LuceneResponse
 from _analyzer import createAnalyzer

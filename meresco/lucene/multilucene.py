@@ -29,7 +29,7 @@ from org.apache.lucene.search.join import TermsCollector
 from weightless.core import DeclineMessage
 from _lucene import millis
 from time import time
-
+from org.meresco.lucene import HashCollector
 
 class MultiLucene(Observable):
     def __init__(self, defaultCore):
@@ -61,7 +61,7 @@ class MultiLucene(Observable):
             for joinFacet in self.groupJoinFacets(joinFacets):
                 response.drilldownData.extend(
                     self.call[joinFacet['core']].joinFacet(
-                        termsCollector=collectors['joinFacet.field.%s' % joinFacet['toField']],
+                        hashCollector=collectors['joinFacet.field.%s' % joinFacet['toField']],
                         fromField=joinFacet['fromField'],
                         facets=joinFacet['facets'],
                     )
@@ -77,8 +77,7 @@ class MultiLucene(Observable):
         raise DeclineMessage()
 
     def _createJoinFacetCollector(self, toField):
-        multipleValuesPerDocument = False
-        return TermsCollector.create(toField, multipleValuesPerDocument)
+        return HashCollector(toField)
 
     def coreInfo(self):
         yield self.all.coreInfo()

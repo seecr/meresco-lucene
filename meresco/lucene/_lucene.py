@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, MatchAllDocsQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
@@ -123,11 +123,11 @@ class Lucene(object):
         self._index.search(lambda: None, luceneQuery, None, hashCollector)
         return dict(collector=hashCollector, toField=toField)
 
-    def joinFacet(self, termsCollector, fromField, facets):
+    def joinFacet(self, hashCollector, fromField, facets):
         facetCollector = self._facetCollector(facets)
         if not facetCollector:
             return []
-        self._index.search(lambda: None, TermsQuery(fromField, None, termsCollector.getCollectorTerms()), None, facetCollector)
+        self._index.search(lambda: None, MatchAllDocsQuery(), None, HashCollectorFilter(hashCollector, facetCollector, fromField))
         result = self._facetResult(facetCollector)
         return result
 

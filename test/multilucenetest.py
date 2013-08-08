@@ -91,6 +91,7 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertTrue(result.queryTime > 0, result.asJson())
 
     def testMultipleJoinQueries(self):
+        self.fail("Not yet implemented")
         result = returnValueFromGenerator(self.dna.any.executeQuery(
                 luceneQuery=TermQuery(Term("field1", "value0")),
                 core='A',

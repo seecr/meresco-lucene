@@ -66,40 +66,53 @@ class Lucene(object):
         return
         yield
 
-    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None, filterQueries=None, collectors=None, joinCollectors=None, suggestionRequest=None, **kwargs):
-        t0 = time()
-        collectors = defaults(collectors, {})
-        collectors['query'] = _topScoreCollector(start=start, stop=stop, sortKeys=sortKeys)
+    def executeQuery(self, *args, **kwargs):
+        state = self.executeQuery3(*args, **kwargs)
+        state.next()
+        raise StopIteration(state.next())
+        yield
+
+    def executeQuery2(self, luceneQuery, filterCollector, facets):
         if facets:
-            collectors['facet'] = self._facetCollector(facets)
+            facetCollector = self._facetCollector(facets)
+            filterCollector.setNextCollector(facetCollector)
+        self._index.search(luceneQuery, None, filterCollector)
+        return self._facetResult(facetCollector) if facets else None
 
-        filters = []
-        filterQueries = defaults(filterQueries, [])
-        for fq in filterQueries:
-            filters.append(self._filterCache.getFilter(query=fq))
-        chainedFilter = None
-        if filters:
-            chainedFilter = ChainedFilter(filters, ChainedFilter.AND)
+    def executeQuery3(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None,
+        filterQueries=None, suggestionRequest=None, filterCollector=None, **kwargs):
+        t0 = time()
 
-        collector = MultiCollector.wrap(collectors.values())
-        joinCollectors = joinCollectors or []
-        for joinCollector in joinCollectors:
-            collector = HashCollectorFilter(
-                    joinCollector['collector'],
-                    collector,
-                    joinCollector['toField']
-                )
-        response = self._index.search(
-                lambda: self._createResponse(collectors, start=start, stop=stop),
-                luceneQuery,
-                chainedFilter,
-                collector,
-            )
+        topcollector = collector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
+        if facets:
+            facetcollector = self._facetCollector(facets)
+            collector = MultiCollector.wrap([topcollector, facetcollector])
+
+        if filterCollector:
+            filterCollector.setNextCollector(collector)
+            collector = filterCollector
+
+        filter_ = None
+        if filterQueries:
+            filters = [self._filterCache.getFilter(f) for f in filterQueries]
+            filter_ = ChainedFilter(filters, ChainedFilter.AND)
+
+        self._index.search(luceneQuery, filter_, collector)
+
+        yield
+
+        total, hits = self._topDocsResponse(topcollector, start=start)
+        response = LuceneResponse(total=total, hits=hits)
+
+        if facets:
+            response.drilldownData = self._facetResult(facetcollector)
+
         if suggestionRequest:
             response.suggestions = self._index.suggest(**suggestionRequest)
+
         response.queryTime = millis(time() - t0)
-        raise StopIteration(response)
-        yield
+
+        yield response
 
     def prefixSearch(self, fieldname, prefix, showCount=False, **kwargs):
         t0 = time()
@@ -124,25 +137,18 @@ class Lucene(object):
         self._index.search(lambda: None, luceneQuery, None, hashCollector)
         return dict(collector=hashCollector, toField=toField, facetCollector=facetCollector)
 
-    def joinFacet(self, hashCollector, fromField, facets):
+    def joinFacet(self, hashCollector, foreignKeyName, facets):
         facetCollector = self._facetCollector(facets)
         if not facetCollector:
             return []
-        self._index.search(lambda: None, MatchAllDocsQuery(), None, HashCollectorFilter(hashCollector, facetCollector, fromField))
+        self._index.search(lambda: None, MatchAllDocsQuery(), None, HashCollectorFilter(hashCollector, facetCollector, foreignKeyName))
         result = self._facetResult(facetCollector)
         return result
 
-    def _createResponse(self, collectors, start, stop):
-        total, hits = self._topDocsResponse(collectors['query'], start=start, stop=stop)
-        response = LuceneResponse(total=total, hits=hits)
-        if 'facet' in collectors:
-            response.drilldownData = self._facetResult(collectors['facet'])
-        return response
-
-    def _topDocsResponse(self, collector, start, stop):
+    def _topDocsResponse(self, collector, start):
         # TODO: Probably use FieldCache iso document.get()
         hits = []
-        if stop > start:
+        if hasattr(collector, "topDocs"):
             hits = [self._index.getDocument(hit.doc).get(IDFIELD) for hit in collector.topDocs(start).scoreDocs]
         return collector.getTotalHits(), hits
 
@@ -187,7 +193,7 @@ def defaults(parameter, default):
 
 millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 millisecs
 
-def _topScoreCollector(start, stop, sortKeys):
+def _topCollector(start, stop, sortKeys):
     if stop <= start:
         return TotalHitCountCollector()
     if sortKeys:

@@ -29,7 +29,8 @@ from org.apache.lucene.search import MatchAllDocsQuery
 from weightless.core import DeclineMessage
 from _lucene import millis
 from time import time
-from org.meresco.lucene import HashCollector
+from org.meresco.lucene import HashCollector, HashCollectorFilter
+from weightless.core import compose
 
 class MultiLucene(Observable):
     def __init__(self, defaultCore):
@@ -44,48 +45,39 @@ class MultiLucene(Observable):
                     groupedJoinFacets.pop(i)
                     return joinFacet['facets']
 
-    def executeQuery(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, **kwargs):
+    def executeQuery(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
         t0 = time()
         core = self._defaultCore if core is None else core
+        joinQueries = joinQueries or {}
+        joinFacets = joinFacets or {}
 
-        joinQueries = joinQueries or []
-        groupedJoinFacets = self.groupJoinFacets(joinFacets)
+        if not (joinQueries or joinFacets):
+            response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, **kwargs)
+            raise StopIteration(response)
 
-        joinCollectors = []
-        for joinQuery in joinQueries:
-            facets = self.getFromGroupedFacet(
-                    groupedJoinFacets=groupedJoinFacets,
-                    core=joinQuery['core'],
-                    fromField=joinQuery['fromField'],
-                    toField=joinQuery['toField']
-                )
-            joinCollectors.append(
-                    self.call[joinQuery['core']].createJoinCollector(
-                        luceneQuery=joinQuery['luceneQuery'],
-                        fromField=joinQuery['fromField'],
-                        toField=joinQuery['toField'],
-                        facets=facets
-                    )
-                )
+        filterCollector = None
+        filterCollector = HashCollector(joins[core])
+        state = compose(self.any[core].executeQuery3(luceneQuery=luceneQuery, filterCollector=filterCollector, **kwargs))
+        state.next()
 
-        for joinFacet in groupedJoinFacets:
-            joinCollectors.append(
-                    self.call[joinFacet['core']].createJoinCollector(
-                        luceneQuery=MatchAllDocsQuery(),
-                        fromField=joinFacet['fromField'],
-                        toField=joinFacet['toField'],
-                        facets=joinFacet['facets']
-                    )
-                )
+        joinResults = []
+        for joinCore, joinQuery in joinQueries.items():
+            joinResults.append(self.call[joinCore].executeQuery2(luceneQuery=joinQuery, filterCollector=HashCollectorFilter(filterCollector, joins[joinCore]), facets=joinFacets.get(joinCore)))
+        for joinCore, joinFacet in joinFacets.items():
+            if joinCore in joinQueries:
+                continue
+            joinResults.append(self.call[joinCore].executeQuery2(luceneQuery=MatchAllDocsQuery(), filterCollector=HashCollectorFilter(filterCollector, joins[joinCore]), facets=joinFacet))
 
-        response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, joinCollectors=joinCollectors, **kwargs)
+        filterCollector.finishCollecting();
 
-        for joinCollector in joinCollectors:
-            facetCollector = joinCollector['facetCollector']
-            if facetCollector:
-                if not hasattr(response, "drilldownData"):
-                    response.drilldownData = []
-                response.drilldownData.extend(self.call._facetResult(facetCollector))
+        response = state.next()
+
+        if joinFacets and not hasattr(response, "drilldownData"):
+            response.drilldownData = []
+
+        for joinResult in joinResults:
+            if joinResult:
+                response.drilldownData.extend(joinResult)
 
         response.queryTime = millis(time() - t0)
         raise StopIteration(response)

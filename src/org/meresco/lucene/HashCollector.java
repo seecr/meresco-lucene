@@ -32,87 +32,130 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.OpenBitSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.ArrayList;
 
 public class HashCollector extends Collector {
 
-    String fromField;
-    FieldCache.Longs fromFieldValues;
-    Map<Long, List<Integer>> hashes = new HashMap<Long, List<Integer>>();
-    Collector facetCollector;
-    // IndexReader toplevel_reader = null;
+    String primaryKeyName;
+    Collector nextCollector = null;
+    Scorer scorer;
+    HashScorer hashScorer = new HashScorer();
+    FieldCache.Longs primaryKeyValues;
+    Map<Long, Integer> hashesToDocId = new HashMap<Long, Integer>();
+    Map<Integer, Float> docIdToScore = new HashMap<Integer, Float>();
+
     int docBase;
+    int nextDocBase = -1;
+    int currentContext = -1;
     List<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
 
-    public HashCollector(String fromField, Collector facetCollector) {
-        this.fromField = fromField;
-        this.facetCollector = facetCollector;
+    OpenBitSet docSet = new OpenBitSet();
+
+    public HashCollector(String primaryKeyName) {
+        this.primaryKeyName = primaryKeyName;
     }
 
-    private AtomicReaderContext contextForDocId(int docId) {
-        int index = 0;
-        for (AtomicReaderContext context : this.contexts) {
-            System.out.println(context.docBase);
-            if (docId <= context.docBase) {
-                return context;
+    public void setNextCollector(Collector nextCollector) throws IOException {
+        this.nextCollector = nextCollector;
+        this.nextCollector.setScorer(this.hashScorer);
+    }
+
+    private void setContextForDocId(int docId) throws IOException {
+        if (docId < this.nextDocBase) {
+            return;
+        }
+        AtomicReaderContext nextContext;
+        while (true) {
+            nextContext = this.contexts.get(this.currentContext + 1);
+            if (nextContext.docBase < docId) {
+                this.currentContext++;
+                this.nextDocBase = nextContext.docBase;
+                if (this.currentContext == this.contexts.size()) {
+                    break;
+                }
+            } else {
+                break;
             }
         }
-        return this.contexts.get(this.contexts.size() - 1);
+        this.docBase = nextContext.docBase;
+        this.nextCollector.setNextReader(nextContext);
     }
 
     public boolean contains(long hash) throws IOException {
-        if (hashes.containsKey(hash)) {
-            List<Integer> absDocIds = hashes.get(hash);
-            if (this.facetCollector != null) {
-                for (Integer absDocId : absDocIds) {
-                    AtomicReaderContext context = contextForDocId(absDocId);
-                    this.facetCollector.setNextReader(context);
-                    this.facetCollector.collect(absDocId - context.docBase);
-                }
+        // System.out.println("Contains hash: " + hash);
+        Integer absDocId = hashesToDocId.get(hash);
+        if (absDocId != null) {
+            if (this.nextCollector != null) {
+                docSet.set(absDocId);
             }
             return true;
         }
         return false;
     }
 
+    public void finishCollecting() throws IOException {
+        DocIdSetIterator it = this.docSet.iterator();
+        int docId;
+        while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            setContextForDocId(docId);
+            this.hashScorer.setDocId(docId);
+            // System.out.println("next collector.collect docID: "+ (docId - context.docBase));
+            this.nextCollector.collect(docId - this.docBase);
+        }
+    }
+
     @Override
     public void collect(int doc) throws IOException {
-        long hash = this.fromFieldValues.get(doc);
+        long hash = this.primaryKeyValues.get(doc);
         int absDocId = doc + this.docBase;
-        List<Integer> docIds = hashes.get(hash);
-        if (docIds == null) {
-            docIds = new ArrayList<Integer>();
-            this.hashes.put(hash, docIds);
-        }
-        docIds.add(absDocId);
+        this.hashesToDocId.put(hash, absDocId);
+        this.docIdToScore.put(absDocId, this.scorer.score());
+        // System.out.println("Collect: Hash: " + hash + " docId: " + absDocId);
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
         this.docBase = context.docBase;
         this.contexts.add(context);
-        // if (this.toplevel_reader == null) {
-        //     IndexReaderContext c = context;
-        //     while (!c.isTopLevel) {
-        //         c = c.parent;
-        //     }
-        //     this.toplevel_reader = c.reader();
-        // }
-        this.fromFieldValues = FieldCache.DEFAULT.getLongs(context.reader(), this.fromField, false);
-        // if (this.facetCollector != null) {
-        //     this.facetCollector.setNextReader(context);
-        // }
+        this.primaryKeyValues = FieldCache.DEFAULT.getLongs(context.reader(), this.primaryKeyName, false);
     }
 
     @Override
     public boolean acceptsDocsOutOfOrder() {
-        return false;
+        return this.nextCollector.acceptsDocsOutOfOrder();
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {}
+    public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
+    }
+
+    class HashScorer extends Scorer {
+        private int currentDocId;
+
+        public HashScorer() {
+            super(null);
+        }
+        public void setDocId(int docId) {
+            this.currentDocId = docId;
+        }
+
+        public float score() {
+            return docIdToScore.get(this.currentDocId);
+        }
+
+        public int freq() throws IOException {return -1;}
+        public long cost() {return -1;}
+        public int advance(int target) throws IOException {return -1;}
+        public int nextDoc() throws IOException {return -1;}
+        public int docID() {return -1;}
+    }
 
 }

@@ -53,12 +53,16 @@ class MultiLucene(Observable):
         state.next()
 
         joinResults = []
-        for joinCore, joinQuery in joinQueries.items():
-            joinResults.append(self.call[joinCore].executeJoinQuery(luceneQuery=joinQuery, filterCollector=HashCollectorFilter(filterCollector, joins[joinCore]), facets=joinFacets.get(joinCore)))
-        for joinCore, joinFacet in joinFacets.items():
-            if joinCore in joinQueries:
-                continue
-            joinResults.append(self.call[joinCore].executeJoinQuery(luceneQuery=MatchAllDocsQuery(), filterCollector=HashCollectorFilter(filterCollector, joins[joinCore]), facets=joinFacet))
+        for joinCore in set(joinQueries.keys() + joinFacets.keys()):
+            query = joinQueries.get(joinCore, MatchAllDocsQuery())
+            facets = joinFacets.get(joinCore)
+            joinResults.append(
+                self.call[joinCore].executeJoinQuery(
+                        luceneQuery=query,
+                        filterCollector=HashCollectorFilter(filterCollector, joins[joinCore]),
+                        facets=facets
+                    )
+            )
 
         filterCollector.finishCollecting();
 

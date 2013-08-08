@@ -41,7 +41,6 @@ public class HashCollectorFilter extends Collector {
 
     public HashCollectorFilter(HashCollector hashCollector, Collector c, String toField) throws IOException {
         this.hashCollector = hashCollector;
-        this.hashCollector.startCollecting();
         this.c = c;
         this.toField = toField;
     }

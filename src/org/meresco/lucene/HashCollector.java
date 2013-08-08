@@ -45,7 +45,6 @@ public class HashCollector extends Collector {
     Collector facetCollector;
     // IndexReader toplevel_reader = null;
     int docBase;
-    int currentLeave;
     List<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
 
     public HashCollector(String fromField, Collector facetCollector) {
@@ -53,34 +52,25 @@ public class HashCollector extends Collector {
         this.facetCollector = facetCollector;
     }
 
-    public void startCollecting() throws IOException {
-        this.docBase = 0;
-        this.currentLeave = -1;
+    private AtomicReaderContext contextForDocId(int docId) {
+        int index = 0;
+        for (AtomicReaderContext context : this.contexts) {
+            System.out.println(context.docBase);
+            if (docId <= context.docBase) {
+                return context;
+            }
+        }
+        return this.contexts.get(this.contexts.size() - 1);
     }
 
     public boolean contains(long hash) throws IOException {
         if (hashes.containsKey(hash)) {
-            System.out.println("Contains: " + hash);
             List<Integer> absDocIds = hashes.get(hash);
             if (this.facetCollector != null) {
                 for (Integer absDocId : absDocIds) {
-                    System.out.println(absDocId);
-                    while(true) {
-                        AtomicReaderContext nextContext = this.contexts.get(this.currentLeave + 1);
-                        if (absDocId >= nextContext.docBase) {
-                            this.docBase = nextContext.docBase;
-                            this.currentLeave++;
-                            if (this.currentLeave + 1 == this.contexts.size()) {
-                                this.facetCollector.setNextReader(nextContext);
-                                break;
-                            }
-                        } else {
-                            this.facetCollector.setNextReader(this.contexts.get(this.currentLeave));
-                            break;
-                        }
-                    }
-                    System.out.println("Facet collect for: absIds:" + absDocId + " docId:" + (absDocId - this.docBase));
-                    this.facetCollector.collect(absDocId - this.docBase);
+                    AtomicReaderContext context = contextForDocId(absDocId);
+                    this.facetCollector.setNextReader(context);
+                    this.facetCollector.collect(absDocId - context.docBase);
                 }
             }
             return true;
@@ -92,7 +82,6 @@ public class HashCollector extends Collector {
     public void collect(int doc) throws IOException {
         long hash = this.fromFieldValues.get(doc);
         int absDocId = doc + this.docBase;
-        System.out.println("Collect: " + hash + " " + absDocId);
         List<Integer> docIds = hashes.get(hash);
         if (docIds == null) {
             docIds = new ArrayList<Integer>();
@@ -125,11 +114,5 @@ public class HashCollector extends Collector {
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {}
-
-    // public void debug() {
-    //     for (Long l : this.hashes) {
-    //         System.out.println(l);
-    //     }
-    // }
 
 }

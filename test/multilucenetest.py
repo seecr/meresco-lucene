@@ -33,7 +33,7 @@ from meresco.lucene import Lucene
 from meresco.lucene.utils import JOINHASH_PREFIX
 from meresco.lucene.multilucene import MultiLucene
 from os.path import join
-from org.apache.lucene.search import TermQuery, MatchAllDocsQuery, BooleanQuery, BooleanClause
+from org.apache.lucene.search import TermQuery, MatchAllDocsQuery
 from org.apache.lucene.index import Term
 
 from lucenetest import createDocument, createCategories

@@ -34,38 +34,50 @@ import org.apache.lucene.search.FieldCache;
 
 public class HashCollectorFilter extends Collector {
 
-    String toField;
-    FieldCache.Longs toFieldValues;
-    final private HashCollector hashCollector;
-    final private Collector c;
+    String foreignKeyName;
+    FieldCache.Longs foreignKeyValues;
+    HashCollector hashCollector;
+    Collector nextCollector = null;
 
-    public HashCollectorFilter(HashCollector hashCollector, Collector c, String toField) throws IOException {
+    public HashCollectorFilter(HashCollector hashCollector, String foreignKeyName) throws IOException {
         this.hashCollector = hashCollector;
-        this.c = c;
-        this.toField = toField;
+        this.foreignKeyName = foreignKeyName;
+    }
+
+    public void setNextCollector(Collector nextCollector) {
+        this.nextCollector = nextCollector;
     }
 
     @Override
     public void collect(int doc) throws IOException {
-        if (this.hashCollector.contains(this.toFieldValues.get(doc))) {
-            this.c.collect(doc);
+        if (this.hashCollector.contains(this.foreignKeyValues.get(doc))) {
+            if (this.nextCollector != null) {
+                this.nextCollector.collect(doc);
+            }
         }
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.toFieldValues = FieldCache.DEFAULT.getLongs(context.reader(), this.toField, false);
-        this.c.setNextReader(context);
+        this.foreignKeyValues = FieldCache.DEFAULT.getLongs(context.reader(), this.foreignKeyName, false);
+        if (this.nextCollector != null) {
+            this.nextCollector.setNextReader(context);
+        }
     }
 
     @Override
     public boolean acceptsDocsOutOfOrder() {
-        return this.c.acceptsDocsOutOfOrder();
+        if (this.nextCollector != null) {
+           return this.nextCollector.acceptsDocsOutOfOrder();
+        }
+        return true;
     }
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {
-        this.c.setScorer(scorer);
+        if (this.nextCollector != null) {
+            this.nextCollector.setScorer(scorer);
+        }
     }
 
 }

@@ -75,9 +75,8 @@ class Index(object):
         self._indexWriter.deleteDocuments(term)
         self.commit()
 
-    def search(self, responseBuilder, *args):
+    def search(self, *args):
         self._indexAndTaxonomy.searcher.search(*args)
-        return responseBuilder()
 
     def suggest(self, query, count, field):
         suggestions = {}

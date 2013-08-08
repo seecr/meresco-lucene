@@ -24,7 +24,6 @@
 ## end license ##
 
 from meresco.core import Observable
-from itertools import groupby
 from org.apache.lucene.search import MatchAllDocsQuery
 from weightless.core import DeclineMessage
 from _lucene import millis

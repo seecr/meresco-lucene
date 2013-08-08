@@ -140,6 +140,41 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'field3'
             }], result.drilldownData)
 
+    def testJoinFacetAndQuery(self):
+        result = returnValueFromGenerator(self.dna.any.executeQuery(
+                luceneQuery=TermQuery(Term("field1", "value0")),
+                core='A',
+                joinQueries=[{
+                    'core': 'B',
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
+                    'luceneQuery': TermQuery(Term('field2', 'value1')),
+                }],
+                joinFacets=[{
+                    'core': 'B',
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
+                    'facet': dict(fieldname='field2', maxTerms=10)
+                }, {
+                    'core': 'B',
+                    'fromField': JOINHASH_PREFIX + 'B',
+                    'toField': JOINHASH_PREFIX + 'A',
+                    'facet': dict(fieldname='field3', maxTerms=10)
+                }]
+            ))
+        self.assertEquals([{
+                'terms': [
+                    {'count': 1, 'term': u'first item3'},
+                    {'count': 1, 'term': u'first item2'},
+                ],
+                'fieldname': u'field2'
+            }, {
+                'terms': [
+                    {'count': 1, 'term': u'second'},
+                ],
+                'fieldname': u'field3'
+            }], result.drilldownData)
+
     def testCoreInfo(self):
         infos = list(compose(self.dna.all.coreInfo()))
         self.assertEquals(2, len(infos))

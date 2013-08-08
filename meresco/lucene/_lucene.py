@@ -118,10 +118,11 @@ class Lucene(object):
     def finish(self):
         self._index.finish()
 
-    def createJoinCollector(self, luceneQuery, fromField, toField):
-        hashCollector = HashCollector(fromField)
+    def createJoinCollector(self, luceneQuery, fromField, toField, facets=None):
+        facetCollector = self._facetCollector(facets) if facets else None
+        hashCollector = HashCollector(fromField, facetCollector)
         self._index.search(lambda: None, luceneQuery, None, hashCollector)
-        return dict(collector=hashCollector, toField=toField)
+        return dict(collector=hashCollector, toField=toField, facetCollector=facetCollector)
 
     def joinFacet(self, hashCollector, fromField, facets):
         facetCollector = self._facetCollector(facets)

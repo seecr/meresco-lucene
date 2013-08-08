@@ -37,14 +37,6 @@ class MultiLucene(Observable):
         Observable.__init__(self)
         self._defaultCore = defaultCore
 
-    def getFromGroupedFacet(self, groupedJoinFacets, core, fromField, toField):
-        for i, joinFacet in enumerate(groupedJoinFacets):
-            if joinFacet['core'] == core and \
-                joinFacet['fromField'] == fromField and \
-                joinFacet['toField'] == toField:
-                    groupedJoinFacets.pop(i)
-                    return joinFacet['facets']
-
     def executeQuery(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
         t0 = time()
         core = self._defaultCore if core is None else core
@@ -57,16 +49,16 @@ class MultiLucene(Observable):
 
         filterCollector = None
         filterCollector = HashCollector(joins[core])
-        state = compose(self.any[core].executeQuery3(luceneQuery=luceneQuery, filterCollector=filterCollector, **kwargs))
+        state = compose(self.any[core].executeQueryGenerator(luceneQuery=luceneQuery, filterCollector=filterCollector, **kwargs))
         state.next()
 
         joinResults = []
         for joinCore, joinQuery in joinQueries.items():
-            joinResults.append(self.call[joinCore].executeQuery2(luceneQuery=joinQuery, filterCollector=HashCollectorFilter(filterCollector, joins[joinCore]), facets=joinFacets.get(joinCore)))
+            joinResults.append(self.call[joinCore].executeJoinQuery(luceneQuery=joinQuery, filterCollector=HashCollectorFilter(filterCollector, joins[joinCore]), facets=joinFacets.get(joinCore)))
         for joinCore, joinFacet in joinFacets.items():
             if joinCore in joinQueries:
                 continue
-            joinResults.append(self.call[joinCore].executeQuery2(luceneQuery=MatchAllDocsQuery(), filterCollector=HashCollectorFilter(filterCollector, joins[joinCore]), facets=joinFacet))
+            joinResults.append(self.call[joinCore].executeJoinQuery(luceneQuery=MatchAllDocsQuery(), filterCollector=HashCollectorFilter(filterCollector, joins[joinCore]), facets=joinFacet))
 
         filterCollector.finishCollecting();
 
@@ -82,39 +74,6 @@ class MultiLucene(Observable):
         response.queryTime = millis(time() - t0)
         raise StopIteration(response)
 
-    def executeQu1ery(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, **kwargs):
-        t0 = time()
-        core = self._defaultCore if core is None else core
-        joinCollectors = []
-        if joinQueries is not None:
-            for joinQuery in joinQueries:
-                joinCollectors.append(
-                    self.call[joinQuery['core']].createJoinCollector(
-                        luceneQuery=joinQuery['luceneQuery'],
-                        fromField=joinQuery['fromField'],
-                        toField=joinQuery['toField']
-                    )
-                )
-        collectors = None
-        if joinFacets:
-            collectors = {}
-            for toField in set([joinFacet['toField'] for joinFacet in joinFacets]):
-                collectors['joinFacet.field.%s' % toField] = self._createJoinFacetCollector(toField)
-        response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, joinCollectors=joinCollectors, collectors=collectors, **kwargs)
-        if joinFacets:
-            if not hasattr(response, "drilldownData"):
-                response.drilldownData = []
-            for joinFacet in self.groupJoinFacets(joinFacets):
-                response.drilldownData.extend(
-                    self.call[joinFacet['core']].joinFacet(
-                        hashCollector=collectors['joinFacet.field.%s' % joinFacet['toField']],
-                        fromField=joinFacet['fromField'],
-                        facets=joinFacet['facets'],
-                    )
-                )
-        response.queryTime = millis(time() - t0)
-        raise StopIteration(response)
-
     def any_unknown(self, message, core=None, **kwargs):
         if message in ['prefixSearch', 'fieldnames']:
             core = self._defaultCore if core is None else core
@@ -122,29 +81,5 @@ class MultiLucene(Observable):
             raise StopIteration(result)
         raise DeclineMessage()
 
-    def _createJoinFacetCollector(self, toField):
-        return HashCollector(toField)
-
     def coreInfo(self):
         yield self.all.coreInfo()
-
-    def _joinFilterCreate(self, q):
-        return self.call[q['core']].createJoinFilter(q['luceneQuery'], fromField=q['fromField'], toField=q['toField'])
-
-    def _joinQueryCompare(self, q1, q2):
-        return q1['core'] == q2['core'] and \
-            q1['fromField'] == q2['fromField'] and \
-            q1['toField'] == q2['toField'] and \
-            q1['luceneQuery'].equals(q2['luceneQuery'])
-
-    @staticmethod
-    def groupJoinFacets(separateJoinFacets):
-        if separateJoinFacets is None:
-            return []
-        groupedJoinFacets = groupby(
-                separateJoinFacets,
-                lambda jf:dict((key, jf[key]) for key in ['core', 'fromField', 'toField']
-            ))
-        return [dict(joinFacetPart, facets=[jf['facet'] for jf in joinFacets]) \
-            for joinFacetPart, joinFacets in groupedJoinFacets]
-

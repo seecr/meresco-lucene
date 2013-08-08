@@ -67,19 +67,19 @@ class Lucene(object):
         yield
 
     def executeQuery(self, *args, **kwargs):
-        state = self.executeQuery3(*args, **kwargs)
+        state = self.executeQueryGenerator(*args, **kwargs)
         state.next()
         raise StopIteration(state.next())
         yield
 
-    def executeQuery2(self, luceneQuery, filterCollector, facets):
+    def executeJoinQuery(self, luceneQuery, filterCollector, facets):
         if facets:
             facetCollector = self._facetCollector(facets)
             filterCollector.setNextCollector(facetCollector)
         self._index.search(luceneQuery, None, filterCollector)
         return self._facetResult(facetCollector) if facets else None
 
-    def executeQuery3(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None,
+    def executeQueryGenerator(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None,
         filterQueries=None, suggestionRequest=None, filterCollector=None, **kwargs):
         t0 = time()
 
@@ -130,20 +130,6 @@ class Lucene(object):
 
     def finish(self):
         self._index.finish()
-
-    def createJoinCollector(self, luceneQuery, fromField, toField, facets=None):
-        facetCollector = self._facetCollector(facets) if facets else None
-        hashCollector = HashCollector(fromField, facetCollector)
-        self._index.search(lambda: None, luceneQuery, None, hashCollector)
-        return dict(collector=hashCollector, toField=toField, facetCollector=facetCollector)
-
-    def joinFacet(self, hashCollector, foreignKeyName, facets):
-        facetCollector = self._facetCollector(facets)
-        if not facetCollector:
-            return []
-        self._index.search(lambda: None, MatchAllDocsQuery(), None, HashCollectorFilter(hashCollector, facetCollector, foreignKeyName))
-        result = self._facetResult(facetCollector)
-        return result
 
     def _topDocsResponse(self, collector, start):
         # TODO: Probably use FieldCache iso document.get()

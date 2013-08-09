@@ -60,5 +60,5 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
 
     def testRemoteInfoField(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__timestamp__', name='main'), parse=False)
-        self.assertEquals(50, body.count(': 1'))
+        self.assertEquals(50, body.count(': 1'), body)
 

@@ -33,7 +33,7 @@ def main(arguments, **kwargs):
     yield '<h2>Contents field: <em>"%s"</em></h2>' % escapeHtml(fieldname)
     response = yield observable.any.prefixSearch(prefix='', core=name, fieldname=fieldname, limit=limit, showCount=True)
     yield '<pre>'
-    yield '\n'.join("%s: %s" % (term.replace('\n','\\n'), count) for (term, count) in response.hits)
+    yield '\n'.join("%s: %s" % (str(term).replace('\n','\\n'), count) for (term, count) in response.hits)
     yield '</pre>'
     yield page.footer(arguments=arguments, **kwargs)
 

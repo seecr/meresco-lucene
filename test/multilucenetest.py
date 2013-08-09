@@ -144,35 +144,6 @@ class MultiLuceneTest(SeecrTestCase):
         infos = list(compose(self.dna.all.coreInfo()))
         self.assertEquals(2, len(infos))
 
-    def testJoinQueryIsCachedAsFilter(self):
-        for i in range(1000):
-            fields = [(JOINHASH_PREFIX + 'B', '1')]
-            returnValueFromGenerator(self.luceneB.addDocument(identifier="id:%s" % i, document=createDocument(fields)))
-        query = MatchAllDocsQuery()
-        result = returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=MatchAllDocsQuery(),
-                core='A',
-                joinQueries=[{
-                    'core': 'B',
-                    'fromField': JOINHASH_PREFIX + 'B',
-                    'toField': JOINHASH_PREFIX + 'A',
-                    'luceneQuery': query,
-                }]
-            ))
-        self.assertTrue(result.queryTime > 20, result.asJson())
-        for i in xrange(20):
-            result = returnValueFromGenerator(self.dna.any.executeQuery(
-                    luceneQuery=MatchAllDocsQuery(),
-                    core='A',
-                    joinQueries=[{
-                        'core': 'B',
-                        'fromField': JOINHASH_PREFIX + 'B',
-                        'toField': JOINHASH_PREFIX + 'A',
-                        'luceneQuery': query,
-                    }]
-                ))
-        self.assertTrue(result.queryTime < 2, result.asJson())
-
     def testJoinFacetCached(self):
         for i in range(1000):
             fields = [(JOINHASH_PREFIX + 'B', '1'), ('field2', 'value%s' % i), ('field3', 'value%s' % i)]

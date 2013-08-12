@@ -50,14 +50,7 @@ class LuceneRemoteTest(SeecrTestCase):
                 stop=10,
                 facets=[{'fieldname': 'field', 'maxTerms':5}],
                 filterQueries=[parseString('query=fiets')],
-                joinQueries=[
-                    {
-                        "core": 'core1',
-                        "fromField": 'A.joinfield',
-                        "toField": 'B.joinfield',
-                        "query": parseString('query=test')
-                    }
-                ]
+                joinQueries= {"core1": parseString('query=test')}
             )
         )
         self.assertEquals(5, result.total)
@@ -77,17 +70,10 @@ class LuceneRemoteTest(SeecrTestCase):
                     'stop': 10,
                     'facets': [{'fieldname': 'field', 'maxTerms':5}],
                     'filterQueries': ['query=fiets'],
-                    'joinQueries': [
-                        {
-                            "core": 'core1',
-                            "fromField": 'A.joinfield',
-                            "toField": 'B.joinfield',
-                            "query": 'query=test'
-                        }
-                    ]
+                    'joinQueries': {'core1': 'query=test'}
                 }
             }, loads(m.kwargs['body']))
-    
+
     def testRemoteExecuteQueryWithNoneValues(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
@@ -202,14 +188,7 @@ class LuceneRemoteTest(SeecrTestCase):
                     'stop': 10,
                     'facets': [{'fieldname': 'field', 'maxTerms':5}],
                     'filterQueries': ['query=fiets'],
-                    'joinQueries': [
-                        {
-                            "core": 'core1',
-                            "fromField": 'A.joinfield',
-                            "toField": 'B.joinfield',
-                            "query": 'query=test'
-                        }
-                    ]
+                    'joinQueries': {'core1': 'query=test'}
                 }
             })
         result = ''.join(compose(service.handleRequest(path='/__lucene_remote__', Method="POST", Body=body)))
@@ -225,14 +204,7 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(10, m.kwargs['stop'])
         self.assertEquals([{'fieldname': 'field', 'maxTerms':5}], m.kwargs['facets'])
         self.assertEquals([parseString('query=fiets')], m.kwargs['filterQueries'])
-        self.assertEquals([
-                {
-                    "core": 'core1',
-                    "fromField": 'A.joinfield',
-                    "toField": 'B.joinfield',
-                    "query": parseString('query=test')
-                }
-            ], m.kwargs['joinQueries'])
+        self.assertEquals({'core1': parseString('query=test')}, m.kwargs['joinQueries'])
 
     def testServicePrefixSearch(self):
         observer = CallTrace('lucene')

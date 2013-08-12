@@ -96,7 +96,7 @@ class LuceneRemoteService(Observable):
             if 'filterQueries' in messageKwargs and messageKwargs['filterQueries'] is not None:
                 messageKwargs['filterQueries'] = [parseString(cqlstring) for cqlstring in messageKwargs['filterQueries']]
             if 'joinQueries' in messageKwargs and messageKwargs['joinQueries'] is not None:
-                messageKwargs['joinQueries'] = [dict(joinQuery, query=parseString(joinQuery['query'])) for joinQuery in messageKwargs['joinQueries']]
+                messageKwargs['joinQueries'] = dict((k, parseString(v)) for k, v in messageKwargs['joinQueries'].items())
             response = yield self.any.unknown(message=messageDict['message'], **messageKwargs)
         except Exception, e:
             x = format_exc() # returns 'None' if e is a Java Error

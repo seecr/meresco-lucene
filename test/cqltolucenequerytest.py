@@ -73,12 +73,11 @@ class CqlToLuceneQueryTest(TestCase):
     def testBraces(self):
         self.assertConversion(['term'], '(term)')
 
-    # def testJoinQueries(self):
-    #     self.assertConversion(['term2', 'term1'], query='term1', joinQueries=[dict(someKey='someValue', query=parseString('term2'))])
+    def testJoinQueries(self):
+        self.assertConversion(['term2', 'term1'], query='term1', joinQueries=dict(core1=parseString('term2')))
 
     def testFilterQueries(self):
         self.assertConversion(['term2', 'term1'], query='term1', filterQueries=[parseString('term2')])
-
 
     def assertConversion(self, expectedClauses, query, **kwargs):
         self.loggedClauses = []

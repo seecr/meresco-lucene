@@ -71,8 +71,8 @@ class LuceneRemote(Observable):
 
 _converters = {
     'filterQueries': lambda key, value: (key, [cql2string(ast) for ast in value]),
-    'joinQueries': lambda key, value: (key, [dict(joinQuery, query=cql2string(joinQuery['query'])) for joinQuery in value]),
-    'cqlAbstractSyntaxTree': lambda key, value: ('cqlQuery', cql2string(value)) 
+    'joinQueries': lambda key, value: (key, dict((k, cql2string(v)) for k, v in value.items())),
+    'cqlAbstractSyntaxTree': lambda key, value: ('cqlQuery', cql2string(value))
 }
 
 _defaultConvert = lambda key, value: (key, value)

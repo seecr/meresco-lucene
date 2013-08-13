@@ -28,7 +28,7 @@ from org.apache.lucene.search import MatchAllDocsQuery
 from weightless.core import DeclineMessage
 from _lucene import millis
 from time import time
-from org.meresco.lucene import HashCollector, HashCollectorFilter
+from org.meresco.lucene import PrimaryKeyCollectorFilter, ForeignKeyCollectorFilter
 from weightless.core import compose
 
 class MultiLucene(Observable):
@@ -46,8 +46,9 @@ class MultiLucene(Observable):
             response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, **kwargs)
             raise StopIteration(response)
 
+        shouldFilter = len(joinQueries) > 0 # Only queries (not facets) should filter query results
         filterCollector = None
-        filterCollector = HashCollector(joins[core])
+        filterCollector = PrimaryKeyCollectorFilter(joins[core], shouldFilter)
         state = compose(self.any[core].executeQueryGenerator(luceneQuery=luceneQuery, filterCollector=filterCollector, **kwargs))
         state.next()
 
@@ -58,7 +59,7 @@ class MultiLucene(Observable):
             joinResults.append(
                 self.call[joinCore].executeJoinQuery(
                         luceneQuery=query,
-                        filterCollector=HashCollectorFilter(filterCollector, joins[joinCore]),
+                        filterCollector=ForeignKeyCollectorFilter(filterCollector, joins[joinCore]),
                         facets=facets
                     )
             )

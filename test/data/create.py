@@ -39,11 +39,13 @@ TEMPLATE = """<ucp:updateRequest xmlns:ucp="info:lc/xmlns/update-v1">
 
 from random import choice, randint
 from string import ascii_letters, digits
+from os import makedirs
+from os.path import isdir
 
 randomWord = lambda length: ''.join(choice(ascii_letters + digits) for i in xrange(length))
 randomSentence = lambda words, maxlength: ' '.join(randomWord(randint(2,maxlength)) for w in xrange(words))
 
-def createRecord(recordNumber):
+def createRecord(recordNumber, randomJoinHash):
     identifier = 'record:%s' % recordNumber
     fields = '\n'.join([
         "<field1>%s</field1>" % randomWord(10),
@@ -52,16 +54,19 @@ def createRecord(recordNumber):
         "<intfield2>%s</intfield2>" % randint(100, 999),
         "<intfield3>%s</intfield3>" % randint(5000, 5010),
         "<field3>%s</field3>" % randomSentence(10, 12),
+        "<joinhash.field>%s</joinhash.field>" % (randint(0,100) if randomJoinHash else recordNumber),
         ])
     return TEMPLATE % locals()
 
 def main():
-    for recordNumber in xrange(3, 101):
-        data = createRecord(recordNumber)
-        filename = '%05d_record:%s.updateRequest' % (recordNumber, recordNumber)
-        with open(filename, 'w') as f:
-            print filename
-            f.write(data)
+    for core in ['main', 'main2']:
+        isdir(core) or makedirs(core)
+        for recordNumber in xrange(3 if core == 'main' else 1, 101 if core == 'main' else 1001):
+            data = createRecord(recordNumber, randomJoinHash=(core != 'main'))
+            filename = '%s/%05d_record:%s.updateRequest' % (core, recordNumber, recordNumber)
+            with open(filename, 'w') as f:
+                print filename
+                f.write(data)
 
 if __name__ == '__main__':
     main()

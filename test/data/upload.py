@@ -24,7 +24,7 @@
 #
 ## end license ##
 
-from os.path import dirname, abspath, join, basename
+from os.path import dirname, abspath, join, basename, isdir
 from lxml.etree import XML, tostring
 from os import listdir, getpid
 from sys import argv, exit
@@ -39,7 +39,7 @@ def main(port, random, start, **kwargs):
     t0 = time()
     try:
         if random <= 0:
-            uploadUpdateRequests(mypath, '/update', port)
+            uploadUpdateRequests(mypath, port)
         else:
             if start <= 0:
                 raise ValueError("Expected start > 0")
@@ -50,12 +50,14 @@ def main(port, random, start, **kwargs):
         t1 = time()
         print 'Took %s seconds' % (t1 - t0)
 
-def uploadUpdateRequests(datadir, uploadPath, uploadPort):
-    requests = (join(datadir, r) for r in sorted(listdir(datadir)) if r.endswith('.updateRequest'))
-    for filename in requests:
-        print 'http://localhost:%s%s' % (uploadPort, uploadPath), '<-', basename(filename)[:-len('.updateRequest')]
-        updateRequest = open(filename).read()
-        _uploadUpdateRequest(updateRequest, uploadPath, uploadPort)
+def uploadUpdateRequests(datadir, uploadPort):
+    for coreDir in [join(datadir, core) for core in listdir(datadir) if isdir(join(datadir, core))]:
+        uploadPath = '/update_%s' % basename(coreDir)
+        requests = (join(coreDir, r) for r in sorted(listdir(coreDir)) if r.endswith('.updateRequest'))
+        for filename in requests:
+            print 'http://localhost:%s%s' % (uploadPort, uploadPath), '<-', basename(filename)[:-len('.updateRequest')]
+            updateRequest = open(filename).read()
+            _uploadUpdateRequest(updateRequest, uploadPath, uploadPort)
 
 def _uploadUpdateRequest(updateRequest, uploadPath, uploadPort):
     XML(updateRequest)

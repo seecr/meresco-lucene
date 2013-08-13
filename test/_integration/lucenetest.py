@@ -26,16 +26,17 @@
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import getRequest, postRequest
 from meresco.xml.namespaces import xpathFirst, xpath
-from simplejson import loads
+from simplejson import loads, dumps
 from time import sleep
+from cqlparser import parseString as parseCql
 
 class LuceneTest(IntegrationTestCase):
 
     def testAddDelete(self):
-        postRequest(self.httpPort, '/update', ADD_RECORD, parse=False)
+        postRequest(self.httpPort, '/update_main', ADD_RECORD, parse=False)
         sleep(1.1)
         self.assertEquals(1, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
-        postRequest(self.httpPort, '/update', DELETE_RECORD, parse=False)
+        postRequest(self.httpPort, '/update_main', DELETE_RECORD, parse=False)
         sleep(1.1)
         self.assertEquals(0, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
 
@@ -101,8 +102,39 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(set(["value0", "value2", "value3", "value4", "value1"]), set(completions))
         self.assertEquals('value1', completions[-1])
 
+    def testJoin(self):
+        header, body = postRequest(port=self.httpPort, path='/remote/__lucene_remote__', data=dumps(dict(
+                message='executeQuery',
+                kwargs=dict(
+                    cqlQuery='*',
+                    filterQueries=['field2=value0 OR field2=value1'],
+                    start=0,
+                    stop=100,
+                    joins={'main': 'joinhash.field', 'main2': 'joinhash.field'},
+                    joinFacets={'main2': [dict(fieldname='untokenized.field2', maxTerms=5)]}
+                )
+            )), parse=False)
+        response = loads(body)
+        self.assertEquals(19, response['total'])
+        self.assertEquals([
+                'record:10', 'record:11', 'record:20', 'record:21', 'record:30',
+                'record:31', 'record:40', 'record:41', 'record:50', 'record:51',
+                'record:60', 'record:61', 'record:70', 'record:71', 'record:80',
+                'record:81', 'record:90', 'record:91', 'record:100'
+            ], response['hits'])
+        self.assertEquals([{
+                'fieldname': 'untokenized.field2',
+                'terms': [
+                    {'count': 27, 'term': 'value3'},
+                    {'count': 22, 'term': 'value0'},
+                    {'count': 19, 'term': 'value9'},
+                    {'count': 19, 'term': 'value7'},
+                    {'count': 19, 'term': 'value5'},
+                ]
+            }], response['drilldownData'])
+
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru'):
-        arguments={'version': '1.2', 
+        arguments={'version': '1.2',
             'operation': 'searchRetrieve',
             'query': query,
         }

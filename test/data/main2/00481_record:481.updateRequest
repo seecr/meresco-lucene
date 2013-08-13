@@ -1,0 +1,18 @@
+<ucp:updateRequest xmlns:ucp="info:lc/xmlns/update-v1">
+    <srw:version xmlns:srw="http://www.loc.gov/zing/srw/">1.0</srw:version>
+    <ucp:action>info:srw/action/1/replace</ucp:action>
+    <ucp:recordIdentifier>record:481</ucp:recordIdentifier>
+    <srw:record xmlns:srw="http://www.loc.gov/zing/srw/">
+        <srw:recordPacking>xml</srw:recordPacking>
+        <srw:recordSchema>data</srw:recordSchema>
+        <srw:recordData><document xmlns='http://meresco.org/namespace/example'>
+    <field1>ChULx5Y7ji</field1>
+<field2>value1</field2>
+<intfield1>1481</intfield1>
+<intfield2>663</intfield2>
+<intfield3>5003</intfield3>
+<field3>r2fswCfqeDy 63L NnnCPmD3jMX0 fYDbknpU K99yTAgb nxgAT jIPc0 Vuh9L jJhmGMxfd6V aUjxi25caK</field3>
+<joinhash.field>54</joinhash.field>
+</document></srw:recordData>
+    </srw:record>
+</ucp:updateRequest>

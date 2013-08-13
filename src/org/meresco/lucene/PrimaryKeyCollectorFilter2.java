@@ -36,11 +36,11 @@ public class PrimaryKeyCollectorFilter2 extends Collector {
 
     String primaryKeyName;
     FieldCache.Longs primaryKeyValues;
-    ForeignKeyCollector backwardFilter;
+    ForeignKeyCollector foreignKeyFilter;
     Collector nextCollector = null;
 
-    public PrimaryKeyCollectorFilter2(ForeignKeyCollector backwardFilter, String primaryKeyName) throws IOException {
-        this.backwardFilter = backwardFilter;
+    public PrimaryKeyCollectorFilter2(ForeignKeyCollector foreignKeyFilter, String primaryKeyName) throws IOException {
+        this.foreignKeyFilter = foreignKeyFilter;
         this.primaryKeyName = primaryKeyName;
     }
 
@@ -50,7 +50,7 @@ public class PrimaryKeyCollectorFilter2 extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-        if (this.backwardFilter.contains(this.primaryKeyValues.get(doc))) {
+        if (this.foreignKeyFilter.contains(this.primaryKeyValues.get(doc))) {
             if (this.nextCollector != null) {
                 this.nextCollector.collect(doc);
             }

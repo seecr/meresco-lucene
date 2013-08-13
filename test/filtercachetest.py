@@ -24,7 +24,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.filtercache import FilterCache
+from meresco.lucene.cache import FilterCache
 
 from org.apache.lucene.search import QueryWrapperFilter, TermQuery
 from org.apache.lucene.index import Term

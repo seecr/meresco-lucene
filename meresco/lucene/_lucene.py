@@ -35,7 +35,7 @@ from os.path import basename
 
 from luceneresponse import LuceneResponse
 from index import Index
-from filtercache import FilterCache
+from cache import FilterCache
 from utils import IDFIELD, createIdField, sortField
 
 

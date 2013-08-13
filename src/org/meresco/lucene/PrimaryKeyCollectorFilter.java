@@ -62,7 +62,7 @@ public class PrimaryKeyCollectorFilter extends Collector {
 
     public PrimaryKeyCollectorFilter(String primaryKeyName, Boolean shouldFilter) {
         this.primaryKeyName = primaryKeyName;
-        this.shouldFilter = shouldFilter;
+        this.shouldFilter = shouldFilter; // Should not filter based on foreign key in contains (For example with only joinFacets)
     }
 
     public void setNextCollector(Collector nextCollector) throws IOException {
@@ -96,7 +96,7 @@ public class PrimaryKeyCollectorFilter extends Collector {
     public boolean contains(long hash) throws IOException {
         Integer absDocId = hashesToDocId.get(hash);
         if (absDocId != null) {
-            if (this.nextCollector != null) {
+            if (this.nextCollector != null && this.shouldFilter) {
                 docSet.set(absDocId);
             }
             return true;

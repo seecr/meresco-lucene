@@ -82,11 +82,11 @@ class Lucene(object):
         t0 = time()
 
         collectors = [extraCollector] if extraCollector else []
-        topcollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
-        collectors.append(topcollector)
+        topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
+        collectors.append(topCollector)
         if facets:
-            facetcollector = self._facetCollector(facets)
-            collectors.append(facetcollector)
+            facetCollector = self._facetCollector(facets)
+            collectors.append(facetCollector)
         collector = MultiCollector.wrap(collectors)
 
         if filterCollector:
@@ -102,11 +102,11 @@ class Lucene(object):
 
         yield
 
-        total, hits = self._topDocsResponse(topcollector, start=start)
+        total, hits = self._topDocsResponse(topCollector, start=start)
         response = LuceneResponse(total=total, hits=hits)
 
         if facets:
-            response.drilldownData = self._facetResult(facetcollector)
+            response.drilldownData = self._facetResult(facetCollector)
 
         if suggestionRequest:
             response.suggestions = self._index.suggest(**suggestionRequest)

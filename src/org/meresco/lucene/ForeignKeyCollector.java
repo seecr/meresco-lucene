@@ -45,32 +45,23 @@ public class ForeignKeyCollector extends Collector {
 
     String foreignKeyName;
     FieldCache.Longs foreignKeyValues;
-    Map<Long, Integer> hashesToDocId = new HashMap<Long, Integer>();
-
-    int docBase;
+    Set<Long> hashes = new HashSet<Long>();
 
     public ForeignKeyCollector(String foreignKeyName) {
         this.foreignKeyName = foreignKeyName;
     }
 
     public boolean contains(long hash) throws IOException {
-        Integer absDocId = hashesToDocId.get(hash);
-        if (absDocId != null) {
-            return true;
-        }
-        return false;
+        return hashes.contains(hash);
     }
 
     @Override
     public void collect(int doc) throws IOException {
-        long hash = this.foreignKeyValues.get(doc);
-        int absDocId = doc + this.docBase;
-        this.hashesToDocId.put(hash, absDocId);
+        this.hashes.add(this.foreignKeyValues.get(doc));
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.docBase = context.docBase;
         this.foreignKeyValues = FieldCache.DEFAULT.getLongs(context.reader(), this.foreignKeyName, false);
     }
 

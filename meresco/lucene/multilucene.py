@@ -30,11 +30,13 @@ from _lucene import millis
 from time import time
 from org.meresco.lucene import PrimaryKeyCollectorFilter, ForeignKeyCollectorFilter, ForeignKeyCollector, PrimaryKeyCollectorFilter2
 from weightless.core import compose
+from chache import KeyCollectorCache
 
 class MultiLucene(Observable):
     def __init__(self, defaultCore):
         Observable.__init__(self)
         self._defaultCore = defaultCore
+        self._collectorCache = KeyCollectorCache(createCollectorFunction=lambda core: ForeignKeyCollector(core))
 
     def executeQuery(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
         t0 = time()
@@ -48,14 +50,18 @@ class MultiLucene(Observable):
 
         foreignKeyCollectors = []
         for joinCore, joinQuery in joinQueries.items():
-            foreignKeyCollector = ForeignKeyCollector(joins[joinCore])
+            inCache, foreignKeyCollector = self._collectorCache.getCollector(joins[joinCore], joinQuery)
+            extraCollector = None if inCache else foreignKeyCollector
             foreignKeyCollectors.append(foreignKeyCollector)
-            list(compose(self.any[joinCore].executeQuery(luceneQuery=joinQuery, extraCollector=foreignKeyCollector)))
+            list(compose(self.any[joinCore].executeQuery(luceneQuery=joinQuery, extraCollector=extraCollector)))
 
         filterCollector = None
         filterCollector = PrimaryKeyCollectorFilter2(foreignKeyCollectors[0], joins[core]) if foreignKeyCollectors else None
-        foreignKeyCollector = ForeignKeyCollector(joins[core])
-        response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, filterCollector=filterCollector, extraCollector=foreignKeyCollector, **kwargs)
+
+        inCache, foreignKeyCollector = self._collectorCache.getCollector(joins[core], luceneQuery)
+        extraCollector = None if inCache else foreignKeyCollector
+
+        response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, filterCollector=filterCollector, extraCollector=extraCollector, **kwargs)
 
         joinResults = []
         for joinCore, joinFacets in joinFacets.items():

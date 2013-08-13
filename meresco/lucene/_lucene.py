@@ -23,14 +23,12 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, MatchAllDocsQuery
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
 from org.apache.lucene.queries import ChainedFilter
-from org.apache.lucene.search.join import TermsCollector, TermsQuery
-from org.meresco.lucene import HashCollector, HashCollectorFilter
 from time import time
 
 from os.path import basename

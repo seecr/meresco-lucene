@@ -48,16 +48,53 @@ myPath = abspath(dirname(__file__))
 dynamicPath = join(myPath, 'html', 'dynamic')
 staticPath = join(myPath, 'html', 'static')
 
+def uploadHelix(lucene, storageComponent):
+    indexHelix = (Fields2LuceneDoc('record', addTimestamp=True),
+        (lucene,)
+    )
+
+    return \
+    (SruRecordUpdate(),
+        (TransactionScope('record'),
+            (Venturi(should=[{'partname': 'record', 'xpath': '.'}], namespaces={'doc': 'http://meresco.org/namespace/example'}),
+                (FilterMessages(allowed=['delete']),
+                    (lucene,),
+                    (storageComponent,)
+                ),
+                (FilterMessages(allowed=['add']),
+                    (Xml2Fields(),
+                        (RenameField(lambda name: name.split('.', 1)[-1]),
+                            indexHelix,
+                            (FilterField(lambda name: name == 'intfield1'),
+                                (RenameField(lambda name: SORTED_PREFIX + name),
+                                    indexHelix,
+                                )
+                            ),
+                            (FilterField(lambda name: name in ['field2', 'field3']),
+                                (RenameField(lambda name: UNTOKENIZED_PREFIX + name),
+                                    indexHelix,
+                                )
+                            ),
+                        )
+                    ),
+                ),
+                (XmlPrintLxml(fromKwarg='lxmlNode', toKwarg='data'),
+                    (storageComponent,)
+                )
+            )
+        )
+    )
+
 def main(reactor, port, databasePath):
-    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, commitCount=53, name='main')
+    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, commitCount=30, name='main')
+    lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, commitTimeout=0.1, name='main2')
+
     multiLuceneHelix = (MultiLucene(defaultCore='main'),
             (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, name='empty-core'),),
             (lucene,),
+            (lucene2,),
         )
     storageComponent = StorageComponent(directory=join(databasePath, 'storage'))
-    indexHelix = (Fields2LuceneDoc('record', addTimestamp=True),
-            (lucene,)
-        )
 
     return \
     (Observable(),
@@ -93,43 +130,17 @@ def main(reactor, port, databasePath):
                             (FileServer(staticPath),)
                         )
                     ),
-                    (PathFilter("/update"),
-                        (SruRecordUpdate(),
-                            (TransactionScope('record'),
-                                (Venturi(should=[{'partname': 'record', 'xpath': '.'}], namespaces={'doc': 'http://meresco.org/namespace/example'}),
-                                    (FilterMessages(allowed=['delete']),
-                                        (lucene,),
-                                        (storageComponent,)
-                                    ),
-                                    (FilterMessages(allowed=['add']),
-                                        (Xml2Fields(),
-                                            (RenameField(lambda name: name.split('.', 1)[-1]),
-                                                indexHelix,
-                                                (FilterField(lambda name: name == 'intfield1'),
-                                                    (RenameField(lambda name: SORTED_PREFIX + name),
-                                                        indexHelix,
-                                                    )
-                                                ),
-                                                (FilterField(lambda name: name in ['field2', 'field3']),
-                                                    (RenameField(lambda name: UNTOKENIZED_PREFIX + name),
-                                                        indexHelix,
-                                                    )
-                                                ),
-                                            )
-                                        ),
-                                    ),
-                                    (XmlPrintLxml(fromKwarg='lxmlNode', toKwarg='data'),
-                                        (storageComponent,)
-                                    )
-                                )
-                            )
-                        )
+                    (PathFilter("/update_main", excluding=['/update_main2']),
+                        uploadHelix(lucene, storageComponent),
+                    ),
+                    (PathFilter("/update_main2"),
+                        uploadHelix(lucene2, storageComponent),
                     ),
                     (PathFilter('/sru'),
                         (SruParser(defaultRecordSchema='record'),
                             (SruHandler(),
                                 (CqlToLuceneQuery([]),
-                                    (lucene,)
+                                    multiLuceneHelix,
                                 ),
                                 (SRUTermDrilldown(defaultFormat='xml'),),
                                 (storageComponent,),

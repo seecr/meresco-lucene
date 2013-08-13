@@ -56,11 +56,17 @@ class MultiLuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.luceneA.addDocument(identifier="id:0", document=createDocument([(JOINHASH_PREFIX + 'A', '1'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
         returnValueFromGenerator(self.luceneA.addDocument(identifier="id:1", document=createDocument([(JOINHASH_PREFIX + 'A', '2'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
         returnValueFromGenerator(self.luceneA.addDocument(identifier="id:2", document=createDocument([(JOINHASH_PREFIX + 'A', '3'), ('field1', 'value1')]), categories=createCategories([('field1', 'first item1')])))
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:7", document=createDocument([(JOINHASH_PREFIX + 'A', '4'), ('field1', 'value1')])))
         returnValueFromGenerator(self.luceneB.addDocument(identifier="id:3", document=createDocument([(JOINHASH_PREFIX + 'B', '1'), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
         returnValueFromGenerator(self.luceneB.addDocument(identifier="id:4", document=createDocument([(JOINHASH_PREFIX + 'B', '2'), ('field2', 'value2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'first')])))
         returnValueFromGenerator(self.luceneB.addDocument(identifier="id:5", document=createDocument([(JOINHASH_PREFIX + 'B', '2'), ('field2', 'value1'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'second')])))
         returnValueFromGenerator(self.luceneC.addDocument(identifier="id:6", document=createDocument([(JOINHASH_PREFIX + 'C', '1'), ('field4', 'value4')])))
         sleep(0.2)
+
+    def tearDown(self):
+        self.luceneA.finish()
+        self.luceneB.finish()
+        self.luceneC.finish()
 
     def testQueryOneIndex(self):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
@@ -71,8 +77,8 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
                 luceneQuery=MatchAllDocsQuery(),
             ))
-        self.assertEquals(3, result.total)
-        self.assertEquals(set(['id:0', 'id:1', 'id:2']), set(result.hits))
+        self.assertEquals(4, result.total)
+        self.assertEquals(set(['id:0', 'id:1', 'id:2', 'id:7']), set(result.hits))
         result = returnValueFromGenerator(self.dna.any.executeQuery(
                 luceneQuery=MatchAllDocsQuery(),
                 core='B',
@@ -114,6 +120,7 @@ class MultiLuceneTest(SeecrTestCase):
                     dict(fieldname='field3', maxTerms=10)
                 ]}
             ))
+        self.assertEquals(2, result.total)
         self.assertEquals([{
                 'terms': [
                     {'count': 2, 'term': u'first item3'},
@@ -121,6 +128,25 @@ class MultiLuceneTest(SeecrTestCase):
                 ],
                 'fieldname': u'field2'
             }, {
+                'terms': [
+                    {'count': 1, 'term': u'second'},
+                    {'count': 1, 'term': u'first'},
+                ],
+                'fieldname': u'field3'
+            }], result.drilldownData)
+
+    def testJoinFacetWillNotFilter(self):
+        result = returnValueFromGenerator(self.dna.any.executeQuery(
+                luceneQuery=MatchAllDocsQuery(),
+                joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B'},
+                core='A',
+                joinFacets={'B': [
+                    dict(fieldname='field3', maxTerms=10),
+                ]}
+            ))
+        self.assertEquals(4, result.total)
+        self.assertEquals(['id:0', 'id:1', 'id:2', 'id:7'], result.hits)
+        self.assertEquals([{
                 'terms': [
                     {'count': 1, 'term': u'second'},
                     {'count': 1, 'term': u'first'},
@@ -156,42 +182,3 @@ class MultiLuceneTest(SeecrTestCase):
     def testCoreInfo(self):
         infos = list(compose(self.dna.all.coreInfo()))
         self.assertEquals(3, len(infos))
-
-    def testJoinQueryIsCachedAsFilter(self):
-        for i in range(1000):
-            fields = [(JOINHASH_PREFIX + 'B', '1')]
-            returnValueFromGenerator(self.luceneB.addDocument(identifier="id:%s" % i, document=createDocument(fields)))
-        query = MatchAllDocsQuery()
-        result = returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=MatchAllDocsQuery(),
-                core='A',
-                joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B'},
-                joinQueries={'B': query},
-            ))
-        self.assertEquals(['id:0'], result.hits)
-        self.assertTrue(result.queryTime < 2, result.asJson())
-        for i in xrange(20):
-            result = returnValueFromGenerator(self.dna.any.executeQuery(
-                    luceneQuery=MatchAllDocsQuery(),
-                    core='A',
-                    joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B'},
-                    joinQueries={'B': query},
-                ))
-        self.assertTrue(result.queryTime < 2, result.asJson())
-
-    def testJoinFacetCached(self):
-        for i in range(1000):
-            fields = [(JOINHASH_PREFIX + 'B', '1'), ('field2', 'value%s' % i), ('field3', 'value%s' % i)]
-            returnValueFromGenerator(self.luceneB.addDocument(identifier="id:%s" % i, document=createDocument(fields), categories=createCategories(fields)))
-        sleep(0.1)
-
-        for i in range(100):
-            returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=MatchAllDocsQuery(),
-                core='A',
-                joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B'},
-                joinFacets={'B': [
-                    dict(fieldname='field2', maxTerms=10),
-                    dict(fieldname='field3', maxTerms=10)
-                ]}
-            ))

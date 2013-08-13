@@ -30,7 +30,7 @@ from _lucene import millis
 from time import time
 from org.meresco.lucene import PrimaryKeyCollectorFilter, ForeignKeyCollectorFilter, ForeignKeyCollector, PrimaryKeyCollectorFilter2
 from weightless.core import compose
-from chache import KeyCollectorCache
+from cache import KeyCollectorCache
 
 class MultiLucene(Observable):
     def __init__(self, defaultCore):

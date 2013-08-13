@@ -78,13 +78,16 @@ class Lucene(object):
         return self._facetResult(facetCollector) if facets else None
 
     def executeQueryGenerator(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None,
-        filterQueries=None, suggestionRequest=None, filterCollector=None, **kwargs):
+        filterQueries=None, suggestionRequest=None, filterCollector=None, extraCollector=None, **kwargs):
         t0 = time()
 
-        topcollector = collector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
+        collectors = [extraCollector] if extraCollector else []
+        topcollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
+        collectors.append(topcollector)
         if facets:
             facetcollector = self._facetCollector(facets)
-            collector = MultiCollector.wrap([topcollector, facetcollector])
+            collectors.append(facetcollector)
+        collector = MultiCollector.wrap(collectors)
 
         if filterCollector:
             filterCollector.setNextCollector(collector)

@@ -47,7 +47,7 @@ if not maxheap:
     maxheap = '4g'
     warn("Using '4g' as maxheap for lucene.initVM(). To override use MERESCO_LUCENE_MAXHEAP environment variable.")
 from lucene import initVM
-VM = initVM(maxheap=maxheap)
+VM = initVM(maxheap=maxheap)#, vmargs='-agentlib:hprof=heap=sites')
 from meresco_lucene import initVM
 VMM = initVM()
 

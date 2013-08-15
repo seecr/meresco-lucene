@@ -25,8 +25,8 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase, CallTrace
-from os.path import join
-from time import sleep
+from os.path import join, isdir
+from time import sleep, time
 from meresco.lucene import Lucene, VM
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.utils import createField
@@ -39,6 +39,8 @@ from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.search.join import TermsCollector
 from seecr.utils.generatorutils import returnValueFromGenerator
 import gc
+
+from org.meresco.lucene import ForeignKeyCollector
 
 class LuceneTest(SeecrTestCase):
     def setUp(self):
@@ -314,6 +316,55 @@ class LuceneTest(SeecrTestCase):
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
         self.assertTrue(response.queryTime < 2, response.queryTime)
 
+    def xtestPerformanceCollectors(self):
+        ### results
+        # 10000 (HashSet):
+        # With collector: 0.0016348361969
+        # Without collector: 0.000734806060791
+        # Contains time: 0.016597032547
+
+        # With collector: 0.00164890289307
+        # Without collector: 0.000725030899048
+        # Contains time: 0.0173671245575
+
+        # 10000 (HashSetLinear):
+        # With collector: 0.00156307220459
+        # Without collector: 0.000715970993042
+        # Contains time: 0.0190229415894
+
+        # With collector: 0.00157284736633
+        # Without collector: 0.000757932662964
+        # Contains time: 0.0188419818878
+
+        N = 10000
+        upload = True
+        if isdir('/tmp/lucene_perf'):
+            upload = False
+        self.lucene = Lucene('/tmp/lucene_perf', commitCount=1, reactor=self._reactor)
+        if upload:
+            for i in range(N):
+                returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([('joinhash.field', i)])))
+        sleep(0.1)
+        for i in range(10):
+            returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
+            returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(),extraCollector=ForeignKeyCollector('joinhash.field')))
+
+        collector = ForeignKeyCollector('joinhash.field')
+        t0 = time()
+        returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), extraCollector=collector))
+        print 'With collector:', time() - t0
+
+        t0 = time()
+        returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
+        print 'Without collector:', time() - t0
+
+
+        t0 = time()
+        for i in range(N):
+            collector.contains(long(i))
+        print 'Contains time:', time() - t0
+
+
 def createDocument(textfields):
     document = Document()
     for name, value in textfields:
@@ -325,3 +376,5 @@ def createCategories(fields):
     for name, value in fields:
         result.append(CategoryPath([name, str(value)]))
     return result
+
+

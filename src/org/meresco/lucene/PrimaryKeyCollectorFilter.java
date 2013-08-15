@@ -54,9 +54,9 @@ public class PrimaryKeyCollectorFilter extends Collector {
     Boolean shouldFilter;
 
     int docBase;
-    int nextDocBase = -1;
-    int currentContext = 0;
+    int nextDocBase = 0;
     List<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
+    List<Integer> docBases = new ArrayList<Integer>();
 
     OpenBitSet docSet = new OpenBitSet();
 
@@ -71,26 +71,22 @@ public class PrimaryKeyCollectorFilter extends Collector {
     }
 
     private void setContextForDocId(int docId) throws IOException {
-        if (docId < this.nextDocBase || this.currentContext + 1 == this.contexts.size()) {
+        if (docId < this.nextDocBase || this.nextDocBase == -1) {
             return;
         }
-        AtomicReaderContext nextContext;
-        while (true) {
-            nextContext = this.contexts.get(this.currentContext + 1);
-            if (nextContext.docBase <= docId) {
-                this.currentContext++;
-                this.nextDocBase = nextContext.docBase;
-                if (this.currentContext + 1 == this.contexts.size()) {
-                    break;
-                }
-            } else {
+        int index = -1;
+        this.nextDocBase = -1;
+        for (Integer docBase : this.docBases) {
+            if (docBase > docId) {
+                this.nextDocBase = docBase;
                 break;
             }
+            index++;
         }
-
-        AtomicReaderContext currentContext = this.contexts.get(this.currentContext);
-        this.docBase = currentContext.docBase;
-        this.nextCollector.setNextReader(currentContext);
+        AtomicReaderContext context = this.contexts.get(index);
+        this.docBase = context.docBase;
+        this.nextCollector.setNextReader(context);
+        // System.out.println("DocId: " + docId + "; Set to docBase: " + this.docBase);
     }
 
     public boolean contains(long hash) throws IOException {
@@ -108,7 +104,7 @@ public class PrimaryKeyCollectorFilter extends Collector {
         DocIdSetIterator it = this.docSet.iterator();
         int docId;
         while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            setContextForDocId(docId);
+            this.setContextForDocId(docId);
             this.hashScorer.setDocId(docId);
             this.nextCollector.collect(docId - this.docBase);
         }
@@ -129,6 +125,7 @@ public class PrimaryKeyCollectorFilter extends Collector {
     public void setNextReader(AtomicReaderContext context) throws IOException {
         this.docBase = context.docBase;
         this.contexts.add(context);
+        this.docBases.add(this.docBase);
         this.primaryKeyValues = FieldCache.DEFAULT.getLongs(context.reader(), this.primaryKeyName, false);
     }
 

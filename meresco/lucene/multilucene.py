@@ -38,7 +38,7 @@ class MultiLucene(Observable):
         self._defaultCore = defaultCore
         self._collectorCache = KeyCollectorCache(createCollectorFunction=lambda core: ForeignKeyCollector(core))
 
-    def executeQuery(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
+    def executeQuery2(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
         t0 = time()
         core = self._defaultCore if core is None else core
         joinQueries = joinQueries or {}
@@ -85,7 +85,7 @@ class MultiLucene(Observable):
         raise StopIteration(response)
 
 
-    def executeQuery2(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
+    def executeQuery(self, luceneQuery=None, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
         t0 = time()
         core = self._defaultCore if core is None else core
         joinQueries = joinQueries or {}
@@ -112,7 +112,6 @@ class MultiLucene(Observable):
                         facets=facets
                     )
             )
-
         filterCollector.finishCollecting();
 
         response = state.next()

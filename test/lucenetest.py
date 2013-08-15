@@ -40,7 +40,7 @@ from org.apache.lucene.search.join import TermsCollector
 from seecr.utils.generatorutils import returnValueFromGenerator
 import gc
 
-from org.meresco.lucene import ForeignKeyCollector
+from org.meresco.lucene import KeyCollector
 
 class LuceneTest(SeecrTestCase):
     def setUp(self):

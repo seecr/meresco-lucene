@@ -27,57 +27,49 @@ package org.meresco.lucene;
 
 import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.OpenBitSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
 
-
-public class ForeignKeyCollectorFilter extends Collector {
+public class KeyCollector extends Collector {
 
     String foreignKeyName;
     FieldCache.Longs foreignKeyValues;
-    PrimaryKeyCollectorFilter backwardFilter;
-    Collector nextCollector = null;
+    Set<Long> hashes = new HashSet<Long>();
 
-    public ForeignKeyCollectorFilter(PrimaryKeyCollectorFilter backwardFilter, String foreignKeyName) throws IOException {
-        this.backwardFilter = backwardFilter;
+    public KeyCollector(String foreignKeyName) {
         this.foreignKeyName = foreignKeyName;
     }
 
-    public void setNextCollector(Collector nextCollector) {
-        this.nextCollector = nextCollector;
+    public boolean contains(long hash) throws IOException {
+        return hashes.contains(hash);
     }
 
     @Override
     public void collect(int doc) throws IOException {
-        if (this.backwardFilter.contains(this.foreignKeyValues.get(doc))) {
-            if (this.nextCollector != null) {
-                this.nextCollector.collect(doc);
-            }
-        }
+        this.hashes.add(this.foreignKeyValues.get(doc));
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
         this.foreignKeyValues = FieldCache.DEFAULT.getLongs(context.reader(), this.foreignKeyName, false);
-        if (this.nextCollector != null) {
-            this.nextCollector.setNextReader(context);
-        }
     }
 
     @Override
     public boolean acceptsDocsOutOfOrder() {
-        if (this.nextCollector != null) {
-           return this.nextCollector.acceptsDocsOutOfOrder();
-        }
         return true;
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
-        if (this.nextCollector != null) {
-            this.nextCollector.setScorer(scorer);
-        }
-    }
-
+    public void setScorer(Scorer scorer) throws IOException {}
 }

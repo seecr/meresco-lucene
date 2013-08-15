@@ -32,16 +32,16 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.FieldCache;
 
 
-public class PrimaryKeyCollectorFilter2 extends Collector {
+public class KeyCollectorFilter extends Collector {
 
-    String primaryKeyName;
-    FieldCache.Longs primaryKeyValues;
-    ForeignKeyCollector foreignKeyFilter;
+    String keyName;
+    FieldCache.Longs keyMap;
+    KeyCollector keyFilter;
     Collector nextCollector = null;
 
-    public PrimaryKeyCollectorFilter2(ForeignKeyCollector foreignKeyFilter, String primaryKeyName) throws IOException {
-        this.foreignKeyFilter = foreignKeyFilter;
-        this.primaryKeyName = primaryKeyName;
+    public KeyCollectorFilter(KeyCollector keyFilter, String keyName) throws IOException {
+        this.keyFilter = keyFilter;
+        this.keyName = keyName;
     }
 
     public void setNextCollector(Collector nextCollector) {
@@ -50,7 +50,7 @@ public class PrimaryKeyCollectorFilter2 extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-        if (this.foreignKeyFilter.contains(this.primaryKeyValues.get(doc))) {
+        if (this.keyFilter.contains(this.keyMap.get(doc))) {
             if (this.nextCollector != null) {
                 this.nextCollector.collect(doc);
             }
@@ -59,7 +59,7 @@ public class PrimaryKeyCollectorFilter2 extends Collector {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.primaryKeyValues = FieldCache.DEFAULT.getLongs(context.reader(), this.primaryKeyName, false);
+        this.keyMap = FieldCache.DEFAULT.getLongs(context.reader(), this.keyName, false);
         if (this.nextCollector != null) {
             this.nextCollector.setNextReader(context);
         }

@@ -70,11 +70,11 @@ class Lucene(object):
         raise StopIteration(state.next())
         yield
 
-    def executeJoinQuery(self, luceneQuery, filterCollector, facets):
+    def executeJoinQuery(self, luceneQuery, collector, facets=None):
         if facets:
             facetCollector = self._facetCollector(facets)
-            filterCollector.setNextCollector(facetCollector)
-        self._index.search(luceneQuery, None, filterCollector)
+            collector.setNextCollector(facetCollector)
+        self._index.search(luceneQuery, None, collector)
         return self._facetResult(facetCollector) if facets else None
 
     def executeQueryGenerator(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None,

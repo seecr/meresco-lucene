@@ -45,7 +45,7 @@ public class KeyCollector extends Collector {
 
     String foreignKeyName;
     FieldCache.Longs foreignKeyValues;
-    HashSetLinear hashes = new HashSetLinear((int) Math.pow(2, 20));
+    HashSetLinear hashes = new HashSetLinear(10000000);
 
     public KeyCollector(String foreignKeyName) {
         this.foreignKeyName = foreignKeyName;

@@ -320,22 +320,22 @@ class LuceneTest(SeecrTestCase):
     def testPerformanceCollectors(self):
         ### results
         # 10000 (HashSet):
-        # With collector: 0.0016348361969
-        # Without collector: 0.000734806060791
-        # Contains time: 0.016597032547
+        # With collector: 0.00243592262268
+        # Without collector: 0.00114011764526
+        # Contains time: 0.0198459625244
 
-        # With collector: 0.00164890289307
-        # Without collector: 0.000725030899048
-        # Contains time: 0.0173671245575
+        # With collector: 0.0024209022522
+        # Without collector: 0.00112700462341
+        # Contains time: 0.0200550556183
 
         # 10000 (HashSetLinear):
-        # With collector: 0.00156307220459
-        # Without collector: 0.000715970993042
-        # Contains time: 0.0190229415894
+        # With collector: 0.00211501121521
+        # Without collector: 0.00103998184204
+        # Contains time: 0.0138301849365
 
-        # With collector: 0.00157284736633
-        # Without collector: 0.000757932662964
-        # Contains time: 0.0188419818878
+        # With collector: 0.00194406509399
+        # Without collector: 0.00127792358398
+        # Contains time: 0.013053894043
 
         N = 10000
         upload = True
@@ -344,7 +344,8 @@ class LuceneTest(SeecrTestCase):
         self.lucene = Lucene('/tmp/lucene_perf', commitCount=1, reactor=self._reactor)
         if upload:
             for i in range(N):
-                returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([('joinhash.field', randint(0, 2**64))])))
+                returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([('joinhash.field', randint(-(2**63), 2**63))])))
+        print 'Index created..'
         sleep(0.1)
         for i in range(10):
             returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
@@ -366,9 +367,9 @@ class LuceneTest(SeecrTestCase):
         print 'Contains time:', time() - t0
 
 
-def createDocument(textfields):
+def createDocument(fields):
     document = Document()
-    for name, value in textfields:
+    for name, value in fields:
         document.add(createField(name, value))
     return document
 

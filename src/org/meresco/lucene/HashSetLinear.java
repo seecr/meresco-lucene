@@ -27,49 +27,50 @@ package org.meresco.lucene;
 
 import java.lang.Math;
 
-public class HashSetLinear
+public final class HashSetLinear
 {
-	private static final long RANGE = (long)Math.pow(2, 64);
-	private long[] hashArray;
-	private int size;
-	
-	public HashSetLinear(int size) {
-		this.size = size;
-		this.hashArray = new long[size];
-	}
+    private static final double HALF_RANGE = Math.pow(2, 63);
+    private long[] hashArray;
+    private int size;
+    private double scaleFactor;
 
-	public boolean contains(long hash) {
-		int index = this.index(hash);
-		while (true) {
-			long h = hashArray[index++];
-			if (h == hash) {
-				return true;
-			} else if (h == 0 || h > hash || index == size) {
-				return false;
-			}
-		}
-	}
+    public HashSetLinear(int size) {
+        this.size = size;
+        this.hashArray = new long[size];
+        this.scaleFactor = size / 2 / HALF_RANGE;
+    }
 
-	public void add(long hash) {
-		if (hash == 0) { throw new RuntimeException("0 is not allowed"); }
-		int index = this.index(hash);
-		while (true) {
-			long h = hashArray[index];
-			if (h == hash) {
-				return;
-			} else if (h == 0 || h > hash) {
-//				System.out.println("Set to index " + index + " hash " + hash);
-				hashArray[index] = hash;
-				if (h > hash) {
-					add(h);
-				}
-				break;
-			}
-			index++;
-		}
-	}
-	
-	private int index(long hash) {
-		return (int) (hash * size / RANGE);
-	}
+    public boolean contains(long hash) {
+        int index = this.index(hash);
+        while (true) {
+            long h = hashArray[index++];
+            if (h == hash) {
+                return true;
+            } else if (h == 0 || h > hash || index == size) {
+                return false;
+            }
+        }
+    }
+
+    public void add(long hash) {
+        if (hash == 0) { throw new RuntimeException("0 is not allowed"); }
+        int index = this.index(hash);
+        while (true) {
+            long h = hashArray[index];
+            if (h == hash) {
+                return;
+            } else if (h == 0 || h > hash) {
+                hashArray[index] = hash;
+                if (h > hash && h != 0) {
+                    add(h);
+                }
+                break;
+            }
+            index++;
+        }
+    }
+
+    private int index(long hash) {
+        return (int) (scaleFactor * hash) + (size >> 1);
+    }
 }

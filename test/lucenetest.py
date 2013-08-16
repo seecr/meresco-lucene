@@ -39,6 +39,7 @@ from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.search.join import TermsCollector
 from seecr.utils.generatorutils import returnValueFromGenerator
 import gc
+from random import randint
 
 from org.meresco.lucene import KeyCollector
 
@@ -316,7 +317,7 @@ class LuceneTest(SeecrTestCase):
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
         self.assertTrue(response.queryTime < 2, response.queryTime)
 
-    def xtestPerformanceCollectors(self):
+    def testPerformanceCollectors(self):
         ### results
         # 10000 (HashSet):
         # With collector: 0.0016348361969
@@ -343,13 +344,13 @@ class LuceneTest(SeecrTestCase):
         self.lucene = Lucene('/tmp/lucene_perf', commitCount=1, reactor=self._reactor)
         if upload:
             for i in range(N):
-                returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([('joinhash.field', i)])))
+                returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([('joinhash.field', randint(0, 2**64))])))
         sleep(0.1)
         for i in range(10):
             returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
-            returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(),extraCollector=ForeignKeyCollector('joinhash.field')))
+            returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), extraCollector=KeyCollector('joinhash.field')))
 
-        collector = ForeignKeyCollector('joinhash.field')
+        collector = KeyCollector('joinhash.field')
         t0 = time()
         returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), extraCollector=collector))
         print 'With collector:', time() - t0

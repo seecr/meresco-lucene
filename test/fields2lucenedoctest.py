@@ -66,8 +66,9 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             'untokenized.field4': ['value4'],
             'untokenized.field5': ['value5', 'value6'],
             'untokenized.field6': ['value5/value6'],
+            'untokenized.field7': ['valuex']
         }
-        fields2LuceneDoc = Fields2LuceneDoc('tsname')
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFieldnames=['untokenized.field4', 'untokenized.field5', 'untokenized.field6'])
         categories = fields2LuceneDoc._createFacetCategories(fields)
         self.assertEquals(4, len(categories))
         self.assertEquals(set([

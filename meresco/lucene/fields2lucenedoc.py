@@ -29,12 +29,13 @@ from org.apache.lucene.facet.taxonomy import CategoryPath
 
 from time import time
 
-from utils import createField, createTimestampField, IDFIELD, UNTOKENIZED_PREFIX
+from utils import createField, createTimestampField, IDFIELD
 
 class Fields2LuceneDoc(Observable):
-    def __init__(self, transactionName, addTimestamp=False):
+    def __init__(self, transactionName, drilldownFieldnames, addTimestamp=False):
         Observable.__init__(self)
         self._transactionName = transactionName
+        self._drilldownFieldnames = drilldownFieldnames
         self._addTimestamp = addTimestamp
 
     def begin(self, name):
@@ -76,4 +77,4 @@ class Fields2LuceneDoc(Observable):
         return int(time()*1000000)
 
     def _createFacetCategories(self, fields):
-        return [CategoryPath([f, str(v)]) for f, vs in fields.items() for v in vs if f.startswith(UNTOKENIZED_PREFIX)]
+        return [CategoryPath([f, str(v)]) for f, vs in fields.items() for v in vs if f in self._drilldownFieldnames]

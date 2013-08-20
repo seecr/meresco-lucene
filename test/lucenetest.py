@@ -317,7 +317,7 @@ class LuceneTest(SeecrTestCase):
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
         self.assertTrue(response.queryTime < 2, response.queryTime)
 
-    def testPerformanceCollectors(self):
+    def xtestPerformanceCollectors(self):
         ### results
         # 10000 (HashSet):
         # With collector: 0.00243592262268

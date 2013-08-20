@@ -36,7 +36,7 @@ public final class HashSetLinear
 
     public HashSetLinear(int size) {
         this.size = size;
-        this.hashArray = new long[size];
+        this.hashArray = new long[(int) Math.ceil(size * 1.1)];
         this.scaleFactor = size / 2 / HALF_RANGE;
     }
 
@@ -46,7 +46,7 @@ public final class HashSetLinear
             long h = hashArray[index++];
             if (h == hash) {
                 return true;
-            } else if (h == 0 || h > hash || index == size) {
+            } else if (h == 0 || h > hash || index == this.hashArray.length) {
                 return false;
             }
         }

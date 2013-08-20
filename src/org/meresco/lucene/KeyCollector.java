@@ -68,7 +68,7 @@ public class KeyCollector extends Collector {
             while (!top.isTopLevel) {
                 top = top.parent;
             }
-            hashes = new HashSetLinear(top.reader().maxDoc());
+            hashes = new HashSetLinear(top.reader().maxDoc() * 2);
         }
         this.foreignKeyValues = FieldCache.DEFAULT.getLongs(context.reader(), this.foreignKeyName, false);
     }

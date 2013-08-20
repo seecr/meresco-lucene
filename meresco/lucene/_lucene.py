@@ -64,12 +64,6 @@ class Lucene(object):
         return
         yield
 
-    def executeQuery(self, *args, **kwargs):
-        state = self.executeQueryGenerator(*args, **kwargs)
-        state.next()
-        raise StopIteration(state.next())
-        yield
-
     def executeJoinQuery(self, luceneQuery, collector, facets=None):
         if facets:
             facetCollector = self._facetCollector(facets)
@@ -77,7 +71,7 @@ class Lucene(object):
         self._index.search(luceneQuery, None, collector)
         return self._facetResult(facetCollector) if facets else None
 
-    def executeQueryGenerator(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None,
+    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None,
         filterQueries=None, suggestionRequest=None, filterCollector=None, extraCollector=None, **kwargs):
         t0 = time()
 
@@ -100,8 +94,6 @@ class Lucene(object):
 
         self._index.search(luceneQuery, filter_, collector)
 
-        yield
-
         total, hits = self._topDocsResponse(topCollector, start=start)
         response = LuceneResponse(total=total, hits=hits)
 
@@ -113,7 +105,8 @@ class Lucene(object):
 
         response.queryTime = millis(time() - t0)
 
-        yield response
+        raise StopIteration(response)
+        yield
 
     def prefixSearch(self, fieldname, prefix, showCount=False, **kwargs):
         t0 = time()

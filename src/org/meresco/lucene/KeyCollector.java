@@ -29,6 +29,7 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.FieldCache;
@@ -45,7 +46,7 @@ public class KeyCollector extends Collector {
 
     String foreignKeyName;
     FieldCache.Longs foreignKeyValues;
-    HashSetLinear hashes = new HashSetLinear(10000000);
+    HashSetLinear hashes = null;
 
     public KeyCollector(String foreignKeyName) {
         this.foreignKeyName = foreignKeyName;
@@ -62,6 +63,14 @@ public class KeyCollector extends Collector {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
+        if (hashes == null) {
+            CompositeReaderContext top = context.parent;
+            while (!top.isTopLevel) {
+                top = top.parent;
+            }
+            int maxDoc = top.reader().maxDoc();
+            hashes = new HashSetLinear((int) Math.ceil(maxDoc * 2));
+        }
         this.foreignKeyValues = FieldCache.DEFAULT.getLongs(context.reader(), this.foreignKeyName, false);
     }
 

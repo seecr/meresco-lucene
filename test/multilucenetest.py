@@ -38,6 +38,7 @@ from org.apache.lucene.index import Term
 
 from lucenetest import createDocument, createCategories
 from time import sleep
+from random import randint
 
 
 class MultiLuceneTest(SeecrTestCase):
@@ -53,14 +54,18 @@ class MultiLuceneTest(SeecrTestCase):
                 (self.luceneC,),
             )
         ))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:0", document=createDocument([(JOINHASH_PREFIX + 'A', '1'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:1", document=createDocument([(JOINHASH_PREFIX + 'A', '2'), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:2", document=createDocument([(JOINHASH_PREFIX + 'A', '3'), ('field1', 'value1')]), categories=createCategories([('field1', 'first item1')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:7", document=createDocument([(JOINHASH_PREFIX + 'A', '4'), ('field1', 'value1')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:3", document=createDocument([(JOINHASH_PREFIX + 'B', '1'), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:4", document=createDocument([(JOINHASH_PREFIX + 'B', '2'), ('field2', 'value2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'first')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:5", document=createDocument([(JOINHASH_PREFIX + 'B', '2'), ('field2', 'value1'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'second')])))
-        returnValueFromGenerator(self.luceneC.addDocument(identifier="id:6", document=createDocument([(JOINHASH_PREFIX + 'C', '1'), ('field4', 'value4')])))
+        joinHash1 = randint(-(2**63), 2**63)
+        joinHash2 = randint(-(2**63), 2**63)
+        joinHash3 = randint(-(2**63), 2**63)
+        joinHash4 = randint(-(2**63), 2**63)
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:0", document=createDocument([(JOINHASH_PREFIX + 'A', joinHash1), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:1", document=createDocument([(JOINHASH_PREFIX + 'A', joinHash2), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:2", document=createDocument([(JOINHASH_PREFIX + 'A', joinHash3), ('field1', 'value1')]), categories=createCategories([('field1', 'first item1')])))
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:7", document=createDocument([(JOINHASH_PREFIX + 'A', joinHash4), ('field1', 'value1')])))
+        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:3", document=createDocument([(JOINHASH_PREFIX + 'B', joinHash1), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
+        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:4", document=createDocument([(JOINHASH_PREFIX + 'B', joinHash2), ('field2', 'value2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'first')])))
+        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:5", document=createDocument([(JOINHASH_PREFIX + 'B', joinHash2), ('field2', 'value1'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'second')])))
+        returnValueFromGenerator(self.luceneC.addDocument(identifier="id:6", document=createDocument([(JOINHASH_PREFIX + 'C', joinHash1), ('field4', 'value4')])))
         sleep(0.2)
 
     def tearDown(self):

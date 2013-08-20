@@ -49,7 +49,7 @@ dynamicPath = join(myPath, 'html', 'dynamic')
 staticPath = join(myPath, 'html', 'static')
 
 def uploadHelix(lucene, storageComponent):
-    indexHelix = (Fields2LuceneDoc('record', addTimestamp=True),
+    indexHelix = (Fields2LuceneDoc('record', drilldownFieldnames=['untokenized.field2'], addTimestamp=True),
         (lucene,)
     )
 

@@ -35,7 +35,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             'sorted.field3': ['value3'],
             'untokenized.field4': ['value4'],
         }
-        fields2LuceneDoc = Fields2LuceneDoc('tsname')
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFieldnames=[])
         document = fields2LuceneDoc._createDocument(fields)
         self.assertEquals(set(['field1', 'field2', 'sorted.field3', 'untokenized.field4']), set([f.name() for f in document.getFields()]))
 
@@ -80,7 +80,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
 
     def testAddTimeStamp(self):
         fields = {'field1': ['value1']}
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', addTimestamp=True)
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', addTimestamp=True, drilldownFieldnames=[])
         fields2LuceneDoc._time = lambda: 123456789
         document = fields2LuceneDoc._createDocument(fields)
         self.assertEquals(set(['field1', '__timestamp__']), set([f.name() for f in document.getFields()]))

@@ -55,7 +55,6 @@ public final class HashSetLinear
     public void add(long hash) {
         if (hash == 0) { throw new RuntimeException("0 is not allowed"); }
         int index = this.index(hash);
-        System.out.println("Add hash " + hash + " to index " + index);
         while (true) {
             long h = hashArray[index];
             if (h == hash) {

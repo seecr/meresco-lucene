@@ -54,20 +54,28 @@ public final class HashSetLinear
 
     public void add(long hash) {
         if (hash == 0) { throw new RuntimeException("0 is not allowed"); }
+        long oldHash = hash;
+        while (oldHash != 0) {
+            oldHash = addHash(oldHash);
+        }
+    }
+
+    private long addHash(long hash) {
         int index = this.index(hash);
         while (true) {
             long h = hashArray[index];
             if (h == hash) {
-                return;
+                return 0;
             } else if (h == 0 || h > hash) {
                 hashArray[index] = hash;
                 if (h > hash && h != 0) {
-                    add(h);
+                    return h;
                 }
                 break;
             }
             index++;
         }
+        return 0;
     }
 
     private int index(long hash) {

@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
@@ -190,7 +190,7 @@ def _topCollector(start, stop, sortKeys):
         ]
         sort = Sort(sortFields)
     else:
-        sort = Sort()
+        return TopScoreDocCollector.create(stop-start, False)
     fillFields = True
     trackDocScores = True
     trackMaxScore = True

@@ -190,7 +190,7 @@ def _topCollector(start, stop, sortKeys):
         ]
         sort = Sort(sortFields)
     else:
-        return TopScoreDocCollector.create(stop-start, False)
+        return TopScoreDocCollector.create(stop, True)
     fillFields = True
     trackDocScores = True
     trackMaxScore = True

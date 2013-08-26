@@ -23,8 +23,9 @@
 #
 ## end license ##
 
-from org.apache.lucene.document import TextField, StringField, Field, LongField
+from org.apache.lucene.document import TextField, StringField, Field, LongField, FieldType
 from org.apache.lucene.search import SortField
+from java.lang import Integer
 
 TIMESTAMPFIELD = '__timestamp__'
 IDFIELD = '__id__'
@@ -37,7 +38,7 @@ TEXTTYPE = 'text'
 STRINGTYPE = 'string'
 
 typeToField = {
-    LONGTYPE: lambda fieldname, value, store: LongField(fieldname, long(value), store),
+    LONGTYPE: lambda fieldname, value, store: LongField(fieldname, long(value), fieldTypeForLong(store, precisionStep(fieldname))),
     TEXTTYPE: TextField,
     STRINGTYPE: StringField
 }
@@ -56,6 +57,29 @@ def fieldType(fieldname):
         return STRINGTYPE
     return TEXTTYPE
 
+def fieldTypeForLong(store, precisionStep):
+    fieldType = FieldType()
+    # For some strange reason FieldType(FieldType ref) doesn't work, this does the same
+    ref = LongField.TYPE_STORED if store == Field.Store.YES else LongField.TYPE_NOT_STORED
+    fieldType.setIndexed(ref.indexed());
+    fieldType.setStored(ref.stored());
+    fieldType.setTokenized(ref.tokenized());
+    fieldType.setStoreTermVectors(ref.storeTermVectors());
+    fieldType.setStoreTermVectorOffsets(ref.storeTermVectorOffsets());
+    fieldType.setStoreTermVectorPositions(ref.storeTermVectorPositions());
+    fieldType.setStoreTermVectorPayloads(ref.storeTermVectorPayloads());
+    fieldType.setOmitNorms(ref.omitNorms());
+    fieldType.setIndexOptions(ref.indexOptions());
+    fieldType.setDocValueType(ref.docValueType());
+    fieldType.setNumericType(ref.numericType());
+
+    if precisionStep:
+        fieldType.setNumericPrecisionStep(precisionStep)
+    return fieldType
+
+def precisionStep(fieldname):
+    if fieldname.startswith(JOINHASH_PREFIX):
+        return Integer.MAX_VALUE
 
 def createField(fieldname, value):
     store = Field.Store.YES if fieldname == IDFIELD else Field.Store.NO

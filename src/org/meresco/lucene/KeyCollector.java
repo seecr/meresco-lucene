@@ -44,9 +44,9 @@ import java.util.ArrayList;
 
 public class KeyCollector extends Collector {
 
-    String foreignKeyName;
-    FieldCache.Longs foreignKeyValues;
-    HashSetLinear hashes = null;
+    private String foreignKeyName;
+    private FieldCache.Longs foreignKeyValues;
+    private HashSetLinear hashes = null;
 
     public KeyCollector(String foreignKeyName) {
         this.foreignKeyName = foreignKeyName;

@@ -29,19 +29,21 @@ import java.lang.Math;
 
 public final class HashSetLinear
 {
-    private static final double HALF_RANGE = Math.pow(2, 63);
-    private long[] hashArray;
-    private int size;
-    private double scaleFactor;
+    private final double HALF_RANGE = Math.pow(2, 63);
+    private final long[] hashArray;
+    private final int size;
+    private final int half_size;
+    private final double scaleFactor;
 
     public HashSetLinear(int size) {
         this.size = size;
+        this.half_size = size >> 1;
         this.hashArray = new long[(int) Math.ceil(size * 1.1)];
         this.scaleFactor = size / 2 / HALF_RANGE;
     }
 
     public boolean contains(long hash) {
-        int index = this.index(hash);
+        int index = (int) (scaleFactor * hash) + half_size;
         while (true) {
             long h = hashArray[index++];
             if (h == hash) {
@@ -51,34 +53,21 @@ public final class HashSetLinear
             }
         }
     }
-
+    
     public void add(long hash) {
-        if (hash == 0) { throw new RuntimeException("0 is not allowed"); }
-        long oldHash = hash;
-        while (oldHash != 0) {
-            oldHash = addHash(oldHash);
-        }
+        if (hash == 0) 
+        	throw new RuntimeException("0 is not allowed");
+    	int index = (int) (scaleFactor * hash) + half_size;
+    	long v = this.hashArray[index];
+    	while (v != 0) {
+    		if (v == hash)
+        		return;
+    		if (v > hash) {
+    			this.hashArray[index] = hash;
+    			hash = v;
+    		}
+		    v = this.hashArray[++index];
+    	}
+    	this.hashArray[index] = hash;
     }
-
-    private long addHash(long hash) {
-        int index = this.index(hash);
-        while (true) {
-            long h = hashArray[index];
-            if (h == hash) {
-                return 0;
-            } else if (h == 0 || h > hash) {
-                hashArray[index] = hash;
-                if (h > hash && h != 0) {
-                    return h;
-                }
-                break;
-            }
-            index++;
-        }
-        return 0;
-    }
-
-    private int index(long hash) {
-        return (int) (scaleFactor * hash) + (size >> 1);
-    }
-}
+};

@@ -176,6 +176,10 @@ millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 
 def _topCollector(start, stop, sortKeys):
     if stop <= start:
         return TotalHitCountCollector()
+    fillFields = False
+    trackDocScores = True
+    trackMaxScore = False
+    docsScoredInOrder = True
     if sortKeys:
         sortFields = [
             sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending'])
@@ -183,9 +187,5 @@ def _topCollector(start, stop, sortKeys):
         ]
         sort = Sort(sortFields)
     else:
-        return TopScoreDocCollector.create(stop, True)
-    fillFields = True
-    trackDocScores = True
-    trackMaxScore = True
-    docsScoredInOrder = False
+        return TopScoreDocCollector.create(stop, docsScoredInOrder)
     return TopFieldCollector.create(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)

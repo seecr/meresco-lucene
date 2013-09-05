@@ -36,6 +36,9 @@ from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
 
+from org.apache.lucene.facet.search import CachedOrdsCountingFacetsAggregator, FacetArrays, FacetsAccumulator
+from org.meresco.lucene import MyFacetsAccumulator
+
 from java.io import File, StringReader
 from java.util import Arrays
 
@@ -148,7 +151,12 @@ class Index(object):
         return self._indexAndTaxonomy.searcher.doc(docId)
 
     def createFacetCollector(self, facetSearchParams):
-        return FacetsCollector.create(facetSearchParams, self._indexAndTaxonomy.searcher.getIndexReader(), self._indexAndTaxonomy.taxoReader)
+        aggregator = CachedOrdsCountingFacetsAggregator()
+        arrays = FacetArrays(self._indexAndTaxonomy.taxoReader.getSize())
+        accu = MyFacetsAccumulator(aggregator, facetSearchParams, self._indexAndTaxonomy.searcher.getIndexReader(), self._indexAndTaxonomy.taxoReader, arrays)
+        # accu.getAggregator = lambda: aggregator
+        return FacetsCollector.create(accu)
+        # return FacetsCollector.create(facetSearchParams, self._indexAndTaxonomy.searcher.getIndexReader(), self._indexAndTaxonomy.taxoReader)
 
     def finish(self):
         if self._commitTimerToken is not None:
@@ -172,3 +180,4 @@ class Index(object):
         finally:
             ts.close()
         return result
+

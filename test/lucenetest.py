@@ -51,12 +51,15 @@ class LuceneTest(SeecrTestCase):
         self.lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor)
 
     def tearDown(self):
-        self._reactor.calledMethods.reset() # don't keep any references.
-        self.lucene.finish()
-        self.lucene = None
-        gc.collect()
-        diff = self._getJavaObjects() - self._javaObjects
-        self.assertEquals(0, len(diff), diff)
+        try:
+            self._reactor.calledMethods.reset() # don't keep any references.
+            self.lucene.finish()
+            self.lucene = None
+            gc.collect()
+            diff = self._getJavaObjects() - self._javaObjects
+            self.assertEquals(0, len(diff), diff)
+        finally:
+            SeecrTestCase.tearDown(self)
 
     def _getJavaObjects(self):
         refs = VM._dumpRefs(classes=True)

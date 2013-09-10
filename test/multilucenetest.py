@@ -72,6 +72,7 @@ class MultiLuceneTest(SeecrTestCase):
         self.luceneA.finish()
         self.luceneB.finish()
         self.luceneC.finish()
+        SeecrTestCase.tearDown(self)
 
     def testQueryOneIndex(self):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
@@ -102,18 +103,15 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertTrue(result.queryTime > 0, result.asJson())
 
     def testMultipleJoinQueries(self):
-        self.fail("Not yet implemented")
-        result = returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=TermQuery(Term("field1", "value0")),
-                core='A',
-                joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B', 'C': JOINHASH_PREFIX + 'C'},
-                joinQueries={
-                    'B': TermQuery(Term('field2', 'value1')),
-                    'C': TermQuery(Term('field4', 'value4'))
-                },
-            ))
-        self.assertEquals(['id:1'], result.hits)
-        self.assertTrue(result.queryTime > 0, result.asJson())
+        self.assertRaises(ValueError, lambda: returnValueFromGenerator(self.dna.any.executeQuery(
+                    luceneQuery=TermQuery(Term("field1", "value0")),
+                    core='A',
+                    joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B', 'C': JOINHASH_PREFIX + 'C'},
+                    joinQueries={
+                        'B': TermQuery(Term('field2', 'value1')),
+                        'C': TermQuery(Term('field4', 'value4'))
+                    },
+                )))
 
     def testJoinFacet(self):
         result = returnValueFromGenerator(self.dna.any.executeQuery(

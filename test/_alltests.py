@@ -48,6 +48,7 @@ from multilucenetest import MultiLuceneTest
 from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
 from filtercachetest import FilterCacheTest
+from termnumeratortest import TermNumeratorTest
 
 if __name__ == '__main__':
     unittest.main()

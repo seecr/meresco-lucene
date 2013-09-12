@@ -23,9 +23,8 @@
 #
 ## end license ##
 
-from org.apache.lucene.document import TextField, StringField, Field, LongField, FieldType, NumericDocValuesField
+from org.apache.lucene.document import TextField, StringField, Field, LongField, NumericDocValuesField
 from org.apache.lucene.search import SortField
-from java.lang import Integer
 
 TIMESTAMPFIELD = '__timestamp__'
 IDFIELD = '__id__'
@@ -60,24 +59,6 @@ def fieldType(fieldname):
     if fieldname.startswith(KEY_PREFIX):
         return KEYTYPE
     return TEXTTYPE
-
-def fieldTypeForLong(store):
-    fieldType = FieldType()
-    # For some strange reason FieldType(FieldType ref) doesn't work, this does the same
-    ref = LongField.TYPE_STORED if store == Field.Store.YES else LongField.TYPE_NOT_STORED
-    fieldType.setIndexed(ref.indexed())
-    fieldType.setStored(ref.stored())
-    fieldType.setTokenized(ref.tokenized())
-    fieldType.setStoreTermVectors(ref.storeTermVectors())
-    fieldType.setStoreTermVectorOffsets(ref.storeTermVectorOffsets())
-    fieldType.setStoreTermVectorPositions(ref.storeTermVectorPositions())
-    fieldType.setStoreTermVectorPayloads(ref.storeTermVectorPayloads())
-    fieldType.setOmitNorms(ref.omitNorms())
-    fieldType.setIndexOptions(ref.indexOptions())
-    fieldType.setDocValueType(ref.docValueType())
-    fieldType.setNumericType(ref.numericType())
-    fieldType.setNumericPrecisionStep(ref.precisionStep())
-    return fieldType
 
 def createField(fieldname, value):
     store = Field.Store.YES if fieldname == IDFIELD else Field.Store.NO

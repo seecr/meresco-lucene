@@ -84,7 +84,7 @@ class Lucene(object):
         collector = MultiCollector.wrap(collectors)
 
         if filterCollector:
-            filterCollector.setNextCollector(collector)
+            filterCollector.setDelegate(collector)
             collector = filterCollector
 
         filter_ = None

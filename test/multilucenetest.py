@@ -30,7 +30,7 @@ from meresco.core import Observable
 from weightless.core import be, compose
 
 from meresco.lucene import Lucene
-from meresco.lucene.utils import JOINHASH_PREFIX
+from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene.multilucene import MultiLucene
 from os.path import join
 from org.apache.lucene.search import TermQuery, MatchAllDocsQuery
@@ -54,18 +54,18 @@ class MultiLuceneTest(SeecrTestCase):
                 (self.luceneC,),
             )
         ))
-        joinHash1 = randint(-(2**63), 2**63)
-        joinHash2 = randint(-(2**63), 2**63)
-        joinHash3 = randint(-(2**63), 2**63)
-        joinHash4 = randint(-(2**63), 2**63)
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:0", document=createDocument([(JOINHASH_PREFIX + 'A', joinHash1), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:1", document=createDocument([(JOINHASH_PREFIX + 'A', joinHash2), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:2", document=createDocument([(JOINHASH_PREFIX + 'A', joinHash3), ('field1', 'value1')]), categories=createCategories([('field1', 'first item1')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:7", document=createDocument([(JOINHASH_PREFIX + 'A', joinHash4), ('field1', 'value1')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:3", document=createDocument([(JOINHASH_PREFIX + 'B', joinHash1), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:4", document=createDocument([(JOINHASH_PREFIX + 'B', joinHash2), ('field2', 'value2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'first')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:5", document=createDocument([(JOINHASH_PREFIX + 'B', joinHash2), ('field2', 'value1'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'second')])))
-        returnValueFromGenerator(self.luceneC.addDocument(identifier="id:6", document=createDocument([(JOINHASH_PREFIX + 'C', joinHash1), ('field4', 'value4')])))
+        key1 = 1
+        key2 = 2
+        key3 = 3
+        key4 = 4
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:0", document=createDocument([(KEY_PREFIX + 'A', key1), ('field1', 'value0')]), categories=createCategories([('field1', 'first item0')])))
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:1", document=createDocument([(KEY_PREFIX + 'A', key2), ('field1', 'value0')]), categories=createCategories([('field1', 'first item1')])))
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:2", document=createDocument([(KEY_PREFIX + 'A', key3), ('field1', 'value1')]), categories=createCategories([('field1', 'first item1')])))
+        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:7", document=createDocument([(KEY_PREFIX + 'A', key4), ('field1', 'value1')])))
+        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:3", document=createDocument([(KEY_PREFIX + 'B', key1), ('field2', 'value1')]), categories=createCategories([('field2', 'first item2')])))
+        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:4", document=createDocument([(KEY_PREFIX + 'B', key2), ('field2', 'value2'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'first')])))
+        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:5", document=createDocument([(KEY_PREFIX + 'B', key3), ('field2', 'value1'), ('field3', 'value3')]), categories=createCategories([('field2', 'first item3'), ('field3', 'second')])))
+        returnValueFromGenerator(self.luceneC.addDocument(identifier="id:6", document=createDocument([(KEY_PREFIX + 'C', key1), ('field4', 'value4')])))
         sleep(0.2)
 
     def tearDown(self):
@@ -94,19 +94,19 @@ class MultiLuceneTest(SeecrTestCase):
 
     def testJoinQuery(self):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=TermQuery(Term("field1", "value0")),
+                luceneQuery=MatchAllDocsQuery(),
                 core='A',
-                joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B'},
+                joins={'A': KEY_PREFIX + 'A', 'B': KEY_PREFIX + 'B'},
                 joinQueries={'B': TermQuery(Term('field2', 'value1'))}
             ))
-        self.assertEquals(['id:0', 'id:1'], result.hits)
+        self.assertEquals(['id:0', 'id:2'], result.hits)
         self.assertTrue(result.queryTime > 0, result.asJson())
 
     def testMultipleJoinQueries(self):
         self.assertRaises(ValueError, lambda: returnValueFromGenerator(self.dna.any.executeQuery(
                     luceneQuery=TermQuery(Term("field1", "value0")),
                     core='A',
-                    joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B', 'C': JOINHASH_PREFIX + 'C'},
+                    joins={'A': KEY_PREFIX + 'A', 'B': KEY_PREFIX + 'B', 'C': KEY_PREFIX + 'C'},
                     joinQueries={
                         'B': TermQuery(Term('field2', 'value1')),
                         'C': TermQuery(Term('field4', 'value4'))
@@ -116,7 +116,7 @@ class MultiLuceneTest(SeecrTestCase):
     def testJoinFacet(self):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
                 luceneQuery=TermQuery(Term("field1", "value0")),
-                joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B'},
+                joins={'A': KEY_PREFIX + 'A', 'B': KEY_PREFIX + 'B'},
                 core='A',
                 joinFacets={'B': [
                     dict(fieldname='field2', maxTerms=10),
@@ -126,13 +126,12 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals([{
                 'terms': [
-                    {'count': 2, 'term': u'first item3'},
+                    {'count': 1, 'term': u'first item3'},
                     {'count': 1, 'term': u'first item2'},
                 ],
                 'fieldname': u'field2'
             }, {
                 'terms': [
-                    {'count': 1, 'term': u'second'},
                     {'count': 1, 'term': u'first'},
                 ],
                 'fieldname': u'field3'
@@ -141,7 +140,7 @@ class MultiLuceneTest(SeecrTestCase):
     def testJoinFacetWillNotFilter(self):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
                 luceneQuery=MatchAllDocsQuery(),
-                joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B'},
+                joins={'A': KEY_PREFIX + 'A', 'B': KEY_PREFIX + 'B'},
                 core='A',
                 joinFacets={'B': [
                     dict(fieldname='field3', maxTerms=10),
@@ -159,16 +158,16 @@ class MultiLuceneTest(SeecrTestCase):
 
     def testJoinFacetAndQuery(self):
         result = returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=TermQuery(Term("field1", "value0")),
+                luceneQuery=MatchAllDocsQuery(),
                 core='A',
-                joins={'A': JOINHASH_PREFIX + 'A', 'B': JOINHASH_PREFIX + 'B'},
+                joins={'A': KEY_PREFIX + 'A', 'B': KEY_PREFIX + 'B'},
                 joinQueries={'B': TermQuery(Term('field2', 'value1'))},
                 joinFacets={'B': [
                     dict(fieldname='field2', maxTerms=10),
                     dict(fieldname='field3', maxTerms=10)
                 ]}
             ))
-        self.assertEquals(['id:0', 'id:1'], result.hits)
+        self.assertEquals(['id:0', 'id:2'], result.hits)
         self.assertEquals([{
                 'terms': [
                     {'count': 1, 'term': u'first item3'},

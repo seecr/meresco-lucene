@@ -39,7 +39,7 @@ STRINGTYPE = 'string'
 KEYTYPE = 'key'
 
 typeToField = {
-    LONGTYPE: lambda fieldname, value, store: LongField(fieldname, long(value), fieldTypeForLong(store)),
+    LONGTYPE: lambda fieldname, value, store: LongField(fieldname, long(value), store),
     TEXTTYPE: TextField,
     STRINGTYPE: StringField,
     KEYTYPE: lambda fieldname, value, store: NumericDocValuesField(fieldname, long(value)),
@@ -65,17 +65,17 @@ def fieldTypeForLong(store):
     fieldType = FieldType()
     # For some strange reason FieldType(FieldType ref) doesn't work, this does the same
     ref = LongField.TYPE_STORED if store == Field.Store.YES else LongField.TYPE_NOT_STORED
-    fieldType.setIndexed(ref.indexed());
-    fieldType.setStored(ref.stored());
-    fieldType.setTokenized(ref.tokenized());
-    fieldType.setStoreTermVectors(ref.storeTermVectors());
-    fieldType.setStoreTermVectorOffsets(ref.storeTermVectorOffsets());
-    fieldType.setStoreTermVectorPositions(ref.storeTermVectorPositions());
-    fieldType.setStoreTermVectorPayloads(ref.storeTermVectorPayloads());
-    fieldType.setOmitNorms(ref.omitNorms());
-    fieldType.setIndexOptions(ref.indexOptions());
-    fieldType.setDocValueType(ref.docValueType());
-    fieldType.setNumericType(ref.numericType());
+    fieldType.setIndexed(ref.indexed())
+    fieldType.setStored(ref.stored())
+    fieldType.setTokenized(ref.tokenized())
+    fieldType.setStoreTermVectors(ref.storeTermVectors())
+    fieldType.setStoreTermVectorOffsets(ref.storeTermVectorOffsets())
+    fieldType.setStoreTermVectorPositions(ref.storeTermVectorPositions())
+    fieldType.setStoreTermVectorPayloads(ref.storeTermVectorPayloads())
+    fieldType.setOmitNorms(ref.omitNorms())
+    fieldType.setIndexOptions(ref.indexOptions())
+    fieldType.setDocValueType(ref.docValueType())
+    fieldType.setNumericType(ref.numericType())
     fieldType.setNumericPrecisionStep(ref.precisionStep())
     return fieldType
 

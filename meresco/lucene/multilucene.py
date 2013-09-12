@@ -45,6 +45,9 @@ class MultiLucene(Observable):
         joinQueries = joinQueries or {}
         joinFacets = joinFacets or {}
 
+        if len(joinQueries.keys()) > 1:
+            raise ValueError("MultiLucene accepts atmost one joinQuery.")
+
         if not (joinQueries or joinFacets):
             response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, **kwargs)
             raise StopIteration(response)

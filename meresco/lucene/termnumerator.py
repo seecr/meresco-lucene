@@ -28,9 +28,12 @@ from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from java.io import File
 
-class TermNumerator(object):
+from meresco.core import Observable
+
+class TermNumerator(Observable):
 
     def __init__(self, path):
+        Observable.__init__(self)
         self._taxoDirectory = SimpleFSDirectory(File(path))
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory)
 

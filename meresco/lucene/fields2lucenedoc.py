@@ -29,7 +29,7 @@ from org.apache.lucene.facet.taxonomy import CategoryPath
 
 from time import time
 
-from utils import createField, createTimestampField, IDFIELD
+from utils import createField, createTimestampField, IDFIELD, KEY_PREFIX
 
 class Fields2LuceneDoc(Observable):
     def __init__(self, transactionName, drilldownFieldnames, addTimestamp=False):
@@ -64,6 +64,8 @@ class Fields2LuceneDoc(Observable):
         doc = Document()
         for field, values in fields.items():
             for value in values:
+                if field.startswith(KEY_PREFIX):
+                    value = self.call.numerateTerm(value)
                 if field == IDFIELD:
                     raise ValueError("Field '%s' is protected and created by Lucene(..)")
                 else:

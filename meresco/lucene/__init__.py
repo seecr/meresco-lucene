@@ -59,3 +59,4 @@ from _lucene import Lucene
 from fields2lucenedoc import Fields2LuceneDoc
 from cqltolucenequery import CqlToLuceneQuery
 from multilucene import MultiLucene
+from termnumerator import TermNumerator

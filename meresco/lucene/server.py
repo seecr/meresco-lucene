@@ -37,7 +37,7 @@ from meresco.components.autocomplete import Autocomplete
 from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
-from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene
+from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX, version, MultiLucene, TermNumerator
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 
 from weightless.io import Reactor
@@ -48,8 +48,9 @@ myPath = abspath(dirname(__file__))
 dynamicPath = join(myPath, 'html', 'dynamic')
 staticPath = join(myPath, 'html', 'static')
 
-def uploadHelix(lucene, storageComponent):
+def uploadHelix(lucene, termNumerator, storageComponent):
     indexHelix = (Fields2LuceneDoc('record', drilldownFieldnames=['untokenized.field2'], addTimestamp=True),
+        (termNumerator,),
         (lucene,)
     )
 
@@ -88,6 +89,8 @@ def uploadHelix(lucene, storageComponent):
 def main(reactor, port, databasePath):
     lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, commitCount=30, name='main')
     lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, commitTimeout=0.1, name='main2')
+
+    termNumerator = TermNumerator(path=join(databasePath, 'termNumerator'))
 
     multiLuceneHelix = (MultiLucene(defaultCore='main'),
             (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, name='empty-core'),),
@@ -131,10 +134,10 @@ def main(reactor, port, databasePath):
                         )
                     ),
                     (PathFilter("/update_main", excluding=['/update_main2']),
-                        uploadHelix(lucene, storageComponent),
+                        uploadHelix(lucene, termNumerator, storageComponent),
                     ),
                     (PathFilter("/update_main2"),
-                        uploadHelix(lucene2, storageComponent),
+                        uploadHelix(lucene2, termNumerator, storageComponent),
                     ),
                     (PathFilter('/sru'),
                         (SruParser(defaultRecordSchema='record'),

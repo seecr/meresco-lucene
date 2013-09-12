@@ -23,11 +23,8 @@
 #
 ## end license ##
 
-from seecr.test import IntegrationTestCase
+from seecr.test import IntegrationTestCase, CallTrace
 from meresco.lucene import Fields2LuceneDoc
-from meresco.lucene._lucene import IDFIELD
-from org.apache.lucene.document import TextField, StringField, Field, LongField, FieldType
-from java.lang import Integer
 
 class Fields2LuceneDocTest(IntegrationTestCase):
     def testCreateDocument(self):
@@ -36,11 +33,13 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             'field2': ['value2', 'value2.1'],
             'sorted.field3': ['value3'],
             'untokenized.field4': ['value4'],
-            'joinhash.field5': [12345],
+            '__key__.field5': ["12345"],
         }
         fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFieldnames=[])
+        observer = CallTrace(returnValues={'numerateTerm': 1})
+        fields2LuceneDoc.addObserver(observer)
         document = fields2LuceneDoc._createDocument(fields)
-        self.assertEquals(set(['field1', 'field2', 'sorted.field3', 'untokenized.field4', 'joinhash.field5']), set([f.name() for f in document.getFields()]))
+        self.assertEquals(set(['field1', 'field2', 'sorted.field3', 'untokenized.field4', '__key__.field5']), set([f.name() for f in document.getFields()]))
 
         field1 = document.getField("field1")
         self.assertEquals('value1', field1.stringValue())
@@ -62,13 +61,11 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         self.assertFalse(field4.fieldType().stored())
         self.assertFalse(field4.fieldType().tokenized())
 
-        field5 = document.getField("joinhash.field5")
-        self.assertEquals(12345, field5.numericValue().longValue())
-        self.assertTrue(field5.fieldType().indexed())
+        field5 = document.getField("__key__.field5")
+        self.assertEquals(1, field5.numericValue().longValue())
+        self.assertFalse(field5.fieldType().indexed())
         self.assertFalse(field5.fieldType().stored())
         self.assertTrue(field5.fieldType().tokenized())
-        self.assertEquals(Integer.MAX_VALUE, FieldType.cast_(field5.fieldType()).numericPrecisionStep()
-)
 
     def testCreateFacet(self):
         fields = {

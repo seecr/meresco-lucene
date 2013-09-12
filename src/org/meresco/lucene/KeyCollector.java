@@ -30,14 +30,7 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
 
 public class KeyCollector extends Collector {
@@ -66,48 +59,10 @@ public class KeyCollector extends Collector {
 	}
 
 	@Override
-	public void setScorer(Scorer scorer) throws IOException {}
-	
+	public void setScorer(Scorer scorer) throws IOException {
+	}
+
 	public OpenBitSet getKeySet() {
 		return this.keySet;
-	}
-	
-	public Filter getFilter(final Query q) {
-		return new Filter() {
-			@Override
-			public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
-				final AtomicReaderContext topLevelContext = context.reader().getContext();
-				final Weight weight = new IndexSearcher(topLevelContext).createNormalizedWeight(q);
-				return new DocIdSet() {
-					@Override
-					public DocIdSetIterator iterator() throws IOException {
-						final Scorer scorer = weight.scorer(topLevelContext, true, false, acceptDocs);
-						return new DocIdSetIterator() {
-							@Override
-							public int docID() {
-								System.out.println("docId");
-								return scorer.docID();
-							}
-							@Override
-							public int nextDoc() throws IOException {
-								int docId = scorer.nextDoc();
-								while (docId != NO_MORE_DOCS && !KeyCollector.this.keySet.get(docId))
-									docId = scorer.nextDoc();
-								return docId;
-							}
-							@Override
-							public int advance(int target) throws IOException {
-								System.out.println("advance");
-								return 0;
-							}
-							@Override
-							public long cost() {
-								System.out.println("cost");
-								return 1;
-							}};
-					}};
-			}
-			
-	};
 	}
 }

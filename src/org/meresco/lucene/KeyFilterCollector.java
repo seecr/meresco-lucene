@@ -32,48 +32,45 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.solr.search.DelegatingCollector;
 
 /**
  * A collector that filters by looking up keys (ords) in a named field.
  */
-public class KeyCollectorFilter extends DelegatingCollector {
+public class KeyFilterCollector extends Collector {
 
-    private OpenBitSet keyFilter;
+	private OpenBitSet keyFilter;
 	private String keyName;
-    private NumericDocValues keyValues;
+	private NumericDocValues keyValues;
+	private Collector delegate;
 
-    public KeyCollectorFilter(OpenBitSet keyFilter, String keyName) throws IOException {
-        this.keyFilter = keyFilter;
-        this.keyName = keyName;
-        this.setDelegate(new NoopCollector());
-    }
-
-    @Override
-    public void collect(int docId) throws IOException {
-        if (this.keyFilter.get(this.keyValues.get(docId)))
-            super.collect(docId);
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-        super.setNextReader(context);
-        this.keyValues = context.reader().getNumericDocValues(this.keyName);
-    }
-}
-
-class NoopCollector extends Collector {
-
-	@Override
-	public void setScorer(Scorer scorer) throws IOException {}
-
-	@Override
-	public void collect(int doc) throws IOException {}
-
-	@Override
-	public void setNextReader(AtomicReaderContext context) throws IOException {}
-
-	@Override
-	public boolean acceptsDocsOutOfOrder() { return true; }
+	public KeyFilterCollector(OpenBitSet keyFilter, String keyName)	throws IOException {
+		this.keyFilter = keyFilter;
+		this.keyName = keyName;
+	}
 	
+	public void setDelegate(Collector delegate) {
+		this.delegate = delegate;
+	}
+
+	@Override
+	public void collect(int docId) throws IOException {
+		if (this.keyFilter.get(this.keyValues.get(docId)))
+			this.delegate.collect(docId);
+	}
+
+	@Override
+	public void setNextReader(AtomicReaderContext context) throws IOException {
+		this.delegate.setNextReader(context);
+		this.keyValues = context.reader().getNumericDocValues(this.keyName);
+	}
+
+	@Override
+	public void setScorer(Scorer scorer) throws IOException {
+		this.delegate.setScorer(scorer);
+	}
+
+	@Override
+	public boolean acceptsDocsOutOfOrder() {
+		return this.delegate.acceptsDocsOutOfOrder();
+	}
 }

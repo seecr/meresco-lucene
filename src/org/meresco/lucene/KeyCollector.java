@@ -26,58 +26,88 @@
 package org.meresco.lucene;
 
 import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.CompositeReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.ArrayList;
 
 public class KeyCollector extends Collector {
 
-    private String foreignKeyName;
-    private FieldCache.Longs foreignKeyValues;
-    private HashSetLinear hashes = null;
+	private String keyName;
+	private NumericDocValues keyValues;
+	private OpenBitSet keySet = new OpenBitSet();
 
-    public KeyCollector(String foreignKeyName) {
-        this.foreignKeyName = foreignKeyName;
-    }
+	public KeyCollector(String keyName) {
+		this.keyName = keyName;
+	}
 
-    public boolean contains(long hash) throws IOException {
-        return hashes.contains(hash);
-    }
+	@Override
+	public void collect(int docId) throws IOException {
+		this.keySet.set(this.keyValues.get(docId));
+	}
 
-    @Override
-    public void collect(int doc) throws IOException {
-        this.hashes.add(this.foreignKeyValues.get(doc));
-    }
+	@Override
+	public void setNextReader(AtomicReaderContext context) throws IOException {
+		this.keyValues = context.reader().getNumericDocValues(this.keyName);
+	}
 
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-        if (hashes == null) {
-            CompositeReaderContext top = context.parent;
-            while (!top.isTopLevel) {
-                top = top.parent;
-            }
-            hashes = new HashSetLinear(top.reader().maxDoc() * 2);
-        }
-        this.foreignKeyValues = FieldCache.DEFAULT.getLongs(context.reader(), this.foreignKeyName, false);
-    }
+	@Override
+	public boolean acceptsDocsOutOfOrder() {
+		return true;
+	}
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-        return true;
-    }
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {}
+	@Override
+	public void setScorer(Scorer scorer) throws IOException {}
+	
+	public OpenBitSet getKeySet() {
+		return this.keySet;
+	}
+	
+	public Filter getFilter(final Query q) {
+		return new Filter() {
+			@Override
+			public DocIdSet getDocIdSet(final AtomicReaderContext context, final Bits acceptDocs) throws IOException {
+				final AtomicReaderContext topLevelContext = context.reader().getContext();
+				final Weight weight = new IndexSearcher(topLevelContext).createNormalizedWeight(q);
+				return new DocIdSet() {
+					@Override
+					public DocIdSetIterator iterator() throws IOException {
+						final Scorer scorer = weight.scorer(topLevelContext, true, false, acceptDocs);
+						return new DocIdSetIterator() {
+							@Override
+							public int docID() {
+								System.out.println("docId");
+								return scorer.docID();
+							}
+							@Override
+							public int nextDoc() throws IOException {
+								int docId = scorer.nextDoc();
+								while (docId != NO_MORE_DOCS && !KeyCollector.this.keySet.get(docId))
+									docId = scorer.nextDoc();
+								return docId;
+							}
+							@Override
+							public int advance(int target) throws IOException {
+								System.out.println("advance");
+								return 0;
+							}
+							@Override
+							public long cost() {
+								System.out.println("cost");
+								return 1;
+							}};
+					}};
+			}
+			
+	};
+	}
 }

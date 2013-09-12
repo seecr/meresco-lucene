@@ -26,58 +26,54 @@
 package org.meresco.lucene;
 
 import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.solr.search.DelegatingCollector;
 
+/**
+ * A collector that filters by looking up keys (ords) in a named field.
+ */
+public class KeyCollectorFilter extends DelegatingCollector {
 
-public class KeyCollectorFilter extends Collector {
+    private OpenBitSet keyFilter;
+	private String keyName;
+    private NumericDocValues keyValues;
 
-    String keyName;
-    FieldCache.Longs keyMap;
-    KeyCollector keyFilter;
-    Collector nextCollector = null;
-
-    public KeyCollectorFilter(KeyCollector keyFilter, String keyName) throws IOException {
+    public KeyCollectorFilter(OpenBitSet keyFilter, String keyName) throws IOException {
         this.keyFilter = keyFilter;
         this.keyName = keyName;
-    }
-
-    public void setNextCollector(Collector nextCollector) {
-        this.nextCollector = nextCollector;
+        this.setDelegate(new NoopCollector());
     }
 
     @Override
-    public void collect(int doc) throws IOException {
-        if (this.keyFilter.contains(this.keyMap.get(doc))) {
-            if (this.nextCollector != null) {
-                this.nextCollector.collect(doc);
-            }
-        }
+    public void collect(int docId) throws IOException {
+        if (this.keyFilter.get(this.keyValues.get(docId)))
+            super.collect(docId);
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.keyMap = FieldCache.DEFAULT.getLongs(context.reader(), this.keyName, false);
-        if (this.nextCollector != null) {
-            this.nextCollector.setNextReader(context);
-        }
+        super.setNextReader(context);
+        this.keyValues = context.reader().getNumericDocValues(this.keyName);
     }
+}
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-        if (this.nextCollector != null) {
-           return this.nextCollector.acceptsDocsOutOfOrder();
-        }
-        return true;
-    }
+class NoopCollector extends Collector {
 
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
-        if (this.nextCollector != null) {
-            this.nextCollector.setScorer(scorer);
-        }
-    }
+	@Override
+	public void setScorer(Scorer scorer) throws IOException {}
 
+	@Override
+	public void collect(int doc) throws IOException {}
+
+	@Override
+	public void setNextReader(AtomicReaderContext context) throws IOException {}
+
+	@Override
+	public boolean acceptsDocsOutOfOrder() { return true; }
+	
 }

@@ -275,14 +275,6 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(['value1', 'value0'], response.hits)
         self.assertTrue(response.queryTime > 0, response.asJson())
 
-    def testListJoinHashTerms(self):
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('joinhash.field1', 123L)])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('joinhash.field1', 124L)])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('joinhash.field1', 125L)])))
-        sleep(0.1)
-        response = returnValueFromGenerator(self.lucene.prefixSearch(fieldname='joinhash.field1', prefix=None, showCount=True))
-        self.assertEquals([(125, 1), (124, 1), (123, 1)], response.hits)
-
     def testSuggestions(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field3', 'value2')])))
         sleep(0.1)

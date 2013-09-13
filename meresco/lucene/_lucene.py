@@ -64,12 +64,6 @@ class Lucene(object):
         return
         yield
 
-    def executeQuery(self, *args, **kwargs):
-        state = self.executeQueryGenerator(*args, **kwargs)
-        state.next()
-        raise StopIteration(state.next())
-        yield
-
     def executeJoinQuery(self, luceneQuery, collector, facets=None):
         if facets:
             facetCollector = self._facetCollector(facets)
@@ -77,7 +71,7 @@ class Lucene(object):
         self._index.search(luceneQuery, None, collector)
         return self._facetResult(facetCollector) if facets else None
 
-    def executeQueryGenerator(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None,
+    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None,
         filterQueries=None, suggestionRequest=None, filterCollector=None, extraCollector=None, **kwargs):
         t0 = time()
 
@@ -90,7 +84,7 @@ class Lucene(object):
         collector = MultiCollector.wrap(collectors)
 
         if filterCollector:
-            filterCollector.setNextCollector(collector)
+            filterCollector.setDelegate(collector)
             collector = filterCollector
 
         filter_ = None
@@ -99,8 +93,6 @@ class Lucene(object):
             filter_ = ChainedFilter(filters, ChainedFilter.AND)
 
         self._index.search(luceneQuery, filter_, collector)
-
-        yield
 
         total, hits = self._topDocsResponse(topCollector, start=start)
         response = LuceneResponse(total=total, hits=hits)
@@ -113,7 +105,8 @@ class Lucene(object):
 
         response.queryTime = millis(time() - t0)
 
-        yield response
+        raise StopIteration(response)
+        yield
 
     def prefixSearch(self, fieldname, prefix, showCount=False, **kwargs):
         t0 = time()
@@ -183,6 +176,10 @@ millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 
 def _topCollector(start, stop, sortKeys):
     if stop <= start:
         return TotalHitCountCollector()
+    fillFields = False
+    trackDocScores = True
+    trackMaxScore = False
+    docsScoredInOrder = True
     if sortKeys:
         sortFields = [
             sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending'])
@@ -190,9 +187,5 @@ def _topCollector(start, stop, sortKeys):
         ]
         sort = Sort(sortFields)
     else:
-        return TopScoreDocCollector.create(stop, True)
-    fillFields = True
-    trackDocScores = True
-    trackMaxScore = True
-    docsScoredInOrder = False
+        return TopScoreDocCollector.create(stop, docsScoredInOrder)
     return TopFieldCollector.create(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)

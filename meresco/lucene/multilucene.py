@@ -28,9 +28,9 @@ from org.apache.lucene.search import MatchAllDocsQuery
 from weightless.core import DeclineMessage
 from _lucene import millis
 from time import time
-from org.meresco.lucene import KeyCollector, KeyCollectorFilter
-from weightless.core import compose
+from org.meresco.lucene import KeyCollector, KeyFilterCollector
 from cache import KeyCollectorCache
+from seecr.utils.generatorutils import consume
 
 class MultiLucene(Observable):
     def __init__(self, defaultCore):
@@ -41,48 +41,51 @@ class MultiLucene(Observable):
     def executeQuery(self, luceneQuery, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
         # joins = {coreName: keyFieldName}
         t0 = time()
-        core = self._defaultCore if core is None else core
+        primaryCoreName = self._defaultCore if core is None else core
         joinQueries = joinQueries or {}
         joinFacets = joinFacets or {}
 
+        if len(joinQueries.keys()) > 1:
+            raise ValueError("MultiLucene accepts atmost one joinQuery.")
+
         if not (joinQueries or joinFacets):
-            response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, **kwargs)
+            response = yield self.any[primaryCoreName].executeQuery(luceneQuery=luceneQuery, **kwargs)
             raise StopIteration(response)
+        foreignCoreName = joinQueries.keys()[0] if joinQueries else joinFacets.keys()[0]
+        foreignQuery = joinQueries.get(foreignCoreName)
+        primaryQuery = luceneQuery
+        foreignKeyName = joins[foreignCoreName]
+        primaryKeyName = joins[primaryCoreName]
+        foreignFacets = joinFacets.get(foreignCoreName)
 
-        keyCollectors = []
-        for joinCore, joinQuery in joinQueries.items():
-            inCache, keyCollector = self._collectorCache.getCollector(joins[joinCore], joinQuery)
-            extraCollector = None if inCache else keyCollector
-            keyCollectors.append(keyCollector)
-            list(compose(self.any[joinCore].executeJoinQuery(luceneQuery=joinQuery, collector=extraCollector)))
+        if foreignQuery:
+            foreignKeyCollector = KeyCollector(foreignKeyName)
+            consume(self.any[foreignCoreName].executeJoinQuery(foreignQuery, foreignKeyCollector))
 
-        keyFilterCollector = KeyCollectorFilter(keyCollectors[0], joins[core]) if keyCollectors else None
+            keySet = foreignKeyCollector.getKeySet()
+            if foreignFacets:
+                primaryKeyCollector = KeyCollector(primaryKeyName)
+                consume(self.any[primaryCoreName].executeJoinQuery(primaryQuery, primaryKeyCollector))
+                keySet.intersect(primaryKeyCollector.getKeySet())
 
-        inCache, keyCollector = self._collectorCache.getCollector(joins[core], luceneQuery)
-        extraCollector = None if inCache else keyCollector
+            primaryKeyFilterCollector = KeyFilterCollector(keySet, primaryKeyName)
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=luceneQuery, filterCollector=primaryKeyFilterCollector, **kwargs)
+        else:
+            primaryKeyCollector = KeyCollector(primaryKeyName)
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=luceneQuery, extraCollector=primaryKeyCollector, **kwargs)
+            keySet = primaryKeyCollector.getKeySet()
+            foreignQuery = MatchAllDocsQuery()
 
-        response = yield self.any[core].executeQuery(luceneQuery=luceneQuery, extraCollector=extraCollector, filterCollector=keyFilterCollector, **kwargs)
+        if foreignFacets:
+            foreignKeyFilterCollector = KeyFilterCollector(keySet, foreignKeyName)
+            foreignReponse = yield self.any[foreignCoreName].executeQuery(foreignQuery, filterCollector=foreignKeyFilterCollector, facets=foreignFacets)
 
-        joinResults = []
-        for joinCore, joinFacets in joinFacets.items():
-            query = joinQueries.get(joinCore, MatchAllDocsQuery())
-            joinResults.append(
-                self.call[joinCore].executeJoinQuery(
-                        luceneQuery=query,
-                        collector=KeyCollectorFilter(keyCollector, joins[joinCore]),
-                        facets=joinFacets
-                )
-            )
+            if not hasattr(primaryResponse, "drilldownData"):
+                primaryResponse.drilldownData = []
+            primaryResponse.drilldownData.extend(foreignReponse.drilldownData)
 
-        if joinFacets and not hasattr(response, "drilldownData"):
-            response.drilldownData = []
-
-        for joinResult in joinResults:
-            if joinResult:
-                response.drilldownData.extend(joinResult)
-
-        response.queryTime = millis(time() - t0)
-        raise StopIteration(response)
+        primaryResponse.queryTime = millis(time() - t0)
+        raise StopIteration(primaryResponse)
 
     def any_unknown(self, message, core=None, **kwargs):
         if message in ['prefixSearch', 'fieldnames']:

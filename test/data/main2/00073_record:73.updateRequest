@@ -12,7 +12,7 @@
 <intfield2>434</intfield2>
 <intfield3>5000</intfield3>
 <field3>SQaocrSm Vhl8nqziWdH ytrJDS11nv E2Y3c22B bI AQl s4CK8rECrg PyIw JGHPAikeFpuO LE1ifVXhA</field3>
-<joinhash.field>1</joinhash.field>
+<__key__.field>1</__key__.field>
 </document></srw:recordData>
     </srw:record>
 </ucp:updateRequest>

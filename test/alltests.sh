@@ -44,3 +44,9 @@ for pycmd in $pyversions; do
     $pycmd _alltests.py "$@"
 done
 
+exit
+echo 'Lucene Java test'
+(
+    cd ../src/test
+    ./alltests.sh "$@"
+)

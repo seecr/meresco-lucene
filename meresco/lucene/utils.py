@@ -23,24 +23,25 @@
 #
 ## end license ##
 
-from org.apache.lucene.document import TextField, StringField, Field, LongField, FieldType
+from org.apache.lucene.document import TextField, StringField, Field, LongField, NumericDocValuesField
 from org.apache.lucene.search import SortField
-from java.lang import Integer
 
 TIMESTAMPFIELD = '__timestamp__'
 IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
-JOINHASH_PREFIX = "joinhash."
+KEY_PREFIX = "__key__."
 
 LONGTYPE = 'long'
 TEXTTYPE = 'text'
 STRINGTYPE = 'string'
+KEYTYPE = 'key'
 
 typeToField = {
-    LONGTYPE: lambda fieldname, value, store: LongField(fieldname, long(value), fieldTypeForLong(store, precisionStep(fieldname))),
+    LONGTYPE: lambda fieldname, value, store: LongField(fieldname, long(value), store),
     TEXTTYPE: TextField,
-    STRINGTYPE: StringField
+    STRINGTYPE: StringField,
+    KEYTYPE: lambda fieldname, value, store: NumericDocValuesField(fieldname, long(value)),
 }
 typeToSortFieldType = {
     LONGTYPE: SortField.Type.LONG,
@@ -51,35 +52,13 @@ typeToSortFieldType = {
 def fieldType(fieldname):
     if fieldname == IDFIELD:
         return STRINGTYPE
-    if fieldname == TIMESTAMPFIELD or fieldname.startswith(JOINHASH_PREFIX):
+    if fieldname == TIMESTAMPFIELD:
         return LONGTYPE
     if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
         return STRINGTYPE
+    if fieldname.startswith(KEY_PREFIX):
+        return KEYTYPE
     return TEXTTYPE
-
-def fieldTypeForLong(store, precisionStep):
-    fieldType = FieldType()
-    # For some strange reason FieldType(FieldType ref) doesn't work, this does the same
-    ref = LongField.TYPE_STORED if store == Field.Store.YES else LongField.TYPE_NOT_STORED
-    fieldType.setIndexed(ref.indexed());
-    fieldType.setStored(ref.stored());
-    fieldType.setTokenized(ref.tokenized());
-    fieldType.setStoreTermVectors(ref.storeTermVectors());
-    fieldType.setStoreTermVectorOffsets(ref.storeTermVectorOffsets());
-    fieldType.setStoreTermVectorPositions(ref.storeTermVectorPositions());
-    fieldType.setStoreTermVectorPayloads(ref.storeTermVectorPayloads());
-    fieldType.setOmitNorms(ref.omitNorms());
-    fieldType.setIndexOptions(ref.indexOptions());
-    fieldType.setDocValueType(ref.docValueType());
-    fieldType.setNumericType(ref.numericType());
-
-    if precisionStep:
-        fieldType.setNumericPrecisionStep(precisionStep)
-    return fieldType
-
-def precisionStep(fieldname):
-    if fieldname.startswith(JOINHASH_PREFIX):
-        return Integer.MAX_VALUE
 
 def createField(fieldname, value):
     store = Field.Store.YES if fieldname == IDFIELD else Field.Store.NO

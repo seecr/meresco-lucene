@@ -28,7 +28,7 @@ from seecr.test.utils import getRequest, postRequest
 from meresco.xml.namespaces import xpathFirst, xpath
 from simplejson import loads, dumps
 from time import sleep
-from cqlparser import parseString as parseCql
+from meresco.lucene.utils import KEY_PREFIX
 
 class LuceneTest(IntegrationTestCase):
 
@@ -110,7 +110,7 @@ class LuceneTest(IntegrationTestCase):
                     filterQueries=['field2=value0 OR field2=value1'],
                     start=0,
                     stop=100,
-                    joins={'main': 'joinhash.field', 'main2': 'joinhash.field'},
+                    joins={'main': KEY_PREFIX + 'field', 'main2': KEY_PREFIX + 'field'},
                     joinFacets={'main2': [dict(fieldname='untokenized.field2', maxTerms=5)]}
                 )
             )), parse=False)

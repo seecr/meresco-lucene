@@ -12,7 +12,7 @@
 <intfield2>960</intfield2>
 <intfield3>5003</intfield3>
 <field3>8YX Cny5qV9ZiS9v W8 kx4PxWNfK WiI 5k zc7K1a skP 2n7TYNod DsMDgWxk6E</field3>
-<joinhash.field>64</joinhash.field>
+<__key__.field>64</__key__.field>
 </document></srw:recordData>
     </srw:record>
 </ucp:updateRequest>

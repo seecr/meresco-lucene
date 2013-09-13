@@ -41,6 +41,8 @@ class TermNumerator(Observable):
         return self._taxoWriter.addCategory(CategoryPath([term]))
 
     def handleShutdown(self):
+        print 'handle shutdown: saving TermNumerator'
+        from sys import stdout; stdout.flush()
         self._taxoWriter.commit()
 
     def close(self):

@@ -25,6 +25,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase, CallTrace
+from seecr.test.io import stdout_replaced
 from os.path import join, isdir
 from time import sleep, time
 from meresco.lucene import Lucene, VM
@@ -319,6 +320,18 @@ class LuceneTest(SeecrTestCase):
         self.assertTrue(response.queryTime > 20, response.queryTime)
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
         self.assertTrue(response.queryTime < 2, response.queryTime)
+
+    def testHandleShutdown(self):
+        document = Document()
+        document.add(TextField('title', 'The title', Field.Store.NO))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="identifier", document=document))
+        sleep(0.1)
+        with stdout_replaced() as s:
+            self.lucene.handleShutdown()
+        lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor)
+        response = returnValueFromGenerator(lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
+        self.assertEquals(1, response.total)
+
 
     def xtestPerformanceCollectors(self):
         ### results

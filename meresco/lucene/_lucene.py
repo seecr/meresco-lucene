@@ -125,6 +125,11 @@ class Lucene(object):
     def finish(self):
         self._index.finish()
 
+    def handleShutdown(self):
+        print "handle shutdown: saving Lucene core '%s'" % self.coreName
+        from sys import stdout; stdout.flush()
+        self.finish()
+
     def _topDocsResponse(self, collector, start):
         # TODO: Probably use FieldCache iso document.get()
         hits = []

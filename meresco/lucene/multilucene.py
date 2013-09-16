@@ -60,12 +60,12 @@ class MultiLucene(Observable):
 
         if foreignQuery:
             foreignKeyCollector = KeyCollector(foreignKeyName)
-            consume(self.any[foreignCoreName].executeJoinQuery(foreignQuery, foreignKeyCollector))
+            consume(self.any[foreignCoreName].search(query=foreignQuery, collector=foreignKeyCollector))
 
             keySet = foreignKeyCollector.getKeySet()
             if foreignFacets:
                 primaryKeyCollector = KeyCollector(primaryKeyName)
-                consume(self.any[primaryCoreName].executeJoinQuery(primaryQuery, primaryKeyCollector))
+                consume(self.any[primaryCoreName].search(query=primaryQuery, collector=primaryKeyCollector))
                 keySet.intersect(primaryKeyCollector.getKeySet())
 
             primaryKeyFilterCollector = KeyFilterCollector(keySet, primaryKeyName)

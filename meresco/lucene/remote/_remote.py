@@ -67,7 +67,7 @@ class LuceneRemote(Observable):
         if not header.startswith('HTTP/1.0 200'):
             raise IOError("Expected status '200' from LuceneRemoteService, but got: " + response)
 
-    _ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames']
+    _ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames', 'executeMultiQuery']
 
 _converters = {
     'filterQueries': lambda key, value: (key, [cql2string(ast) for ast in value]),

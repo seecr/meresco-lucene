@@ -44,7 +44,7 @@ class LuceneRemoteTest(SeecrTestCase):
         observable.addObserver(remote)
         remote._httppost = http.httppost
 
-        result = returnValueFromGenerator(observable.any.executeQuery(
+        result = returnValueFromGenerator(observable.any.executeMultiQuery(
                 cqlAbstractSyntaxTree=parseString('query AND  field=value'),
                 start=0,
                 stop=10,
@@ -63,7 +63,7 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals('/path/__lucene_remote__', m.kwargs['request'])
         self.assertEquals('application/json', m.kwargs['headers']['Content-Type'])
         self.assertDictEquals({
-                'message': 'executeQuery',
+                'message': 'executeMultiQuery',
                 'kwargs':{
                     'cqlQuery': 'query AND field=value',
                     'start':0,

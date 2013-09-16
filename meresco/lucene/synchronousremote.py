@@ -58,6 +58,11 @@ class SynchronousRemote(object):
             kwargs['cqlAbstractSyntaxTree'] = args[0]
         return returnValueFromGenerator(self._observable.any.unknown(message='executeQuery', **kwargs))
 
+    def executeMultiQuery(self, *args, **kwargs):
+        if len(args) == 1:
+            kwargs['cqlAbstractSyntaxTree'] = args[0]
+        return returnValueFromGenerator(self._observable.any.unknown(message='executeMultiQuery', **kwargs))
+
     def _httppost(self, host, port, request, body, headers):
         sok = _socket(host, port)
         try:

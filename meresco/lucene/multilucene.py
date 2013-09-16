@@ -30,7 +30,7 @@ from _lucene import millis
 from time import time
 from org.meresco.lucene import KeyCollector, KeyFilterCollector
 from cache import KeyCollectorCache
-from seecr.utils.generatorutils import consume
+from seecr.utils.generatorutils import consume, generatorReturn
 
 class MultiLucene(Observable):
     def __init__(self, defaultCore):
@@ -38,7 +38,19 @@ class MultiLucene(Observable):
         self._defaultCore = defaultCore
         self._collectorCache = KeyCollectorCache(createCollectorFunction=lambda core: KeyCollector(core))
 
-    def executeQuery(self, luceneQuery, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
+    def executeQuery(self, core=None, **kwargs):
+        coreName = self._defaultCore if core is None else core
+        response = yield self.any[coreName].executeQuery(**kwargs)
+        generatorReturn(response)
+
+    def executeMultiQuery(self, queries=None, where=None, **kwargs):
+        if queries is None and where is None:
+            response = yield self._executeMutliQueryOld(**kwargs)
+            generatorReturn(response)
+            return
+        # new style
+
+    def _executeMutliQueryOld(self, luceneQuery, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
         # joins = {coreName: keyFieldName}
         t0 = time()
         primaryCoreName = self._defaultCore if core is None else core

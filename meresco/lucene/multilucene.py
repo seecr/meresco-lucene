@@ -69,10 +69,10 @@ class MultiLucene(Observable):
                 keySet.intersect(primaryKeyCollector.getKeySet())
 
             primaryKeyFilterCollector = KeyFilterCollector(keySet, primaryKeyName)
-            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=luceneQuery, filterCollector=primaryKeyFilterCollector, **kwargs)
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, **kwargs)
         else:
             primaryKeyCollector = KeyCollector(primaryKeyName)
-            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=luceneQuery, extraCollector=primaryKeyCollector, **kwargs)
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, extraCollector=primaryKeyCollector, **kwargs)
             keySet = primaryKeyCollector.getKeySet()
             foreignQuery = MatchAllDocsQuery()
 

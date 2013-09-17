@@ -91,10 +91,10 @@ class Lucene(object):
         self._index.search(luceneQuery, filter_, collector)
 
         total, hits = self._topDocsResponse(topCollector, start=start)
-        response = LuceneResponse(total=total, hits=hits)
+        response = LuceneResponse(total=total, hits=hits, drilldownData=[])
 
         if facets:
-            response.drilldownData = self._facetResult(facetCollector)
+            response.drilldownData.extend(self._facetResult(facetCollector))
 
         if suggestionRequest:
             response.suggestions = self._index.suggest(**suggestionRequest)

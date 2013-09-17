@@ -45,6 +45,7 @@ from lucenequerycomposertest import LuceneQueryComposerTest
 from fields2lucenedoctest import Fields2LuceneDocTest
 from lucenetest import LuceneTest
 from multilucenetest import MultiLuceneTest
+from multiquerytest import MultiQueryTest
 from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
 from filtercachetest import FilterCacheTest

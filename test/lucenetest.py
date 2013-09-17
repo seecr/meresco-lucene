@@ -193,6 +193,8 @@ class LuceneTest(SeecrTestCase):
         # does not crash!!!
         returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         sleep(0.1)
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals([], result.drilldownData)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
 
         self.assertEquals([{

@@ -43,61 +43,41 @@ class MultiLucene(Observable):
         response = yield self.any[coreName].executeQuery(**kwargs)
         generatorReturn(response)
 
-    def executeMultiQuery(self, queries=None, where=None, **kwargs):
-        if queries is None and where is None:
-            response = yield self._executeMutliQueryOld(**kwargs)
-            generatorReturn(response)
-            return
-        # new style
-
-    def _executeMutliQueryOld(self, luceneQuery, core=None, joinQueries=None, joinFacets=None, joins=None, **kwargs):
-        # joins = {coreName: keyFieldName}
+    def executeMultiQuery(self, multiQuery):
+        multiQuery.validate()
         t0 = time()
-        primaryCoreName = self._defaultCore if core is None else core
-        joinQueries = joinQueries or {}
-        joinFacets = joinFacets or {}
 
-        if len(joinQueries.keys()) > 1:
-            raise ValueError("MultiLucene accepts atmost one joinQuery.")
-
-        if not (joinQueries or joinFacets):
-            response = yield self.any[primaryCoreName].executeQuery(luceneQuery=luceneQuery, **kwargs)
-            raise StopIteration(response)
-        foreignCoreName = joinQueries.keys()[0] if joinQueries else joinFacets.keys()[0]
-        foreignQuery = joinQueries.get(foreignCoreName)
-        primaryQuery = luceneQuery
-        foreignKeyName = joins[foreignCoreName]
-        primaryKeyName = joins[primaryCoreName]
-        foreignFacets = joinFacets.get(foreignCoreName)
+        primaryCoreName, foreignCoreName = multiQuery.cores()
+        primaryKeyName, foreignKeyName = multiQuery.keyNames(primaryCoreName, foreignCoreName)
+        foreignQuery = multiQuery.queryFor(core=foreignCoreName)
+        primaryQuery = multiQuery.queryFor(core=primaryCoreName)
+        if primaryQuery is None:
+            primaryQuery = MatchAllDocsQuery()
 
         if foreignQuery:
             foreignKeyCollector = KeyCollector(foreignKeyName)
             consume(self.any[foreignCoreName].search(query=foreignQuery, collector=foreignKeyCollector))
-
             keySet = foreignKeyCollector.getKeySet()
-            if foreignFacets:
-                primaryKeyCollector = KeyCollector(primaryKeyName)
-                consume(self.any[primaryCoreName].search(query=primaryQuery, collector=primaryKeyCollector))
-                keySet.intersect(primaryKeyCollector.getKeySet())
+            # if foreignFacets: # Optimization?????
+            primaryKeyCollector = KeyCollector(primaryKeyName)
+            consume(self.any[primaryCoreName].search(query=primaryQuery, collector=primaryKeyCollector))
+            keySet.intersect(primaryKeyCollector.getKeySet())
 
             primaryKeyFilterCollector = KeyFilterCollector(keySet, primaryKeyName)
-            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, **kwargs)
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, facets=multiQuery.facetsFor(primaryCoreName))
         else:
             primaryKeyCollector = KeyCollector(primaryKeyName)
-            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, extraCollector=primaryKeyCollector, **kwargs)
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, extraCollector=primaryKeyCollector, facets=multiQuery.facetsFor(primaryCoreName))
             keySet = primaryKeyCollector.getKeySet()
             foreignQuery = MatchAllDocsQuery()
 
-        if foreignFacets:
+        if multiQuery.facetsFor(foreignCoreName):
             foreignKeyFilterCollector = KeyFilterCollector(keySet, foreignKeyName)
-            foreignReponse = yield self.any[foreignCoreName].executeQuery(foreignQuery, filterCollector=foreignKeyFilterCollector, facets=foreignFacets)
-
-            if not hasattr(primaryResponse, "drilldownData"):
-                primaryResponse.drilldownData = []
+            foreignReponse = yield self.any[foreignCoreName].executeQuery(foreignQuery, filterCollector=foreignKeyFilterCollector, facets=multiQuery.facetsFor(foreignCoreName))
             primaryResponse.drilldownData.extend(foreignReponse.drilldownData)
 
         primaryResponse.queryTime = millis(time() - t0)
-        raise StopIteration(primaryResponse)
+        generatorReturn(primaryResponse)
 
     def any_unknown(self, message, core=None, **kwargs):
         if message in ['prefixSearch', 'fieldnames']:
@@ -108,3 +88,5 @@ class MultiLucene(Observable):
 
     def coreInfo(self):
         yield self.all.coreInfo()
+
+

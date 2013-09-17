@@ -24,7 +24,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase, CallTrace
-from seecr.utils.generatorutils import returnValueFromGenerator
+from seecr.utils.generatorutils import returnValueFromGenerator, consume
 
 from meresco.core import Observable
 from weightless.core import be, compose
@@ -32,6 +32,7 @@ from weightless.core import be, compose
 from meresco.lucene import Lucene
 from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene.multilucene import MultiLucene
+from meresco.lucene.multiquery import MultiQuery
 from os.path import join
 from org.apache.lucene.search import TermQuery, MatchAllDocsQuery
 from org.apache.lucene.index import Term
@@ -92,33 +93,26 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(set(['id:3', 'id:4', 'id:5']), set(result.hits))
 
     def testJoinQuery(self):
+        query = MultiQuery()
+        query.add(core='coreA', query=None)
+        query.add(core='coreB', query=TermQuery(Term('field2', 'value1')))
+        query.resultsFrom(core='coreA')
+        query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
         result = returnValueFromGenerator(self.dna.any.executeMultiQuery(
-                luceneQuery=MatchAllDocsQuery(),
-                core='coreA',
-                joins={'coreA': KEY_PREFIX + 'A', 'coreB': KEY_PREFIX + 'B'},
-                joinQueries={'coreB': TermQuery(Term('field2', 'value1'))}
-            ))
+            multiQuery=query,
+        ))
         self.assertEquals(['id:0', 'id:2'], result.hits)
         self.assertTrue(result.queryTime > 0, result.asJson())
 
-    def testJoinQuery2(self):
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(
-            queries={
-                'coreA': {
-                    'query': None, # MatchAllDocsQuery
-                    'primary': True,
-                },
-                'coreB': {
-                    'query': TermQuery(Term('field2', 'value1')),
-                }
-            },
-            match={
-                ('coreA', 'coreB'): (KEY_PREFIX + 'A', KEY_PREFIX + 'B'),
-            }
-        ))
-        self.assertEquals(['id:0', 'id:2'], result.hits)
+    def testNotSupportedMultiQueries(self):
+        try:
+            consume(self.dna.any.executeMultiQuery(multiQuery=MultiQuery()))
+            self.fail()
+        except ValueError, e:
+            self.assertTrue('Unsupported' in str(e), str(e))
 
-    def testUniteQuery(self):
+
+    def XXXtestUniteQuery(self):
         result = returnValueFromGenerator(self.dna.any.executeMultiQuery(
             queries={
                 'coreA': {
@@ -137,27 +131,40 @@ class MultiLuceneTest(SeecrTestCase):
         ))
 
 
-    def testMultipleJoinQueries(self):
-        self.assertRaises(ValueError, lambda: returnValueFromGenerator(self.dna.any.executeMultiQuery(
-                    luceneQuery=TermQuery(Term("field1", "value0")),
-                    core='coreA',
-                    joins={'coreA': KEY_PREFIX + 'A', 'coreB': KEY_PREFIX + 'B', 'coreC': KEY_PREFIX + 'C'},
-                    joinQueries={
-                        'coreB': TermQuery(Term('field2', 'value1')),
-                        'coreC': TermQuery(Term('field4', 'value4'))
-                    },
-                )))
-
     def testJoinFacet(self):
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(
-                luceneQuery=TermQuery(Term("field1", "value0")),
-                joins={'coreA': KEY_PREFIX + 'A', 'coreB': KEY_PREFIX + 'B'},
-                core='coreA',
-                joinFacets={'coreB': [
-                    dict(fieldname='cat2', maxTerms=10),
-                    dict(fieldname='cat3', maxTerms=10)
-                ]}
-            ))
+        query = MultiQuery()
+        query.add(core='coreA', query=TermQuery(Term("field1", "value0")))
+        query.add(core='coreB', query=None, facets=[
+                dict(fieldname='cat2', maxTerms=10),
+                dict(fieldname='cat3', maxTerms=10),
+            ])
+        query.resultsFrom('coreA')
+        query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
+        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=query))
+        self.assertEquals(2, result.total)
+        self.assertEquals([{
+                'terms': [
+                    {'count': 1, 'term': u'cat2 3'},
+                    {'count': 1, 'term': u'cat2 2'},
+                ],
+                'fieldname': u'cat2'
+            }, {
+                'terms': [
+                    {'count': 1, 'term': u'cat3 0'},
+                ],
+                'fieldname': u'cat3'
+            }], result.drilldownData)
+
+    def testJoinFacetFromBPointOfView(self):
+        query = MultiQuery()
+        query.add(core='coreA', query=TermQuery(Term("field1", "value0")))
+        query.add(core='coreB', query=None, facets=[
+                dict(fieldname='cat2', maxTerms=10),
+                dict(fieldname='cat3', maxTerms=10),
+            ])
+        query.resultsFrom('coreB')
+        query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
+        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=query))
         self.assertEquals(2, result.total)
         self.assertEquals([{
                 'terms': [
@@ -173,14 +180,14 @@ class MultiLuceneTest(SeecrTestCase):
             }], result.drilldownData)
 
     def testJoinFacetWillNotFilter(self):
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(
-                luceneQuery=MatchAllDocsQuery(),
-                joins={'coreA': KEY_PREFIX + 'A', 'coreB': KEY_PREFIX + 'B'},
-                core='coreA',
-                joinFacets={'coreB': [
-                    dict(fieldname='cat3', maxTerms=10),
-                ]}
-            ))
+        query = MultiQuery()
+        query.add(core='coreA', query=MatchAllDocsQuery())
+        query.add(core='coreB', query=None, facets=[
+                dict(fieldname='cat3', maxTerms=10),
+            ])
+        query.resultsFrom('coreA')
+        query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
+        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=query))
         self.assertEquals(4, result.total)
         self.assertEquals(['id:0', 'id:1', 'id:2', 'id:7'], result.hits)
         self.assertEquals([{
@@ -192,16 +199,15 @@ class MultiLuceneTest(SeecrTestCase):
             }], result.drilldownData)
 
     def testJoinFacetAndQuery(self):
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(
-                luceneQuery=MatchAllDocsQuery(),
-                core='coreA',
-                joins={'coreA': KEY_PREFIX + 'A', 'coreB': KEY_PREFIX + 'B'},
-                joinQueries={'coreB': TermQuery(Term('field2', 'value1'))},
-                joinFacets={'coreB': [
-                    dict(fieldname='cat2', maxTerms=10),
-                    dict(fieldname='cat3', maxTerms=10)
-                ]}
-            ))
+        query = MultiQuery()
+        query.add(core='coreA', query=MatchAllDocsQuery())
+        query.add(core='coreB', query=TermQuery(Term('field2', 'value1')), facets=[
+                dict(fieldname='cat2', maxTerms=10),
+                dict(fieldname='cat3', maxTerms=10),
+            ])
+        query.resultsFrom('coreA')
+        query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
+        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=query))
         self.assertEquals(['id:0', 'id:2'], result.hits)
         self.assertEquals([{
                 'terms': [

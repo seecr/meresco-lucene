@@ -27,7 +27,7 @@ from meresco.lucene.remote import LuceneRemote, LuceneRemoteService
 from meresco.lucene import LuceneResponse
 from meresco.core import Observable
 from seecr.test import SeecrTestCase, CallTrace
-from cqlparser import parseString
+from cqlparser import parseString, CQL_QUERY, cql2string
 from weightless.core import compose
 from seecr.utils.generatorutils import returnValueFromGenerator
 from simplejson import loads, dumps
@@ -255,4 +255,17 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(['aap', 'noot'], response.hits)
         self.assertEquals(['fieldnames'], observer.calledMethodNames())
 
+    def testDumps(self):
+        kwargs = {'query': parseString('query'), 'nestedQuery':{'key':parseString('key')}}
 
+        def encode(anObject):
+            if isinstance(anObject, CQL_QUERY):
+                return {'__CQL_QUERY__': cql2string(anObject)}
+            raise TypeError(repr(anObject) + 'is not JSON serializable')
+        def decode(dct):
+            if '__CQL_QUERY__' in dct:
+                return parseString(dct['__CQL_QUERY__'])
+            return dct
+
+        d = dumps(kwargs, default=encode)
+        print loads(d, object_hook=decode)

@@ -30,6 +30,7 @@ class MultiQuery(object):
         self._facets = {}
         self._resultsFrom = None
         self._matches = {}
+        self._unites = []
 
     def add(self, core, query=None, facets=None):
         self._queries[core] = query
@@ -44,6 +45,20 @@ class MultiQuery(object):
         cores = sorted(kwargs.keys())
         keys = [kwargs[core] for core in cores]
         self._matches[tuple(cores)] = tuple(keys)
+
+    def unite(self, **kwargs):
+        if len(kwargs) != MultiQuery.MAX_CORES:
+            raise ValueError("Expected unite(coreA=<luceneQueryA>, coreB=<luceneQueryA>)")
+        cores = sorted(kwargs.keys())
+        try:
+            keyNames = self.keyNames(*cores)
+        except KeyError:
+            raise ValueError('No match found for %s' % cores)
+        for core, keyName in zip(cores, keyNames):
+            self._unites.append((core, keyName, kwargs[core]))
+
+    def unites(self):
+        return self._unites
 
     def keyNames(self, *cores):
         try:

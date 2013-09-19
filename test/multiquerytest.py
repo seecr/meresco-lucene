@@ -56,3 +56,12 @@ class MultiQueryTest(SeecrTestCase):
         multiQuery.addMatch(coreA='keyA', coreB='keyB')
         self.assertEquals(('keyA', 'keyB'), multiQuery.keyNames('coreA', 'coreB'))
         self.assertEquals(('keyB', 'keyA'), multiQuery.keyNames('coreB', 'coreA'))
+
+    def testUnite(self):
+        mq = MultiQuery()
+        mq.add(core='coreA', query=None)
+        mq.add(core='coreB', query=None)
+        mq.addMatch(coreA='keyA', coreB='keyB')
+        mq.unite(coreA='AQuery', coreB='anotherQuery')
+
+        self.assertEquals(set([('coreA', 'keyA', 'AQuery'), ('coreB', 'keyB', 'anotherQuery')]), set(mq.unites()))

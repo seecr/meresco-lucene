@@ -54,6 +54,17 @@ class MultiLucene(Observable):
         if primaryQuery is None:
             primaryQuery = MatchAllDocsQuery()
 
+
+        unionKeySet = None
+        if multiQuery.unites():
+            for coreName, coreKeyName, unite in multiQuery.unites():
+                uniteKeyCollector = KeyCollector(coreKeyName)
+                consume(self.any[coreName].search(query=unite, collector=uniteKeyCollector))
+                if unionKeySet is None:
+                    unionKeySet = uniteKeyCollector.getKeySet()
+                else:
+                    unionKeySet.union(uniteKeyCollector.getKeySet())
+
         if foreignQuery:
             foreignKeyCollector = KeyCollector(foreignKeyName)
             consume(self.any[foreignCoreName].search(query=foreignQuery, collector=foreignKeyCollector))
@@ -62,13 +73,19 @@ class MultiLucene(Observable):
             primaryKeyCollector = KeyCollector(primaryKeyName)
             consume(self.any[primaryCoreName].search(query=primaryQuery, collector=primaryKeyCollector))
             keySet.intersect(primaryKeyCollector.getKeySet())
+            if unionKeySet:
+                keySet.intersect(unionKeySet)
 
             primaryKeyFilterCollector = KeyFilterCollector(keySet, primaryKeyName)
             primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, facets=multiQuery.facetsFor(primaryCoreName))
         else:
+            primaryKeyFilterCollector = None
+            if unionKeySet:
+                primaryKeyFilterCollector = KeyFilterCollector(unionKeySet, primaryKeyName)
             primaryKeyCollector = KeyCollector(primaryKeyName)
-            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, extraCollector=primaryKeyCollector, facets=multiQuery.facetsFor(primaryCoreName))
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, extraCollector=primaryKeyCollector, facets=multiQuery.facetsFor(primaryCoreName))
             keySet = primaryKeyCollector.getKeySet()
+
             foreignQuery = MatchAllDocsQuery()
 
         if multiQuery.facetsFor(foreignCoreName):

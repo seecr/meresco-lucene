@@ -56,14 +56,13 @@ class MultiLucene(Observable):
 
 
         unionKeySet = None
-        if multiQuery.unites():
-            for coreName, coreKeyName, unite in multiQuery.unites():
-                uniteKeyCollector = KeyCollector(coreKeyName)
-                consume(self.any[coreName].search(query=unite, collector=uniteKeyCollector))
-                if unionKeySet is None:
-                    unionKeySet = uniteKeyCollector.getKeySet()
-                else:
-                    unionKeySet.union(uniteKeyCollector.getKeySet())
+        for coreName, coreKeyName, unite in multiQuery.unites():
+            uniteKeyCollector = KeyCollector(coreKeyName)
+            consume(self.any[coreName].search(query=unite, collector=uniteKeyCollector))
+            if unionKeySet is None:
+                unionKeySet = uniteKeyCollector.getKeySet()
+            else:
+                unionKeySet.union(uniteKeyCollector.getKeySet())
 
         if foreignQuery:
             foreignKeyCollector = KeyCollector(foreignKeyName)

@@ -232,6 +232,17 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(3, result.total)
         self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
 
+    def testUniteResultFromTwoIndexes_filterQueries(self):
+        q = ComposedQuery()
+        q.add(core='coreA', query=None, filterQueries=[query('Q=true')])
+        q.add(core='coreB', query=None)
+        q.resultsFrom('coreA')
+        q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
+        q.unite(coreA=query('U=true'), coreB=query('N=true'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(3, result.total)
+        self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
+
     def testUniteAndFacets(self):
         q = ComposedQuery()
         q.add(core='coreA', query=query('Q=true'), facets=[

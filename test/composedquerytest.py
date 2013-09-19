@@ -63,5 +63,24 @@ class ComposedQueryTest(SeecrTestCase):
         mq.add(core='coreB', query=None)
         mq.addMatch(coreA='keyA', coreB='keyB')
         mq.unite(coreA='AQuery', coreB='anotherQuery')
-
         self.assertEquals(set([('coreA', 'keyA', 'AQuery'), ('coreB', 'keyB', 'anotherQuery')]), set(mq.unites()))
+
+    def testFilterQueries(self):
+        cq = ComposedQuery()
+        cq.add(core='coreA', query='Q0', filterQueries=['Q1', 'Q2'], facets=['F0', 'F1'])
+        cq.add(core='coreB', query='Q3', filterQueries=['Q4'])
+        cq.addMatch(coreA='keyA', coreB='keyB')
+        cq.unite(coreA='AQuery', coreB='anotherQuery')
+        self.assertEquals(None, cq.stop)
+        self.assertEquals(None, cq.start)
+        self.assertEquals(None, cq.sortKeys)
+        cq.stop = 10
+        cq.start = 0
+        cq.sortKeys = [dict(sortBy='field', sortDescending=True)]
+        self.assertEquals('Q0', cq.queryFor('coreA'))
+        self.assertEquals(['Q1', 'Q2'], cq.filterQueriesFor('coreA'))
+        self.assertEquals(['F0', 'F1'], cq.facetsFor('coreA'))
+        self.assertEquals(10, cq.stop)
+        self.assertEquals(0, cq.start)
+        self.assertEquals([dict(sortBy='field', sortDescending=True)], cq.sortKeys)
+

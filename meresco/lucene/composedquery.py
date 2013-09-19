@@ -26,15 +26,19 @@
 
 class ComposedQuery(object):
     def __init__(self):
-        self._queries = {}
-        self._facets = {}
+        self._coreQueries = {}
         self._resultsFrom = None
         self._matches = {}
         self._unites = []
+        self._sortKeys = None
+        self._stop = None
+        self._start = None
 
-    def add(self, core, query=None, facets=None):
-        self._queries[core] = query
-        self._facets[core] = facets
+    def add(self, core, query=None, facets=None, filterQueries=None):
+        self._coreQueries[core] = dict(
+            query=query,
+            filterQueries=filterQueries,
+            facets=facets)
 
     def resultsFrom(self, core):
         self._resultsFrom = core
@@ -67,18 +71,21 @@ class ComposedQuery(object):
             return tuple(reversed(self._matches[tuple(reversed(cores))]))
 
     def queryFor(self, core):
-        return self._queries[core]
+        return self._coreQueries[core]['query']
 
     def facetsFor(self, core):
-        return self._facets[core]
+        return self._coreQueries[core]['facets']
+
+    def filterQueriesFor(self, core):
+        return self._coreQueries[core]['filterQueries']
 
     def validate(self):
-        if len(self._queries) != ComposedQuery.MAX_CORES:
+        if len(self._coreQueries) != ComposedQuery.MAX_CORES:
             raise ValueError('Unsupported number of cores, expected exactly %s.' % ComposedQuery.MAX_CORES)
         if self._resultsFrom is None:
             raise ValueError("Core for results not specified, use resultsFrom(core='core')")
-        if self._resultsFrom not in self._queries:
-            raise ValueError("Core in resultsFrom does not match the available cores, '%s' not in %s" % (self._resultsFrom, sorted(self._queries.keys())))
+        if self._resultsFrom not in self._coreQueries:
+            raise ValueError("Core in resultsFrom does not match the available cores, '%s' not in %s" % (self._resultsFrom, sorted(self._coreQueries.keys())))
         if len(self._matches) == 0:
             raise ValueError("No match set for cores")
         try:
@@ -89,10 +96,21 @@ class ComposedQuery(object):
     def cores(self):
         def _cores():
             yield self._resultsFrom
-            for core in self._queries.keys():
+            for core in self._coreQueries.keys():
                 if core != self._resultsFrom:
                     yield core
         return tuple(_cores())
 
+    def _prop(name):
+        def fget(self):
+            return getattr(self, '_'+name)
+        def fset(self, value):
+            return setattr(self, '_'+name, value)
+        return dict(fget=fget, fset=fset)
+    stop = property(**_prop('stop'))
+    start = property(**_prop('start'))
+    sortKeys = property(**_prop('sortKeys'))
+
     MAX_CORES = 2
 
+del ComposedQuery._prop

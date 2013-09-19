@@ -24,7 +24,7 @@
 ## end license ##
 
 
-class MultiQuery(object):
+class ComposedQuery(object):
     def __init__(self):
         self._queries = {}
         self._facets = {}
@@ -40,14 +40,14 @@ class MultiQuery(object):
         self._resultsFrom = core
 
     def addMatch(self, **kwargs):
-        if len(kwargs) != MultiQuery.MAX_CORES:
+        if len(kwargs) != ComposedQuery.MAX_CORES:
             raise ValueError("Expected addMatch(coreA='keyA', coreB='keyB')")
         cores = sorted(kwargs.keys())
         keys = [kwargs[core] for core in cores]
         self._matches[tuple(cores)] = tuple(keys)
 
     def unite(self, **kwargs):
-        if len(kwargs) != MultiQuery.MAX_CORES:
+        if len(kwargs) != ComposedQuery.MAX_CORES:
             raise ValueError("Expected unite(coreA=<luceneQueryA>, coreB=<luceneQueryA>)")
         cores = sorted(kwargs.keys())
         try:
@@ -73,8 +73,8 @@ class MultiQuery(object):
         return self._facets[core]
 
     def validate(self):
-        if len(self._queries) != MultiQuery.MAX_CORES:
-            raise ValueError('Unsupported number of cores, expected exactly %s.' % MultiQuery.MAX_CORES)
+        if len(self._queries) != ComposedQuery.MAX_CORES:
+            raise ValueError('Unsupported number of cores, expected exactly %s.' % ComposedQuery.MAX_CORES)
         if self._resultsFrom is None:
             raise ValueError("Core for results not specified, use resultsFrom(core='core')")
         if self._resultsFrom not in self._queries:

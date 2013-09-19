@@ -24,41 +24,41 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.multiquery import MultiQuery
+from meresco.lucene.composedquery import ComposedQuery
 
-class MultiQueryTest(SeecrTestCase):
-    def testValidateMultiQuery(self):
-        multiQuery = MultiQuery()
+class ComposedQueryTest(SeecrTestCase):
+    def testValidateComposedQuery(self):
+        composedQuery = ComposedQuery()
         def assertValueError(message):
             try:
-                multiQuery.validate()
+                composedQuery.validate()
                 self.fail()
             except ValueError, e:
                 self.assertEquals(message, str(e))
         assertValueError("Unsupported number of cores, expected exactly 2.")
-        multiQuery.add(core='coreA', query=None)
+        composedQuery.add(core='coreA', query=None)
         assertValueError("Unsupported number of cores, expected exactly 2.")
-        multiQuery.add(core='coreB', query=None)
+        composedQuery.add(core='coreB', query=None)
         assertValueError("Core for results not specified, use resultsFrom(core='core')")
-        multiQuery.resultsFrom(core='coreC')
+        composedQuery.resultsFrom(core='coreC')
         assertValueError("Core in resultsFrom does not match the available cores, 'coreC' not in ['coreA', 'coreB']")
-        multiQuery.resultsFrom(core='coreA')
+        composedQuery.resultsFrom(core='coreA')
         assertValueError("No match set for cores")
-        multiQuery.addMatch(coreC='keyC', coreD='keyE')
+        composedQuery.addMatch(coreC='keyC', coreD='keyE')
         assertValueError("No match set for cores: ('coreA', 'coreB')")
-        multiQuery.addMatch(coreA='keyA', coreB='keyB')
-        multiQuery.validate()
+        composedQuery.addMatch(coreA='keyA', coreB='keyB')
+        composedQuery.validate()
 
     def testKeyNames(self):
-        multiQuery = MultiQuery()
-        multiQuery.add(core='coreA', query=None)
-        multiQuery.add(core='coreB', query=None)
-        multiQuery.addMatch(coreA='keyA', coreB='keyB')
-        self.assertEquals(('keyA', 'keyB'), multiQuery.keyNames('coreA', 'coreB'))
-        self.assertEquals(('keyB', 'keyA'), multiQuery.keyNames('coreB', 'coreA'))
+        composedQuery = ComposedQuery()
+        composedQuery.add(core='coreA', query=None)
+        composedQuery.add(core='coreB', query=None)
+        composedQuery.addMatch(coreA='keyA', coreB='keyB')
+        self.assertEquals(('keyA', 'keyB'), composedQuery.keyNames('coreA', 'coreB'))
+        self.assertEquals(('keyB', 'keyA'), composedQuery.keyNames('coreB', 'coreA'))
 
     def testUnite(self):
-        mq = MultiQuery()
+        mq = ComposedQuery()
         mq.add(core='coreA', query=None)
         mq.add(core='coreB', query=None)
         mq.addMatch(coreA='keyA', coreB='keyB')

@@ -32,7 +32,7 @@ from weightless.core import be, compose
 from meresco.lucene import Lucene
 from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene.multilucene import MultiLucene
-from meresco.lucene.multiquery import MultiQuery
+from meresco.lucene.composedquery import ComposedQuery
 from os.path import join
 from cqlparser import parseString as parseCql
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
@@ -106,24 +106,24 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(set(['B-N', 'B-N>A-M', 'B-N>A-MU', 'B-N>A-MQ', 'B-N>A-MQU']), set(result.hits))
 
     def testJoinQuery(self):
-        q = MultiQuery()
+        q = ComposedQuery()
         q.add(core='coreA')
         q.add(core='coreB', query=query('N=true'))
         q.resultsFrom('coreA')
         q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(q))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(4, result.total)
         self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), set(result.hits))
 
-    def testNotSupportedMultiQueries(self):
+    def testNotSupportedComposedQueries(self):
         try:
-            consume(self.dna.any.executeMultiQuery(multiQuery=MultiQuery()))
+            consume(self.dna.any.executeComposedQuery(query=ComposedQuery()))
             self.fail()
         except ValueError, e:
             self.assertTrue('Unsupported' in str(e), str(e))
 
     def testJoinFacet(self):
-        q = MultiQuery()
+        q = ComposedQuery()
         q.add(core='coreA', query=query('Q=true'))
         q.add(core='coreB', query=None, facets=[
                 dict(fieldname='cat_N', maxTerms=10),
@@ -131,7 +131,7 @@ class MultiLuceneTest(SeecrTestCase):
             ])
         q.resultsFrom('coreA')
         q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=q))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
         self.assertEquals(4, result.total)
         self.assertEquals([{
                 'terms': [
@@ -147,7 +147,7 @@ class MultiLuceneTest(SeecrTestCase):
             }], result.drilldownData)
 
     def testJoinFacetFromBPointOfView(self):
-        q = MultiQuery()
+        q = ComposedQuery()
         q.add(core='coreA', query=query('Q=true'))
         q.add(core='coreB', query=None, facets=[
                 dict(fieldname='cat_N', maxTerms=10),
@@ -155,7 +155,7 @@ class MultiLuceneTest(SeecrTestCase):
             ])
         q.resultsFrom('coreB')
         q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=q))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
         self.assertEquals(2, result.total)
         self.assertEquals([{
                 'terms': [
@@ -171,14 +171,14 @@ class MultiLuceneTest(SeecrTestCase):
              }], result.drilldownData)
 
     def testJoinFacetWillNotFilter(self):
-        query = MultiQuery()
+        query = ComposedQuery()
         query.add(core='coreA', query=None)
         query.add(core='coreB', query=None, facets=[
                 dict(fieldname='cat_N', maxTerms=10),
             ])
         query.resultsFrom('coreA')
         query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=query))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=query))
         self.assertEquals(8, result.total)
         self.assertEquals([{
                 'terms': [
@@ -188,7 +188,7 @@ class MultiLuceneTest(SeecrTestCase):
             }], result.drilldownData)
 
     def testJoinFacetAndQuery(self):
-        q = MultiQuery()
+        q = ComposedQuery()
         q.add(core='coreA', query=None)
         q.add(core='coreB', query=query('N=true'), facets=[
                 dict(fieldname='cat_N', maxTerms=10),
@@ -196,7 +196,7 @@ class MultiLuceneTest(SeecrTestCase):
             ])
         q.resultsFrom('coreA')
         q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=q))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
         self.assertEquals(4, result.total)
         self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), set(result.hits))
         self.assertEquals([{
@@ -222,15 +222,48 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
 
     def testUniteResultFromTwoIndexes(self):
-        q = MultiQuery()
+        q = ComposedQuery()
         q.add(core='coreA', query=query('Q=true'))
         q.add(core='coreB', query=None)
         q.resultsFrom('coreA')
         q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
         q.unite(coreA=query('U=true'), coreB=query('N=true'))
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(q))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(3, result.total)
         self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
+
+    def testUniteAndFacets(self):
+        q = ComposedQuery()
+        q.add(core='coreA', query=query('Q=true'), facets=[
+                dict(fieldname='cat_Q', maxTerms=10),
+                dict(fieldname='cat_U', maxTerms=10),
+            ])
+        q.add(core='coreB', query=None, facets=[
+                dict(fieldname='cat_N', maxTerms=10),
+            ])
+        q.resultsFrom('coreA')
+        q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
+        q.unite(coreA=query('U=true'), coreB=query('N=true'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(3, result.total)
+        self.assertEquals([{
+                'terms': [
+                    {'count': 3, 'term': u'true'},
+                ],
+                'fieldname': u'cat_Q'
+            }, {
+                'terms': [
+                    {'count': 2, 'term': u'true'},
+                    {'count': 1, 'term': u'false'},
+                ],
+                'fieldname': u'cat_U'
+            }, {
+                'terms': [
+                    {'count': 2, 'term': u'true'},
+                ],
+                'fieldname': u'cat_N'
+            }], result.drilldownData)
+
 
     def addDocument(self, lucene, identifier, key, fields):
         keyField, keyValue = key

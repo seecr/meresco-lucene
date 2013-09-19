@@ -43,20 +43,20 @@ class MultiLucene(Observable):
         response = yield self.any[coreName].executeQuery(**kwargs)
         generatorReturn(response)
 
-    def executeMultiQuery(self, multiQuery):
-        multiQuery.validate()
+    def executeComposedQuery(self, query):
+        query.validate()
         t0 = time()
 
-        primaryCoreName, foreignCoreName = multiQuery.cores()
-        primaryKeyName, foreignKeyName = multiQuery.keyNames(primaryCoreName, foreignCoreName)
-        foreignQuery = multiQuery.queryFor(core=foreignCoreName)
-        primaryQuery = multiQuery.queryFor(core=primaryCoreName)
+        primaryCoreName, foreignCoreName = query.cores()
+        primaryKeyName, foreignKeyName = query.keyNames(primaryCoreName, foreignCoreName)
+        foreignQuery = query.queryFor(core=foreignCoreName)
+        primaryQuery = query.queryFor(core=primaryCoreName)
         if primaryQuery is None:
             primaryQuery = MatchAllDocsQuery()
 
 
         unionKeySet = None
-        for coreName, coreKeyName, unite in multiQuery.unites():
+        for coreName, coreKeyName, unite in query.unites():
             uniteKeyCollector = KeyCollector(coreKeyName)
             consume(self.any[coreName].search(query=unite, collector=uniteKeyCollector))
             if unionKeySet is None:
@@ -76,20 +76,20 @@ class MultiLucene(Observable):
                 keySet.intersect(unionKeySet)
 
             primaryKeyFilterCollector = KeyFilterCollector(keySet, primaryKeyName)
-            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, facets=multiQuery.facetsFor(primaryCoreName))
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, facets=query.facetsFor(primaryCoreName))
         else:
             primaryKeyFilterCollector = None
             if unionKeySet:
                 primaryKeyFilterCollector = KeyFilterCollector(unionKeySet, primaryKeyName)
             primaryKeyCollector = KeyCollector(primaryKeyName)
-            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, extraCollector=primaryKeyCollector, facets=multiQuery.facetsFor(primaryCoreName))
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, extraCollector=primaryKeyCollector, facets=query.facetsFor(primaryCoreName))
             keySet = primaryKeyCollector.getKeySet()
 
             foreignQuery = MatchAllDocsQuery()
 
-        if multiQuery.facetsFor(foreignCoreName):
+        if query.facetsFor(foreignCoreName):
             foreignKeyFilterCollector = KeyFilterCollector(keySet, foreignKeyName)
-            foreignReponse = yield self.any[foreignCoreName].executeQuery(foreignQuery, filterCollector=foreignKeyFilterCollector, facets=multiQuery.facetsFor(foreignCoreName))
+            foreignReponse = yield self.any[foreignCoreName].executeQuery(foreignQuery, filterCollector=foreignKeyFilterCollector, facets=query.facetsFor(foreignCoreName))
             primaryResponse.drilldownData.extend(foreignReponse.drilldownData)
 
         primaryResponse.queryTime = millis(time() - t0)

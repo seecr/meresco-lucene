@@ -34,9 +34,8 @@ from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.multiquery import MultiQuery
 from os.path import join
-from org.apache.lucene.search import TermQuery, MatchAllDocsQuery
-from org.apache.lucene.index import Term
-
+from cqlparser import parseString as parseCql
+from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from lucenetest import createDocument, createCategories
 from time import sleep
 
@@ -46,63 +45,75 @@ class MultiLuceneTest(SeecrTestCase):
         SeecrTestCase.setUp(self)
         self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), commitCount=1)
         self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), commitCount=1)
-        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1)
         self.dna = be((Observable(),
             (MultiLucene(defaultCore='coreA'),
                 (self.luceneA,),
                 (self.luceneB,),
-                (self.luceneC,),
             )
         ))
-        key1 = 1
-        key2 = 2
-        key3 = 3
-        key4 = 4
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:0", document=createDocument([(KEY_PREFIX + 'A', key1), ('field1', 'value0')]), categories=createCategories([('cat1', 'cat1 0')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:1", document=createDocument([(KEY_PREFIX + 'A', key2), ('field1', 'value0')]), categories=createCategories([('cat1', 'cat1 1')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:2", document=createDocument([(KEY_PREFIX + 'A', key3), ('field1', 'value1')]), categories=createCategories([('cat1', 'cat1 1')])))
-        returnValueFromGenerator(self.luceneA.addDocument(identifier="id:7", document=createDocument([(KEY_PREFIX + 'A', key4), ('field1', 'value1')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:3", document=createDocument([(KEY_PREFIX + 'B', key1), ('field2', 'value1')]), categories=createCategories([('cat2', 'cat2 2')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:4", document=createDocument([(KEY_PREFIX + 'B', key2), ('field2', 'value2'), ('field3', 'value3')]), categories=createCategories([('cat2', 'cat2 3'), ('cat3', 'cat3 0')])))
-        returnValueFromGenerator(self.luceneB.addDocument(identifier="id:5", document=createDocument([(KEY_PREFIX + 'B', key3), ('field2', 'value1'), ('field3', 'value3')]), categories=createCategories([('cat2', 'cat2 3'), ('cat3', 'cat3 1')])))
-        returnValueFromGenerator(self.luceneC.addDocument(identifier="id:6", document=createDocument([(KEY_PREFIX + 'C', key1), ('field4', 'value4')])))
+
+        # +---------------------------------+     +---------------------------------+
+        # |              ______             |     |                                 |
+        # |         ____/      \____     A  |     |    __________                B  |
+        # |        /   /\   Q  /\   \       |     |   /          \                  |
+        # |       /   /  \    /  \   \      |     |  /   ____     \                 |
+        # |      /   |    \  /    |   \     |     | |   /    \     |                |
+        # |     /     \    \/    /     \    |     | |  |  M   | N  |                |
+        # |    /       \   /\   /       \   |     | |   \____/     |                |
+        # |   |         \_|__|_/         |  |     |  \            /                 |
+        # |   |    U      |  |     M     |  |     |   \__________/                  |
+        # |   |           \  /           |  |     |                                 |
+        # |    \           \/           /   |     |                                 |
+        # |     \          /\          /    |     |                                 |
+        # |      \        /  \        /     |     |                                 |
+        # |       \______/    \______/      |     |                                 |
+        # |                                 |     |                                 |
+        # |                                 |     |                                 |
+        # +---------------------------------+     +---------------------------------+
+
+        k1, k2, k3, k4, k5, k6, k7, k8, k9, k10 = range(1,11)
+        self.addDocument(self.luceneA, identifier='A',      key=('A', k1 ), fields=[('M', 'false'), ('Q', 'false'), ('U', 'false')])
+        self.addDocument(self.luceneA, identifier='A-U',    key=('A', k2 ), fields=[('M', 'false'), ('Q', 'false'), ('U', 'true' )])
+        self.addDocument(self.luceneA, identifier='A-Q',    key=('A', k3 ), fields=[('M', 'false'), ('Q', 'true' ), ('U', 'false')])
+        self.addDocument(self.luceneA, identifier='A-QU',   key=('A', k4 ), fields=[('M', 'false'), ('Q', 'true' ), ('U', 'true' )])
+        self.addDocument(self.luceneA, identifier='A-M',    key=('A', k5 ), fields=[('M', 'true' ), ('Q', 'false'), ('U', 'false')])
+        self.addDocument(self.luceneA, identifier='A-MU',   key=('A', k6 ), fields=[('M', 'true' ), ('Q', 'false'), ('U', 'true' )])
+        self.addDocument(self.luceneA, identifier='A-MQ',   key=('A', k7 ), fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false')])
+        self.addDocument(self.luceneA, identifier='A-MQU',  key=('A', k8 ), fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' )])
+
+        self.addDocument(self.luceneB, identifier='B-N>A-M',   key=('B', k5 ), fields=[('N', 'true' ), ('O', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-N>A-MU',  key=('B', k6 ), fields=[('N', 'true' ), ('O', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  key=('B', k7 ), fields=[('N', 'true' ), ('O', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQU', key=('B', k8 ), fields=[('N', 'true' ), ('O', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N',       key=('B', k9 ), fields=[('N', 'true' ), ('O', 'true' )])
+        self.addDocument(self.luceneB, identifier='B',         key=('B', k10), fields=[('N', 'false'), ('O', 'false')])
         sleep(0.2)
 
     def tearDown(self):
         self.luceneA.finish()
         self.luceneB.finish()
-        self.luceneC.finish()
         SeecrTestCase.tearDown(self)
 
     def testQueryOneIndex(self):
-        result = returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=TermQuery(Term("field1", "value0")),
-            ))
-        self.assertEquals(2, result.total)
-        self.assertEquals(set(['id:0', 'id:1']), set(result.hits))
-        result = returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=MatchAllDocsQuery(),
-            ))
-        self.assertEquals(4, result.total)
-        self.assertEquals(set(['id:0', 'id:1', 'id:2', 'id:7']), set(result.hits))
-        result = returnValueFromGenerator(self.dna.any.executeQuery(
-                luceneQuery=MatchAllDocsQuery(),
-                core='coreB',
-            ))
-        self.assertEquals(3, result.total)
-        self.assertEquals(set(['id:3', 'id:4', 'id:5']), set(result.hits))
+        result = returnValueFromGenerator(self.dna.any.executeQuery(luceneQuery=query('Q=true')))
+        self.assertEquals(set(['A-Q', 'A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
+        result = returnValueFromGenerator(self.dna.any.executeQuery(luceneQuery=query('Q=true AND M=true')))
+        self.assertEquals(set(['A-MQ', 'A-MQU']), set(result.hits))
+
+    def testB_N_is_true(self):
+        result = returnValueFromGenerator(self.dna.any.executeQuery(core='coreB', luceneQuery=query('N=true')))
+        self.assertEquals(5, result.total)
+        self.assertEquals(set(['B-N', 'B-N>A-M', 'B-N>A-MU', 'B-N>A-MQ', 'B-N>A-MQU']), set(result.hits))
 
     def testJoinQuery(self):
-        query = MultiQuery()
-        query.add(core='coreA', query=None)
-        query.add(core='coreB', query=TermQuery(Term('field2', 'value1')))
-        query.resultsFrom(core='coreA')
-        query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(
-            multiQuery=query,
-        ))
-        self.assertEquals(['id:0', 'id:2'], result.hits)
-        self.assertTrue(result.queryTime > 0, result.asJson())
+        q = MultiQuery()
+        q.add(core='coreA')
+        q.add(core='coreB', query=query('N=true'))
+        q.resultsFrom('coreA')
+        q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
+        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(q))
+        self.assertEquals(4, result.total)
+        self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), set(result.hits))
 
     def testNotSupportedMultiQueries(self):
         try:
@@ -111,117 +122,123 @@ class MultiLuceneTest(SeecrTestCase):
         except ValueError, e:
             self.assertTrue('Unsupported' in str(e), str(e))
 
-
-    def XXXtestUniteQuery(self):
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(
-            queries={
-                'coreA': {
-                    'query': TermQuery(Term('__all__', 'fiets')),
-                    'primary': True,
-                    'unite': 'dcterms:source="ihlia" or dcterms:source="uitburo"',
-                },
-                'coreB': {
-                    'query': None,
-                    'unite': 'lh:holder="info:isil:NL-0800070000"',
-                }
-            },
-            match={
-                ('coreA', 'coreB'): (KEY_PREFIX + 'A', KEY_PREFIX + 'B'),
-            }
-        ))
-
-
     def testJoinFacet(self):
-        query = MultiQuery()
-        query.add(core='coreA', query=TermQuery(Term("field1", "value0")))
-        query.add(core='coreB', query=None, facets=[
-                dict(fieldname='cat2', maxTerms=10),
-                dict(fieldname='cat3', maxTerms=10),
+        q = MultiQuery()
+        q.add(core='coreA', query=query('Q=true'))
+        q.add(core='coreB', query=None, facets=[
+                dict(fieldname='cat_N', maxTerms=10),
+                dict(fieldname='cat_O', maxTerms=10),
             ])
-        query.resultsFrom('coreA')
-        query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=query))
-        self.assertEquals(2, result.total)
+        q.resultsFrom('coreA')
+        q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
+        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=q))
+        self.assertEquals(4, result.total)
         self.assertEquals([{
                 'terms': [
-                    {'count': 1, 'term': u'cat2 3'},
-                    {'count': 1, 'term': u'cat2 2'},
-                ],
-                'fieldname': u'cat2'
+                        {'count': 2, 'term': u'true'},
+                    ],
+                'fieldname': u'cat_N'
             }, {
                 'terms': [
-                    {'count': 1, 'term': u'cat3 0'},
+                    {'count': 1, 'term': u'false'},
+                    {'count': 1, 'term': u'true'},
                 ],
-                'fieldname': u'cat3'
+                'fieldname': u'cat_O'
             }], result.drilldownData)
 
     def testJoinFacetFromBPointOfView(self):
-        query = MultiQuery()
-        query.add(core='coreA', query=TermQuery(Term("field1", "value0")))
-        query.add(core='coreB', query=None, facets=[
-                dict(fieldname='cat2', maxTerms=10),
-                dict(fieldname='cat3', maxTerms=10),
+        q = MultiQuery()
+        q.add(core='coreA', query=query('Q=true'))
+        q.add(core='coreB', query=None, facets=[
+                dict(fieldname='cat_N', maxTerms=10),
+                dict(fieldname='cat_O', maxTerms=10),
             ])
-        query.resultsFrom('coreB')
-        query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=query))
+        q.resultsFrom('coreB')
+        q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
+        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=q))
         self.assertEquals(2, result.total)
         self.assertEquals([{
                 'terms': [
-                    {'count': 1, 'term': u'cat2 3'},
-                    {'count': 1, 'term': u'cat2 2'},
-                ],
-                'fieldname': u'cat2'
+                        {'count': 2, 'term': u'true'},
+                    ],
+                'fieldname': u'cat_N'
             }, {
                 'terms': [
-                    {'count': 1, 'term': u'cat3 0'},
+                    {'count': 1, 'term': u'false'},
+                    {'count': 1, 'term': u'true'},
                 ],
-                'fieldname': u'cat3'
-            }], result.drilldownData)
+                'fieldname': u'cat_O'
+             }], result.drilldownData)
 
     def testJoinFacetWillNotFilter(self):
         query = MultiQuery()
-        query.add(core='coreA', query=MatchAllDocsQuery())
+        query.add(core='coreA', query=None)
         query.add(core='coreB', query=None, facets=[
-                dict(fieldname='cat3', maxTerms=10),
+                dict(fieldname='cat_N', maxTerms=10),
             ])
         query.resultsFrom('coreA')
         query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
         result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=query))
-        self.assertEquals(4, result.total)
-        self.assertEquals(['id:0', 'id:1', 'id:2', 'id:7'], result.hits)
+        self.assertEquals(8, result.total)
         self.assertEquals([{
                 'terms': [
-                    {'count': 1, 'term': u'cat3 1'},
-                    {'count': 1, 'term': u'cat3 0'},
+                    {'count': 4, 'term': u'true'},
                 ],
-                'fieldname': u'cat3'
+                'fieldname': u'cat_N'
             }], result.drilldownData)
 
     def testJoinFacetAndQuery(self):
-        query = MultiQuery()
-        query.add(core='coreA', query=MatchAllDocsQuery())
-        query.add(core='coreB', query=TermQuery(Term('field2', 'value1')), facets=[
-                dict(fieldname='cat2', maxTerms=10),
-                dict(fieldname='cat3', maxTerms=10),
+        q = MultiQuery()
+        q.add(core='coreA', query=None)
+        q.add(core='coreB', query=query('N=true'), facets=[
+                dict(fieldname='cat_N', maxTerms=10),
+                dict(fieldname='cat_O', maxTerms=10),
             ])
-        query.resultsFrom('coreA')
-        query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
-        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=query))
-        self.assertEquals(['id:0', 'id:2'], result.hits)
+        q.resultsFrom('coreA')
+        q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
+        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(multiQuery=q))
+        self.assertEquals(4, result.total)
+        self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), set(result.hits))
         self.assertEquals([{
                 'terms': [
-                    {'count': 1, 'term': u'cat2 3'},
-                    {'count': 1, 'term': u'cat2 2'},
+                    {'count': 4, 'term': u'true'},
                 ],
-                'fieldname': u'cat2'
+                'fieldname': u'cat_N'
             }, {
                 'terms': [
-                    {'count': 1, 'term': u'cat3 1'},
+                    {'count': 2, 'term': u'false'},
+                    {'count': 2, 'term': u'true'},
                 ],
-                'fieldname': u'cat3'
+                'fieldname': u'cat_O'
             }], result.drilldownData)
 
     def testCoreInfo(self):
         infos = list(compose(self.dna.all.coreInfo()))
-        self.assertEquals(3, len(infos))
+        self.assertEquals(2, len(infos))
+
+    def testUniteResultForJustOneIndex(self):
+        result = returnValueFromGenerator(self.dna.any.executeQuery(core='coreA', luceneQuery=query('(Q=true AND U=true) OR (Q=true AND M=true)')))
+        self.assertEquals(3, result.total)
+        self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
+
+    def testUniteResultFromTwoIndexes(self):
+        q = MultiQuery()
+        q.add(core='coreA', query=query('Q=true'))
+        q.add(core='coreB', query=None)
+        q.resultsFrom('coreA')
+        q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
+        q.unite(coreA=query('U=true'), coreB=query('N=true'))
+        result = returnValueFromGenerator(self.dna.any.executeMultiQuery(q))
+        self.assertEquals(3, result.total)
+        self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
+
+    def addDocument(self, lucene, identifier, key, fields):
+        keyField, keyValue = key
+        consume(lucene.addDocument(
+            identifier=identifier,
+            document=createDocument([(KEY_PREFIX + keyField, keyValue)]+fields),
+            categories=createCategories([('cat_'+field, value) for field, value in fields])
+            ))
+
+def query(cqlString):
+    return LuceneQueryComposer([]).compose(parseCql(cqlString))

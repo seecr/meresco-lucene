@@ -23,12 +23,13 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
 from org.apache.lucene.queries import ChainedFilter
+from org.meresco.lucene import KeyFilterCollector
 from time import time
 
 from os.path import basename
@@ -37,6 +38,7 @@ from luceneresponse import LuceneResponse
 from index import Index
 from cache import FilterCache
 from utils import IDFIELD, createIdField, sortField
+from seecr.utils.generatorutils import generatorReturn
 
 
 class Lucene(object):
@@ -67,11 +69,20 @@ class Lucene(object):
     def search(self, query=None, filter=None, collector=None):
         self._index.search(query, filter, collector)
 
-    def executeQuery(self, luceneQuery, start=0, stop=10, sortKeys=None, facets=None,
-        filterQueries=None, suggestionRequest=None, filterCollector=None, extraCollector=None, **kwargs):
-        t0 = time()
+    def facets(self, filterCollector, facets):
+        facetCollector = self._facetCollector(facets)
+        filterCollector.setDelegate(facetCollector)
+        self.search(MatchAllDocsQuery(), None, filterCollector)
+        generatorReturn(self._facetResult(facetCollector))
+        yield
 
-        collectors = [extraCollector] if extraCollector else []
+    def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
+        filterQueries=None, suggestionRequest=None, filterCollector=None, **kwargs):
+        t0 = time()
+        stop = 10 if stop is None else stop
+        start = 0 if start is None else start
+
+        collectors = []
         topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
         collectors.append(topCollector)
         if facets:
@@ -88,7 +99,7 @@ class Lucene(object):
             filters = [self._filterCache.getFilter(f) for f in filterQueries]
             filter_ = ChainedFilter(filters, ChainedFilter.AND)
 
-        self._index.search(luceneQuery, filter_, collector)
+        self.search(luceneQuery, filter_, collector)
 
         total, hits = self._topDocsResponse(topCollector, start=start)
         response = LuceneResponse(total=total, hits=hits, drilldownData=[])

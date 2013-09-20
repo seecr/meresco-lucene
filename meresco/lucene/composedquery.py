@@ -104,6 +104,9 @@ class ComposedQuery(object):
                     yield core
         return tuple(_cores())
 
+    def otherKwargs(self):
+        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys)
+
     def _prop(name):
         def fget(self):
             return getattr(self, '_'+name)

@@ -72,14 +72,14 @@ class MultiLuceneTest(SeecrTestCase):
         # +---------------------------------+     +---------------------------------+
 
         k1, k2, k3, k4, k5, k6, k7, k8, k9, k10 = range(1,11)
-        self.addDocument(self.luceneA, identifier='A',      key=('A', k1 ), fields=[('M', 'false'), ('Q', 'false'), ('U', 'false')])
-        self.addDocument(self.luceneA, identifier='A-U',    key=('A', k2 ), fields=[('M', 'false'), ('Q', 'false'), ('U', 'true' )])
-        self.addDocument(self.luceneA, identifier='A-Q',    key=('A', k3 ), fields=[('M', 'false'), ('Q', 'true' ), ('U', 'false')])
-        self.addDocument(self.luceneA, identifier='A-QU',   key=('A', k4 ), fields=[('M', 'false'), ('Q', 'true' ), ('U', 'true' )])
-        self.addDocument(self.luceneA, identifier='A-M',    key=('A', k5 ), fields=[('M', 'true' ), ('Q', 'false'), ('U', 'false')])
-        self.addDocument(self.luceneA, identifier='A-MU',   key=('A', k6 ), fields=[('M', 'true' ), ('Q', 'false'), ('U', 'true' )])
-        self.addDocument(self.luceneA, identifier='A-MQ',   key=('A', k7 ), fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false')])
-        self.addDocument(self.luceneA, identifier='A-MQU',  key=('A', k8 ), fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' )])
+        self.addDocument(self.luceneA, identifier='A',      key=('A', k1 ), fields=[('M', 'false'), ('Q', 'false'), ('U', 'false'), ('S', '1')])
+        self.addDocument(self.luceneA, identifier='A-U',    key=('A', k2 ), fields=[('M', 'false'), ('Q', 'false'), ('U', 'true' ), ('S', '2')])
+        self.addDocument(self.luceneA, identifier='A-Q',    key=('A', k3 ), fields=[('M', 'false'), ('Q', 'true' ), ('U', 'false'), ('S', '3')])
+        self.addDocument(self.luceneA, identifier='A-QU',   key=('A', k4 ), fields=[('M', 'false'), ('Q', 'true' ), ('U', 'true' ), ('S', '4')])
+        self.addDocument(self.luceneA, identifier='A-M',    key=('A', k5 ), fields=[('M', 'true' ), ('Q', 'false'), ('U', 'false'), ('S', '5')])
+        self.addDocument(self.luceneA, identifier='A-MU',   key=('A', k6 ), fields=[('M', 'true' ), ('Q', 'false'), ('U', 'true' ), ('S', '6')])
+        self.addDocument(self.luceneA, identifier='A-MQ',   key=('A', k7 ), fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false'), ('S', '7')])
+        self.addDocument(self.luceneA, identifier='A-MQU',  key=('A', k8 ), fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' ), ('S', '8')])
 
         self.addDocument(self.luceneB, identifier='B-N>A-M',   key=('B', k5 ), fields=[('N', 'true' ), ('O', 'true' )])
         self.addDocument(self.luceneB, identifier='B-N>A-MU',  key=('B', k6 ), fields=[('N', 'true' ), ('O', 'false')])
@@ -284,6 +284,33 @@ class MultiLuceneTest(SeecrTestCase):
                 ],
                 'fieldname': u'cat_N'
             }], result.drilldownData)
+
+    def testStartStopSortKeys(self):
+        q = ComposedQuery()
+        q.add(core='coreA', query=query('Q=true'))
+        q.add(core='coreB', query=None)
+        q.resultsFrom('coreA')
+        q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
+        q.unite(coreA=query('U=true'), coreB=query('N=true'))
+        q.sortKeys=[dict(sortBy='S', sortDescending=False)]
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(3, result.total)
+        self.assertEquals(['A-QU', 'A-MQ', 'A-MQU'], result.hits)
+        q.sortKeys=[dict(sortBy='S', sortDescending=True)]
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(3, result.total)
+        self.assertEquals(['A-MQU', 'A-MQ', 'A-QU'], result.hits)
+        q.stop = 2
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(3, result.total)
+        self.assertEquals(['A-MQU', 'A-MQ'], result.hits)
+        q.stop = 10
+        q.start = 1
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(3, result.total)
+        self.assertEquals(['A-MQ', 'A-QU'], result.hits)
+
+
 
 
     def addDocument(self, lucene, identifier, key, fields):

@@ -28,6 +28,7 @@ from meresco.core import Transparent
 from meresco.components.statistics import Logger
 from meresco.components.clausecollector import ClauseCollector
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
+from seecr.utils.generatorutils import generatorReturn
 
 
 class CqlToLuceneQuery(Transparent, Logger):
@@ -41,7 +42,12 @@ class CqlToLuceneQuery(Transparent, Logger):
         if joinQueries:
             joinQueries = dict((k, self._convert(v)) for k, v in joinQueries.items())
         response = yield self.any.executeQuery(luceneQuery=self._convert(cqlAbstractSyntaxTree), filterQueries=filterQueries, joinQueries=joinQueries, *args, **kwargs)
-        raise StopIteration(response)
+        generatorReturn(response)
+
+    def executeComposedQuery(self, query):
+        query.convertWith(self._convert)
+        response = yield self.any.executeComposedQuery(query=query)
+        generatorReturn(response)
 
     def _convert(self, ast):
         ClauseCollector(ast, self.log).visit()

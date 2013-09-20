@@ -29,6 +29,8 @@ from cqlparser import parseString
 from meresco.lucene.cqltolucenequery import CqlToLuceneQuery
 from meresco.core import Observable
 from weightless.core import be, compose
+from seecr.utils.generatorutils import consume
+from meresco.lucene.composedquery import ComposedQuery
 
 from org.apache.lucene.search import TermQuery
 from org.apache.lucene.index import Term
@@ -78,6 +80,17 @@ class CqlToLuceneQueryTest(TestCase):
 
     def testFilterQueries(self):
         self.assertConversion(['term2', 'term1'], query='term1', filterQueries=[parseString('term2')])
+
+    def testConvertComposedQuery(self):
+        q = ComposedQuery()
+        q.add(core='A', query=parseString('fieldAQ exact valueAQ'))
+        q.add(core='B', query=parseString('fieldBQ exact valueBQ'))
+        q.addMatch(A='keyA', B='keyB')
+        q.unite(A=parseString('fieldUA exact valueUA'), B=parseString('fieldUB exact valueUB'))
+        consume(self.dna.any.executeComposedQuery(query=q))
+        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
+        self.assertEquals(repr(TermQuery(Term('fieldAQ', 'valueAQ'))), repr(q.queryFor('A')))
+        # tested that other queries are converted in ComposeQueryTest
 
     def assertConversion(self, expectedClauses, query, **kwargs):
         self.loggedClauses = []

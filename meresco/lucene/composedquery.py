@@ -96,6 +96,13 @@ class ComposedQuery(object):
         except KeyError:
             raise ValueError("No match set for cores: %s" % str(self.cores()))
 
+    def convertWith(self, convert):
+        convertQuery = lambda query: (query if query is None else convert(query))
+        for coreQuery in self._coreQueries.values():
+            coreQuery['query'] = convertQuery(coreQuery['query'])
+            coreQuery['filterQueries'] = [convertQuery(fq) for fq in coreQuery['filterQueries']]
+        self._unites = [(core, keyName, convertQuery(query)) for core, keyName, query in self._unites]
+
     def cores(self):
         def _cores():
             yield self._resultsFrom

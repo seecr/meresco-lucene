@@ -59,14 +59,14 @@ class MultiLucene(Observable):
             foreignKeyCollector = KeyCollector(foreignKeyName)
             consume(self.any[foreignCoreName].search(query=q, collector=foreignKeyCollector))
             keySetWrap.intersect(foreignKeyCollector.getKeySet())
-        primaryQueries = query.queriesFor(primaryCoreName)
-        if not primaryQueries:
-            primaryQueries = [MatchAllDocsQuery()]
-        for q in primaryQueries:
-            # if foreignFacets: # Optimization?????
-            primaryKeyCollector = KeyCollector(primaryKeyName)
-            consume(self.any[primaryCoreName].search(query=q, collector=primaryKeyCollector))
-            keySetWrap.intersect(primaryKeyCollector.getKeySet())
+        if query.facetsFor(foreignCoreName):
+            primaryQueries = query.queriesFor(primaryCoreName)
+            if not primaryQueries:
+                primaryQueries = [MatchAllDocsQuery()]
+            for q in primaryQueries:
+                primaryKeyCollector = KeyCollector(primaryKeyName)
+                consume(self.any[primaryCoreName].search(query=q, collector=primaryKeyCollector))
+                keySetWrap.intersect(primaryKeyCollector.getKeySet())
         primaryKeyFilterCollector = KeyFilterCollector(keySetWrap.keySet, primaryKeyName)
         primaryQuery = query.queryFor(core=primaryCoreName)
         if primaryQuery is None:

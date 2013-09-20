@@ -31,6 +31,7 @@ from cqlparser import parseString, CQL_QUERY, cql2string
 from weightless.core import compose
 from seecr.utils.generatorutils import returnValueFromGenerator
 from simplejson import loads, dumps
+from meresco.lucene.remote._conversion import jsonDumpMessage, jsonLoadMessage
 
 class LuceneRemoteTest(SeecrTestCase):
     def testRemoteExecuteQuery(self):
@@ -65,12 +66,12 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertDictEquals({
                 'message': 'executeMultiQuery',
                 'kwargs':{
-                    'cqlQuery': 'query AND field=value',
+                    'cqlAbstractSyntaxTree': {'__CQL_QUERY__': 'query AND field=value'},
                     'start':0,
                     'stop': 10,
                     'facets': [{'fieldname': 'field', 'maxTerms':5}],
-                    'filterQueries': ['query=fiets'],
-                    'joinQueries': {'core1': 'query=test'}
+                    'filterQueries': [{'__CQL_QUERY__': 'query=fiets'}],
+                    'joinQueries': {'core1': {'__CQL_QUERY__': 'query=test'}}
                 }
             }, loads(m.kwargs['body']))
 
@@ -106,9 +107,12 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertDictEquals({
                 'message': 'executeQuery',
                 'kwargs':{
-                    'cqlQuery': 'query AND field=value',
+                    'cqlAbstractSyntaxTree': {'__CQL_QUERY__': 'query AND field=value'},
                     'start':0,
                     'stop': 10,
+                    'facets': None,
+                    'filterQueries': None,
+                    'joinQueries': None,
                 }
             }, loads(m.kwargs['body']))
 
@@ -183,17 +187,17 @@ class LuceneRemoteTest(SeecrTestCase):
         body = dumps({
                 'message': 'executeQuery',
                 'kwargs':{
-                    'cqlQuery': 'query AND field=value',
+                    'cqlAbstractSyntaxTree': {'__CQL_QUERY__': 'query AND field=value'},
                     'start':0,
                     'stop': 10,
                     'facets': [{'fieldname': 'field', 'maxTerms':5}],
-                    'filterQueries': ['query=fiets'],
-                    'joinQueries': {'core1': 'query=test'}
+                    'filterQueries': [{'__CQL_QUERY__': 'query=fiets'}],
+                    'joinQueries': {'core1': {'__CQL_QUERY__': 'query=test'}}
                 }
             })
         result = ''.join(compose(service.handleRequest(path='/__lucene_remote__', Method="POST", Body=body)))
         header, body = result.split('\r\n'*2)
-        self.assertTrue('Content-Type: application/json' in header, header)
+        self.assertTrue('Content-Type: application/json' in header, header+body)
         response = LuceneResponse.fromJson(body)
         self.assertEquals(2, response.total)
         self.assertEquals(['aap', 'noot'], response.hits)
@@ -255,17 +259,11 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(['aap', 'noot'], response.hits)
         self.assertEquals(['fieldnames'], observer.calledMethodNames())
 
-    def testDumps(self):
-        kwargs = {'query': parseString('query'), 'nestedQuery':{'key':parseString('key')}}
-
-        def encode(anObject):
-            if isinstance(anObject, CQL_QUERY):
-                return {'__CQL_QUERY__': cql2string(anObject)}
-            raise TypeError(repr(anObject) + 'is not JSON serializable')
-        def decode(dct):
-            if '__CQL_QUERY__' in dct:
-                return parseString(dct['__CQL_QUERY__'])
-            return dct
-
-        d = dumps(kwargs, default=encode)
-        print loads(d, object_hook=decode)
+    def testConversion(self):
+        kwargs = {'q': parseString('CQL'), 'attr': {'qs':[parseString('qs')]}}
+        dump = jsonDumpMessage(message='aMessage', **kwargs)
+        self.assertEquals(str, type(dump))
+        message, kwargs = jsonLoadMessage(dump)
+        self.assertEquals('aMessage', message)
+        self.assertEquals(parseString('CQL'), kwargs['q'])
+        self.assertEquals([parseString('qs')], kwargs['attr']['qs'])

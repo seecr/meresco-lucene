@@ -25,13 +25,12 @@
 
 
 from meresco.core import Observable
-from cqlparser import cql2string
 from weightless.http import httppost
 from weightless.core import DeclineMessage
-from simplejson import dumps
 
 from meresco.lucene import LuceneResponse
 
+from _conversion import jsonDumpMessage
 
 class LuceneRemote(Observable):
     def __init__(self, host=None, port=None, path=None, name=None):
@@ -43,8 +42,7 @@ class LuceneRemote(Observable):
 
     def any_unknown(self, message, **kwargs):
         if message in self._ALLOWED_METHODS:
-            newKwargs = dict(_convert(k,v) for k,v in kwargs.items() if v is not None)
-            result = yield self._send(message=message, **newKwargs)
+            result = yield self._send(message=message, **kwargs)
             raise StopIteration(result)
         raise DeclineMessage()
 
@@ -52,7 +50,7 @@ class LuceneRemote(Observable):
         return (self._host, self._port) if self._host else self.call.luceneRemoteServer()
 
     def _send(self, message, **kwargs):
-        body = dumps(dict(message=message, kwargs=kwargs))
+        body = jsonDumpMessage(message, **kwargs)
         headers={'Content-Type': 'application/json', 'Content-Length': len(body)}
         host, port = self._luceneRemoteServer() # WARNING: can return a different server each time.
         response = yield self._httppost(host=host, port=port, request=self._path, body=body, headers=headers)
@@ -69,13 +67,6 @@ class LuceneRemote(Observable):
 
     _ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames', 'executeMultiQuery']
 
-_converters = {
-    'filterQueries': lambda key, value: (key, [cql2string(ast) for ast in value]),
-    'joinQueries': lambda key, value: (key, dict((k, cql2string(v)) for k, v in value.items())),
-    'cqlAbstractSyntaxTree': lambda key, value: ('cqlQuery', cql2string(value))
-}
 
-_defaultConvert = lambda key, value: (key, value)
 
-def _convert(key, value):
-    return _converters.get(key, _defaultConvert)(key, value)
+

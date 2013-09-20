@@ -27,12 +27,12 @@ from meresco.lucene import version
 from meresco.core import Observable
 from meresco.components.http.utils import Ok, CRLF, ContentTypeHeader, ContentTypePlainText, serverErrorPlainText
 from meresco.components.http import PathFilter, PathRename, FileServer, StringServer
-from simplejson import loads
 from cqlparser import parseString, cql2string
 from weightless.core import be, compose
 from seecr.html import DynamicHtml
 from traceback import format_exc
 from simplejson import dumps
+from _conversion import jsonLoadMessage
 
 from os.path import join, dirname, abspath
 myPath = dirname(abspath(__file__))
@@ -87,17 +87,10 @@ class LuceneRemoteService(Observable):
 
     def _handleQuery(self, Body):
         try:
-            messageDict = loads(Body)
-            if messageDict['message'] not in _ALLOWED_METHODS:
+            message, kwargs = jsonLoadMessage(Body)
+            if message not in _ALLOWED_METHODS:
                 raise ValueError('Expected %s' % (' or '.join('"%s"' % m for m in _ALLOWED_METHODS)))
-            messageKwargs = messageDict['kwargs']
-            if 'cqlQuery' in messageKwargs:
-                messageKwargs['cqlAbstractSyntaxTree'] = parseString(messageKwargs.pop('cqlQuery'))
-            if 'filterQueries' in messageKwargs and messageKwargs['filterQueries'] is not None:
-                messageKwargs['filterQueries'] = [parseString(cqlstring) for cqlstring in messageKwargs['filterQueries']]
-            if 'joinQueries' in messageKwargs and messageKwargs['joinQueries'] is not None:
-                messageKwargs['joinQueries'] = dict((k, parseString(v)) for k, v in messageKwargs['joinQueries'].items())
-            response = yield self.any.unknown(message=messageDict['message'], **messageKwargs)
+            response = yield self.any.unknown(message=message, **kwargs)
         except Exception, e:
             x = format_exc() # returns 'None' if e is a Java Error
             yield serverErrorPlainText

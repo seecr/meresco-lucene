@@ -25,6 +25,7 @@
 
 from meresco.lucene.remote import LuceneRemote, LuceneRemoteService
 from meresco.lucene import LuceneResponse
+from meresco.lucene.composedquery import ComposedQuery
 from meresco.core import Observable
 from seecr.test import SeecrTestCase, CallTrace
 from cqlparser import parseString, CQL_QUERY, cql2string
@@ -267,3 +268,20 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals('aMessage', message)
         self.assertEquals(parseString('CQL'), kwargs['q'])
         self.assertEquals([parseString('qs')], kwargs['attr']['qs'])
+
+    def testConversionOfComposedQuery(self):
+        cq = ComposedQuery()
+        cq.add(core='coreA', query=parseString('Q0'), filterQueries=['Q1', 'Q2'], facets=['F0', 'F1'])
+        cq.add(core='coreB', query='Q3', filterQueries=['Q4'])
+        cq.addMatch(coreA='keyA', coreB='keyB')
+        cq.unite(coreA='AQuery', coreB='anotherQuery')
+        cq.start = 0
+        cq.sortKeys = [dict(sortBy='field', sortDescending=True)]
+
+        kwargs = {'q': cq}
+        dump = jsonDumpMessage(message='aMessage', **kwargs)
+        self.assertEquals(str, type(dump))
+        message, kwargs = jsonLoadMessage(dump)
+        self.assertEquals('aMessage', message)
+        cq2 = kwargs['q']
+        self.assertEquals(parseString('Q0'), cq2.queryFor('coreA'))

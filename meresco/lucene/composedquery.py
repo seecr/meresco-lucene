@@ -124,6 +124,20 @@ class ComposedQuery(object):
     start = property(**_prop('start'))
     sortKeys = property(**_prop('sortKeys'))
 
+    def asDict(self):
+        result = vars(self)
+        result['_matches'] = dict(('->'.join(key), value) for key, value in result['_matches'].items())
+        return result
+
+    @classmethod
+    def fromDict(cls, dct):
+        cq = cls()
+        matches = dct['_matches']
+        dct['_matches'] = dict((tuple(key.split('->')), value) for key, value in matches.items())
+        for attr, value in dct.items():
+            setattr(cq, attr, value)
+        return cq
+
     MAX_CORES = 2
 
 del ComposedQuery._prop

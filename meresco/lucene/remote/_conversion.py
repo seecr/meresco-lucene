@@ -25,15 +25,20 @@
 
 from cqlparser import cql2string, parseString, CQL_QUERY
 from simplejson import dumps, loads
+from meresco.lucene.composedquery import ComposedQuery
 
 def _dumps_default(anObject):
     if isinstance(anObject, CQL_QUERY):
         return {'__CQL_QUERY__': cql2string(anObject)}
+    elif isinstance(anObject, ComposedQuery):
+        return {'__COMPOSED_QUERY__': dumps(anObject.asDict(), default=_dumps_default)}
     raise TypeError(repr(anObject) + 'is not JSON serializable')
 
 def _loads_object_hook(dct):
     if '__CQL_QUERY__' in dct:
         return parseString(dct['__CQL_QUERY__'])
+    elif '__COMPOSED_QUERY__' in dct:
+        return ComposedQuery.fromDict(loads(dct['__COMPOSED_QUERY__'], object_hook=_loads_object_hook))
     return dct
 
 def jsonDumpMessage(message, **kwargs):

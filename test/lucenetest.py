@@ -335,56 +335,6 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(1, response.total)
 
 
-    def xtestPerformanceCollectors(self):
-        ### results
-        # 10000 (HashSet):
-        # With collector: 0.00243592262268
-        # Without collector: 0.00114011764526
-        # Contains time: 0.0198459625244
-
-        # With collector: 0.0024209022522
-        # Without collector: 0.00112700462341
-        # Contains time: 0.0200550556183
-
-        # 10000 (HashSetLinear):
-        # With collector: 0.00211501121521
-        # Without collector: 0.00103998184204
-        # Contains time: 0.0138301849365
-
-        # With collector: 0.00194406509399
-        # Without collector: 0.00127792358398
-        # Contains time: 0.013053894043
-
-        N = 10000
-        upload = True
-        if isdir('/tmp/lucene_perf'):
-            upload = False
-        self.lucene = Lucene('/tmp/lucene_perf', commitCount=1, reactor=self._reactor)
-        if upload:
-            for i in range(N):
-                returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([('joinhash.field', randint(-(2**63), 2**63))])))
-        print 'Index created..'
-        sleep(0.1)
-        for i in range(10):
-            returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
-            returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), extraCollector=KeyCollector('joinhash.field')))
-
-        collector = KeyCollector('joinhash.field')
-        t0 = time()
-        returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), extraCollector=collector))
-        print 'With collector:', time() - t0
-
-        t0 = time()
-        returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
-        print 'Without collector:', time() - t0
-
-
-        t0 = time()
-        for i in range(N):
-            collector.contains(long(i))
-        print 'Contains time:', time() - t0
-
-
 def createDocument(fields):
     document = Document()
     for name, value in fields:

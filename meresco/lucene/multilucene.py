@@ -49,6 +49,7 @@ class MultiLucene(Observable):
 
         primaryCoreName, foreignCoreName = query.cores()
         primaryKeyName, foreignKeyName = query.keyNames(primaryCoreName, foreignCoreName)
+
         keySetWrap = KeySetWrap()
         for coreName, coreKeyName, unite in query.unites():
             uniteKeyCollector = KeyCollector(coreKeyName)
@@ -59,6 +60,8 @@ class MultiLucene(Observable):
             foreignKeyCollector = KeyCollector(foreignKeyName)
             consume(self.any[foreignCoreName].search(query=q, collector=foreignKeyCollector))
             keySetWrap.intersect(foreignKeyCollector.getKeySet())
+
+        foreignDrilldownData = []
         if query.facetsFor(foreignCoreName):
             primaryQueries = query.queriesFor(primaryCoreName)
             if not primaryQueries:
@@ -67,6 +70,11 @@ class MultiLucene(Observable):
                 primaryKeyCollector = KeyCollector(primaryKeyName)
                 consume(self.any[primaryCoreName].search(query=q, collector=primaryKeyCollector))
                 keySetWrap.intersect(primaryKeyCollector.getKeySet())
+            foreignDrilldownData = yield self.any[foreignCoreName].facets(
+                    filterCollector=KeyFilterCollector(keySetWrap.keySet, foreignKeyName),
+                    facets=query.facetsFor(foreignCoreName)
+                )
+
         primaryKeyFilterCollector = KeyFilterCollector(keySetWrap.keySet, primaryKeyName)
         primaryQuery = query.queryFor(core=primaryCoreName)
         if primaryQuery is None:
@@ -79,13 +87,7 @@ class MultiLucene(Observable):
                 **query.otherKwargs()
             )
 
-        if query.facetsFor(foreignCoreName):
-            foreignDrilldownData = yield self.any[foreignCoreName].facets(
-                    filterCollector=KeyFilterCollector(keySetWrap.keySet, foreignKeyName),
-                    facets=query.facetsFor(foreignCoreName)
-                )
-            primaryResponse.drilldownData.extend(foreignDrilldownData)
-
+        primaryResponse.drilldownData.extend(foreignDrilldownData)
         primaryResponse.queryTime = millis(time() - t0)
         generatorReturn(primaryResponse)
 

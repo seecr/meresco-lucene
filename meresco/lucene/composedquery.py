@@ -37,7 +37,7 @@ class ComposedQuery(object):
     def add(self, core, query=None, facets=None, filterQueries=None):
         self._coreQueries[core] = dict(
             query=query,
-            filterQueries=filterQueries,
+            filterQueries=[] if filterQueries is None else filterQueries,
             facets=facets)
 
     def resultsFrom(self, core):
@@ -72,6 +72,9 @@ class ComposedQuery(object):
 
     def queryFor(self, core):
         return self._coreQueries[core]['query']
+
+    def queriesFor(self, core):
+        return [q for q in [self.queryFor(core)] + self.filterQueriesFor(core) if q]
 
     def facetsFor(self, core):
         return self._coreQueries[core]['facets']

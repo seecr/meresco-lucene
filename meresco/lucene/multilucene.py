@@ -55,34 +55,53 @@ class MultiLucene(Observable):
             primaryQuery = MatchAllDocsQuery()
 
 
-        unionKeySet = None
+        keySet = None
         for coreName, coreKeyName, unite in query.unites():
             uniteKeyCollector = KeyCollector(coreKeyName)
             consume(self.any[coreName].search(query=unite, collector=uniteKeyCollector))
-            if unionKeySet is None:
-                unionKeySet = uniteKeyCollector.getKeySet()
+            if keySet is None:
+                keySet = uniteKeyCollector.getKeySet()
             else:
-                unionKeySet.union(uniteKeyCollector.getKeySet())
+                keySet.union(uniteKeyCollector.getKeySet())
 
-        if foreignQuery:
-            foreignKeyCollector = KeyCollector(foreignKeyName)
-            consume(self.any[foreignCoreName].search(query=foreignQuery, collector=foreignKeyCollector))
-            keySet = foreignKeyCollector.getKeySet()
-            # if foreignFacets: # Optimization?????
-            primaryKeyCollector = KeyCollector(primaryKeyName)
-            consume(self.any[primaryCoreName].search(query=primaryQuery, collector=primaryKeyCollector))
-            keySet.intersect(primaryKeyCollector.getKeySet())
-            if unionKeySet:
-                keySet.intersect(unionKeySet)
-
+        if query.queriesFor(foreignCoreName):
+            for q in query.queriesFor(foreignCoreName):
+                foreignKeyCollector = KeyCollector(foreignKeyName)
+                consume(self.any[foreignCoreName].search(query=q, collector=foreignKeyCollector))
+                if keySet is None:
+                    keySet = foreignKeyCollector.getKeySet()
+                else:
+                    keySet.intersect(foreignKeyCollector.getKeySet())
+            primaryQueries = query.queriesFor(primaryCoreName)
+            if not primaryQueries:
+                primaryQueries = [MatchAllDocsQuery()]
+            for q in primaryQueries:
+                # if foreignFacets: # Optimization?????
+                primaryKeyCollector = KeyCollector(primaryKeyName)
+                consume(self.any[primaryCoreName].search(query=q, collector=primaryKeyCollector))
+                if keySet is None:
+                    keySet = primaryKeyCollector.getKeySet()
+                else:
+                    keySet.intersect(primaryKeyCollector.getKeySet())
             primaryKeyFilterCollector = KeyFilterCollector(keySet, primaryKeyName)
-            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, facets=query.facetsFor(primaryCoreName))
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(
+                    luceneQuery=primaryQuery,
+                    filterCollector=primaryKeyFilterCollector,
+                    facets=query.facetsFor(primaryCoreName),
+                    filterQueries=query.filterQueriesFor(primaryCoreName),
+                )
         else:
             primaryKeyFilterCollector = None
-            if unionKeySet:
-                primaryKeyFilterCollector = KeyFilterCollector(unionKeySet, primaryKeyName)
+            if keySet:
+                primaryKeyFilterCollector = KeyFilterCollector(keySet, primaryKeyName)
             primaryKeyCollector = KeyCollector(primaryKeyName)
-            primaryResponse = yield self.any[primaryCoreName].executeQuery(luceneQuery=primaryQuery, filterCollector=primaryKeyFilterCollector, extraCollector=primaryKeyCollector, facets=query.facetsFor(primaryCoreName))
+            primaryResponse = yield self.any[primaryCoreName].executeQuery(
+                    luceneQuery=primaryQuery,
+                    filterCollector=primaryKeyFilterCollector,
+                    extraCollector=primaryKeyCollector,
+                    facets=query.facetsFor(primaryCoreName),
+                    filterQueries=query.filterQueriesFor(primaryCoreName),
+                )
             keySet = primaryKeyCollector.getKeySet()
 
             foreignQuery = MatchAllDocsQuery()

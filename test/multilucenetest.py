@@ -115,6 +115,16 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(4, result.total)
         self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), set(result.hits))
 
+    def testJoinQueryWithFilters(self):
+        q = ComposedQuery()
+        q.add(core='coreA')
+        q.add(core='coreB', filterQueries=[query('N=true')])
+        q.resultsFrom('coreA')
+        q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(4, result.total)
+        self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), set(result.hits))
+
     def testNotSupportedComposedQueries(self):
         try:
             consume(self.dna.any.executeComposedQuery(query=ComposedQuery()))

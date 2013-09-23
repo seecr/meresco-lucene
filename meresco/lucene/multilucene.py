@@ -46,7 +46,7 @@ class MultiLucene(Observable):
     def executeComposedQuery(self, query):
         query.validate()
         if query.numberOfCores == 1:
-            response = yield self.singleComposedQuery(self, query)
+            response = yield self._sinqleQuery(query)
             generatorReturn(response)
         t0 = time()
 
@@ -94,6 +94,17 @@ class MultiLucene(Observable):
         primaryResponse.queryTime = millis(time() - t0)
         generatorReturn(primaryResponse)
 
+    def _sinqleQuery(self, query):
+        t0 = time()
+        primaryCoreName, = query.cores()
+        primaryResponse = yield self.any[primaryCoreName].executeQuery(
+                luceneQuery=query.queryFor(primaryCoreName),
+                facets=query.facetsFor(primaryCoreName),
+                filterQueries=query.filterQueriesFor(primaryCoreName),
+                **query.otherKwargs()
+            )
+        primaryResponse.queryTime = millis(time() - t0)
+        generatorReturn(primaryResponse)
 
     def any_unknown(self, message, core=None, **kwargs):
         if message in ['prefixSearch', 'fieldnames']:

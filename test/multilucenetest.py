@@ -102,12 +102,12 @@ class MultiLuceneTest(SeecrTestCase):
 
     def testQueryOneIndexWithComposedQuery(self):
         cq = ComposedQuery()
-        cq.add(core='coreA', query='Q=true')
+        cq.add(core='coreA', query=query('Q=true'))
         cq.resultsFrom('coreA')
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(cq))
         self.assertEquals(set(['A-Q', 'A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
         cq = ComposedQuery()
-        cq.add(core='coreA', query='Q=true', filterQueries=[query('M=true')])
+        cq.add(core='coreA', query=query('Q=true'), filterQueries=[query('M=true')])
         cq.resultsFrom('coreA')
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(cq))
         self.assertEquals(set(['A-MQ', 'A-MQU']), set(result.hits))

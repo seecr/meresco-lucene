@@ -103,12 +103,12 @@ class MultiLuceneTest(SeecrTestCase):
     def testQueryOneIndexWithComposedQuery(self):
         cq = ComposedQuery()
         cq.add(core='coreA', query=query('Q=true'))
-        cq.resultsFrom('coreA')
+        cq.resultsFrom = 'coreA'
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(cq))
         self.assertEquals(set(['A-Q', 'A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
         cq = ComposedQuery()
         cq.add(core='coreA', query=query('Q=true'), filterQueries=[query('M=true')])
-        cq.resultsFrom('coreA')
+        cq.resultsFrom = 'coreA'
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(cq))
         self.assertEquals(set(['A-MQ', 'A-MQU']), set(result.hits))
 
@@ -121,7 +121,7 @@ class MultiLuceneTest(SeecrTestCase):
         q = ComposedQuery()
         q.add(core='coreA')
         q.add(core='coreB', query=query('N=true'))
-        q.resultsFrom('coreA')
+        q.resultsFrom = 'coreA'
         q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(4, result.total)
@@ -131,7 +131,7 @@ class MultiLuceneTest(SeecrTestCase):
         q = ComposedQuery()
         q.add(core='coreA')
         q.add(core='coreB', filterQueries=[query('N=true')])
-        q.resultsFrom('coreA')
+        q.resultsFrom = 'coreA'
         q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(4, result.total)
@@ -151,7 +151,7 @@ class MultiLuceneTest(SeecrTestCase):
                 dict(fieldname='cat_N', maxTerms=10),
                 dict(fieldname='cat_O', maxTerms=10),
             ])
-        q.resultsFrom('coreA')
+        q.resultsFrom = 'coreA'
         q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
         self.assertEquals(4, result.total)
@@ -175,7 +175,7 @@ class MultiLuceneTest(SeecrTestCase):
                 dict(fieldname='cat_N', maxTerms=10),
                 dict(fieldname='cat_O', maxTerms=10),
             ])
-        q.resultsFrom('coreB')
+        q.resultsFrom = 'coreB'
         q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
         self.assertEquals(2, result.total)
@@ -198,7 +198,7 @@ class MultiLuceneTest(SeecrTestCase):
         query.add(core='coreB', query=None, facets=[
                 dict(fieldname='cat_N', maxTerms=10),
             ])
-        query.resultsFrom('coreA')
+        query.resultsFrom = 'coreA'
         query.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=query))
         self.assertEquals(8, result.total)
@@ -216,7 +216,7 @@ class MultiLuceneTest(SeecrTestCase):
                 dict(fieldname='cat_N', maxTerms=10),
                 dict(fieldname='cat_O', maxTerms=10),
             ])
-        q.resultsFrom('coreA')
+        q.resultsFrom = 'coreA'
         q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
         self.assertEquals(4, result.total)
@@ -247,7 +247,7 @@ class MultiLuceneTest(SeecrTestCase):
         q = ComposedQuery()
         q.add(core='coreA', query=query('Q=true'))
         q.add(core='coreB', query=None)
-        q.resultsFrom('coreA')
+        q.resultsFrom = 'coreA'
         q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
         q.unite(coreA=query('U=true'), coreB=query('N=true'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
@@ -258,7 +258,7 @@ class MultiLuceneTest(SeecrTestCase):
         q = ComposedQuery()
         q.add(core='coreA', query=None, filterQueries=[query('Q=true')])
         q.add(core='coreB', query=None)
-        q.resultsFrom('coreA')
+        q.resultsFrom = 'coreA'
         q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
         q.unite(coreA=query('U=true'), coreB=query('N=true'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
@@ -274,7 +274,7 @@ class MultiLuceneTest(SeecrTestCase):
         q.add(core='coreB', query=None, facets=[
                 dict(fieldname='cat_N', maxTerms=10),
             ])
-        q.resultsFrom('coreA')
+        q.resultsFrom = 'coreA'
         q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
         q.unite(coreA=query('U=true'), coreB=query('N=true'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
@@ -301,7 +301,7 @@ class MultiLuceneTest(SeecrTestCase):
         q = ComposedQuery()
         q.add(core='coreA', query=query('Q=true'))
         q.add(core='coreB', query=None)
-        q.resultsFrom('coreA')
+        q.resultsFrom = 'coreA'
         q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
         q.unite(coreA=query('U=true'), coreB=query('N=true'))
         q.sortKeys=[dict(sortBy='S', sortDescending=False)]

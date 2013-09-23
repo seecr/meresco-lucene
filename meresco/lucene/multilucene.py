@@ -97,8 +97,11 @@ class MultiLucene(Observable):
     def _sinqleQuery(self, query):
         t0 = time()
         primaryCoreName, = query.cores()
+        primaryQuery = query.queryFor(core=primaryCoreName)
+        if primaryQuery is None:
+            primaryQuery = MatchAllDocsQuery()
         primaryResponse = yield self.any[primaryCoreName].executeQuery(
-                luceneQuery=query.queryFor(primaryCoreName),
+                luceneQuery=primaryQuery,
                 facets=query.facetsFor(primaryCoreName),
                 filterQueries=query.filterQueriesFor(primaryCoreName),
                 **query.otherKwargs()

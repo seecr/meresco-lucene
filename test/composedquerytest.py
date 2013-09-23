@@ -38,10 +38,8 @@ class ComposedQueryTest(SeecrTestCase):
         assertValueError("Unsupported number of cores, expected at most 2 and at least 1.")
         composedQuery.add(core='coreA', query=None)
         composedQuery.add(core='coreB', query=None)
-        assertValueError("Core for results not specified, use resultsFrom(core='core')")
-        composedQuery.resultsFrom(core='coreC')
-        assertValueError("Core in resultsFrom does not match the available cores, 'coreC' not in ['coreA', 'coreB']")
-        composedQuery.resultsFrom(core='coreA')
+        assertValueError("Core for results not specified, use resultsFrom = 'core'")
+        composedQuery.resultsFrom ='coreA'
         assertValueError("No match set for cores")
         composedQuery.addMatch(coreC='keyC', coreD='keyE')
         assertValueError("No match set for cores: ('coreA', 'coreB')")
@@ -100,6 +98,20 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(('keyA', 'keyB'), cq2.keyNames('coreA', 'coreB'))
         self.assertEquals(('keyB', 'keyA'), cq2.keyNames('coreB', 'coreA'))
 
+    def testAddFilterQueriesIncremental(self):
+        cq = ComposedQuery()
+        cq.addFilterQuery(core='coreA', query='Q1')
+        cq.addFilterQuery(core='coreA', query='Q2')
+
+        self.assertEquals(['Q1', 'Q2'], cq.filterQueriesFor('coreA'))
+
+    def testAddFacetIncremental(self):
+        cq = ComposedQuery()
+        cq.addFacet(core='coreA', facet=dict(fieldname='Q1', maxTerms=10))
+        cq.addFacet(core='coreA', facet=dict(fieldname='Q2', maxTerms=10))
+
+        self.assertEquals([dict(fieldname='Q1', maxTerms=10), dict(fieldname='Q2', maxTerms=10)], cq.facetsFor('coreA'))
+
     def testConvertAllQueries(self):
         cq = ComposedQuery()
         cq.add(core='coreA', query='Q0', filterQueries=['Q1', 'Q2'])
@@ -117,6 +129,16 @@ class ComposedQueryTest(SeecrTestCase):
     def testSingleCoreQuery(self):
         cq = ComposedQuery()
         cq.add(core='coreA', query='Q0')
-        cq.resultsFrom('coreA')
+        cq.resultsFrom = 'coreA'
         cq.validate()
         self.assertEquals(1, cq.numberOfCores)
+
+    def testOneQueryInOtherCore(self):
+        cq = ComposedQuery()
+        cq.resultsFrom = 'coreA'
+        cq.addMatch(coreA='keyA', coreB='keyB')
+        cq.add(core='coreB', query='Q0')
+        cq.validate()
+        self.assertEquals(None, cq.queryFor('coreA'))
+        self.assertEquals('Q0', cq.queryFor('coreB'))
+

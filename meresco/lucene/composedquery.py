@@ -27,7 +27,6 @@
 class ComposedQuery(object):
     def __init__(self):
         self._coreQueries = {}
-        self._resultsFrom = None
         self._matches = {}
         self._unites = []
 
@@ -35,10 +34,15 @@ class ComposedQuery(object):
         self._coreQueries[core] = dict(
             query=query,
             filterQueries=[] if filterQueries is None else filterQueries,
-            facets=facets)
+            facets=[] if facets is None else facets)
 
-    def resultsFrom(self, core):
-        self._resultsFrom = core
+    def addFilterQuery(self, core, query):
+        self._ensureCore(core)
+        self._coreQueries[core]['filterQueries'].append(query)
+
+    def addFacet(self, core, facet):
+        self._ensureCore(core)
+        self._coreQueries[core]['facets'].append(facet)
 
     def addMatch(self, **kwargs):
         if len(kwargs) != ComposedQuery.MAX_CORES:
@@ -86,10 +90,8 @@ class ComposedQuery(object):
     def validate(self):
         if not (1 <= self.numberOfCores <= ComposedQuery.MAX_CORES):
             raise ValueError('Unsupported number of cores, expected at most %s and at least 1.' % ComposedQuery.MAX_CORES)
-        if self._resultsFrom is None:
-            raise ValueError("Core for results not specified, use resultsFrom(core='core')")
-        if self._resultsFrom not in self._coreQueries:
-            raise ValueError("Core in resultsFrom does not match the available cores, '%s' not in %s" % (self._resultsFrom, sorted(self._coreQueries.keys())))
+        if self.resultsFrom is None:
+            raise ValueError("Core for results not specified, use resultsFrom = 'core'")
         if self.numberOfCores > 1:
             if len(self._matches) == 0:
                 raise ValueError("No match set for cores")
@@ -113,6 +115,9 @@ class ComposedQuery(object):
                     yield core
         return tuple(_cores())
 
+    def matchingCores(self):
+        return set(core for coreTuple in self._matches.keys() for core in coreTuple)
+
     def otherKwargs(self):
         return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest)
 
@@ -127,6 +132,13 @@ class ComposedQuery(object):
     sortKeys = property(**_prop('sortKeys'))
     suggestionRequest = property(**_prop('suggestionRequest'))
 
+    def _get_resultsFrom(self):
+        return getattr(self, '_resultsFrom', None)
+    def _set_resultsFrom(self, value):
+        self._resultsFrom = value
+        self._ensureCore(value)
+    resultsFrom = property(_get_resultsFrom, _set_resultsFrom)
+
     def asDict(self):
         result = vars(self)
         result['_matches'] = dict(('->'.join(key), value) for key, value in result['_matches'].items())
@@ -140,6 +152,11 @@ class ComposedQuery(object):
         for attr, value in dct.items():
             setattr(cq, attr, value)
         return cq
+
+    def _ensureCore(self, core):
+        if core not in self._coreQueries:
+            self.add(core)
+
 
     MAX_CORES = 2
 

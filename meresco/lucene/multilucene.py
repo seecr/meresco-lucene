@@ -45,6 +45,9 @@ class MultiLucene(Observable):
 
     def executeComposedQuery(self, query):
         query.validate()
+        if query.numberOfCores == 1:
+            response = yield self.singleComposedQuery(self, query)
+            generatorReturn(response)
         t0 = time()
 
         primaryCoreName, foreignCoreName = query.cores()
@@ -90,6 +93,7 @@ class MultiLucene(Observable):
         primaryResponse.drilldownData.extend(foreignDrilldownData)
         primaryResponse.queryTime = millis(time() - t0)
         generatorReturn(primaryResponse)
+
 
     def any_unknown(self, message, core=None, **kwargs):
         if message in ['prefixSearch', 'fieldnames']:

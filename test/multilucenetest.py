@@ -100,6 +100,18 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeQuery(luceneQuery=query('Q=true AND M=true')))
         self.assertEquals(set(['A-MQ', 'A-MQU']), set(result.hits))
 
+    def testQueryOneIndexWithComposedQuery(self):
+        cq = ComposedQuery()
+        cq.add(core='coreA', query='Q=true')
+        cq.resultsFrom('coreA')
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(cq))
+        self.assertEquals(set(['A-Q', 'A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
+        cq = ComposedQuery()
+        cq.add(core='coreA', query='Q=true', filterQueries=[query('M=true')])
+        cq.resultsFrom('coreA')
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(cq))
+        self.assertEquals(set(['A-MQ', 'A-MQU']), set(result.hits))
+
     def testB_N_is_true(self):
         result = returnValueFromGenerator(self.dna.any.executeQuery(core='coreB', luceneQuery=query('N=true')))
         self.assertEquals(5, result.total)

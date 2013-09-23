@@ -1,1 +1,5 @@
 jcc (>= 2.16)
+python-setuptools
+gcc
+gcc-c++
+python-devel

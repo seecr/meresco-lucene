@@ -36,12 +36,10 @@ class CqlToLuceneQuery(Transparent, Logger):
         Transparent.__init__(self, name=name)
         self._cqlComposer = LuceneQueryComposer(unqualifiedFields, **kwargs)
 
-    def executeQuery(self, cqlAbstractSyntaxTree, filterQueries=None, joinQueries=None, *args, **kwargs):
+    def executeQuery(self, cqlAbstractSyntaxTree, filterQueries=None, **kwargs):
         if filterQueries:
             filterQueries = [self._convert(ast) for ast in filterQueries]
-        if joinQueries:
-            joinQueries = dict((k, self._convert(v)) for k, v in joinQueries.items())
-        response = yield self.any.executeQuery(luceneQuery=self._convert(cqlAbstractSyntaxTree), filterQueries=filterQueries, joinQueries=joinQueries, *args, **kwargs)
+        response = yield self.any.executeQuery(luceneQuery=self._convert(cqlAbstractSyntaxTree), filterQueries=filterQueries, **kwargs)
         generatorReturn(response)
 
     def executeComposedQuery(self, query):

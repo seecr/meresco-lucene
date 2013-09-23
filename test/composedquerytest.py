@@ -100,7 +100,6 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(('keyA', 'keyB'), cq2.keyNames('coreA', 'coreB'))
         self.assertEquals(('keyB', 'keyA'), cq2.keyNames('coreB', 'coreA'))
 
-
     def testConvertAllQueries(self):
         cq = ComposedQuery()
         cq.add(core='coreA', query='Q0', filterQueries=['Q1', 'Q2'])
@@ -115,5 +114,9 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(["Converted_Q4"], cq.filterQueriesFor('coreB'))
         self.assertEquals(set([('coreA', 'keyA', 'Converted_Q5'), ('coreB', 'keyB', 'Converted_Q6')]), set(cq.unites()))
 
-
+    def testSingleCoreQuery(self):
+        cq = ComposedQuery()
+        cq.add(core='coreA', query='Q0')
+        cq.resultsFrom('coreA')
+        cq.validate()
 

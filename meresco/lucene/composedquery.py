@@ -82,19 +82,24 @@ class ComposedQuery(object):
     def filterQueriesFor(self, core):
         return self._coreQueries[core]['filterQueries']
 
+    @property
+    def numberOfCores(self):
+        return len(self._coreQueries)
+
     def validate(self):
-        if len(self._coreQueries) != ComposedQuery.MAX_CORES:
-            raise ValueError('Unsupported number of cores, expected exactly %s.' % ComposedQuery.MAX_CORES)
+        if not (1 <= self.numberOfCores <= ComposedQuery.MAX_CORES):
+            raise ValueError('Unsupported number of cores, expected at most %s and at least 1.' % ComposedQuery.MAX_CORES)
         if self._resultsFrom is None:
             raise ValueError("Core for results not specified, use resultsFrom(core='core')")
         if self._resultsFrom not in self._coreQueries:
             raise ValueError("Core in resultsFrom does not match the available cores, '%s' not in %s" % (self._resultsFrom, sorted(self._coreQueries.keys())))
-        if len(self._matches) == 0:
-            raise ValueError("No match set for cores")
-        try:
-            self.keyNames(*self.cores())
-        except KeyError:
-            raise ValueError("No match set for cores: %s" % str(self.cores()))
+        if self.numberOfCores > 1:
+            if len(self._matches) == 0:
+                raise ValueError("No match set for cores")
+            try:
+                self.keyNames(*self.cores())
+            except KeyError:
+                raise ValueError("No match set for cores: %s" % str(self.cores()))
 
     def convertWith(self, convert):
         convertQuery = lambda query: (query if query is None else convert(query))

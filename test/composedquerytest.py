@@ -35,9 +35,8 @@ class ComposedQueryTest(SeecrTestCase):
                 self.fail()
             except ValueError, e:
                 self.assertEquals(message, str(e))
-        assertValueError("Unsupported number of cores, expected exactly 2.")
+        assertValueError("Unsupported number of cores, expected at most 2 and at least 1.")
         composedQuery.add(core='coreA', query=None)
-        assertValueError("Unsupported number of cores, expected exactly 2.")
         composedQuery.add(core='coreB', query=None)
         assertValueError("Core for results not specified, use resultsFrom(core='core')")
         composedQuery.resultsFrom(core='coreC')
@@ -48,6 +47,7 @@ class ComposedQueryTest(SeecrTestCase):
         assertValueError("No match set for cores: ('coreA', 'coreB')")
         composedQuery.addMatch(coreA='keyA', coreB='keyB')
         composedQuery.validate()
+        self.assertEquals(2, composedQuery.numberOfCores)
 
     def testKeyNames(self):
         composedQuery = ComposedQuery()
@@ -119,4 +119,4 @@ class ComposedQueryTest(SeecrTestCase):
         cq.add(core='coreA', query='Q0')
         cq.resultsFrom('coreA')
         cq.validate()
-
+        self.assertEquals(1, cq.numberOfCores)

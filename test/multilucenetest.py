@@ -297,6 +297,16 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_N'
             }], result.drilldownData)
 
+    def testUniteMakesItTwoCoreQuery(self):
+        q = ComposedQuery()
+        q.add(core='coreA', query=query('Q=true'))
+        q.resultsFrom = 'coreA'
+        q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
+        q.unite(coreA=query('U=true'), coreB=query('N=true'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(3, result.total)
+        self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), set(result.hits))
+
     def testStartStopSortKeys(self):
         q = ComposedQuery()
         q.add(core='coreA', query=query('Q=true'))

@@ -61,6 +61,7 @@ class ComposedQuery(object):
             raise ValueError('No match found for %s' % cores)
         for core, keyName in zip(cores, keyNames):
             self._unites.append((core, keyName, kwargs[core]))
+            self._ensureCore(core)
 
     def unites(self):
         return self._unites

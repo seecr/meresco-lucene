@@ -142,3 +142,13 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(None, cq.queryFor('coreA'))
         self.assertEquals('Q0', cq.queryFor('coreB'))
 
+    def testUniteMakesItTwoCoreQuery(self):
+        cq = ComposedQuery()
+        cq.resultsFrom = 'coreA'
+        cq.addMatch(coreA='keyA', coreB='keyB')
+        cq.add('coreA', query='A')
+        cq.unite(coreA='Q5', coreB='Q6')
+        cq.validate()
+        self.assertEquals(('coreA', 'coreB'), cq.cores())
+
+

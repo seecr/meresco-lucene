@@ -46,15 +46,17 @@ class LuceneRemoteTest(SeecrTestCase):
         observable.addObserver(remote)
         remote._httppost = http.httppost
 
-        result = returnValueFromGenerator(observable.any.executeMultiQuery(
-                cqlAbstractSyntaxTree=parseString('query AND  field=value'),
-                start=0,
-                stop=10,
-                facets=[{'fieldname': 'field', 'maxTerms':5}],
+        cq = ComposedQuery()
+        cq.resultsFrom = 'coreA'
+        cq.add(
+                core='coreA',
+                query=parseString('query AND  field=value'),
                 filterQueries=[parseString('query=fiets')],
-                joinQueries= {"core1": parseString('query=test')}
+                facets=[{'fieldname': 'field', 'maxTerms':5}],
             )
-        )
+        cq.add(core='coreB', query=parseString('query=test'))
+        cq.addMatch(coreA='keyA', coreB='keyB')
+        result = returnValueFromGenerator(observable.any.executeComposedQuery(query=cq))
         self.assertEquals(5, result.total)
         self.assertEquals(["1", "2", "3", "4", "5"], result.hits)
 
@@ -64,17 +66,11 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(1234, m.kwargs['port'])
         self.assertEquals('/path/__lucene_remote__', m.kwargs['request'])
         self.assertEquals('application/json', m.kwargs['headers']['Content-Type'])
-        self.assertDictEquals({
-                'message': 'executeMultiQuery',
-                'kwargs':{
-                    'cqlAbstractSyntaxTree': {'__CQL_QUERY__': 'query AND field=value'},
-                    'start':0,
-                    'stop': 10,
-                    'facets': [{'fieldname': 'field', 'maxTerms':5}],
-                    'filterQueries': [{'__CQL_QUERY__': 'query=fiets'}],
-                    'joinQueries': {'core1': {'__CQL_QUERY__': 'query=test'}}
-                }
-            }, loads(m.kwargs['body']))
+        message, kwargs = jsonLoadMessage(m.kwargs['body'])
+        query = kwargs['query']
+        self.assertEquals('executeComposedQuery', message)
+        self.assertEquals('coreA', query.resultsFrom)
+        self.assertEquals([{'fieldname': 'field', 'maxTerms':5}], query.facetsFor('coreA'))
 
     def testRemoteExecuteQueryWithNoneValues(self):
         http = CallTrace('http')

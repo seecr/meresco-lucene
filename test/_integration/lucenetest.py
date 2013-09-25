@@ -29,6 +29,10 @@ from meresco.xml.namespaces import xpathFirst, xpath
 from simplejson import loads, dumps
 from time import sleep
 from meresco.lucene.utils import KEY_PREFIX
+from meresco.lucene import ComposedQuery
+from meresco.lucene.synchronousremote import SynchronousRemote
+from seecr.utils.generatorutils import returnValueFromGenerator
+from cqlparser import parseString
 
 class LuceneTest(IntegrationTestCase):
 
@@ -103,25 +107,22 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals('value1', completions[-1])
 
     def testJoin(self):
-        header, body = postRequest(port=self.httpPort, path='/remote/__lucene_remote__', data=dumps(dict(
-                message='executeQuery',
-                kwargs=dict(
-                    cqlQuery='*',
-                    filterQueries=['field2=value0 OR field2=value1'],
-                    start=0,
-                    stop=100,
-                    joins={'main': KEY_PREFIX + 'field', 'main2': KEY_PREFIX + 'field'},
-                    joinFacets={'main2': [dict(fieldname='untokenized.field2', maxTerms=5)]}
-                )
-            )), parse=False)
-        response = loads(body)
-        self.assertEquals(19, response['total'])
+        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
+        q = ComposedQuery()
+        q.resultsFrom = 'main'
+        q.addMatch(main=KEY_PREFIX+'field', main2=KEY_PREFIX+'field')
+        q.start=0
+        q.stop=100
+        q.add(core='main', filterQueries=[parseString('field2=value0 OR field2=value1')])
+        q.add(core='main2', facets=[dict(fieldname='untokenized.field2', maxTerms=5)])
+        response = remote.executeComposedQuery(query=q)
+        self.assertEquals(19, response.total)
         self.assertEquals([
                 'record:10', 'record:11', 'record:20', 'record:21', 'record:30',
                 'record:31', 'record:40', 'record:41', 'record:50', 'record:51',
                 'record:60', 'record:61', 'record:70', 'record:71', 'record:80',
                 'record:81', 'record:90', 'record:91', 'record:100'
-            ], response['hits'])
+            ], response.hits)
         self.assertEquals([{
                 'fieldname': 'untokenized.field2',
                 'terms': [
@@ -131,7 +132,7 @@ class LuceneTest(IntegrationTestCase):
                     {'count': 19, 'term': 'value7'},
                     {'count': 19, 'term': 'value5'},
                 ]
-            }], response['drilldownData'])
+            }], response.drilldownData)
 
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru'):
         arguments={'version': '1.2',

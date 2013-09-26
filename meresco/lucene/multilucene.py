@@ -73,20 +73,11 @@ class MultiLucene(Observable):
                 primaryKeyCollector = KeyCollector(primaryKeyName)
                 consume(self.any[primaryCoreName].search(query=q, collector=primaryKeyCollector))
                 keySetWrap.intersect(primaryKeyCollector.getKeySet())
-            foreignQueries = query.queriesFor(foreignCoreName) + query.uniteQueriesFor(foreignCoreName)
-            if not foreignQueries:
-                foreignDrilldownData.extend((yield self.any[foreignCoreName].facets(
-                        filterCollector=KeyFilterCollector(keySetWrap.keySet, foreignKeyName),
-                        facets=query.facetsFor(foreignCoreName)
-                    )))
-            else:
-                foreignResponse = yield self.any[foreignCoreName].executeQuery(
-                        luceneQuery=MatchAllDocsQuery(),
-                        filterQueries=foreignQueries,
-                        filterCollector=KeyFilterCollector(keySetWrap.keySet, foreignKeyName),
-                        facets=query.facetsFor(foreignCoreName),
-                    )
-                foreignDrilldownData.extend(foreignResponse.drilldownData)
+            foreignDrilldownData.extend((yield self.any[foreignCoreName].facets(
+                    filterQueries=query.queriesFor(foreignCoreName) + query.uniteQueriesFor(foreignCoreName),
+                    filterCollector=KeyFilterCollector(keySetWrap.keySet, foreignKeyName),
+                    facets=query.facetsFor(foreignCoreName)
+                )))
 
         primaryKeyFilterCollector = KeyFilterCollector(keySetWrap.keySet, primaryKeyName)
         primaryQuery = query.queryFor(core=primaryCoreName)

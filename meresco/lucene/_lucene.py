@@ -69,10 +69,11 @@ class Lucene(object):
     def search(self, query=None, filter=None, collector=None):
         self._index.search(query, filter, collector)
 
-    def facets(self, filterCollector, facets):
+    def facets(self, filterCollector, facets, filterQueries):
         facetCollector = self._facetCollector(facets)
         filterCollector.setDelegate(facetCollector)
-        self.search(MatchAllDocsQuery(), None, filterCollector)
+        filter_ = self._filterFor(filterQueries)
+        self.search(MatchAllDocsQuery(), filter_, filterCollector)
         generatorReturn(self._facetResult(facetCollector))
         yield
 
@@ -94,10 +95,7 @@ class Lucene(object):
             filterCollector.setDelegate(collector)
             collector = filterCollector
 
-        filter_ = None
-        if filterQueries:
-            filters = [self._filterCache.getFilter(f) for f in filterQueries]
-            filter_ = ChainedFilter(filters, ChainedFilter.AND)
+        filter_ = self._filterFor(filterQueries)
 
         self.search(luceneQuery, filter_, collector)
 
@@ -143,6 +141,12 @@ class Lucene(object):
         if hasattr(collector, "topDocs"):
             hits = [self._index.getDocument(hit.doc).get(IDFIELD) for hit in collector.topDocs(start).scoreDocs]
         return collector.getTotalHits(), hits
+
+    def _filterFor(self, filterQueries):
+        if not filterQueries:
+            return None
+        filters = [self._filterCache.getFilter(f) for f in filterQueries]
+        return ChainedFilter(filters, ChainedFilter.AND)
 
     def _facetResult(self, facetCollector):
         facetResults = facetCollector.getFacetResults()

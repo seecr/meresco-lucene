@@ -313,6 +313,30 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
+    def testUniteAndFacetsWithForeignQuery(self):
+        q = ComposedQuery()
+        q.add(core='coreA', query=None)
+        q.add(core='coreB', query=query('O=true'), facets=[
+                dict(fieldname='cat_N', maxTerms=10),
+                dict(fieldname='cat_O', maxTerms=10),
+            ])
+        q.resultsFrom = 'coreA'
+        q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
+        q.unite(coreA=query('U=true'), coreB=query('N=true'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(2, result.total)
+        self.assertEquals([{
+               'terms': [
+                    {'count': 2, 'term': u'true'},
+                ],
+                'fieldname': u'cat_N'
+            }, {
+                'terms': [
+                    {'count': 2, 'term': u'true'},
+                ],
+                'fieldname': u'cat_O'
+            }], result.drilldownData)
+
     def testUniteMakesItTwoCoreQuery(self):
         q = ComposedQuery()
         q.add(core='coreA', query=query('Q=true'))

@@ -61,14 +61,14 @@ class MultiLuceneTest(SeecrTestCase):
         # |     /     \    \/    /     \    |     | |  |  M   | N  |                |
         # |    /       \   /\   /       \   |     | |   \____/     |                |
         # |   |         \_|__|_/         |  |     |  \            /                 |
-        # |   |    U      |  |     M     |  |     |   \__________/                  |
-        # |   |           \  /           |  |     |                                 |
-        # |    \           \/           /   |     |                                 |
-        # |     \          /\          /    |     |                                 |
-        # |      \        /  \        /     |     |                                 |
-        # |       \______/    \______/      |     |                                 |
-        # |                                 |     |                                 |
-        # |                                 |     |                                 |
+        # |   |    U      |  |     M     |  |     |   \__________/    __________    |
+        # |   |           \  /           |  |     |                  /          \   |
+        # |    \           \/           /   |     |                 /   ____     \  |
+        # |     \          /\          /    |     |                |   /    \     | |
+        # |      \        /  \        /     |     |                |  |  M   | P  | |
+        # |       \______/    \______/      |     |                |   \____/     | |
+        # |                                 |     |                 \            /  |
+        # |                                 |     |                  \__________/   |
         # +---------------------------------+     +---------------------------------+
 
         k1, k2, k3, k4, k5, k6, k7, k8, k9, k10 = range(1,11)
@@ -81,12 +81,17 @@ class MultiLuceneTest(SeecrTestCase):
         self.addDocument(self.luceneA, identifier='A-MQ',   key=('A', k7 ), fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false'), ('S', '7')])
         self.addDocument(self.luceneA, identifier='A-MQU',  key=('A', k8 ), fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' ), ('S', '8')])
 
-        self.addDocument(self.luceneB, identifier='B-N>A-M',   key=('B', k5 ), fields=[('N', 'true' ), ('O', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-N>A-MU',  key=('B', k6 ), fields=[('N', 'true' ), ('O', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  key=('B', k7 ), fields=[('N', 'true' ), ('O', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQU', key=('B', k8 ), fields=[('N', 'true' ), ('O', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N',       key=('B', k9 ), fields=[('N', 'true' ), ('O', 'true' )])
-        self.addDocument(self.luceneB, identifier='B',         key=('B', k10), fields=[('N', 'false'), ('O', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-M',   key=('B', k5 ), fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MU',  key=('B', k6 ), fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  key=('B', k7 ), fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQU', key=('B', k8 ), fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N',       key=('B', k9 ), fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B',         key=('B', k10), fields=[('N', 'false'), ('O', 'false'), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-P>A-M',   key=('B', k5 ), fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P>A-MU',  key=('B', k6 ), fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  key=('B', k7 ), fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQU', key=('B', k8 ), fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P',       key=('B', k9 ), fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
         sleep(0.2)
 
     def tearDown(self):
@@ -157,13 +162,14 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(4, result.total)
         self.assertEquals([{
                 'terms': [
+                        {'count': 2, 'term': u'false'},
                         {'count': 2, 'term': u'true'},
                     ],
                 'fieldname': u'cat_N'
             }, {
                 'terms': [
-                    {'count': 1, 'term': u'false'},
-                    {'count': 1, 'term': u'true'},
+                    {'count': 2, 'term': u'false'},
+                    {'count': 2, 'term': u'true'},
                 ],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
@@ -178,16 +184,18 @@ class MultiLuceneTest(SeecrTestCase):
         q.resultsFrom = 'coreB'
         q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
-        self.assertEquals(2, result.total)
+        self.assertEquals(4, result.total)
+        self.assertEquals(set(['B-N>A-MQ', 'B-N>A-MQU', 'B-P>A-MQ', 'B-P>A-MQU']), set(result.hits))
         self.assertEquals([{
                 'terms': [
+                        {'count': 2, 'term': u'false'},
                         {'count': 2, 'term': u'true'},
                     ],
                 'fieldname': u'cat_N'
             }, {
                 'terms': [
-                    {'count': 1, 'term': u'false'},
-                    {'count': 1, 'term': u'true'},
+                    {'count': 2, 'term': u'false'},
+                    {'count': 2, 'term': u'true'},
                 ],
                 'fieldname': u'cat_O'
              }], result.drilldownData)
@@ -204,6 +212,7 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(8, result.total)
         self.assertEquals([{
                 'terms': [
+                    {'count': 4, 'term': u'false'},
                     {'count': 4, 'term': u'true'},
                 ],
                 'fieldname': u'cat_N'
@@ -273,6 +282,7 @@ class MultiLuceneTest(SeecrTestCase):
             ])
         q.add(core='coreB', query=None, facets=[
                 dict(fieldname='cat_N', maxTerms=10),
+                dict(fieldname='cat_O', maxTerms=10),
             ])
         q.resultsFrom = 'coreA'
         q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
@@ -295,6 +305,12 @@ class MultiLuceneTest(SeecrTestCase):
                     {'count': 2, 'term': u'true'},
                 ],
                 'fieldname': u'cat_N'
+            }, {
+                'terms': [
+                    {'count': 1, 'term': u'false'},
+                    {'count': 1, 'term': u'true'},
+                ],
+                'fieldname': u'cat_O'
             }], result.drilldownData)
 
     def testUniteMakesItTwoCoreQuery(self):

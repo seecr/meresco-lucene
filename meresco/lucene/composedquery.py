@@ -66,6 +66,9 @@ class ComposedQuery(object):
     def unites(self):
         return self._unites
 
+    def uniteQueriesFor(self, core):
+        return [uniteQuery for coreName, coreKeyName, uniteQuery in self._unites if coreName == core]
+
     def keyNames(self, *cores):
         try:
             return self._matches[tuple(cores)]

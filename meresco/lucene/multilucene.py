@@ -54,9 +54,9 @@ class MultiLucene(Observable):
         primaryKeyName, foreignKeyName = query.keyNames(primaryCoreName, foreignCoreName)
 
         keySetWrap = KeySetWrap()
-        for coreName, coreKeyName, unite in query.unites():
+        for coreName, coreKeyName, uniteQuery in query.unites():
             uniteKeyCollector = KeyCollector(coreKeyName)
-            consume(self.any[coreName].search(query=unite, collector=uniteKeyCollector))
+            consume(self.any[coreName].search(query=uniteQuery, collector=uniteKeyCollector))
             keySetWrap.union(uniteKeyCollector.getKeySet())
 
         for q in query.queriesFor(foreignCoreName):
@@ -73,10 +73,20 @@ class MultiLucene(Observable):
                 primaryKeyCollector = KeyCollector(primaryKeyName)
                 consume(self.any[primaryCoreName].search(query=q, collector=primaryKeyCollector))
                 keySetWrap.intersect(primaryKeyCollector.getKeySet())
-            foreignDrilldownData = yield self.any[foreignCoreName].facets(
-                    filterCollector=KeyFilterCollector(keySetWrap.keySet, foreignKeyName),
-                    facets=query.facetsFor(foreignCoreName)
-                )
+            foreignQueries = query.queriesFor(foreignCoreName) + query.uniteQueriesFor(foreignCoreName)
+            if not foreignQueries:
+                foreignDrilldownData.extend((yield self.any[foreignCoreName].facets(
+                        filterCollector=KeyFilterCollector(keySetWrap.keySet, foreignKeyName),
+                        facets=query.facetsFor(foreignCoreName)
+                    )))
+            else:
+                foreignResponse = yield self.any[foreignCoreName].executeQuery(
+                        luceneQuery=MatchAllDocsQuery(),
+                        filterQueries=foreignQueries,
+                        filterCollector=KeyFilterCollector(keySetWrap.keySet, foreignKeyName),
+                        facets=query.facetsFor(foreignCoreName),
+                    )
+                foreignDrilldownData.extend(foreignResponse.drilldownData)
 
         primaryKeyFilterCollector = KeyFilterCollector(keySetWrap.keySet, primaryKeyName)
         primaryQuery = query.queryFor(core=primaryCoreName)

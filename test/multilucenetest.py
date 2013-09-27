@@ -25,6 +25,8 @@
 
 from seecr.test import SeecrTestCase, CallTrace
 from seecr.utils.generatorutils import returnValueFromGenerator, consume
+from org.meresco.lucene import KeyCollector, KeyFilterCollector
+from org.apache.lucene.search import MatchAllDocsQuery
 
 from meresco.core import Observable
 from weightless.core import be, compose
@@ -71,27 +73,28 @@ class MultiLuceneTest(SeecrTestCase):
         # |                                 |     |                  \__________/   |
         # +---------------------------------+     +---------------------------------+
 
-        k1, k2, k3, k4, k5, k6, k7, k8, k9, k10 = range(1,11)
-        self.addDocument(self.luceneA, identifier='A',      key=('A', k1 ), fields=[('M', 'false'), ('Q', 'false'), ('U', 'false'), ('S', '1')])
-        self.addDocument(self.luceneA, identifier='A-U',    key=('A', k2 ), fields=[('M', 'false'), ('Q', 'false'), ('U', 'true' ), ('S', '2')])
-        self.addDocument(self.luceneA, identifier='A-Q',    key=('A', k3 ), fields=[('M', 'false'), ('Q', 'true' ), ('U', 'false'), ('S', '3')])
-        self.addDocument(self.luceneA, identifier='A-QU',   key=('A', k4 ), fields=[('M', 'false'), ('Q', 'true' ), ('U', 'true' ), ('S', '4')])
-        self.addDocument(self.luceneA, identifier='A-M',    key=('A', k5 ), fields=[('M', 'true' ), ('Q', 'false'), ('U', 'false'), ('S', '5')])
-        self.addDocument(self.luceneA, identifier='A-MU',   key=('A', k6 ), fields=[('M', 'true' ), ('Q', 'false'), ('U', 'true' ), ('S', '6')])
-        self.addDocument(self.luceneA, identifier='A-MQ',   key=('A', k7 ), fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false'), ('S', '7')])
-        self.addDocument(self.luceneA, identifier='A-MQU',  key=('A', k8 ), fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' ), ('S', '8')])
+        k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11 = range(1,12)
+        pk1, pk2, pk3, pk4, pk5, pk6, pk7, pk8, pk9, pk10, pk11 = range(101,112)
+        self.addDocument(self.luceneA, identifier='A',      keys=[('A', k1 )], fields=[('M', 'false'), ('Q', 'false'), ('U', 'false'), ('S', '1')])
+        self.addDocument(self.luceneA, identifier='A-U',    keys=[('A', k2 )], fields=[('M', 'false'), ('Q', 'false'), ('U', 'true' ), ('S', '2')])
+        self.addDocument(self.luceneA, identifier='A-Q',    keys=[('A', k3 )], fields=[('M', 'false'), ('Q', 'true' ), ('U', 'false'), ('S', '3')])
+        self.addDocument(self.luceneA, identifier='A-QU',   keys=[('A', k4 )], fields=[('M', 'false'), ('Q', 'true' ), ('U', 'true' ), ('S', '4')])
+        self.addDocument(self.luceneA, identifier='A-M',    keys=[('A', k5 )], fields=[('M', 'true' ), ('Q', 'false'), ('U', 'false'), ('S', '5')])
+        self.addDocument(self.luceneA, identifier='A-MU',   keys=[('A', k6 )], fields=[('M', 'true' ), ('Q', 'false'), ('U', 'true' ), ('S', '6')])
+        self.addDocument(self.luceneA, identifier='A-MQ',   keys=[('A', k7 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false'), ('S', '7')])
+        self.addDocument(self.luceneA, identifier='A-MQU',  keys=[('A', k8 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' ), ('S', '8')])
 
-        self.addDocument(self.luceneB, identifier='B-N>A-M',   key=('B', k5 ), fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MU',  key=('B', k6 ), fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  key=('B', k7 ), fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQU', key=('B', k8 ), fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N',       key=('B', k9 ), fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B',         key=('B', k10), fields=[('N', 'false'), ('O', 'false'), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-P>A-M',   key=('B', k5 ), fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P>A-MU',  key=('B', k6 ), fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  key=('B', k7 ), fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQU', key=('B', k8 ), fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P',       key=('B', k9 ), fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-N>A-M',   keys=[('B', k5 ), ('pB', pk1 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MU',  keys=[('B', k6 ), ('pB', pk2 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  keys=[('B', k7 ), ('pB', pk3 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', k8 ), ('pB', pk4 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N',       keys=[('B', k9 ), ('pB', pk5 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B',         keys=[('B', k10), ('pB', pk6 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-P>A-M',   keys=[('B', k5 ), ('pB', pk7 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P>A-MU',  keys=[('B', k6 ), ('pB', pk8 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  keys=[('B', k7 ), ('pB', pk9 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQU', keys=[('B', k8 ), ('pB', pk10)], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P',       keys=[('B', k11), ('pB', pk11)], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
         sleep(0.2)
 
     def tearDown(self):
@@ -313,6 +316,65 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
+    def testUniteCoreB(self):
+        q = ComposedQuery()
+        q.resultsFrom = 'coreB'
+        q.addMatch(coreA=KEY_PREFIX +'A', coreB=KEY_PREFIX +'B')
+        q.unite(coreA=query('U=true'), coreB=query('N=true'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU', 'B-P>A-M', 'B-P>A-MQ', 'B-P>A-MQU', 'B-P>A-MU', ], sorted(result.hits))
+        # SHOULD BE
+        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU', 'B-P>A-MQU', 'B-P>A-MU', ], sorted(result.hits))
+
+    def testCoreB_KeyBIsNotAPrimaryKey(self):
+        keyBCollector = KeyCollector(KEY_PREFIX + 'B')
+        consume(self.luceneB.search(query=query('N=true'), collector=keyBCollector))
+        keyBSet = keyBCollector.getKeySet()
+        result = returnValueFromGenerator(self.luceneB.executeQuery(
+                MatchAllDocsQuery(),
+                filterCollector=KeyFilterCollector(keyBSet, KEY_PREFIX+'B'),
+            ))
+        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU', 'B-P>A-M', 'B-P>A-MQ', 'B-P>A-MQU', 'B-P>A-MU'], sorted(result.hits))
+
+        # Key B is not a primary Key
+        result = returnValueFromGenerator(self.luceneB.executeQuery(query('N=true')))
+        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU'], sorted(result.hits))
+
+        primaryKeyBCollector = KeyCollector(KEY_PREFIX + 'pB')
+        consume(self.luceneB.search(query=query('N=true'), collector=primaryKeyBCollector))
+        primaryKeyBSet = primaryKeyBCollector.getKeySet()
+        result = returnValueFromGenerator(self.luceneB.executeQuery(
+                MatchAllDocsQuery(),
+                filterCollector=KeyFilterCollector(primaryKeyBSet, KEY_PREFIX+'pB'),
+            ))
+        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU'], sorted(result.hits))
+
+    def testCoreB_Unite_basics(self):
+        foreignKeyCollector = KeyCollector(KEY_PREFIX + 'A')
+        consume(self.luceneA.search(query=query('U=true'), collector=foreignKeyCollector))
+        foreignKeySet = foreignKeyCollector.getKeySet()
+        result = returnValueFromGenerator(self.luceneB.executeQuery(
+                MatchAllDocsQuery(),
+                filterCollector=KeyFilterCollector(foreignKeySet, KEY_PREFIX+'B'),
+            ))
+        self.assertEquals(['B-N>A-MQU', 'B-N>A-MU', 'B-P>A-MQU', 'B-P>A-MU', ], sorted(result.hits))
+
+        primaryKeyBCollector = KeyCollector(KEY_PREFIX + 'pB')
+        consume(self.luceneB.search(query=query('N=true'), collector=primaryKeyBCollector))
+        primaryKeyBSet = primaryKeyBCollector.getKeySet()
+
+        primaryKeyBCollector = KeyCollector(KEY_PREFIX + 'pB')
+        keyFilterCollector = KeyFilterCollector(foreignKeySet, KEY_PREFIX + 'B')
+        keyFilterCollector.setDelegate(primaryKeyBCollector)
+        consume(self.luceneB.search(query=MatchAllDocsQuery(), collector=keyFilterCollector))
+        primaryKeyBSet.union(primaryKeyBCollector.getKeySet())
+
+        result = returnValueFromGenerator(self.luceneB.executeQuery(
+                MatchAllDocsQuery(),
+                filterCollector=KeyFilterCollector(primaryKeyBSet, KEY_PREFIX+'pB'),
+            ))
+        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU', 'B-P>A-MQU', 'B-P>A-MU', ], sorted(result.hits))
+
     def testUniteAndFacetsCoreB(self):
         q = ComposedQuery()
         q.add(core='coreA', query=query('Q=true'))
@@ -401,11 +463,10 @@ class MultiLuceneTest(SeecrTestCase):
 
 
 
-    def addDocument(self, lucene, identifier, key, fields):
-        keyField, keyValue = key
+    def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(
             identifier=identifier,
-            document=createDocument([(KEY_PREFIX + keyField, keyValue)]+fields),
+            document=createDocument([(KEY_PREFIX + keyField, keyValue) for (keyField, keyValue) in keys]+fields),
             categories=createCategories([('cat_'+field, value) for field, value in fields])
             ))
 

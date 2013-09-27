@@ -68,12 +68,14 @@ class Lucene(object):
 
     def search(self, query=None, filter=None, collector=None):
         self._index.search(query, filter, collector)
+        return
+        yield
 
     def facets(self, filterCollector, facets, filterQueries):
         facetCollector = self._facetCollector(facets)
         filterCollector.setDelegate(facetCollector)
         filter_ = self._filterFor(filterQueries)
-        self.search(MatchAllDocsQuery(), filter_, filterCollector)
+        self._index.search(MatchAllDocsQuery(), filter_, filterCollector)
         generatorReturn(self._facetResult(facetCollector))
         yield
 
@@ -97,7 +99,7 @@ class Lucene(object):
 
         filter_ = self._filterFor(filterQueries)
 
-        self.search(luceneQuery, filter_, collector)
+        self._index.search(luceneQuery, filter_, collector)
 
         total, hits = self._topDocsResponse(topCollector, start=start)
         response = LuceneResponse(total=total, hits=hits, drilldownData=[])

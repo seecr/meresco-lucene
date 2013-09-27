@@ -50,8 +50,8 @@ class MultiLucene(Observable):
             generatorReturn(response)
         t0 = time()
 
-        primaryCoreName, foreignCoreName = query.cores()
-        primaryKeyName, foreignKeyName = query.keyNames(primaryCoreName, foreignCoreName)
+        resultCoreName, otherCoreName = query.cores()
+        resultMatchKeyName, otherMatchKeyName = query.keyNames(resultCoreName, otherCoreName)
 
         keySetWrap = KeySetWrap()
         for coreName, coreKeyName, uniteQuery in query.unites():
@@ -59,56 +59,56 @@ class MultiLucene(Observable):
             consume(self.any[coreName].search(query=uniteQuery, collector=uniteKeyCollector))
             keySetWrap.union(uniteKeyCollector.getKeySet())
 
-        for q in query.queriesFor(foreignCoreName):
-            foreignKeyCollector = KeyCollector(foreignKeyName)
-            consume(self.any[foreignCoreName].search(query=q, collector=foreignKeyCollector))
-            keySetWrap.intersect(foreignKeyCollector.getKeySet())
+        for q in query.queriesFor(otherCoreName):
+            matchKeyCollector = KeyCollector(otherMatchKeyName)
+            consume(self.any[otherCoreName].search(query=q, collector=matchKeyCollector))
+            keySetWrap.intersect(matchKeyCollector.getKeySet())
 
-        foreignDrilldownData = []
-        if query.facetsFor(foreignCoreName):
-            primaryQueries = query.queriesFor(primaryCoreName)
-            if not primaryQueries:
-                primaryQueries = [MatchAllDocsQuery()]
-            for q in primaryQueries:
-                primaryKeyCollector = KeyCollector(primaryKeyName)
-                consume(self.any[primaryCoreName].search(query=q, collector=primaryKeyCollector))
-                keySetWrap.intersect(primaryKeyCollector.getKeySet())
-            foreignDrilldownData.extend((yield self.any[foreignCoreName].facets(
-                    filterQueries=query.queriesFor(foreignCoreName) + query.uniteQueriesFor(foreignCoreName),
-                    filterCollector=KeyFilterCollector(keySetWrap.keySet, foreignKeyName),
-                    facets=query.facetsFor(foreignCoreName)
+        drilldownData = []
+        if query.facetsFor(otherCoreName):
+            resultCoreQueries = query.queriesFor(resultCoreName)
+            if not resultCoreQueries:
+                resultCoreQueries = [MatchAllDocsQuery()]
+            for q in resultCoreQueries:
+                matchKeyCollector = KeyCollector(resultMatchKeyName)
+                consume(self.any[resultCoreName].search(query=q, collector=matchKeyCollector))
+                keySetWrap.intersect(matchKeyCollector.getKeySet())
+            drilldownData.extend((yield self.any[otherCoreName].facets(
+                    filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),
+                    filterCollector=KeyFilterCollector(keySetWrap.keySet, otherMatchKeyName),
+                    facets=query.facetsFor(otherCoreName)
                 )))
 
-        primaryKeyFilterCollector = KeyFilterCollector(keySetWrap.keySet, primaryKeyName)
-        primaryQuery = query.queryFor(core=primaryCoreName)
-        if primaryQuery is None:
-            primaryQuery = MatchAllDocsQuery()
-        primaryResponse = yield self.any[primaryCoreName].executeQuery(
-                luceneQuery=primaryQuery,
-                filterCollector=primaryKeyFilterCollector,
-                facets=query.facetsFor(primaryCoreName),
-                filterQueries=query.filterQueriesFor(primaryCoreName),
+        resultMatchKeyFilterCollector = KeyFilterCollector(keySetWrap.keySet, resultMatchKeyName)
+        resultCoreQuery = query.queryFor(core=resultCoreName)
+        if resultCoreQuery is None:
+            resultCoreQuery = MatchAllDocsQuery()
+        result = yield self.any[resultCoreName].executeQuery(
+                luceneQuery=resultCoreQuery,
+                filterCollector=resultMatchKeyFilterCollector,
+                facets=query.facetsFor(resultCoreName),
+                filterQueries=query.filterQueriesFor(resultCoreName),
                 **query.otherKwargs()
             )
 
-        primaryResponse.drilldownData.extend(foreignDrilldownData)
-        primaryResponse.queryTime = millis(time() - t0)
-        generatorReturn(primaryResponse)
+        result.drilldownData.extend(drilldownData)
+        result.queryTime = millis(time() - t0)
+        generatorReturn(result)
 
     def _sinqleQuery(self, query):
         t0 = time()
-        primaryCoreName, = query.cores()
-        primaryQuery = query.queryFor(core=primaryCoreName)
-        if primaryQuery is None:
-            primaryQuery = MatchAllDocsQuery()
-        primaryResponse = yield self.any[primaryCoreName].executeQuery(
-                luceneQuery=primaryQuery,
-                facets=query.facetsFor(primaryCoreName),
-                filterQueries=query.filterQueriesFor(primaryCoreName),
+        resultCoreName, = query.cores()
+        resultCoreQuery = query.queryFor(core=resultCoreName)
+        if resultCoreQuery is None:
+            resultCoreQuery = MatchAllDocsQuery()
+        result = yield self.any[resultCoreName].executeQuery(
+                luceneQuery=resultCoreQuery,
+                facets=query.facetsFor(resultCoreName),
+                filterQueries=query.filterQueriesFor(resultCoreName),
                 **query.otherKwargs()
             )
-        primaryResponse.queryTime = millis(time() - t0)
-        generatorReturn(primaryResponse)
+        result.queryTime = millis(time() - t0)
+        generatorReturn(result)
 
     def any_unknown(self, message, core=None, **kwargs):
         if message in ['prefixSearch', 'fieldnames']:

@@ -38,6 +38,10 @@ rm -rf $libDir
 mkdir -p $libDir
 
 luceneJarDir=/usr/lib64/python2.6/site-packages/lucene
+if [ -f /etc/debian_version ]; then
+    luceneJarDir=/usr/lib/python2.7/dist-packages/lucene
+fi
+
 classpath=${luceneJarDir}/lucene-core-4.3.0.jar:${luceneJarDir}/lucene-analyzers-common-4.3.0.jar:${luceneJarDir}/lucene-facet-4.3.0.jar
 
 javac -cp ${classpath} -d ${buildDir} org/meresco/lucene/*.java
@@ -54,7 +58,12 @@ python -m jcc.__main__ \
     --build \
     --install
 
-mv $mydir/root/usr/lib64/python2.6/site-packages/meresco_lucene $libDir/
+rootLibDir=$mydir/root/usr/lib64/python2.6/site-packages/meresco_lucene
+if [ -f /etc/debian_version ]; then
+    rootLibDir=$mydir/root/usr/local/lib/python2.7/dist-packages/meresco_lucene
+fi
+
+mv ${rootLibDir} $libDir/
 
 
 rm -rf $buildDir

@@ -40,6 +40,13 @@ if [ "${option:0:10}" == "--python2." ]; then
 fi
 echo Found Python versions: $pyversions
 for pycmd in $pyversions; do
+    if [ "${pycmd}" == "python2.6" -a -f /etc/debian_version ]; then
+        debian_version=$(cat /etc/debian_version)
+        if [ "${debian_version:0:1}" == "7" ]; then
+            echo "Skipping ${pycmd} for Wheezy"
+            continue
+        fi
+    fi
     echo "================ $t with $pycmd _alltests.py $@ ================"
     $pycmd _alltests.py "$@"
 done

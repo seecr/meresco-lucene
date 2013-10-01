@@ -32,6 +32,7 @@ from org.meresco.lucene import KeyCollector, KeyFilterCollector
 from cache import KeyCollectorCache
 from seecr.utils.generatorutils import consume, generatorReturn
 
+
 class MultiLucene(Observable):
     def __init__(self, defaultCore):
         Observable.__init__(self)
@@ -45,7 +46,7 @@ class MultiLucene(Observable):
 
     def executeComposedQuery(self, query):
         query.validate()
-        if query.numberOfCores == 1:
+        if query.isSingleCoreQuery():
             response = yield self._sinqleQuery(query)
             generatorReturn(response)
         t0 = time()
@@ -97,7 +98,7 @@ class MultiLucene(Observable):
 
     def _sinqleQuery(self, query):
         t0 = time()
-        resultCoreName, = query.cores()
+        resultCoreName = query.cores()[0]
         resultCoreQuery = query.queryFor(core=resultCoreName)
         if resultCoreQuery is None:
             resultCoreQuery = MatchAllDocsQuery()
@@ -119,6 +120,7 @@ class MultiLucene(Observable):
 
     def coreInfo(self):
         yield self.all.coreInfo()
+
 
 class KeySetWrap(object):
     def __init__(self):

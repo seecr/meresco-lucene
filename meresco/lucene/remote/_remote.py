@@ -32,6 +32,7 @@ from meresco.lucene import LuceneResponse
 
 from _conversion import jsonDumpMessage
 
+
 class LuceneRemote(Observable):
     def __init__(self, host=None, port=None, path=None, name=None):
         Observable.__init__(self, name=name)

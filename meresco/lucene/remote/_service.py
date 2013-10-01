@@ -41,6 +41,7 @@ usrSharePath = join(dirname(dirname(dirname(myPath))), 'usr-share')  #DO_NOT_DIS
 staticPath = join(usrSharePath, 'lucene-remote', 'static')
 dynamicPath = join(myPath, 'dynamic')
 
+
 class LuceneRemoteService(Observable):
     def __init__(self, reactor, **kwargs):
         Observable.__init__(self, **kwargs)

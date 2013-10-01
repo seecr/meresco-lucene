@@ -62,6 +62,17 @@ class ComposedQuery(object):
         for core, keyName in zip(cores, keyNames):
             self._unites.append((core, keyName, kwargs[core]))
 
+    def isSingleCoreQuery(self):
+        usedCores = set([self._resultsFrom])
+        for core, coreQueryDict in self._coreQueries.items():
+            if coreQueryDict.get('query') != None or \
+                coreQueryDict.get('filterQueries') or \
+                coreQueryDict.get('facets'):
+                    usedCores.add(core)
+        for core, _, _ in self._unites:
+            usedCores.add(core)
+        return len(usedCores) == 1
+
     def unites(self):
         return self._unites
 

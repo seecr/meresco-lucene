@@ -157,6 +157,26 @@ class ComposedQueryTest(SeecrTestCase):
         cq.validate()
         self.assertEquals(('coreA', 'coreB'), cq.cores())
 
+    def testIsSingleCoreQuery(self):
+        cq = ComposedQuery('coreA')
+        self.assertTrue(cq.isSingleCoreQuery())
+        cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
+        self.assertTrue(cq.isSingleCoreQuery())
+        cq.setCoreQuery('coreA', query='A')
+        self.assertTrue(cq.isSingleCoreQuery())
+        cq.setCoreQuery('coreB', query=None)
+        self.assertTrue(cq.isSingleCoreQuery())        
+        cq.unite(coreA='Q5', coreB='Q6')
+        self.assertFalse(cq.isSingleCoreQuery())
+
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery('coreB', query='B')
+        self.assertFalse(cq.isSingleCoreQuery())
+
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery('coreB', query=None, filterQueries=['B'])
+        self.assertFalse(cq.isSingleCoreQuery())
+
     def assertValueError(self, composedQuery, message):
         try:
             composedQuery.validate()

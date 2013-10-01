@@ -30,8 +30,8 @@ from meresco.lucene.composedquery import ComposedQuery
 class ComposedQueryTest(SeecrTestCase):
     def testValidateComposedQuery(self):
         composedQuery = ComposedQuery('coreA')
-        composedQuery.setCoreQuery(core='coreA', query=None)
-        composedQuery.setCoreQuery(core='coreB', query=None)
+        composedQuery.setCoreQuery(core='coreA', query='Q0')
+        composedQuery.setCoreQuery(core='coreB', query='Q1')
         self.assertValueError(composedQuery, "No match set for cores ('coreA', 'coreB')")
         composedQuery.addMatch(dict(core='coreC', uniqueKey='keyC'), dict(core='coreD', key='keyE'))
         self.assertValueError(composedQuery, 'Unsupported number of cores, expected at most 2.')
@@ -44,9 +44,13 @@ class ComposedQueryTest(SeecrTestCase):
     def testUniqueKeyDoesntMatchResultsFrom(self):
         composedQuery = ComposedQuery('coreA')
         composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', key='ignored'))
-        composedQuery.validate()
-        composedQuery.setCoreQuery('coreA', query='Q0')
+        self.assertTrue(composedQuery.isSingleCoreQuery())
         self.assertValueError(composedQuery, "Match for result core 'coreA', for which one or more queries apply, must have a uniqueKey specification.")
+
+        composedQuery.setCoreQuery('coreA', query='Q0')
+        self.assertTrue(composedQuery.isSingleCoreQuery())
+        self.assertValueError(composedQuery, "Match for result core 'coreA', for which one or more queries apply, must have a uniqueKey specification.")
+
         composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', uniqueKey='keyB'))
         self.assertValueError(composedQuery, "Match for result core 'coreA', for which one or more queries apply, must have a uniqueKey specification.")
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))

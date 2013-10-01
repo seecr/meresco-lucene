@@ -87,7 +87,7 @@ class ComposedQuery(object):
                 if keyName in coreSpec:
                     keyNames.append(coreSpec[keyName])
                     break
-            else: 
+            else:
                 raise KeyError('No key specificied in match for %s' % coreSpec['core'])
         return keyNames
 
@@ -122,14 +122,14 @@ class ComposedQuery(object):
     def validate(self):
         if self.numberOfCores > ComposedQuery.MAX_CORES:
             raise ValueError('Unsupported number of cores, expected at most %s.' % ComposedQuery.MAX_CORES)
-        if self.numberOfCores > 1 or self._matches:
+        if not self.isSingleCoreQuery() or self._matches:
             try:
                 coreASpec, coreBSpec = self._matchCoreSpecs(*self.cores())
             except KeyError:
-                raise ValueError("No match set for cores %s" % str(self.cores()))
+               raise ValueError("No match set for cores %s" % str(self.cores()))
             for coreSpec in [coreASpec, coreBSpec]:
                 if coreSpec['core'] == self._resultsFrom:
-                    if not 'uniqueKey' in coreSpec and self.queryFor(self._resultsFrom):
+                    if not 'uniqueKey' in coreSpec:
                         raise ValueError("Match for result core '%s', for which one or more queries apply, must have a uniqueKey specification." % self._resultsFrom)
 
     def convertWith(self, convert):
@@ -154,7 +154,7 @@ class ComposedQuery(object):
     suggestionRequest = property(**_prop('suggestionRequest'))
 
     def asDict(self):
-        result = vars(self)
+        result = dict(vars(self))
         result['_matches'] = dict(('->'.join(key), value) for key, value in result['_matches'].items())
         return result
 
@@ -176,7 +176,10 @@ class ComposedQuery(object):
             coreASpec, coreBSpec = self._matches[cores]
         except KeyError:
             coreBSpec, coreASpec = self._matches[tuple(reversed(cores))]
-        return coreASpec, coreBSpec        
+        return coreASpec, coreBSpec
+
+    def __repr__(self):
+        return "%s%s" % (self.__class__.__name__, self.asDict())
 
     MAX_CORES = 2
 

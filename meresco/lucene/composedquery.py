@@ -25,12 +25,14 @@
 
 
 class ComposedQuery(object):
-    def __init__(self):
+    def __init__(self, resultsFromCore):
+        self._resultsFrom = resultsFromCore
         self._coreQueries = {}
+        self._ensureCore(resultsFromCore)
         self._matches = {}
         self._unites = []
 
-    def add(self, core, query=None, facets=None, filterQueries=None):
+    def setCoreQuery(self, core, query=None, facets=None, filterQueries=None):
         self._coreQueries[core] = dict(
             query=query,
             filterQueries=[] if filterQueries is None else filterQueries,
@@ -44,12 +46,10 @@ class ComposedQuery(object):
         self._ensureCore(core)
         self._coreQueries[core]['facets'].append(facet)
 
-    def addMatch(self, **kwargs):
-        if len(kwargs) != ComposedQuery.MAX_CORES:
-            raise ValueError("Expected addMatch(coreA='keyA', coreB='keyB')")
-        cores = sorted(kwargs.keys())
-        keys = [kwargs[core] for core in cores]
-        self._matches[tuple(cores)] = tuple(keys)
+    def addMatch(self, coreASpec, coreBSpec):
+        for coreSpec in [coreASpec, coreBSpec]:
+            self._ensureCore(coreSpec['core'])
+        self._matches[(coreASpec['core'], coreBSpec['core'])] = (coreASpec, coreBSpec)
 
     def unite(self, **kwargs):
         if len(kwargs) != ComposedQuery.MAX_CORES:
@@ -61,7 +61,6 @@ class ComposedQuery(object):
             raise ValueError('No match found for %s' % cores)
         for core, keyName in zip(cores, keyNames):
             self._unites.append((core, keyName, kwargs[core]))
-            self._ensureCore(core)
 
     def unites(self):
         return self._unites
@@ -70,10 +69,16 @@ class ComposedQuery(object):
         return [uniteQuery for coreName, coreKeyName, uniteQuery in self._unites if coreName == core]
 
     def keyNames(self, *cores):
-        try:
-            return self._matches[tuple(cores)]
-        except KeyError:
-            return tuple(reversed(self._matches[tuple(reversed(cores))]))
+        coreASpec, coreBSpec = self._matchCoreSpecs(*cores)
+        keyNames = []
+        for coreSpec in [coreASpec, coreBSpec]:
+            for keyName in ['key', 'uniqueKey']:
+                if keyName in coreSpec:
+                    keyNames.append(coreSpec[keyName])
+                    break
+            else: 
+                raise KeyError('No key specificied in match for %s' % coreSpec['core'])
+        return keyNames
 
     def queryFor(self, core):
         return self._coreQueries[core]['query']
@@ -89,31 +94,12 @@ class ComposedQuery(object):
 
     @property
     def numberOfCores(self):
-        return len(self._coreQueries)
-
-    def validate(self):
-        if not (1 <= self.numberOfCores <= ComposedQuery.MAX_CORES):
-            raise ValueError('Unsupported number of cores, expected at most %s and at least 1.' % ComposedQuery.MAX_CORES)
-        if self.resultsFrom is None:
-            raise ValueError("Core for results not specified, use resultsFrom = 'core'")
-        if self.numberOfCores > 1:
-            if len(self._matches) == 0:
-                raise ValueError("No match set for cores")
-            try:
-                self.keyNames(*self.cores())
-            except KeyError:
-                raise ValueError("No match set for cores: %s" % str(self.cores()))
-
-    def convertWith(self, convert):
-        convertQuery = lambda query: (query if query is None else convert(query))
-        for coreQuery in self._coreQueries.values():
-            coreQuery['query'] = convertQuery(coreQuery['query'])
-            coreQuery['filterQueries'] = [convertQuery(fq) for fq in coreQuery['filterQueries']]
-        self._unites = [(core, keyName, convertQuery(query)) for core, keyName, query in self._unites]
+        return len(self.cores())
 
     def cores(self):
         def _cores():
-            yield self._resultsFrom
+            if not self._resultsFrom is None:
+                yield self._resultsFrom
             for core in self._coreQueries.keys():
                 if core != self._resultsFrom:
                     yield core
@@ -121,6 +107,26 @@ class ComposedQuery(object):
 
     def matchingCores(self):
         return set(core for coreTuple in self._matches.keys() for core in coreTuple)
+
+    def validate(self):
+        if self.numberOfCores > ComposedQuery.MAX_CORES:
+            raise ValueError('Unsupported number of cores, expected at most %s.' % ComposedQuery.MAX_CORES)
+        if self.numberOfCores > 1 or self._matches:
+            try:
+                coreASpec, coreBSpec = self._matchCoreSpecs(*self.cores())
+            except KeyError:
+                raise ValueError("No match set for cores %s" % str(self.cores()))
+            for coreSpec in [coreASpec, coreBSpec]:
+                if coreSpec['core'] == self._resultsFrom:
+                    if not 'uniqueKey' in coreSpec:
+                        raise ValueError("Match for result core '%s' must have a uniqueKey specification." % self._resultsFrom)
+
+    def convertWith(self, convert):
+        convertQuery = lambda query: (query if query is None else convert(query))
+        for coreQuery in self._coreQueries.values():
+            coreQuery['query'] = convertQuery(coreQuery['query'])
+            coreQuery['filterQueries'] = [convertQuery(fq) for fq in coreQuery['filterQueries']]
+        self._unites = [(core, keyName, convertQuery(query)) for core, keyName, query in self._unites]
 
     def otherKwargs(self):
         return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest)
@@ -136,13 +142,6 @@ class ComposedQuery(object):
     sortKeys = property(**_prop('sortKeys'))
     suggestionRequest = property(**_prop('suggestionRequest'))
 
-    def _get_resultsFrom(self):
-        return getattr(self, '_resultsFrom', None)
-    def _set_resultsFrom(self, value):
-        self._resultsFrom = value
-        self._ensureCore(value)
-    resultsFrom = property(_get_resultsFrom, _set_resultsFrom)
-
     def asDict(self):
         result = vars(self)
         result['_matches'] = dict(('->'.join(key), value) for key, value in result['_matches'].items())
@@ -150,7 +149,7 @@ class ComposedQuery(object):
 
     @classmethod
     def fromDict(cls, dct):
-        cq = cls()
+        cq = cls(dct['_resultsFrom'])
         matches = dct['_matches']
         dct['_matches'] = dict((tuple(key.split('->')), value) for key, value in matches.items())
         for attr, value in dct.items():
@@ -159,9 +158,16 @@ class ComposedQuery(object):
 
     def _ensureCore(self, core):
         if core not in self._coreQueries:
-            self.add(core)
+            self.setCoreQuery(core)
 
+    def _matchCoreSpecs(self, *cores):
+        try:
+            coreASpec, coreBSpec = self._matches[cores]
+        except KeyError:
+            coreBSpec, coreASpec = self._matches[tuple(reversed(cores))]
+        return coreASpec, coreBSpec        
 
     MAX_CORES = 2
+
 
 del ComposedQuery._prop

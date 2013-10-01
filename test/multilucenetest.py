@@ -25,7 +25,7 @@
 
 from seecr.test import SeecrTestCase, CallTrace
 from seecr.utils.generatorutils import returnValueFromGenerator, consume
-from org.meresco.lucene import KeyCollector, KeyFilterCollector
+from org.meresco.lucene import KeyCollector, KeyFilterCollector, DocIdCollector
 from org.apache.lucene.search import MatchAllDocsQuery
 
 from meresco.core import Observable
@@ -57,16 +57,16 @@ class MultiLuceneTest(SeecrTestCase):
         # +---------------------------------+     +---------------------------------+
         # |              ______             |     |                                 |
         # |         ____/      \____     A  |     |    __________                B  |
-        # |        /   /\   Q  /\   \       |     |   /          \                  |
+        # |        /   /\   Q  /\   \       |     |   /    N     \                  |
         # |       /   /  \    /  \   \      |     |  /   ____     \                 |
         # |      /   |    \  /    |   \     |     | |   /    \     |                |
-        # |     /     \    \/    /     \    |     | |  |  M   | N  |                |
-        # |    /       \   /\   /       \   |     | |   \____/     |                |
-        # |   |         \_|__|_/         |  |     |  \            /                 |
-        # |   |    U      |  |     M     |  |     |   \__________/    __________    |
-        # |   |           \  /           |  |     |                  /          \   |
-        # |    \           \/           /   |     |                 /   ____     \  |
-        # |     \          /\          /    |     |                |   /    \     | |
+        # |     /     \    \/    /     \    |     | |  |  M __|____|_____           |
+        # |    /       \   /\   /       \   |     | |   \__/_/     |     \          |
+        # |   |         \_|__|_/         |  |     |  \    |       /      |          |
+        # |   |    U      |  |     M     |  |     |   \___|______/    ___|_______   |
+        # |   |           \  /           |  |     |       |          /   |       \  |
+        # |    \           \/           /   |     |       |   O     /   _|__      \ |
+        # |     \          /\          /    |     |        \_______|___/_/  \     | |
         # |      \        /  \        /     |     |                |  |  M   | P  | |
         # |       \______/    \______/      |     |                |   \____/     | |
         # |                                 |     |                 \            /  |
@@ -74,7 +74,6 @@ class MultiLuceneTest(SeecrTestCase):
         # +---------------------------------+     +---------------------------------+
 
         k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11 = range(1,12)
-        pk1, pk2, pk3, pk4, pk5, pk6, pk7, pk8, pk9, pk10, pk11 = range(101,112)
         self.addDocument(self.luceneA, identifier='A',      keys=[('A', k1 )], fields=[('M', 'false'), ('Q', 'false'), ('U', 'false'), ('S', '1')])
         self.addDocument(self.luceneA, identifier='A-U',    keys=[('A', k2 )], fields=[('M', 'false'), ('Q', 'false'), ('U', 'true' ), ('S', '2')])
         self.addDocument(self.luceneA, identifier='A-Q',    keys=[('A', k3 )], fields=[('M', 'false'), ('Q', 'true' ), ('U', 'false'), ('S', '3')])
@@ -84,17 +83,17 @@ class MultiLuceneTest(SeecrTestCase):
         self.addDocument(self.luceneA, identifier='A-MQ',   keys=[('A', k7 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false'), ('S', '7')])
         self.addDocument(self.luceneA, identifier='A-MQU',  keys=[('A', k8 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' ), ('S', '8')])
 
-        self.addDocument(self.luceneB, identifier='B-N>A-M',   keys=[('B', k5 ), ('pB', pk1 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MU',  keys=[('B', k6 ), ('pB', pk2 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  keys=[('B', k7 ), ('pB', pk3 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', k8 ), ('pB', pk4 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N',       keys=[('B', k9 ), ('pB', pk5 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B',         keys=[('B', k10), ('pB', pk6 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-P>A-M',   keys=[('B', k5 ), ('pB', pk7 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P>A-MU',  keys=[('B', k6 ), ('pB', pk8 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  keys=[('B', k7 ), ('pB', pk9 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQU', keys=[('B', k8 ), ('pB', pk10)], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P',       keys=[('B', k11), ('pB', pk11)], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-N>A-M',   keys=[('B', k5 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MU',  keys=[('B', k6 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  keys=[('B', k7 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', k8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N',       keys=[('B', k9 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B',         keys=[('B', k10)], fields=[('N', 'false'), ('O', 'false'), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-P>A-M',   keys=[('B', k5 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P>A-MU',  keys=[('B', k6 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  keys=[('B', k7 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQU', keys=[('B', k8 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P',       keys=[('B', k11)], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
         sleep(0.2)
 
     def tearDown(self):
@@ -316,66 +315,41 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
-    def testUniteCoreB(self):
+    def not_yet_implemented_testUniteCoreB(self):
         q = ComposedQuery()
         q.resultsFrom = 'coreB'
         q.addMatch(coreA=KEY_PREFIX +'A', coreB=KEY_PREFIX +'B')
         q.unite(coreA=query('U=true'), coreB=query('N=true'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU', 'B-P>A-M', 'B-P>A-MQ', 'B-P>A-MQU', 'B-P>A-MU', ], sorted(result.hits))
-        # SHOULD BE
         self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU', 'B-P>A-MQU', 'B-P>A-MU', ], sorted(result.hits))
 
-    def testCoreB_KeyBIsNotAPrimaryKey(self):
+    def testReminderThatCollectingNonUniqueKeysGivesTooManyResults(self):
         keyBCollector = KeyCollector(KEY_PREFIX + 'B')
         consume(self.luceneB.search(query=query('N=true'), collector=keyBCollector))
         keyBSet = keyBCollector.getKeySet()
         result = returnValueFromGenerator(self.luceneB.executeQuery(
                 MatchAllDocsQuery(),
-                filterCollector=KeyFilterCollector(keyBSet, KEY_PREFIX+'B'),
+                filterCollector=KeyFilterCollector(keyBSet, KEY_PREFIX + 'B'),
             ))
         self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU', 'B-P>A-M', 'B-P>A-MQ', 'B-P>A-MQU', 'B-P>A-MU'], sorted(result.hits))
 
-        # Key B is not a primary Key
-        result = returnValueFromGenerator(self.luceneB.executeQuery(query('N=true')))
-        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU'], sorted(result.hits))
+    def testNto1UniteExperiment(self):
+        # unite B-N met A-U, query op A-Q en not B-O
+        uniteDocIdCollector = DocIdCollector()
+        consume(self.luceneB.search(query=query('N=true and O=false'), collector=uniteDocIdCollector))
+        matchKeyCollector = KeyCollector(KEY_PREFIX + 'A')
+        consume(self.luceneA.search(query=query('U=true and Q=true'), collector=matchKeyCollector))
+        keyFilterCollector = KeyFilterCollector(matchKeyCollector.getKeySet(), KEY_PREFIX + 'B')
+        keyFilterCollector.setDelegate(uniteDocIdCollector)
+        consume(self.luceneB.search(query=query('O=false'), collector=keyFilterCollector))
 
-        primaryKeyBCollector = KeyCollector(KEY_PREFIX + 'pB')
-        consume(self.luceneB.search(query=query('N=true'), collector=primaryKeyBCollector))
-        primaryKeyBSet = primaryKeyBCollector.getKeySet()
-        result = returnValueFromGenerator(self.luceneB.executeQuery(
-                MatchAllDocsQuery(),
-                filterCollector=KeyFilterCollector(primaryKeyBSet, KEY_PREFIX+'pB'),
-            ))
-        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU'], sorted(result.hits))
+        matchKeyCollector = KeyCollector(KEY_PREFIX + 'A')
+        consume(self.luceneA.search(query=query('Q=true'), collector=matchKeyCollector))
+        keyFilterCollector = KeyFilterCollector(matchKeyCollector.getKeySet(), KEY_PREFIX + 'B')
+        result = returnValueFromGenerator(self.luceneB.executeQuery(luceneQuery=query('O=false'), filter=uniteDocIdCollector.getDocIdFilter(), filterCollector=keyFilterCollector))             
+        self.assertEquals([u'B-N>A-MQU', u'B-P>A-MQU'], sorted(result.hits))
 
-    def testCoreB_Unite_basics(self):
-        foreignKeyCollector = KeyCollector(KEY_PREFIX + 'A')
-        consume(self.luceneA.search(query=query('U=true'), collector=foreignKeyCollector))
-        foreignKeySet = foreignKeyCollector.getKeySet()
-        result = returnValueFromGenerator(self.luceneB.executeQuery(
-                MatchAllDocsQuery(),
-                filterCollector=KeyFilterCollector(foreignKeySet, KEY_PREFIX+'B'),
-            ))
-        self.assertEquals(['B-N>A-MQU', 'B-N>A-MU', 'B-P>A-MQU', 'B-P>A-MU', ], sorted(result.hits))
-
-        primaryKeyBCollector = KeyCollector(KEY_PREFIX + 'pB')
-        consume(self.luceneB.search(query=query('N=true'), collector=primaryKeyBCollector))
-        primaryKeyBSet = primaryKeyBCollector.getKeySet()
-
-        primaryKeyBCollector = KeyCollector(KEY_PREFIX + 'pB')
-        keyFilterCollector = KeyFilterCollector(foreignKeySet, KEY_PREFIX + 'B')
-        keyFilterCollector.setDelegate(primaryKeyBCollector)
-        consume(self.luceneB.search(query=MatchAllDocsQuery(), collector=keyFilterCollector))
-        primaryKeyBSet.union(primaryKeyBCollector.getKeySet())
-
-        result = returnValueFromGenerator(self.luceneB.executeQuery(
-                MatchAllDocsQuery(),
-                filterCollector=KeyFilterCollector(primaryKeyBSet, KEY_PREFIX+'pB'),
-            ))
-        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU', 'B-P>A-MQU', 'B-P>A-MU', ], sorted(result.hits))
-
-    def testUniteAndFacetsCoreB(self):
+    def not_yet_implemented_testUniteAndFacetsCoreB(self):
         q = ComposedQuery()
         q.add(core='coreA', query=query('Q=true'))
         q.add(core='coreB', query=None, facets=[
@@ -383,7 +357,7 @@ class MultiLuceneTest(SeecrTestCase):
                 dict(fieldname='cat_O', maxTerms=10),
             ])
         q.resultsFrom = 'coreB'
-        q.addMatch(coreA=KEY_PREFIX+'A', coreB=KEY_PREFIX+'B')
+        q.addMatch(coreA=KEY_PREFIX + 'A', coreB=KEY_PREFIX + 'B')
         q.unite(coreA=query('U=true'), coreB=query('N=true'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set(['B-N>A-MQ', 'B-N>MQU']), set(result.hits))

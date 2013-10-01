@@ -47,7 +47,7 @@ public class KeyFilterCollector extends Collector {
 		this.keyFilter = keyFilter;
 		this.keyName = keyName;
 	}
-	
+
 	public void setDelegate(Collector delegate) {
 		this.delegate = delegate;
 	}

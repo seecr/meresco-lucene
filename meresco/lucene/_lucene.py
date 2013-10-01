@@ -80,7 +80,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-        filterQueries=None, suggestionRequest=None, filterCollector=None, **kwargs):
+        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -97,7 +97,7 @@ class Lucene(object):
             filterCollector.setDelegate(collector)
             collector = filterCollector
 
-        filter_ = self._filterFor(filterQueries)
+        filter_ = self._filterFor(filterQueries, filter)
 
         self._index.search(luceneQuery, filter_, collector)
 
@@ -144,10 +144,12 @@ class Lucene(object):
             hits = [self._index.getDocument(hit.doc).get(IDFIELD) for hit in collector.topDocs(start).scoreDocs]
         return collector.getTotalHits(), hits
 
-    def _filterFor(self, filterQueries):
+    def _filterFor(self, filterQueries, filter=None):
         if not filterQueries:
-            return None
+            return filter
         filters = [self._filterCache.getFilter(f) for f in filterQueries]
+        if filter is not None:
+            filters.append(filter)
         return ChainedFilter(filters, ChainedFilter.AND)
 
     def _facetResult(self, facetCollector):

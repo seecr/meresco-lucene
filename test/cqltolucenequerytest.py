@@ -79,11 +79,12 @@ class CqlToLuceneQueryTest(TestCase):
         self.assertConversion(['term2', 'term1'], query='term1', filterQueries=[parseString('term2')])
 
     def testConvertComposedQuery(self):
-        q = ComposedQuery()
-        q.add(core='A', query=parseString('fieldAQ exact valueAQ'))
-        q.add(core='B', query=parseString('fieldBQ exact valueBQ'))
-        q.addMatch(A='keyA', B='keyB')
+        q = ComposedQuery('A')
+        q.setCoreQuery(core='A', query=parseString('fieldAQ exact valueAQ'))
+        q.setCoreQuery(core='B', query=parseString('fieldBQ exact valueBQ'))
+        q.addMatch(dict(core='A', uniqueKey='keyA'), dict(core='B', key='keyB'))
         q.unite(A=parseString('fieldUA exact valueUA'), B=parseString('fieldUB exact valueUB'))
+        q.validate()
         consume(self.dna.any.executeComposedQuery(query=q))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         self.assertEquals(repr(TermQuery(Term('fieldAQ', 'valueAQ'))), repr(q.queryFor('A')))

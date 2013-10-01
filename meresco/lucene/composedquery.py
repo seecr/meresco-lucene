@@ -118,8 +118,8 @@ class ComposedQuery(object):
                 raise ValueError("No match set for cores %s" % str(self.cores()))
             for coreSpec in [coreASpec, coreBSpec]:
                 if coreSpec['core'] == self._resultsFrom:
-                    if not 'uniqueKey' in coreSpec:
-                        raise ValueError("Match for result core '%s' must have a uniqueKey specification." % self._resultsFrom)
+                    if not 'uniqueKey' in coreSpec and self.queryFor(self._resultsFrom):
+                        raise ValueError("Match for result core '%s', for which one or more queries apply, must have a uniqueKey specification." % self._resultsFrom)
 
     def convertWith(self, convert):
         convertQuery = lambda query: (query if query is None else convert(query))

@@ -28,11 +28,12 @@ from meresco.lucene import LuceneResponse
 from meresco.lucene.composedquery import ComposedQuery
 from meresco.core import Observable
 from seecr.test import SeecrTestCase, CallTrace
-from cqlparser import parseString, CQL_QUERY, cql2string
+from cqlparser import parseString
 from weightless.core import compose
 from seecr.utils.generatorutils import returnValueFromGenerator
 from simplejson import loads, dumps
 from meresco.lucene.remote._conversion import jsonDumpMessage, jsonLoadMessage
+
 
 class LuceneRemoteTest(SeecrTestCase):
     def testRemoteExecuteQuery(self):
@@ -46,16 +47,15 @@ class LuceneRemoteTest(SeecrTestCase):
         observable.addObserver(remote)
         remote._httppost = http.httppost
 
-        cq = ComposedQuery()
-        cq.resultsFrom = 'coreA'
-        cq.add(
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery(
                 core='coreA',
                 query=parseString('query AND  field=value'),
                 filterQueries=[parseString('query=fiets')],
                 facets=[{'fieldname': 'field', 'maxTerms':5}],
             )
-        cq.add(core='coreB', query=parseString('query=test'))
-        cq.addMatch(coreA='keyA', coreB='keyB')
+        cq.setCoreQuery(core='coreB', query=parseString('query=test'))
+        cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         result = returnValueFromGenerator(observable.any.executeComposedQuery(query=cq))
         self.assertEquals(5, result.total)
         self.assertEquals(["1", "2", "3", "4", "5"], result.hits)
@@ -69,7 +69,7 @@ class LuceneRemoteTest(SeecrTestCase):
         message, kwargs = jsonLoadMessage(m.kwargs['body'])
         query = kwargs['query']
         self.assertEquals('executeComposedQuery', message)
-        self.assertEquals('coreA', query.resultsFrom)
+        self.assertEquals('coreA', query._resultsFrom)
         self.assertEquals([{'fieldname': 'field', 'maxTerms':5}], query.facetsFor('coreA'))
 
     def testRemoteExecuteQueryWithNoneValues(self):
@@ -266,10 +266,10 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals([parseString('qs')], kwargs['attr']['qs'])
 
     def testConversionOfComposedQuery(self):
-        cq = ComposedQuery()
-        cq.add(core='coreA', query=parseString('Q0'), filterQueries=['Q1', 'Q2'], facets=['F0', 'F1'])
-        cq.add(core='coreB', query='Q3', filterQueries=['Q4'])
-        cq.addMatch(coreA='keyA', coreB='keyB')
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery(core='coreA', query=parseString('Q0'), filterQueries=['Q1', 'Q2'], facets=['F0', 'F1'])
+        cq.setCoreQuery(core='coreB', query='Q3', filterQueries=['Q4'])
+        cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         cq.unite(coreA='AQuery', coreB='anotherQuery')
         cq.start = 0
         cq.sortKeys = [dict(sortBy='field', sortDescending=True)]

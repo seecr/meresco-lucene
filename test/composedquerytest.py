@@ -44,9 +44,11 @@ class ComposedQueryTest(SeecrTestCase):
     def testUniqueKeyDoesntMatchResultsFrom(self):
         composedQuery = ComposedQuery('coreA')
         composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', key='ignored'))
-        self.assertValueError(composedQuery, "Match for result core 'coreA' must have a uniqueKey specification.")
+        composedQuery.validate()
+        composedQuery.setCoreQuery('coreA', query='Q0')
+        self.assertValueError(composedQuery, "Match for result core 'coreA', for which one or more queries apply, must have a uniqueKey specification.")
         composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', uniqueKey='keyB'))
-        self.assertValueError(composedQuery, "Match for result core 'coreA' must have a uniqueKey specification.")
+        self.assertValueError(composedQuery, "Match for result core 'coreA', for which one or more queries apply, must have a uniqueKey specification.")
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         composedQuery.validate()
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', uniqueKey='keyB'))

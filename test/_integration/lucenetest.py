@@ -26,16 +26,15 @@
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import getRequest, postRequest
 from meresco.xml.namespaces import xpathFirst, xpath
-from simplejson import loads, dumps
+from simplejson import loads
 from time import sleep
 from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene import ComposedQuery
 from meresco.lucene.synchronousremote import SynchronousRemote
-from seecr.utils.generatorutils import returnValueFromGenerator
 from cqlparser import parseString
 
-class LuceneTest(IntegrationTestCase):
 
+class LuceneTest(IntegrationTestCase):
     def testAddDelete(self):
         postRequest(self.httpPort, '/update_main', ADD_RECORD, parse=False)
         sleep(1.1)
@@ -108,13 +107,12 @@ class LuceneTest(IntegrationTestCase):
 
     def testJoin(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        q = ComposedQuery()
-        q.resultsFrom = 'main'
-        q.addMatch(main=KEY_PREFIX+'field', main2=KEY_PREFIX+'field')
+        q = ComposedQuery('main')
+        q.addMatch(dict(core='main', uniqueKey=KEY_PREFIX+'field'), dict(core='main2', key=KEY_PREFIX+'field'))
         q.start=0
         q.stop=100
-        q.add(core='main', filterQueries=[parseString('field2=value0 OR field2=value1')])
-        q.add(core='main2', facets=[dict(fieldname='untokenized.field2', maxTerms=5)])
+        q.setCoreQuery(core='main', filterQueries=[parseString('field2=value0 OR field2=value1')])
+        q.setCoreQuery(core='main2', facets=[dict(fieldname='untokenized.field2', maxTerms=5)])
         response = remote.executeComposedQuery(query=q)
         self.assertEquals(19, response.total)
         self.assertEquals([

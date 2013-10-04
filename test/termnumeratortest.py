@@ -25,7 +25,7 @@
 
 from seecr.test import SeecrTestCase
 from meresco.lucene.termnumerator import TermNumerator
-
+from seecr.test.io import stdout_replaced
 
 class TermNumeratorTest(SeecrTestCase):
 
@@ -35,6 +35,7 @@ class TermNumeratorTest(SeecrTestCase):
         self.assertEquals(2, numerator.numerateTerm('string2'))
         self.assertEquals(1, numerator.numerateTerm('string1'))
 
+    @stdout_replaced
     def testCommit(self):
         numerator = TermNumerator(self.tempdir)
         self.assertEquals(1, numerator.numerateTerm('string1'))

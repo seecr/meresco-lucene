@@ -25,18 +25,17 @@
 
 from meresco.lucene import createAnalyzer
 
-from org.apache.lucene.index import IndexWriter, DirectoryReader, IndexWriterConfig, MultiFields, Term
-from org.apache.lucene.search import IndexSearcher
+from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields, Term
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
-from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter, DirectoryTaxonomyReader
+from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
 from org.apache.lucene.facet.index import FacetFields
 from org.apache.lucene.facet.search import FacetsCollector
 from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
 
-from org.apache.lucene.facet.search import CachedOrdsCountingFacetsAggregator, FacetArrays, FacetsAccumulator
+from org.apache.lucene.facet.search import CachedOrdsCountingFacetsAggregator, FacetArrays
 from org.meresco.lucene import MyFacetsAccumulator
 
 from java.io import File, StringReader

@@ -31,38 +31,38 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.OpenBitSet;
+import java.util.BitSet;
 
 public class KeyCollector extends Collector {
 
-	private String keyName;
-	private NumericDocValues keyValues;
-	private OpenBitSet keySet = new OpenBitSet();
+    private String keyName;
+    private NumericDocValues keyValues;
+    protected BitSet keySet = new BitSet();
 
-	public KeyCollector(String keyName) {
-		this.keyName = keyName;
-	}
+    public KeyCollector(String keyName) {
+        this.keyName = keyName;
+    }
 
-	@Override
-	public void collect(int docId) throws IOException {
-		this.keySet.set(this.keyValues.get(docId));
-	}
+    @Override
+    public void collect(int docId) throws IOException {
+        this.keySet.set((int)this.keyValues.get(docId));
+    }
 
-	@Override
-	public void setNextReader(AtomicReaderContext context) throws IOException {
-		this.keyValues = context.reader().getNumericDocValues(this.keyName);
-	}
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        this.keyValues = context.reader().getNumericDocValues(this.keyName);
+    }
 
-	@Override
-	public boolean acceptsDocsOutOfOrder() {
-		return true;
-	}
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+        return true;
+    }
 
-	@Override
-	public void setScorer(Scorer scorer) throws IOException {
-	}
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+    }
 
-	public OpenBitSet getKeySet() {
-		return this.keySet;
-	}
+    public BitSet getCollectedKeys() {
+        return this.keySet;
+    }
 }

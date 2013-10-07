@@ -31,19 +31,20 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.OpenBitSet;
+
+import java.util.BitSet;
 
 /**
  * A collector that filters by looking up keys (ords) in a named field.
  */
 public class KeyFilterCollector extends Collector {
 
-	private OpenBitSet keyFilter;
+	private BitSet keyFilter;
 	private String keyName;
 	private NumericDocValues keyValues;
 	private Collector delegate;
 
-	public KeyFilterCollector(OpenBitSet keyFilter, String keyName)	throws IOException {
+	public KeyFilterCollector(BitSet keyFilter, String keyName)	throws IOException {
 		this.keyFilter = keyFilter;
 		this.keyName = keyName;
 	}
@@ -54,7 +55,7 @@ public class KeyFilterCollector extends Collector {
 
 	@Override
 	public void collect(int docId) throws IOException {
-		if (this.keyFilter.get(this.keyValues.get(docId)))
+		if (this.keyFilter.get((int)this.keyValues.get(docId)))
 			this.delegate.collect(docId);
 	}
 

@@ -26,14 +26,14 @@
 package org.meresco.lucene;
 
 import org.apache.lucene.facet.search.FacetsAggregator;
-import org.apache.lucene.facet.search.FacetsAccumulator;
+import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.params.FacetSearchParams;
 import org.apache.lucene.facet.search.FacetsAggregator;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.search.FacetArrays;
 
-public class MyFacetsAccumulator extends FacetsAccumulator {
+public class MyFacetsAccumulator extends StandardFacetsAccumulator {
 
     private FacetsAggregator aggregator;
 

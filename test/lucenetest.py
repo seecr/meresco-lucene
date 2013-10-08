@@ -26,8 +26,8 @@
 
 from seecr.test import SeecrTestCase, CallTrace
 from seecr.test.io import stdout_replaced
-from os.path import join, isdir
-from time import sleep, time
+from os.path import join
+from time import sleep
 from meresco.lucene import Lucene, VM
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.utils import createField
@@ -37,12 +37,8 @@ from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuer
 from org.apache.lucene.document import Document, TextField, Field
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.taxonomy import CategoryPath
-from org.apache.lucene.search.join import TermsCollector
 from seecr.utils.generatorutils import returnValueFromGenerator
 import gc
-from random import randint
-
-from org.meresco.lucene import KeyCollector
 
 class LuceneTest(SeecrTestCase):
     def setUp(self):

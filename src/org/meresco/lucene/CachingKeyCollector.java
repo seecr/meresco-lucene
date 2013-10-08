@@ -78,10 +78,7 @@ public class CachingKeyCollector extends KeyCollector {
 
     /**
      * Get a OpenBitSet containing all the collected keys. This returns a new
-     * OpenBitSet. Use {@link getFilter} with
-     * {@link org.apache.lucene.queries.BooleanFilter} or
-     * {@link org.apache.lucene.queries.ChainedFilter} for combining
-     * results from different collectors to do cross-filtering.
+     * OpenBitSet.
      */
     @Override
     public OpenBitSet getCollectedKeys() {

@@ -27,7 +27,6 @@ package org.meresco.lucene;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -37,6 +36,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.OpenBitSet;
 
 /**
  * A KeyCollector for implementing joins between two or more Lucene indexes. This
@@ -77,17 +77,17 @@ public class CachingKeyCollector extends KeyCollector {
     }
 
     /**
-     * Get a BitSet containing all the collected keys. This returns a new
-     * BitSet. Use {@link getFilter} with
+     * Get a OpenBitSet containing all the collected keys. This returns a new
+     * OpenBitSet. Use {@link getFilter} with
      * {@link org.apache.lucene.queries.BooleanFilter} or
      * {@link org.apache.lucene.queries.ChainedFilter} for combining
      * results from different collectors to do cross-filtering.
      */
     @Override
-    public BitSet getCollectedKeys() {
+    public OpenBitSet getCollectedKeys() {
         updateCache();
-        BitSet keySet = new BitSet();
-        for (BitSet b : this.seen)
+        OpenBitSet keySet = new OpenBitSet();
+        for (OpenBitSet b : this.seen)
             keySet.or(b);
         return keySet;
     }
@@ -96,19 +96,19 @@ public class CachingKeyCollector extends KeyCollector {
     public void setNextReader(AtomicReaderContext context) throws IOException {
         updateCache();
         Object readerKey = context.reader().getCombinedCoreAndDeletesKey();
-        BitSet bitSet = this.keySetCache.get(readerKey);
+        OpenBitSet bitSet = this.keySetCache.get(readerKey);
         if (bitSet != null) {
             this.seen.add(bitSet);
             throw new CollectionTerminatedException(); // already have this one
         }
         super.setNextReader(context);
         this.currentReaderKey = readerKey;
-        this.keySet = new BitSet();
+        this.keySet = new OpenBitSet();
     }
 
     public void printKeySetCacheSize() {
         int size = 0;
-        for (BitSet b : this.keySetCache.values())
+        for (OpenBitSet b : this.keySetCache.values())
             size += b.size();
         System.out.println("cache: " + this.keySetCache.size() + " entries, " + (size / 8 / 1024 / 1024) + " MB");
     }
@@ -126,13 +126,13 @@ public class CachingKeyCollector extends KeyCollector {
      * that keys are quasi-randomly distributed, so all bitsets are of the same
      * size, and the whole cache may become large.
      */
-    private Map<Object, BitSet> keySetCache = new WeakHashMap<Object, BitSet>();
+    private Map<Object, OpenBitSet> keySetCache = new WeakHashMap<Object, OpenBitSet>();
 
     /**
-     * Records which BitSets belong to the result of the most recent collect
+     * Records which OpenBitSets belong to the result of the most recent collect
      * cycle (The cache might contain more; for readers not yet GC'd.
      */
-    private List<BitSet> seen = new ArrayList<BitSet>();
+    private List<OpenBitSet> seen = new ArrayList<OpenBitSet>();
 
     /**
      * This indicates the reader for which collection is going on. At the end,

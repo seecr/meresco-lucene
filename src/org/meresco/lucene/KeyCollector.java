@@ -31,13 +31,13 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
-import java.util.BitSet;
+import org.apache.lucene.util.OpenBitSet;
 
 public class KeyCollector extends Collector {
 
     private String keyName;
     private NumericDocValues keyValues;
-    protected BitSet keySet = new BitSet();
+    protected OpenBitSet keySet = new OpenBitSet();
 
     public KeyCollector(String keyName) {
         this.keyName = keyName;
@@ -62,7 +62,7 @@ public class KeyCollector extends Collector {
     public void setScorer(Scorer scorer) throws IOException {
     }
 
-    public BitSet getCollectedKeys() {
+    public OpenBitSet getCollectedKeys() {
         return this.keySet;
     }
 }

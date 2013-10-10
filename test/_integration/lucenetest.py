@@ -133,19 +133,6 @@ class LuceneTest(IntegrationTestCase):
                 ]
             }], response.drilldownData)
 
-    def testJoinCollectorCaching(self):
-        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        q = ComposedQuery('main')
-        q.addMatch(dict(core='main', uniqueKey=KEY_PREFIX+'field'), dict(core='main2', key=KEY_PREFIX+'field'))
-        q.setCoreQuery(core='main', query=parseString('*'))
-        q.setCoreQuery(core='main2', query=parseString('*'))
-        response = remote.executeComposedQuery(query=q)
-        print response.total, response.queryTime
-        response = remote.executeComposedQuery(query=q)
-        print response.queryTime
-        response = remote.executeComposedQuery(query=q)
-        print response.queryTime
-
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru'):
         arguments={'version': '1.2',
             'operation': 'searchRetrieve',

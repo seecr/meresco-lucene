@@ -35,34 +35,34 @@ import org.apache.lucene.util.OpenBitSet;
 
 public class KeyCollector extends Collector {
 
-	private String keyName;
-	private NumericDocValues keyValues;
-	private OpenBitSet keySet = new OpenBitSet();
+    private String keyName;
+    private NumericDocValues keyValues;
+    protected OpenBitSet keySet = new OpenBitSet();
 
-	public KeyCollector(String keyName) {
-		this.keyName = keyName;
-	}
+    public KeyCollector(String keyName) {
+        this.keyName = keyName;
+    }
 
-	@Override
-	public void collect(int docId) throws IOException {
-		this.keySet.set(this.keyValues.get(docId));
-	}
+    @Override
+    public void collect(int docId) throws IOException {
+        this.keySet.set((int)this.keyValues.get(docId));
+    }
 
-	@Override
-	public void setNextReader(AtomicReaderContext context) throws IOException {
-		this.keyValues = context.reader().getNumericDocValues(this.keyName);
-	}
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        this.keyValues = context.reader().getNumericDocValues(this.keyName);
+    }
 
-	@Override
-	public boolean acceptsDocsOutOfOrder() {
-		return true;
-	}
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+        return true;
+    }
 
-	@Override
-	public void setScorer(Scorer scorer) throws IOException {
-	}
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+    }
 
-	public OpenBitSet getKeySet() {
-		return this.keySet;
-	}
+    public OpenBitSet getCollectedKeys() {
+        return this.keySet;
+    }
 }

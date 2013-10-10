@@ -32,6 +32,7 @@ from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene import ComposedQuery
 from meresco.lucene.synchronousremote import SynchronousRemote
 from cqlparser import parseString
+from org.apache.lucene.search import MatchAllDocsQuery
 
 
 class LuceneTest(IntegrationTestCase):

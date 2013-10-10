@@ -313,7 +313,7 @@ class MultiLuceneTest(SeecrTestCase):
     def testReminderThatCollectingNonUniqueKeysGivesTooManyResults(self):
         keyBCollector = KeyCollector(KEY_PREFIX + 'B')
         consume(self.luceneB.search(query=query('N=true'), collector=keyBCollector))
-        keyBSet = keyBCollector.getKeySet()
+        keyBSet = keyBCollector.getCollectedKeys()
         result = returnValueFromGenerator(self.luceneB.executeQuery(
                 MatchAllDocsQuery(),
                 filterCollector=KeyFilterCollector(keyBSet, KEY_PREFIX + 'B'),
@@ -326,14 +326,14 @@ class MultiLuceneTest(SeecrTestCase):
         consume(self.luceneB.search(query=query('N=true and O=false'), collector=uniteDocIdCollector))
         matchKeyCollector = KeyCollector(KEY_PREFIX + 'A')
         consume(self.luceneA.search(query=query('U=true and Q=true'), collector=matchKeyCollector))
-        keyFilterCollector = KeyFilterCollector(matchKeyCollector.getKeySet(), KEY_PREFIX + 'B')
+        keyFilterCollector = KeyFilterCollector(matchKeyCollector.getCollectedKeys(), KEY_PREFIX + 'B')
         keyFilterCollector.setDelegate(uniteDocIdCollector)
         consume(self.luceneB.search(query=query('O=false'), collector=keyFilterCollector))
 
         matchKeyCollector = KeyCollector(KEY_PREFIX + 'A')
         consume(self.luceneA.search(query=query('Q=true'), collector=matchKeyCollector))
-        keyFilterCollector = KeyFilterCollector(matchKeyCollector.getKeySet(), KEY_PREFIX + 'B')
-        result = returnValueFromGenerator(self.luceneB.executeQuery(luceneQuery=query('O=false'), filter=uniteDocIdCollector.getDocIdFilter(), filterCollector=keyFilterCollector))             
+        keyFilterCollector = KeyFilterCollector(matchKeyCollector.getCollectedKeys(), KEY_PREFIX + 'B')
+        result = returnValueFromGenerator(self.luceneB.executeQuery(luceneQuery=query('O=false'), filter=uniteDocIdCollector.getDocIdFilter(), filterCollector=keyFilterCollector))
         self.assertEquals([u'B-N>A-MQU', u'B-P>A-MQU'], sorted(result.hits))
 
     def not_yet_implemented_testUniteAndFacetsCoreB(self):
@@ -417,8 +417,54 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(3, result.total)
         self.assertEquals(['A-MQ', 'A-QU'], result.hits)
 
+    def testCachingCollectorsAfterUpdate(self):
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        q.setCoreQuery(core='coreB', query=query("N=true"))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        sleep(0.2)
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals([u'A-M', u'A-MU', u'A-MQ', u'A-MQU'], result.hits)
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals([u'A-M', u'A-MU', u'A-MQ', u'A-MQU'], result.hits)
+        self.assertTrue(result.queryTime < 5)
+        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 80 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        sleep(0.2)
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals([u'A-M', u'A-MU', u'A-MQ'], result.hits)
 
+    def testCachingCollectorsAfterUpdateInSegmentWithMultipleDocuments(self):
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        q.setCoreQuery(core='coreB', query=query("N=true"))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        sleep(0.2)
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals([u'A-M', u'A-MU', u'A-MQ', u'A-MQU'], result.hits)
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals([u'A-M', u'A-MU', u'A-MQ', u'A-MQU'], result.hits)
+        self.assertTrue(result.queryTime < 5)
+        self.addDocument(self.luceneB, identifier='B-N>A-MU', keys=[('B', 60 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        sleep(0.2)
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals([u'A-M', u'A-MQ', u'A-MQU'], result.hits)
 
+    def testCachingCollectorsAfterDelete(self):
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        q.setCoreQuery(core='coreB', query=query("N=true"))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
+        sleep(0.2)
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals([u'A-M', u'A-MU', u'A-MQ', u'A-MQU'], result.hits)
+        consume(self.luceneB.delete(identifier='B-N>A-MU'))
+        sleep(0.2)
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals([u'A-M', u'A-MQ', u'A-MQU'], result.hits)
 
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(

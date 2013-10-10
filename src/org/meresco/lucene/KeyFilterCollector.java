@@ -54,7 +54,7 @@ public class KeyFilterCollector extends Collector {
 
 	@Override
 	public void collect(int docId) throws IOException {
-		if (this.keyFilter.get(this.keyValues.get(docId)))
+		if (this.keyFilter.get((int)this.keyValues.get(docId)))
 			this.delegate.collect(docId);
 	}
 

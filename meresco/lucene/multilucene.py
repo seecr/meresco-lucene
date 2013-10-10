@@ -28,8 +28,7 @@ from org.apache.lucene.search import MatchAllDocsQuery
 from weightless.core import DeclineMessage
 from _lucene import millis
 from time import time
-from org.meresco.lucene import KeyCollector, KeyFilterCollector
-from cache import KeyCollectorCache
+from org.meresco.lucene import KeyCollector, KeyFilterCollector, CachingKeyCollector
 from seecr.utils.generatorutils import consume, generatorReturn
 
 
@@ -37,7 +36,6 @@ class MultiLucene(Observable):
     def __init__(self, defaultCore):
         Observable.__init__(self)
         self._defaultCore = defaultCore
-        self._collectorCache = KeyCollectorCache(createCollectorFunction=lambda core: KeyCollector(core))
 
     def executeQuery(self, core=None, **kwargs):
         coreName = self._defaultCore if core is None else core
@@ -56,14 +54,16 @@ class MultiLucene(Observable):
 
         keySetWrap = KeySetWrap()
         for coreName, coreKeyName, uniteQuery in query.unites():
-            uniteKeyCollector = KeyCollector(coreKeyName)
+            uniteKeyCollector = CachingKeyCollector.create(uniteQuery, coreKeyName)
+            # uniteKeyCollector = KeyCollector(coreKeyName)
             consume(self.any[coreName].search(query=uniteQuery, collector=uniteKeyCollector))
-            keySetWrap.union(uniteKeyCollector.getKeySet())
+            keySetWrap.union(uniteKeyCollector.getCollectedKeys())
 
         for q in query.queriesFor(otherCoreName):
-            matchKeyCollector = KeyCollector(otherMatchKeyName)
+            matchKeyCollector = CachingKeyCollector.create(q, otherMatchKeyName)
+            # matchKeyCollector = KeyCollector(otherMatchKeyName)
             consume(self.any[otherCoreName].search(query=q, collector=matchKeyCollector))
-            keySetWrap.intersect(matchKeyCollector.getKeySet())
+            keySetWrap.intersect(matchKeyCollector.getCollectedKeys())
 
         drilldownData = []
         if query.facetsFor(otherCoreName):
@@ -71,9 +71,10 @@ class MultiLucene(Observable):
             if not resultCoreQueries:
                 resultCoreQueries = [MatchAllDocsQuery()]
             for q in resultCoreQueries:
-                matchKeyCollector = KeyCollector(resultMatchKeyName)
+                matchKeyCollector = CachingKeyCollector.create(q, resultMatchKeyName)
+                # matchKeyCollector = KeyCollector(resultMatchKeyName)
                 consume(self.any[resultCoreName].search(query=q, collector=matchKeyCollector))
-                keySetWrap.intersect(matchKeyCollector.getKeySet())
+                keySetWrap.intersect(matchKeyCollector.getCollectedKeys())
             drilldownData.extend((yield self.any[otherCoreName].facets(
                     filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),
                     filterCollector=KeyFilterCollector(keySetWrap.keySet, otherMatchKeyName),
@@ -130,11 +131,11 @@ class KeySetWrap(object):
         if self.keySet is None:
             self.keySet = otherKeySet
         else:
-            self.keySet.intersect(otherKeySet)
+            getattr(self.keySet, "and")(otherKeySet)
 
     def union(self, otherKeySet):
         if self.keySet is None:
             self.keySet = otherKeySet
         else:
-            self.keySet.union(otherKeySet)
+            getattr(self.keySet, "or")(otherKeySet)
 

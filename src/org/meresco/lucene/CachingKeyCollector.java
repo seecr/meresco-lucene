@@ -27,6 +27,7 @@ package org.meresco.lucene;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -34,12 +35,11 @@ import java.util.WeakHashMap;
 import org.apache.lucene.facet.collections.LRUHashMap;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.OpenBitSet;
 
 /**
- * A KeyCollector for implementing joins between two or more Lucene indexes. This
+ * A KeyCollector for implementing joins between two or more Lucene indexs. This
  * version caches the keys and the filters.
  *
  * First use this collector to collect keys from a field containing integers
@@ -77,8 +77,11 @@ public class CachingKeyCollector extends KeyCollector {
     }
 
     /**
-     * Get a OpenBitSet containing all the collected keys. This returns a new
-     * OpenBitSet.
+     * Get a BitSet containing all the collected keys. This returns a new
+     * BitSet. Use {@link getFilter} with
+     * {@link org.apache.lucene.queries.BooleanFilter} or
+     * {@link org.apache.lucene.queries.ChainedFilter} for combining
+     * results from different collectors to do cross-filtering.
      */
     @Override
     public OpenBitSet getCollectedKeys() {
@@ -87,6 +90,28 @@ public class CachingKeyCollector extends KeyCollector {
         for (OpenBitSet b : this.seen)
             keySet.or(b);
         return keySet;
+    }
+
+    /**
+     * Create a Lucene Filter for filtering docs based on a key in this
+     * KeyCollector. It can be used for any index, as long as the keyName is
+     * correct.
+     *
+     * @param keyName
+     *            The name of the field containing the keys to match. This field
+     *            must refer to a NumericDocValues field containing integer
+     *            keys.
+     * @return A Lucene Filter object. It is cached by this KeyCollector and it
+     *         caches the docIds of the index is is applied to.
+     */
+    public KeyFilter getFilter(String keyName) {
+        KeyFilter filter = this.keyFilterCache.get(keyName);
+        if (filter == null) {
+            filter = new KeyFilter(this, keyName);
+            this.keyFilterCache.put(keyName, filter);
+        }
+        filter.reset();
+        return filter;
     }
 
     @Override
@@ -107,7 +132,7 @@ public class CachingKeyCollector extends KeyCollector {
         int size = 0;
         for (OpenBitSet b : this.keySetCache.values())
             size += b.size();
-        System.out.println("cache: " + this.keySetCache.size() + " entries, " + (size / 8 / 1024 / 1024) + " MB");
+        System.out.print("cache: " + this.keySetCache.size() + " entries, " + (size / 8 / 1024 / 1024) + " MB");
     }
 
     /**
@@ -126,7 +151,14 @@ public class CachingKeyCollector extends KeyCollector {
     private Map<Object, OpenBitSet> keySetCache = new WeakHashMap<Object, OpenBitSet>();
 
     /**
-     * Records which OpenBitSets belong to the result of the most recent collect
+     * Caches Lucene Filters for for different keys. The filter can be used on
+     * any index as long as the keyName refers to te proper field containing the
+     * keys, so this cache may contain readers from different indexes.
+     */
+    private Map<String, KeyFilter> keyFilterCache = new LRUHashMap<String, KeyFilter>(5);
+
+    /**
+     * Records which BitSets belong to the result of the most recent collect
      * cycle (The cache might contain more; for readers not yet GC'd.
      */
     private List<OpenBitSet> seen = new ArrayList<OpenBitSet>();
@@ -148,7 +180,7 @@ public class CachingKeyCollector extends KeyCollector {
 
     private void updateCache() {
         if (this.currentReaderKey != null) {
-            this.keySet.clone(); // clone trims
+            this.keySet.trimTrailingZeros();
             this.keySetCache.put(this.currentReaderKey, this.keySet);
             this.seen.add(this.keySet);
             this.currentReaderKey = null;

@@ -42,6 +42,22 @@ class MultiLucene(Observable):
         response = yield self.any[coreName].executeQuery(**kwargs)
         generatorReturn(response)
 
+    def orAllUnites(self, query, keyName):
+        keySetWrap = KeySetWrap()
+        for coreName, coreKeyName, uniteQuery in query.unites():
+            keyCollector = CachingKeyCollector.create(uniteQuery, coreKeyName)
+            consume(self.any[coreName].search(query=uniteQuery, collector=keyCollector))
+            keySetWrap.union(keyCollector.getCollectedKeys())
+            #booleanFiler.addFilter(keyCollector.getFilter(keyName, OR))
+        return keySetWrap
+
+    def andAllQueries(self, queries, coreName, keyName, keyFilter):
+        for q in queries:
+            keyCollector = CachingKeyCollector.create(q, keyName)
+            consume(self.any[coreName].search(query=q, collector=keyCollector))
+            keyFilter.intersect(keyCollector.getCollectedKeys())
+        return keyFilter
+
     def executeComposedQuery(self, query):
         query.validate()
         if query.isSingleCoreQuery():
@@ -52,36 +68,25 @@ class MultiLucene(Observable):
         resultCoreName, otherCoreName = query.cores()
         resultMatchKeyName, otherMatchKeyName = query.keyNames(resultCoreName, otherCoreName)
 
-        keySetWrap = KeySetWrap()
-        for coreName, coreKeyName, uniteQuery in query.unites():
-            uniteKeyCollector = CachingKeyCollector.create(uniteQuery, coreKeyName)
-            # uniteKeyCollector = KeyCollector(coreKeyName)
-            consume(self.any[coreName].search(query=uniteQuery, collector=uniteKeyCollector))
-            keySetWrap.union(uniteKeyCollector.getCollectedKeys())
-
-        for q in query.queriesFor(otherCoreName):
-            matchKeyCollector = CachingKeyCollector.create(q, otherMatchKeyName)
-            # matchKeyCollector = KeyCollector(otherMatchKeyName)
-            consume(self.any[otherCoreName].search(query=q, collector=matchKeyCollector))
-            keySetWrap.intersect(matchKeyCollector.getCollectedKeys())
+        otherCoreBaseFilter = self.orAllUnites(query, otherMatchKeyName)
+        otherCoreIntermediateFilter = self.andAllQueries(query.queriesFor(otherCoreName), otherCoreName, otherMatchKeyName, otherCoreBaseFilter)
 
         drilldownData = []
+        otherCoreFinalFilter = otherCoreIntermediateFilter
         if query.facetsFor(otherCoreName):
             resultCoreQueries = query.queriesFor(resultCoreName)
             if not resultCoreQueries:
                 resultCoreQueries = [MatchAllDocsQuery()]
-            for q in resultCoreQueries:
-                matchKeyCollector = CachingKeyCollector.create(q, resultMatchKeyName)
-                # matchKeyCollector = KeyCollector(resultMatchKeyName)
-                consume(self.any[resultCoreName].search(query=q, collector=matchKeyCollector))
-                keySetWrap.intersect(matchKeyCollector.getCollectedKeys())
+
+            otherCoreFinalFilter = self.andAllQueries(resultCoreQueries, resultCoreName, resultMatchKeyName, otherCoreIntermediateFilter)
+
             drilldownData.extend((yield self.any[otherCoreName].facets(
                     filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),
-                    filterCollector=KeyFilterCollector(keySetWrap.keySet, otherMatchKeyName),
+                    filterCollector=KeyFilterCollector(otherCoreFinalFilter.keySet, otherMatchKeyName),
                     facets=query.facetsFor(otherCoreName)
                 )))
 
-        resultMatchKeyFilterCollector = KeyFilterCollector(keySetWrap.keySet, resultMatchKeyName)
+        resultMatchKeyFilterCollector = KeyFilterCollector(otherCoreFinalFilter.keySet, resultMatchKeyName)
         resultCoreQuery = query.queryFor(core=resultCoreName)
         if resultCoreQuery is None:
             resultCoreQuery = MatchAllDocsQuery()

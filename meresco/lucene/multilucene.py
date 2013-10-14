@@ -100,7 +100,7 @@ class MultiLucene(Observable):
 
             otherCoreFinalFilter = self.andAllQueries(resultCoreQueries, resultCoreName, resultMatchKeyName, otherMatchKeyName, otherCoreIntermediateFilter)
             drilldownData.extend((yield self.any[otherCoreName].facets(
-                    filterQueries=query.queriesFor(otherCoreName),# + query.uniteQueriesFor(otherCoreName),
+                    filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),
                     filter=otherCoreFinalFilter,
                     facets=query.facetsFor(otherCoreName)
                 )))

@@ -91,32 +91,26 @@ class MultiLucene(Observable):
 
         otherCoreIntermediateFilter = self.andAllQueries(query.queriesFor(otherCoreName), otherCoreName, otherMatchKeyName, otherMatchKeyName, otherCoreBaseFilter)
         resultCoreIntermediateFilter = self.andAllQueries(query.queriesFor(otherCoreName), otherCoreName, otherMatchKeyName, resultMatchKeyName, resultCoreBaseFilter)
-        print resultCoreBaseFilter, resultCoreIntermediateFilter
 
         drilldownData = []
-        otherCoreFinalFilter = otherCoreIntermediateFilter
         if query.facetsFor(otherCoreName):
             resultCoreQueries = query.queriesFor(resultCoreName)
             if not resultCoreQueries:
                 resultCoreQueries = [MatchAllDocsQuery()]
 
             otherCoreFinalFilter = self.andAllQueries(resultCoreQueries, resultCoreName, resultMatchKeyName, otherMatchKeyName, otherCoreIntermediateFilter)
-            print otherCoreFinalFilter
             drilldownData.extend((yield self.any[otherCoreName].facets(
-                    filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),
-                    filterCollector=None,#KeyFilterCollector(otherCoreFinalFilter.keySet, otherMatchKeyName),
+                    filterQueries=query.queriesFor(otherCoreName),# + query.uniteQueriesFor(otherCoreName),
                     filter=otherCoreFinalFilter,
                     facets=query.facetsFor(otherCoreName)
                 )))
 
-        # resultMatchKeyFilterCollector = KeyFilterCollector(otherCoreFinalFilter.keySet, resultMatchKeyName)
         resultCoreQuery = query.queryFor(core=resultCoreName)
         if resultCoreQuery is None:
             resultCoreQuery = MatchAllDocsQuery()
         result = yield self.any[resultCoreName].executeQuery(
                 luceneQuery=resultCoreQuery,
                 filter=resultCoreIntermediateFilter,
-                # filterCollector=resultMatchKeyFilterCollector,
                 facets=query.facetsFor(resultCoreName),
                 filterQueries=query.filterQueriesFor(resultCoreName),
                 **query.otherKwargs()

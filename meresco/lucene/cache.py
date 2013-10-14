@@ -42,22 +42,3 @@ class FilterCache(object):
         if len(self._filters) > self._size:
             self._filters.pop(0)
         return f
-
-class KeyCollectorCache(object):
-    def __init__(self, createCollectorFunction, size=50):
-        self._collectors = []
-        self._createCollectorFunction = createCollectorFunction
-        self._size = size
-
-    def getCollector(self, core, query):
-        for i, (c, q, collector) in enumerate(self._collectors):
-            if query.equals(q) and core == c:
-                self._collectors.append(self._collectors.pop(i))
-                return True, collector
-        collector = self._createCollectorFunction(core)
-        # TODO: core, query is not enough as key (filterQueries e.d.)
-        # self._collectors.append((core, query, collector))
-        if len(self._collectors) > self._size:
-            self._collectors.pop(0)
-        return False, collector
-

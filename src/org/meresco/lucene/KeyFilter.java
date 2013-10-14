@@ -102,11 +102,11 @@ public class KeyFilter extends Filter {
         NumericDocValues keyValues = reader.getNumericDocValues(this.keyName);
         if (keyValues == null)
             throw new RuntimeException("no keys found for field " + this.keyName);
-        BitSet docBitSet = new BitSet();
+        OpenBitSet docBitSet = new OpenBitSet();
         for (int docId = 0; docId < reader.maxDoc(); docId++)
             if (this.keySet.get((int) keyValues.get(docId)))
                 docBitSet.set(docId);
-        return new DocIdBitSet((BitSet) docBitSet.clone());
+        return docBitSet.clone();
     }
 
 }

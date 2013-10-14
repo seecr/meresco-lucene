@@ -267,7 +267,13 @@ class MultiLuceneTest(SeecrTestCase):
             ])
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         q.unite(coreA=query('U=true'), coreB=query('N=true'))
-        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        resultOne = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=query('U=true'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        q.unite(coreA=query('U=false'), coreB=query('N=true'))
+        ignoredResult = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
 
         q = ComposedQuery('coreA')
         q.setCoreQuery(core='coreA', query=query('Q=true'), facets=[
@@ -280,8 +286,79 @@ class MultiLuceneTest(SeecrTestCase):
             ])
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         q.unite(coreA=query('U=true'), coreB=query('N=true'))
-        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        resultAgain = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(resultOne.total, resultAgain.total)
+        self.assertEquals(resultOne.hits, resultAgain.hits)
+        self.assertEquals(resultOne.drilldownData, resultAgain.drilldownData)
 
+    def testUniteResultFromTwoIndexesCachedAfterUpdate(self):
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=query('Q=true'), facets=[
+                dict(fieldname='cat_Q', maxTerms=10),
+                dict(fieldname='cat_U', maxTerms=10),
+            ])
+        q.setCoreQuery(core='coreB', query=None, facets=[
+                dict(fieldname='cat_N', maxTerms=10),
+                dict(fieldname='cat_O', maxTerms=10),
+            ])
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        q.unite(coreA=query('U=true'), coreB=query('N=true'))
+        resultOne = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(3, resultOne.total)
+        self.assertEquals([{
+                'terms': [
+                    {'count': 3, 'term': u'true'}
+                ], 'fieldname': u'cat_Q'
+            }, {
+                'terms': [
+                    {'count': 2, 'term': u'true'},
+                    {'count': 1, 'term': u'false'}
+                ], 'fieldname': u'cat_U'
+            }, {
+                'terms': [
+                    {'count': 2, 'term': u'true'}
+                ], 'fieldname': u'cat_N'
+            }, {
+                'terms': [
+                    {'count': 1, 'term': u'false'},
+                    {'count': 1, 'term': u'true'}
+                ], 'fieldname': u'cat_O'
+            }], resultOne.drilldownData)
+
+        self.addDocument(self.luceneA, identifier='A-MQU',  keys=[('A', 8 )], fields=[('M', 'true' ), ('Q', 'false' ), ('U', 'true' ), ('S', '8')])
+        sleep(0.2)
+
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=query('Q=true'), facets=[
+                dict(fieldname='cat_Q', maxTerms=10),
+                dict(fieldname='cat_U', maxTerms=10),
+            ])
+        q.setCoreQuery(core='coreB', query=None, facets=[
+                dict(fieldname='cat_N', maxTerms=10),
+                dict(fieldname='cat_O', maxTerms=10),
+            ])
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        q.unite(coreA=query('U=true'), coreB=query('N=true'))
+        resultAgain = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(2, resultAgain.total)
+        self.assertEquals([{
+                'terms': [
+                    {'count': 2, 'term': u'true'}
+                ], 'fieldname': u'cat_Q'
+            }, {
+                'terms': [
+                    {'count': 1, 'term': u'true'},
+                    {'count': 1, 'term': u'false'}
+                ], 'fieldname': u'cat_U'
+            }, {
+                'terms': [
+                    {'count': 1, 'term': u'true'}
+                ], 'fieldname': u'cat_N'
+            }, {
+                'terms': [
+                    {'count': 1, 'term': u'true'}
+                ], 'fieldname': u'cat_O'
+            }], resultAgain.drilldownData)
 
     def testUniteResultFromTwoIndexes_filterQueries(self):
         q = ComposedQuery('coreA')

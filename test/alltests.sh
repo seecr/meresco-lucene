@@ -50,10 +50,3 @@ for pycmd in $pyversions; do
     echo "================ $t with $pycmd _alltests.py $@ ================"
     $pycmd _alltests.py "$@"
 done
-
-exit
-echo 'Lucene Java test'
-(
-    cd ../src/test
-    ./alltests.sh "$@"
-)

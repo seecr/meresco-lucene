@@ -106,7 +106,8 @@ public class KeyFilter extends Filter {
         for (int docId = 0; docId < reader.maxDoc(); docId++)
             if (this.keySet.get((int) keyValues.get(docId)))
                 docBitSet.set(docId);
-        return docBitSet.clone();
+        docBitSet.trimTrailingZeros();
+        return docBitSet;
     }
 
 }

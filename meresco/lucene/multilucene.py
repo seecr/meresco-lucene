@@ -25,11 +25,10 @@
 
 from meresco.core import Observable
 from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause
-from org.apache.lucene.queries import BooleanFilter
 from weightless.core import DeclineMessage
 from _lucene import millis
 from time import time
-from org.meresco.lucene import KeyCollector, KeyFilterCollector, CachingKeyCollector, MyBooleanFilter
+from org.meresco.lucene import CachingKeyCollector, KeyBooleanFilter
 from seecr.utils.generatorutils import consume, generatorReturn
 
 
@@ -53,25 +52,20 @@ class MultiLucene(Observable):
             yield self.collectKeys(uniteQuery, coreName, coreKeyName)
 
     def orCollectors(self, collectors, keyName):
-        keySetWrap = KeySetWrap()
-        filters = []
+        booleanFilter = None
         for keyCollector in collectors:
-            filters.append(keyCollector.getFilter(keyName))
-        if filters:
-            booleanFilter = MyBooleanFilter()
-            [booleanFilter.add(f, BooleanClause.Occur.SHOULD) for f in filters]
-            return booleanFilter
+            if not booleanFilter:
+                booleanFilter = KeyBooleanFilter()
+            booleanFilter.add(keyCollector.getFilter(keyName), BooleanClause.Occur.SHOULD)
+        return booleanFilter
 
-    def andAllQueries(self, queries, coreName, keyName, filterKeyName, booleanFilter):
-        filters = []
+    def andQueries(self, queries, coreName, keyName, filterKeyName, booleanFilter):
         for q in queries:
+            if not booleanFilter:
+                booleanFilter = KeyBooleanFilter()
             keyCollector = CachingKeyCollector.create(q, keyName)
             consume(self.any[coreName].search(query=q, collector=keyCollector))
-            filters.append(keyCollector.getFilter(filterKeyName))
-        if filters:
-            if not booleanFilter:
-                booleanFilter = MyBooleanFilter()
-            [booleanFilter.add(f, BooleanClause.Occur.MUST) for f in filters]
+            booleanFilter.add(keyCollector.getFilter(filterKeyName), BooleanClause.Occur.MUST)
         return booleanFilter
 
     def executeComposedQuery(self, query):
@@ -79,42 +73,31 @@ class MultiLucene(Observable):
         if query.isSingleCoreQuery():
             response = yield self._sinqleQuery(query)
             generatorReturn(response)
+
         t0 = time()
 
         resultCoreName, otherCoreName = query.cores()
         resultMatchKeyName, otherMatchKeyName = query.keyNames(resultCoreName, otherCoreName)
 
         unitesKeyCollectors = list(self.collectUniteKeyCollectors(query))
-        t1 = time()
         otherCoreBaseFilter = self.orCollectors(unitesKeyCollectors, otherMatchKeyName)
-        t2 = time()
         resultCoreBaseFilter = self.orCollectors(unitesKeyCollectors, resultMatchKeyName)
 
-        t3 = time()
-        otherCoreIntermediateFilter = self.andAllQueries(query.queriesFor(otherCoreName), otherCoreName, otherMatchKeyName, otherMatchKeyName, otherCoreBaseFilter)
-        t4 = time()
-        resultCoreIntermediateFilter = self.andAllQueries(query.queriesFor(otherCoreName), otherCoreName, otherMatchKeyName, resultMatchKeyName, resultCoreBaseFilter)
-        t5 = time()
-        print "t1=" + str(t1-t0) + "; t2=" + str(t2-t1) + "; t3=" + str(t3-t2) + "; t4=" + str(t4-t3) + "; t5=" + str(t5-t4)
+        otherCoreIntermediateFilter = self.andQueries(query.queriesFor(otherCoreName), otherCoreName, otherMatchKeyName, otherMatchKeyName, otherCoreBaseFilter)
+        resultCoreIntermediateFilter = self.andQueries(query.queriesFor(otherCoreName), otherCoreName, otherMatchKeyName, resultMatchKeyName, resultCoreBaseFilter)
         drilldownData = []
         if query.facetsFor(otherCoreName):
             resultCoreQueries = query.queriesFor(resultCoreName)
             if not resultCoreQueries:
                 resultCoreQueries = [MatchAllDocsQuery()]
 
-            t6 = time()
-            otherCoreFinalFilter = self.andAllQueries(resultCoreQueries, resultCoreName, resultMatchKeyName, otherMatchKeyName, otherCoreIntermediateFilter)
-            t7 = time()
-            print query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName)
+            otherCoreFinalFilter = self.andQueries(resultCoreQueries, resultCoreName, resultMatchKeyName, otherMatchKeyName, otherCoreIntermediateFilter)
             drilldownData.extend((yield self.any[otherCoreName].facets(
                     filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),
                     filter=otherCoreFinalFilter,
                     facets=query.facetsFor(otherCoreName)
                 )))
-            t8 = time()
-            print "t6=" + str(t6-t5) + "; t7=" + str(t7-t6) + "; t8=" + str(t8-t7)
 
-        t9 = time()
         resultCoreQuery = query.queryFor(core=resultCoreName)
         if resultCoreQuery is None:
             resultCoreQuery = MatchAllDocsQuery()
@@ -125,8 +108,6 @@ class MultiLucene(Observable):
                 filterQueries=query.filterQueriesFor(resultCoreName),
                 **query.otherKwargs()
             )
-        t10 = time()
-        print "t10=" + str(t10-t9)
 
         result.drilldownData.extend(drilldownData)
         result.queryTime = millis(time() - t0)

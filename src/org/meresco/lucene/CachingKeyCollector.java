@@ -64,9 +64,10 @@ public class CachingKeyCollector extends KeyCollector {
     public static CachingKeyCollector create(Query query, String keyName) {
         LRUHashMap<String, CachingKeyCollector> collectorCache = CachingKeyCollector.queryCache.get(query);
         if (collectorCache == null) {
-            collectorCache = new LRUHashMap<String, CachingKeyCollector>(10);
+            collectorCache = new LRUHashMap<String, CachingKeyCollector>(5);
             CachingKeyCollector.queryCache.put(query, collectorCache);
         }
+
         CachingKeyCollector keyCollector = collectorCache.get(keyName);
         if (keyCollector == null) {
             keyCollector = new CachingKeyCollector(keyName);
@@ -139,8 +140,7 @@ public class CachingKeyCollector extends KeyCollector {
      * Caches KeyCollectors for (Query,keyName) pairs. KeyCollectors can become
      * large, tens of MB.
      */
-    private static LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>> queryCache = new LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>>(
-            10);
+    private static LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>> queryCache = new LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>>(10);
 
     /**
      * Caches bitsets (containing keys) for specific readers within one index.

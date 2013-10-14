@@ -29,7 +29,6 @@ from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
 from org.apache.lucene.queries import ChainedFilter
-from org.meresco.lucene import KeyFilterCollector
 from time import time
 
 from os.path import basename

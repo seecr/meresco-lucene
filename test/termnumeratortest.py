@@ -43,3 +43,10 @@ class TermNumeratorTest(SeecrTestCase):
         numerator.close()
         numerator = TermNumerator(self.tempdir)
         self.assertEquals(1, numerator.numerateTerm('string1'))
+
+    def testGetTerm(self):
+        numerator = TermNumerator(self.tempdir)
+        one = numerator.numerateTerm("one")
+        self.assertEquals("one", numerator.getTerm(one))
+        two = numerator.numerateTerm("two")
+        self.assertEquals("two", numerator.getTerm(two))

@@ -24,7 +24,7 @@
 ## end license ##
 
 from org.apache.lucene.store import SimpleFSDirectory
-from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
+from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter, DirectoryTaxonomyReader
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from java.io import File
 
@@ -39,6 +39,15 @@ class TermNumerator(Observable):
 
     def numerateTerm(self, term):
         return self._taxoWriter.addCategory(CategoryPath([term]))
+
+    def getTerm(self, nr):
+        if not hasattr(self, "_taxoReader"):
+            self._taxoReader = DirectoryTaxonomyReader(self._taxoWriter)
+        tr = DirectoryTaxonomyReader.openIfChanged(self._taxoReader)
+        if tr:
+            self._taxoReader.close()
+            self._taxoReader = tr
+        return self._taxoReader.getPath(nr).components[0]
 
     def handleShutdown(self):
         print 'handle shutdown: saving TermNumerator'

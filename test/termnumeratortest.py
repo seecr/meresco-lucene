@@ -50,3 +50,6 @@ class TermNumeratorTest(SeecrTestCase):
         self.assertEquals("one", numerator.getTerm(one))
         two = numerator.numerateTerm("two")
         self.assertEquals("two", numerator.getTerm(two))
+        empty = numerator.numerateTerm("")
+        self.assertEquals(None, empty)
+

@@ -38,6 +38,8 @@ class TermNumerator(Observable):
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory)
 
     def numerateTerm(self, term):
+        if not term:
+            return
         return self._taxoWriter.addCategory(CategoryPath([term]))
 
     def getTerm(self, nr):

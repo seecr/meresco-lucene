@@ -42,12 +42,15 @@ sysPath.insert(0, libDir)                                                       
 
 from os import getenv
 from warnings import warn
-maxheap = getenv('MERESCO_LUCENE_MAXHEAP')
+maxheap = getenv('PYLUCENE_MAXHEAP')
 if not maxheap:
     maxheap = '4g'
-    warn("Using '4g' as maxheap for lucene.initVM(). To override use MERESCO_LUCENE_MAXHEAP environment variable.")
-from lucene import initVM
-VM = initVM(maxheap=maxheap)#, vmargs='-agentlib:hprof=heap=sites')
+    warn("Using '4g' as maxheap for lucene.initVM(). To override use PYLUCENE_MAXHEAP environment variable.")
+from lucene import initVM, getVMEnv
+try:
+    VM = initVM(maxheap=maxheap)#, vmargs='-agentlib:hprof=heap=sites')
+except ValueError:
+    VM = getVMEnv()
 from meresco_lucene import initVM
 VMM = initVM()
 

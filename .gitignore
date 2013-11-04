@@ -1,3 +1,6 @@
 lib
 deps.d
 build
+*.class
+src/.classpath
+src/.project

@@ -1,0 +1,73 @@
+Performancemetingen Lucene 4.3.0
+
+Index holdings: 20.000.000 docs
+Index werken: 6.000.000 docs
+
+Query: MatchAllDocs
+
+Functies om te testen:
+1. Top 10 relevantie (InOrderTopScoreDocCollector) InOrder/OutOfOrder
+2. Top 10 gesorteerd (TopFieldDocCollector)
+3. Facetten (FacetsCollector, CachedOrdsCountingFacetsAggregator <== !!)
+4. Join/Where (KeyCollector, KeyColectorFilter)
+5. Groeperen (?)
+6. Paging (InOrderTopScoreDocCollector vs InOrderPagingScoreDocCollector)
+
+Interessant om te bekijken:
+ScoreCachingCollector
+DocSetCollector (solr)
+
+Aantekeningen
+1. en 2. 10-1000 hits maakt niet uit; true/false wel
+2. Sort() of Sort(SortField("ppn", SortField.Type.LONG)) maakt niets uit. Nonsense wel!
+
+   1.
+docsScoredOutOfOrder: 83
+docsScoredInOrder:       73
+
+   2.
+fillFields, trackDocScores, trackMaxScore, docsScoredInOrder
+a.  false         false                  false                   false                             186
+b.  true                                                                                                186
+c.                  true                                                                                175
+d.                                           true                                                       205
+e.                                                                     true                             162      
+f.                  true                                             true                             154 <=OneComparatorScoringNoMaxScoreCollector
+g.  true          true                   true                    false                            205 <= Current
+
+2.f
+Sort() (relevantie)         154
+Sort("ppn", LONG)         157
+Sort("nonsense")          122
+
+
+Facets met CachedOrdsCountinEtc: 366ms
+
+Request: location nRes=10 nLbl=10
+Num valid Descendants (up to specified depth): 18870097
+	location (0.0)
+		  location/84261233 (6.0)
+		  location/1317307 (5.0)
+		  location/12982021 (5.0)
+		  location/8119834 (5.0)
+		  location/111219330 (5.0)
+		  location/11945202 (5.0)
+		  location/169179691 (5.0)
+		  location/4833721 (5.0)
+		  location/10619585 (5.0)
+		  location/62588906 (5.0)
+
+Facte met Standaard FacetDing: 888ms		  
+Request: location nRes=10 nLbl=10
+Num valid Descendants (up to specified depth): 18870097
+	location (0.0)
+		  location/84261233 (6.0)
+		  location/1317307 (5.0)
+		  location/12982021 (5.0)
+		  location/8119834 (5.0)
+		  location/111219330 (5.0)
+		  location/11945202 (5.0)
+		  location/169179691 (5.0)
+		  location/4833721 (5.0)
+		  location/10619585 (5.0)
+		  location/62588906 (5.0)

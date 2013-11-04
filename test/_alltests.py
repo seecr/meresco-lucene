@@ -50,6 +50,7 @@ from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
 from filtercachetest import FilterCacheTest
 from termnumeratortest import TermNumeratorTest
+from dedupfiltercollectortest import DeDupFilterCollectorTest
 
 if __name__ == '__main__':
     unittest.main()

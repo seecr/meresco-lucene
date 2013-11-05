@@ -82,14 +82,17 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, **kwargs):
+        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, resultsFilterCollector=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
 
         collectors = []
-        topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
-        collectors.append(topCollector)
+        resultsCollector = topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
+        if resultsFilterCollector:
+            resultsFilterCollector.setDelegate(topCollector)
+            resultsCollector = resultsFilterCollector
+        collectors.append(resultsCollector)
         if facets:
             facetCollector = self._facetCollector(facets)
             collectors.append(facetCollector)

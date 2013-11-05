@@ -32,12 +32,14 @@ from meresco.lucene import Lucene, VM
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.utils import createField
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
+from org.meresco.lucene import DeDupFilterCollector
 from cqlparser import parseString as parseCql
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
-from org.apache.lucene.document import Document, TextField, Field
+from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from seecr.utils.generatorutils import returnValueFromGenerator
+from weightless.core import consume, retval
 import gc
 
 class LuceneTest(SeecrTestCase):
@@ -330,12 +332,34 @@ class LuceneTest(SeecrTestCase):
         response = returnValueFromGenerator(lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
         self.assertEquals(1, response.total)
 
+    def testResultsFilterCollecter(self):
+        dedupCollector = DeDupFilterCollector("__key__")
+        doc = document(field0='v0')
+        doc.add(NumericDocValuesField("__key__", long(42)))
+        consume(self.lucene.addDocument("urn:1", doc, categories(cat="cat-A")))
+        doc = document(field0='v1')
+        doc.add(NumericDocValuesField("__key__", long(42)))
+        consume(self.lucene.addDocument("urn:2", doc, categories(cat="cat-A")))
+        self.lucene.commit()
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
+                        resultsFilterCollector=dedupCollector, facets=facets(cat=10)))
+        self.assertEquals(1, result.total)
+        self.assertEquals({'count': 2, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
+
+def facets(**fields):
+    return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]
+
+def document(**fields):
+    return createDocument(fields.items())
 
 def createDocument(fields):
     document = Document()
     for name, value in fields:
         document.add(createField(name, value))
     return document
+
+def categories(**fields):
+    return createCategories(fields.items())
 
 def createCategories(fields):
     result = []

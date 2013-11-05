@@ -23,6 +23,7 @@
 #
 ## end license ##
 
+from lucene import JavaError
 from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
@@ -53,6 +54,9 @@ class Lucene(object):
                 compareQueryFunction=lambda q1, q2: q1.equals(q2),
                 createFilterFunction=lambda q: QueryWrapperFilter(q)
             )
+
+    def commit(self):
+        return self._index.commit()
 
     def addDocument(self, identifier, document, categories=None):
         document.add(createIdField(identifier))
@@ -127,13 +131,13 @@ class Lucene(object):
         raise StopIteration(response)
         yield
 
-    def finish(self):
-        self._index.finish()
+    def close(self):
+        self._index.close()
 
     def handleShutdown(self):
         print "handle shutdown: saving Lucene core '%s'" % self.coreName
         from sys import stdout; stdout.flush()
-        self.finish()
+        self.close()
 
     def _topDocsResponse(self, collector, start):
         # TODO: Probably use FieldCache iso document.get()

@@ -97,8 +97,8 @@ class MultiLuceneTest(SeecrTestCase):
         sleep(0.2)
 
     def tearDown(self):
-        self.luceneA.finish()
-        self.luceneB.finish()
+        self.luceneA.close()
+        self.luceneB.close()
         SeecrTestCase.tearDown(self)
 
     def testQueryOneIndex(self):

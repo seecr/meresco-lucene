@@ -157,7 +157,7 @@ class Index(object):
         return FacetsCollector.create(accu)
         # return FacetsCollector.create(facetSearchParams, self._indexAndTaxonomy.searcher.getIndexReader(), self._indexAndTaxonomy.taxoReader)
 
-    def finish(self):
+    def close(self):
         if self._commitTimerToken is not None:
             self._reactor.removeTimer(self._commitTimerToken)
         self._indexAndTaxonomy.close()

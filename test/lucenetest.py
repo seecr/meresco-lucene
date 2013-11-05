@@ -50,7 +50,7 @@ class LuceneTest(SeecrTestCase):
     def tearDown(self):
         try:
             self._reactor.calledMethods.reset() # don't keep any references.
-            self.lucene.finish()
+            self.lucene.close()
             self.lucene = None
             gc.collect()
             diff = self._getJavaObjects() - self._javaObjects
@@ -91,7 +91,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(set(['id:0', 'id:2']), set(result.hits))
 
     def testAddCommitAfterTimeout(self):
-        self.lucene.finish()
+        self.lucene.close()
         self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3)
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
         self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
@@ -106,7 +106,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(1, result.total)
 
     def testAddAndCommitCount3(self):
-        self.lucene.finish()
+        self.lucene.close()
         self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3)
         token = object()
         self._reactor.returnValues['addTimer'] = token

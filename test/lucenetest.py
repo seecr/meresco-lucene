@@ -333,7 +333,6 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(1, response.total)
 
     def testResultsFilterCollecter(self):
-        dedupCollector = DeDupFilterCollector("__key__")
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))
         consume(self.lucene.addDocument("urn:1", doc, categories(cat="cat-A")))
@@ -342,7 +341,7 @@ class LuceneTest(SeecrTestCase):
         consume(self.lucene.addDocument("urn:2", doc, categories(cat="cat-A")))
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
-                        resultsFilterCollector=dedupCollector, facets=facets(cat=10)))
+                        dedupField="__key__", facets=facets(cat=10)))
         self.assertEquals(1, result.total)
         self.assertEquals({'count': 2, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
 

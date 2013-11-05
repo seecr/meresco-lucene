@@ -19,14 +19,6 @@ public class DeDupFilterCollector extends Collector {
     this.keyName = keyName;
   }
 
-  public DeDupFilterCollector(String keyName) {
-    this(keyName, null);
-  }
-
-  public void setDelegate(Collector next) {
-    this.next = next;
-  }
-
   @Override
   public void setScorer(Scorer scorer) throws IOException {
     this.next.setScorer(scorer);

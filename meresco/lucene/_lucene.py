@@ -30,6 +30,7 @@ from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
 from org.apache.lucene.queries import ChainedFilter
+from org.meresco.lucene import DeDupFilterCollector
 from time import time
 
 from os.path import basename
@@ -82,16 +83,15 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, resultsFilterCollector=None, **kwargs):
+        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
 
         collectors = []
         resultsCollector = topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
-        if resultsFilterCollector:
-            resultsFilterCollector.setDelegate(topCollector)
-            resultsCollector = resultsFilterCollector
+        if dedupField:
+            resultsCollector = DeDupFilterCollector(dedupField, topCollector)
         collectors.append(resultsCollector)
         if facets:
             facetCollector = self._facetCollector(facets)

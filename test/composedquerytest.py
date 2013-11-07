@@ -80,13 +80,18 @@ class ComposedQueryTest(SeecrTestCase):
         cq.setCoreQuery(core='coreB', query='Q3', filterQueries=['Q4'])
         cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         cq.unite(coreA='AQuery', coreB='anotherQuery')
+        self.assertEquals(None, cq.stop)
+        self.assertEquals(None, cq.start)
+        self.assertEquals(None, cq.sortKeys)
+        cq.stop = 10
+        cq.start = 0
+        cq.sortKeys = [dict(sortBy='field', sortDescending=True)]
         self.assertEquals('Q0', cq.queryFor('coreA'))
         self.assertEquals(['Q1', 'Q2'], cq.filterQueriesFor('coreA'))
         self.assertEquals(['F0', 'F1'], cq.facetsFor('coreA'))
-
-    def testPiggyBackOtherKwarsWithoutKnowningThemAllbyName(self):
-        cq.ComposedQuery("core42", dict(some="other"))
-        self.assertEquals({"some": "otherrrrr"}, cq.otherKwargs())
+        self.assertEquals(10, cq.stop)
+        self.assertEquals(0, cq.start)
+        self.assertEquals([dict(sortBy='field', sortDescending=True)], cq.sortKeys)
 
     def testAsDictFromDict(self):
         cq = ComposedQuery('coreA')

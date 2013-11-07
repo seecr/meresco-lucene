@@ -32,8 +32,6 @@ class ComposedQuery(object):
         self._matches = {}
         self._unites = []
 
-        self._data = {}
-
     def setCoreQuery(self, core, query=None, facets=None, filterQueries=None):
         self._coreQueries[core] = dict(
             query=query,
@@ -144,19 +142,13 @@ class ComposedQuery(object):
     def otherKwargs(self):
         return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField)
 
-    def __getattr__(self, name):
-        if '_'+name in self._data:
-            return self._data['_'+name]
-        raise AttributeError(name)
-
     def _prop(name, defaultValue=None):
         def fget(self):
-            #return getattr(self, '_'+name, defaultValue)
-            pass
+            return getattr(self, '_'+name, defaultValue)
         def fset(self, value):
             return setattr(self, '_'+name, value)
         return dict(fget=fget, fset=fset)
-    #stop = property(**_prop('stop'))
+    stop = property(**_prop('stop'))
     start = property(**_prop('start'))
     sortKeys = property(**_prop('sortKeys'))
     suggestionRequest = property(**_prop('suggestionRequest'))

@@ -33,6 +33,7 @@ from org.apache.lucene.facet.index import FacetFields
 from org.apache.lucene.facet.search import FacetsCollector
 from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
 from org.apache.lucene.search.spell import DirectSpellChecker
+from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
 
 from org.apache.lucene.facet.search import CachedOrdsCountingFacetsAggregator, FacetArrays
@@ -60,7 +61,8 @@ class Index(object):
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
         self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
         self._analyzer = createAnalyzer()
-        conf = IndexWriterConfig(Version.LUCENE_43, self._analyzer);
+        conf = IndexWriterConfig(Version.LUCENE_43, self._analyzer)
+        conf.setSimilarity(BM25Similarity())
         self._indexWriter = IndexWriter(indexDirectory, conf)
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory)
         self._taxoWriter.commit()

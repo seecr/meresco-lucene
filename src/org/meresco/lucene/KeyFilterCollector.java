@@ -54,17 +54,17 @@ public class KeyFilterCollector extends Collector {
 
 	@Override
 	public void collect(int docId) throws IOException {
-		if (this.keyFilter.get((int)this.keyValues.get(docId)))
-			this.delegate.collect(docId);
+		if (this.keyValues != null) {
+			if (this.keyFilter.get((int)this.keyValues.get(docId))) {
+				this.delegate.collect(docId);
+			}
+		}
 	}
 
 	@Override
 	public void setNextReader(AtomicReaderContext context) throws IOException {
 		this.delegate.setNextReader(context);
 		this.keyValues = context.reader().getNumericDocValues(this.keyName);
-		if (this.keyValues == null) {
-			this.keyValues = NumericDocValues.EMPTY;
-		}
 	}
 
 	@Override

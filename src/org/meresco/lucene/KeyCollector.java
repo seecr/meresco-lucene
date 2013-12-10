@@ -45,15 +45,14 @@ public class KeyCollector extends Collector {
 
     @Override
     public void collect(int docId) throws IOException {
-        this.keySet.set((int)this.keyValues.get(docId));
+        if (this.keyValues != null) {
+            this.keySet.set((int)this.keyValues.get(docId));
+        }
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
         this.keyValues = context.reader().getNumericDocValues(this.keyName);
-        if (this.keyValues == null) {
-            this.keyValues = NumericDocValues.EMPTY;
-        }
     }
 
     @Override

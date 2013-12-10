@@ -83,7 +83,6 @@ public class KeyFilter extends Filter {
      */
     public void unite(KeyFilter f) {
         this.keySet.or(f.keySet);
-
     }
 
     @Override
@@ -102,12 +101,14 @@ public class KeyFilter extends Filter {
         NumericDocValues keyValues = reader.getNumericDocValues(this.keyName);
         OpenBitSet docBitSet = new OpenBitSet();
         if (keyValues != null) {
-            for (int docId = 0; docId < reader.maxDoc(); docId++)
-                if (this.keySet.get((int) keyValues.get(docId)))
+            for (int docId = 0; docId < reader.maxDoc(); docId++) {
+                int keyValue = (int) keyValues.get(docId);
+                if (keyValue > 0 && this.keySet.get(keyValue)) {
                     docBitSet.set(docId);
-            docBitSet.trimTrailingZeros();
+                }
+            }
         }
+        docBitSet.trimTrailingZeros();
         return docBitSet;
     }
-
 }

@@ -33,8 +33,8 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
 
-public class KeyCollector extends Collector {
 
+public class KeyCollector extends Collector {
     private String keyName;
     private NumericDocValues keyValues;
     protected OpenBitSet keySet = new OpenBitSet();
@@ -46,7 +46,10 @@ public class KeyCollector extends Collector {
     @Override
     public void collect(int docId) throws IOException {
         if (this.keyValues != null) {
-            this.keySet.set((int)this.keyValues.get(docId));
+            int value = (int)this.keyValues.get(docId);
+            if (value > 0) {
+                this.keySet.set(value);
+            }
         }
     }
 

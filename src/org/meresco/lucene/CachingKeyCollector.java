@@ -38,6 +38,7 @@ import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.OpenBitSet;
 
+
 /**
  * A KeyCollector for implementing joins between two or more Lucene indexs. This
  * version caches the keys and the filters.
@@ -49,7 +50,6 @@ import org.apache.lucene.util.OpenBitSet;
  * @author erik@seecr.nl
  * */
 public class CachingKeyCollector extends KeyCollector {
-
     /**
      * Create a collector that collects keys from a field. It caches the keys on
      * segment level. The collector itself is also cached, as well as its

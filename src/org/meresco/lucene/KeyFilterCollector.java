@@ -62,6 +62,9 @@ public class KeyFilterCollector extends Collector {
 	public void setNextReader(AtomicReaderContext context) throws IOException {
 		this.delegate.setNextReader(context);
 		this.keyValues = context.reader().getNumericDocValues(this.keyName);
+		if (this.keyValues == null) {
+			this.keyValues = NumericDocValues.EMPTY;
+		}
 	}
 
 	@Override

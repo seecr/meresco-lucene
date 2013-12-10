@@ -83,7 +83,7 @@ class MultiLuceneTest(SeecrTestCase):
         self.addDocument(self.luceneA, identifier='A-MQ',   keys=[('A', k7 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false'), ('S', '7')])
         self.addDocument(self.luceneA, identifier='A-MQU',  keys=[('A', k8 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' ), ('S', '8')])
 
-        self.addDocument(self.luceneB, identifier='B-N>A-M',   keys=[('B', k5 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
+        self.addDocument(self.luceneB, identifier='B-N>A-M',   keys=[('B', k5 ), ('D', k5)], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
         self.addDocument(self.luceneB, identifier='B-N>A-MU',  keys=[('B', k6 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
         self.addDocument(self.luceneB, identifier='B-N>A-MQ',  keys=[('B', k7 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
         self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', k8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
@@ -576,6 +576,15 @@ class MultiLuceneTest(SeecrTestCase):
         q.setCoreQuery(core='coreA')
         q.setCoreQuery(core='coreB', query=query('N=true'))
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'C'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(1, result.total)
+        self.assertEquals(set(['A-M']), set(result.hits))
+
+    def testJoinQueryOnOptionalKeyOtherSide(self):
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA')
+        q.setCoreQuery(core='coreB', query=query('N=true'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'D'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(1, result.total)
         self.assertEquals(set(['A-M']), set(result.hits))

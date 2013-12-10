@@ -51,6 +51,9 @@ public class KeyCollector extends Collector {
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
         this.keyValues = context.reader().getNumericDocValues(this.keyName);
+        if (this.keyValues == null) {
+            this.keyValues = NumericDocValues.EMPTY;
+        }
     }
 
     @Override

@@ -78,7 +78,7 @@ class MultiLuceneTest(SeecrTestCase):
         self.addDocument(self.luceneA, identifier='A-U',    keys=[('A', k2 )], fields=[('M', 'false'), ('Q', 'false'), ('U', 'true' ), ('S', '2')])
         self.addDocument(self.luceneA, identifier='A-Q',    keys=[('A', k3 )], fields=[('M', 'false'), ('Q', 'true' ), ('U', 'false'), ('S', '3')])
         self.addDocument(self.luceneA, identifier='A-QU',   keys=[('A', k4 )], fields=[('M', 'false'), ('Q', 'true' ), ('U', 'true' ), ('S', '4')])
-        self.addDocument(self.luceneA, identifier='A-M',    keys=[('A', k5 )], fields=[('M', 'true' ), ('Q', 'false'), ('U', 'false'), ('S', '5')])
+        self.addDocument(self.luceneA, identifier='A-M',    keys=[('A', k5 ), ('C', k5)], fields=[('M', 'true' ), ('Q', 'false'), ('U', 'false'), ('S', '5')])
         self.addDocument(self.luceneA, identifier='A-MU',   keys=[('A', k6 )], fields=[('M', 'true' ), ('Q', 'false'), ('U', 'true' ), ('S', '6')])
         self.addDocument(self.luceneA, identifier='A-MQ',   keys=[('A', k7 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false'), ('S', '7')])
         self.addDocument(self.luceneA, identifier='A-MQU',  keys=[('A', k8 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' ), ('S', '8')])
@@ -570,6 +570,15 @@ class MultiLuceneTest(SeecrTestCase):
         sleep(0.2)
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals([u'A-M', u'A-MQ', u'A-MQU'], result.hits)
+
+    def testJoinQueryOnOptionalKey(self):
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA')
+        q.setCoreQuery(core='coreB', query=query('N=true'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'C'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(1, result.total)
+        self.assertEquals(set(['A-M']), set(result.hits))
 
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(

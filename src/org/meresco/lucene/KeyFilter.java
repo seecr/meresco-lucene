@@ -100,13 +100,13 @@ public class KeyFilter extends Filter {
 
     private DocIdSet createDocIdSet(AtomicReader reader) throws IOException {
         NumericDocValues keyValues = reader.getNumericDocValues(this.keyName);
-        if (keyValues == null)
-            throw new RuntimeException("no keys found for field " + this.keyName);
         OpenBitSet docBitSet = new OpenBitSet();
-        for (int docId = 0; docId < reader.maxDoc(); docId++)
-            if (this.keySet.get((int) keyValues.get(docId)))
-                docBitSet.set(docId);
-        docBitSet.trimTrailingZeros();
+        if (keyValues != null) {
+            for (int docId = 0; docId < reader.maxDoc(); docId++)
+                if (this.keySet.get((int) keyValues.get(docId)))
+                    docBitSet.set(docId);
+            docBitSet.trimTrailingZeros();
+        }
         return docBitSet;
     }
 

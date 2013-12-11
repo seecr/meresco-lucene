@@ -408,7 +408,7 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
-    def not_yet_implemented_testUniteCoreB(self):
+    def NOT_YET_SUPPORTED_testUniteCoreB(self):
         q = ComposedQuery('coreB')
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX +'A'), dict(core='coreB', key=KEY_PREFIX +'B'))
         q.unite(coreA=query('U=true'), coreB=query('N=true'))
@@ -441,7 +441,7 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.luceneB.executeQuery(luceneQuery=query('O=false'), filter=uniteDocIdCollector.getDocIdFilter(), filterCollector=keyFilterCollector))
         self.assertEquals([u'B-N>A-MQU', u'B-P>A-MQU'], sorted(result.hits))
 
-    def not_yet_implemented_testUniteAndFacetsCoreB(self):
+    def NOT_YET_SUPPORTED_testUniteAndFacetsCoreB(self):
         q = ComposedQuery('coreB')
         q.setCoreQuery(core='coreA', query=query('Q=true'))
         q.setCoreQuery(core='coreB', query=None, facets=[
@@ -588,6 +588,13 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(1, result.total)
         self.assertEquals(set(['A-M']), set(result.hits))
+
+    def NOT_YET_SUPPORTED_testJoinQueryOnOptionalKeyUniteResultsWithoutKey(self):
+        q = ComposedQuery('coreA')
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'C'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        q.unite(coreA=query('U=true'), coreB=query('N=true'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(set(['A-U', 'A-QU', 'A-MU', 'A-MQU', 'A-M']), set(result.hits))
 
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(

@@ -343,7 +343,7 @@ class LuceneTest(SeecrTestCase):
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
                         dedupField="__key__", facets=facets(cat=10)))
         self.assertEquals(1, result.total)
-        self.assertEquals({'count': 2, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
+        self.assertEquals({'count': 1, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

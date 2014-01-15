@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -35,6 +35,10 @@ class IndexAndTaxonomy(object):
         self.searcher = IndexSearcher(DirectoryReader.open(indexWriter, True))
         self.searcher.setSimilarity(BM25Similarity())
         self.taxoReader = DirectoryTaxonomyReader(taxoDirectory)
+        self._bm25Arguments = None
+        self.similarity = Similarity()
+        self.similarity.get = lambda: self.searcher.getSimilarity().toString()
+        self.similarity.set = self._setBM25Similarity
 
     def reopen(self):
         currentReader = self.searcher.getIndexReader()
@@ -43,13 +47,29 @@ class IndexAndTaxonomy(object):
             return
         currentReader.close()
         self.searcher = IndexSearcher(reader)
-        self.searcher.setSimilarity(BM25Similarity())
+        self._setSimilarityFor(self.searcher)
         taxoReader = DirectoryTaxonomyReader.openIfChanged(self.taxoReader)
         if taxoReader is None:
             return
         self.taxoReader.close()
         self.taxoReader = taxoReader
 
+    def _setSimilarityFor(self, searcher):
+        similarity = BM25Similarity()
+        if self._bm25Arguments:
+            similarity = BM25Similarity(*self._bm25Arguments)
+        self.searcher.setSimilarity(similarity)
+
+    def _setBM25Similarity(self, k1=None, b=None):
+        if k1 is None or b is None:
+            self._bm25Arguments = None
+        else:
+            self._bm25Arguments = (k1, b)
+        self._setSimilarityFor(self.searcher)
+
     def close(self):
         self.taxoReader.close()
         self.searcher.getIndexReader().close()
+
+class Similarity(object):
+    pass

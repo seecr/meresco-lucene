@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -68,6 +68,7 @@ class Index(object):
         self._taxoWriter.commit()
 
         self._indexAndTaxonomy = IndexAndTaxonomy(self._indexWriter, self._taxoDirectory)
+        self.similarity = self._indexAndTaxonomy.similarity
 
     def addDocument(self, term, document, categories=None):
         if categories:

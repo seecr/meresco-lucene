@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -23,7 +23,6 @@
 #
 ## end license ##
 
-from lucene import JavaError
 from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
@@ -48,6 +47,7 @@ class Lucene(object):
 
     def __init__(self, path, reactor, commitTimeout=None, commitCount=None, name=None):
         self._index = Index(path, reactor=reactor, commitCount=commitCount, commitTimeout=commitTimeout)
+        self.similarity = self._index.similarity
         if name is not None:
             self.observable_name = lambda: name
         self.coreName = name or basename(path)

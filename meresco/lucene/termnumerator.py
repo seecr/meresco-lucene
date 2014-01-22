@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -26,16 +26,18 @@
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter, DirectoryTaxonomyReader
 from org.apache.lucene.facet.taxonomy import CategoryPath
+from org.apache.lucene.index import IndexWriterConfig
+from org.apache.lucene.facet.taxonomy.writercache.lru import LruTaxonomyWriterCache
 from java.io import File
 
 from meresco.core import Observable
 
 class TermNumerator(Observable):
 
-    def __init__(self, path):
+    def __init__(self, path, lruTaxonomyWriterCacheSize=100):
         Observable.__init__(self)
         self._taxoDirectory = SimpleFSDirectory(File(path))
-        self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory)
+        self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
 
     def numerateTerm(self, term):
         if not term:

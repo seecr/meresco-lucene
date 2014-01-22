@@ -35,6 +35,7 @@ from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
+from org.apache.lucene.facet.taxonomy.writercache.lru import LruTaxonomyWriterCache
 
 from org.apache.lucene.facet.search import CachedOrdsCountingFacetsAggregator, FacetArrays
 from org.meresco.lucene import MyFacetsAccumulator
@@ -50,7 +51,7 @@ from meresco.lucene.utils import fieldType, LONGTYPE
 # Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html
 
 class Index(object):
-    def __init__(self, path, reactor, commitTimeout=None, commitCount=None):
+    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000):
         self._reactor = reactor
         self._maxCommitCount = commitCount or 1000
         self._commitCount = 0
@@ -64,10 +65,10 @@ class Index(object):
         conf = IndexWriterConfig(Version.LUCENE_43, self._analyzer)
         conf.setSimilarity(BM25Similarity())
         self._indexWriter = IndexWriter(indexDirectory, conf)
-        self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory)
+        self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
         self._taxoWriter.commit()
 
-        self._indexAndTaxonomy = IndexAndTaxonomy(self._indexWriter, self._taxoDirectory)
+        self._indexAndTaxonomy = IndexAndTaxonomy(self._indexWriter, self._taxoWriter)
         self.similarity = self._indexAndTaxonomy.similarity
 
     def addDocument(self, term, document, categories=None):

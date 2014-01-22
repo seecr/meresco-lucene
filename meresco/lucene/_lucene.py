@@ -45,8 +45,8 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, name=None):
-        self._index = Index(path, reactor=reactor, commitCount=commitCount, commitTimeout=commitTimeout)
+    def __init__(self, path, reactor, name=None, **kwargs):
+        self._index = Index(path, reactor=reactor, **kwargs)
         self.similarity = self._index.similarity
         if name is not None:
             self.observable_name = lambda: name

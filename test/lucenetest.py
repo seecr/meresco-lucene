@@ -42,6 +42,7 @@ from seecr.utils.generatorutils import returnValueFromGenerator
 from weightless.core import consume, retval
 import gc
 
+
 class LuceneTest(SeecrTestCase):
     def setUp(self):
         super(LuceneTest, self).setUp()
@@ -332,7 +333,7 @@ class LuceneTest(SeecrTestCase):
         response = returnValueFromGenerator(lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
         self.assertEquals(1, response.total)
 
-    def testResultsFilterCollecter(self):
+    def testResultsFilterCollector(self):
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))
         consume(self.lucene.addDocument("urn:1", doc, categories(cat="cat-A")))
@@ -342,8 +343,10 @@ class LuceneTest(SeecrTestCase):
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
                         dedupField="__key__", facets=facets(cat=10)))
+        self.assertEquals([u'urn:1'], result.hits)
         self.assertEquals(1, result.total)
         self.assertEquals({'count': 1, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
+
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

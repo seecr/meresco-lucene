@@ -98,7 +98,7 @@ class Lucene(object):
         collector = MultiCollector.wrap(collectors)
 
         if dedupField:
-            collector = DeDupFilterCollector(dedupField, collector)
+            collector = dedupCollector = DeDupFilterCollector(dedupField, collector)
 
         if filterCollector:
             filterCollector.setDelegate(collector)

@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -32,7 +32,7 @@ from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene import ComposedQuery
 from meresco.lucene.synchronousremote import SynchronousRemote
 from cqlparser import parseString
-from org.apache.lucene.search import MatchAllDocsQuery
+from meresco.lucene.hit import Hit
 
 
 class LuceneTest(IntegrationTestCase):
@@ -117,10 +117,10 @@ class LuceneTest(IntegrationTestCase):
         response = remote.executeComposedQuery(query=q)
         self.assertEquals(19, response.total)
         self.assertEquals([
-                'record:10', 'record:11', 'record:20', 'record:21', 'record:30',
-                'record:31', 'record:40', 'record:41', 'record:50', 'record:51',
-                'record:60', 'record:61', 'record:70', 'record:71', 'record:80',
-                'record:81', 'record:90', 'record:91', 'record:100'
+                Hit('record:10'), Hit('record:11'), Hit('record:20'), Hit('record:21'), Hit('record:30'),
+                Hit('record:31'), Hit('record:40'), Hit('record:41'), Hit('record:50'), Hit('record:51'),
+                Hit('record:60'), Hit('record:61'), Hit('record:70'), Hit('record:71'), Hit('record:80'),
+                Hit('record:81'), Hit('record:90'), Hit('record:91'), Hit('record:100')
             ], response.hits)
         self.assertEquals([{
                 'fieldname': 'untokenized.field2',

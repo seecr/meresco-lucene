@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -26,6 +26,7 @@
 from meresco.lucene.remote import LuceneRemote, LuceneRemoteService
 from meresco.lucene import LuceneResponse
 from meresco.lucene.composedquery import ComposedQuery
+from meresco.lucene.hit import Hit
 from meresco.core import Observable
 from seecr.test import SeecrTestCase, CallTrace
 from cqlparser import parseString
@@ -39,7 +40,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testRemoteExecuteQuery(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
-            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=["1", "2", "3", "4", "5"]).asJson())
+            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=[Hit("1"), Hit("2"), Hit("3", duplicateCount=2), Hit("4"), Hit("5")]).asJson())
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
@@ -58,7 +59,7 @@ class LuceneRemoteTest(SeecrTestCase):
         cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         result = returnValueFromGenerator(observable.any.executeComposedQuery(query=cq))
         self.assertEquals(5, result.total)
-        self.assertEquals(["1", "2", "3", "4", "5"], result.hits)
+        self.assertEquals([Hit("1"), Hit("2"), Hit("3", duplicateCount=2), Hit("4"), Hit("5")], result.hits)
 
         self.assertEquals(['httppost'], http.calledMethodNames())
         m = http.calledMethods[0]
@@ -75,7 +76,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testRemoteExecuteQueryWithNoneValues(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
-            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=["1", "2", "3", "4", "5"]).asJson())
+            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=[Hit("1"), Hit("2"), Hit("3"), Hit("4"), Hit("5")]).asJson())
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
@@ -93,7 +94,7 @@ class LuceneRemoteTest(SeecrTestCase):
             )
         )
         self.assertEquals(5, result.total)
-        self.assertEquals(["1", "2", "3", "4", "5"], result.hits)
+        self.assertEquals([Hit("1"), Hit("2"), Hit("3"), Hit("4"), Hit("5")], result.hits)
 
         self.assertEquals(['httppost'], http.calledMethodNames())
         m = http.calledMethods[0]

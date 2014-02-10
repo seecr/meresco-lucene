@@ -42,5 +42,8 @@ class Hit(object):
             h.update(v)
         return hash(h.digest())
 
+    def __str__(self):
+        return str(self.id)
+
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, ', '.join("%s=%s" % (k, repr(v)) for k, v in self.__dict__.items()))

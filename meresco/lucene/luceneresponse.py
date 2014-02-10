@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from simplejson import loads, dumps, JSONEncoder
+from simplejson import loads, dumps, JSONEncoder, JSONDecoder
 from hit import Hit
 
 class LuceneResponse(object):
@@ -32,7 +32,7 @@ class LuceneResponse(object):
 
     @classmethod
     def fromJson(cls, json):
-        return cls(**loads(json))
+        return cls(**loads(json, cls=LuceneResponseJsonDecoder))
 
     def asJson(self, **kwargs):
         return dumps(vars(self), cls=LuceneResponseJsonEncoder, **kwargs)
@@ -41,5 +41,16 @@ class LuceneResponse(object):
 class LuceneResponseJsonEncoder(JSONEncoder):
     def default(self, o):
         if type(o) is Hit:
-            return {"id": o.id}
+            d = {"__class__": Hit.__name__}
+            d.update(o.__dict__)
+            return d
         return JSONEncoder.default(self, o)
+
+class LuceneResponseJsonDecoder(JSONDecoder):
+    def __init__(self, **kwargs):
+        JSONDecoder.__init__(self, object_hook=self.dict_to_object, **kwargs)
+
+    def dict_to_object(self, d):
+        if Hit.__name__ == d.pop('__class__', None):
+            return Hit(**d)
+        return d

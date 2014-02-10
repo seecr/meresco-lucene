@@ -109,7 +109,8 @@ class Lucene(object):
 
         self._index.search(luceneQuery, filter_, collector)
 
-        total, hits = self._topDocsResponse(topCollector, start=start)
+        total, hits = self._topDocsResponse(topCollector, start=start, dedupCollector=dedupCollector if dedupField else None)
+
         response = LuceneResponse(total=total, hits=hits, drilldownData=[])
 
         if facets:
@@ -145,11 +146,15 @@ class Lucene(object):
         from sys import stdout; stdout.flush()
         self.close()
 
-    def _topDocsResponse(self, collector, start):
+    def _topDocsResponse(self, collector, start, dedupCollector=None):
         # TODO: Probably use FieldCache iso document.get()
         hits = []
         if hasattr(collector, "topDocs"):
-            hits = [Hit(self._index.getDocument(hit.doc).get(IDFIELD)) for hit in collector.topDocs(start).scoreDocs]
+            for scoreDoc in collector.topDocs(start).scoreDocs:
+                hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
+                if dedupCollector:
+                    hit.duplicateCount = dedupCollector.countFor(scoreDoc.doc)
+                hits.append(hit)
         return collector.getTotalHits(), hits
 
     def _filterFor(self, filterQueries, filter=None):

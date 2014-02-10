@@ -23,18 +23,24 @@
 #
 ## end license ##
 
+from hashlib import md5
 
 class Hit(object):
 
-    def __init__(self, id):
+    def __init__(self, id, **kwargs):
         self.id = id
+        self.__dict__.update(kwargs)
 
     def __eq__(self, other):
         return self.__class__.__name__ == other.__class__.__name__ and \
-            self.id == other.id
+            self.__dict__ == other.__dict__
 
     def __hash__(self):
-        return hash(self.id)
+        h = md5()
+        for k,v in self.__dict__.items():
+            h.update(k)
+            h.update(v)
+        return hash(h.digest())
 
     def __repr__(self):
-        return "%s(id=%s)" % (self.__class__.__name__, repr(self.id))
+        return "%s(%s)" % (self.__class__.__name__, ', '.join("%s=%s" % (k, repr(v)) for k, v in self.__dict__.items()))

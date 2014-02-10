@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -23,23 +23,18 @@
 #
 ## end license ##
 
-from simplejson import loads, dumps, JSONEncoder
-from hit import Hit
 
-class LuceneResponse(object):
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+class Hit(object):
 
-    @classmethod
-    def fromJson(cls, json):
-        return cls(**loads(json))
+    def __init__(self, id):
+        self.id = id
 
-    def asJson(self, **kwargs):
-        return dumps(vars(self), cls=LuceneResponseJsonEncoder, **kwargs)
+    def __eq__(self, other):
+        return self.__class__.__name__ == other.__class__.__name__ and \
+            self.id == other.id
 
+    def __hash__(self):
+        return hash(self.id)
 
-class LuceneResponseJsonEncoder(JSONEncoder):
-    def default(self, o):
-        if type(o) is Hit:
-            return {"id": o.id}
-        return JSONEncoder.default(self, o)
+    def __repr__(self):
+        return "%s(id=%s)" % (self.__class__.__name__, repr(self.id))

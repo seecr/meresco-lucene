@@ -1,3 +1,28 @@
+## begin license ##
+#
+# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+#
+# Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+#
+# This file is part of "Meresco Lucene"
+#
+# "Meresco Lucene" is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# "Meresco Lucene" is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with "Meresco Lucene"; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+## end license ##
+
 from java.lang import Long
 from org.apache.lucene.search import TopScoreDocCollector, MatchAllDocsQuery
 from org.apache.lucene.document import Document, NumericDocValuesField
@@ -45,11 +70,7 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         self.assertEquals(1, len(topDocsResult.scoreDocs))
 
         docId = topDocsResult.scoreDocs[0].doc
-        similarFiltered = c.similarFiltered()
-        self.assertEquals(1, len(similarFiltered))
-        itemOne = similarFiltered[0]
-        self.assertEquals(docId, itemOne)
-        self.assertEquals([docId], similarFiltered)
+        self.assertEquals(2, c.countFor(docId))
 
     def testCollectorFiltersTwoTimesTwoSimilarOneNot(self):
         self._addDocument("urn:1", 1)
@@ -68,7 +89,9 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         index = self.lucene._index
         identifierAndDocIds = [(d, index.getDocument(d).get(IDFIELD)) for d in docIds]
         self.assertEquals([(0, "urn:1"), (1, "urn:2"), (2, "urn:3")], identifierAndDocIds)
-        self.assertEquals([0, 1], c.similarFiltered())
+        self.assertEquals(2, c.countFor(docIds[0]))
+        self.assertEquals(2, c.countFor(docIds[1]))
+        self.assertEquals(1, c.countFor(docIds[2]))
 
     def testSilentyYieldsWrongResultWhenFieldNameDoesNotMatch(self):
         self._addDocument("urn:1", 2)
@@ -76,7 +99,7 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         c = DeDupFilterCollector("__wrong_field__", tc)
         consume(self.lucene.search(query=MatchAllDocsQuery(), collector=c))
         self.assertEquals(1, tc.topDocs().totalHits)
-       
+
     def testShouldAddResultsWithoutIsFormatOf(self):
         self._addDocument("urn:1", 2)
         self._addDocument("urn:2", None)

@@ -38,6 +38,7 @@ from luceneresponse import LuceneResponse
 from index import Index
 from cache import FilterCache
 from utils import IDFIELD, createIdField, sortField
+from hit import Hit
 from seecr.utils.generatorutils import generatorReturn
 
 
@@ -148,7 +149,7 @@ class Lucene(object):
         # TODO: Probably use FieldCache iso document.get()
         hits = []
         if hasattr(collector, "topDocs"):
-            hits = [self._index.getDocument(hit.doc).get(IDFIELD) for hit in collector.topDocs(start).scoreDocs]
+            hits = [Hit(self._index.getDocument(hit.doc).get(IDFIELD)) for hit in collector.topDocs(start).scoreDocs]
         return collector.getTotalHits(), hits
 
     def _filterFor(self, filterQueries, filter=None):

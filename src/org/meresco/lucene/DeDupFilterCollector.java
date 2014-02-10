@@ -42,7 +42,7 @@ import org.apache.lucene.search.Scorer;
 public class DeDupFilterCollector extends Collector {
   private int currentDocBase;
   private Collector delegate;
-  private String keyName;
+  public String keyName;
   private NumericDocValues keyValues;
   private Map<Long, Integer> keys = new HashMap<Long, Integer>();
   private IndexReaderContext topLevelReaderContext = null;
@@ -90,7 +90,12 @@ public class DeDupFilterCollector extends Collector {
   public int countFor(int docId) throws IOException {
     List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
     AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
-    long key = context.reader().getNumericDocValues(this.keyName).get(docId);
-    return this.keys.get(key);
+    try {
+      long key = context.reader().getNumericDocValues(this.keyName).get(docId);
+      Integer count = this.keys.get(key);
+      return count == null ? 0 : count;
+    } catch (ArrayIndexOutOfBoundsException e) {
+      return 0;
+    }
   }
 }

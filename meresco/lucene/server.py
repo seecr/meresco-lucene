@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -30,14 +30,14 @@ from seecr.html import DynamicHtml
 
 from meresco.components.http import StringServer, ObservableHttpServer, BasicHttpHandler, ApacheLogger, PathFilter, PathRename, FileServer
 from meresco.components.http.utils import ContentTypePlainText
-from meresco.components.sru import SruRecordUpdate, SruParser, SruHandler
+from meresco.components.sru import SruRecordUpdate, SruParser, SruHandler, SruDuplicateCount
 from meresco.components.drilldown import SRUTermDrilldown
 from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml, FilterField, RenameField, FilterMessages
 from meresco.components.autocomplete import Autocomplete
 from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
-from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX, version, MultiLucene, TermNumerator
+from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 
 from weightless.io import Reactor
@@ -146,6 +146,7 @@ def main(reactor, port, databasePath):
                                     multiLuceneHelix,
                                 ),
                                 (SRUTermDrilldown(defaultFormat='xml'),),
+                                (SruDuplicateCount(),),
                                 (storageComponent,),
                             )
                         )
@@ -155,6 +156,7 @@ def main(reactor, port, databasePath):
                             (SruHandler(),
                                 (LuceneRemote(host='localhost', port=port, path='/remote'),),
                                 (SRUTermDrilldown(defaultFormat='xml'),),
+                                (SruDuplicateCount(),),
                                 (storageComponent,),
                             )
                         )

@@ -343,7 +343,7 @@ class LuceneTest(SeecrTestCase):
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
                         dedupField="__key__", facets=facets(cat=10)))
-        self.assertEquals([Hit(id=u'urn:1', duplicateCount=2)], result.hits)
+        self.assertEquals([Hit(id=u'urn:1', duplicateCount={'__key__': 2})], result.hits)
         self.assertEquals(1, result.total)
         self.assertEquals({'count': 1, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
 

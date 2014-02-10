@@ -33,6 +33,7 @@ from meresco.lucene import ComposedQuery
 from meresco.lucene.synchronousremote import SynchronousRemote
 from cqlparser import parseString
 from meresco.lucene.hit import Hit
+from meresco.components import lxmltostring
 
 
 class LuceneTest(IntegrationTestCase):
@@ -132,6 +133,15 @@ class LuceneTest(IntegrationTestCase):
                     {'count': 19, 'term': 'value5'},
                 ]
             }], response.drilldownData)
+
+    def testDedup(self):
+        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
+        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.field", core="main", stop=3, sortKeys=[{'sortBy': '__id__', 'sortDescending': False}])
+        self.assertEquals([
+                Hit(id='record:1', duplicateCount={'__key__.field': 0}),
+                Hit(id='record:10', duplicateCount={'__key__.field': 1}),
+                Hit(id='record:100', duplicateCount={'__key__.field': 0})
+            ], response.hits)
 
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru'):
         arguments={'version': '1.2',

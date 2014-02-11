@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
@@ -43,20 +44,22 @@ public class DeDupFilterCollector extends Collector {
     private int currentDocBase;
     private Collector delegate;
     public String keyName;
-    private String sortByFieldName;
     private NumericDocValues keyValues;
-    private Map<Long, Integer> keys = new HashMap<Long, Integer>();
+    private Map<Long, Key> keys = new HashMap<Long, Key>();
     private IndexReaderContext topLevelReaderContext = null;
+
+    private String sortByFieldName = null;
+    private NumericDocValues sortByValues;
+
+    public DeDupFilterCollector(String keyName, Collector delegate) {
+        this.delegate = delegate;
+        this.keyName = keyName;
+    }
 
     public DeDupFilterCollector(String keyName, String sortByFieldName, Collector delegate) {
         this.delegate = delegate;
         this.keyName = keyName;
         this.sortByFieldName = sortByFieldName;
-    }
-
-    public DeDupFilterCollector(String keyName, Collector delegate) {
-        this.delegate = delegate;
-        this.keyName = keyName;
     }
 
     @Override
@@ -66,14 +69,19 @@ public class DeDupFilterCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-        long key = this.keyValues.get(doc);
-        if (key > 0) {
-            Integer count = this.keys.get(key);
-            if (count != null) {
-                this.keys.put(key, count + 1);
+        long keyValue = this.keyValues.get(doc);
+        if (keyValue > 0) {
+            int absDoc = this.currentDocBase + doc;
+            long sortByValue = this.sortByValues.get(doc);
+            Key key = this.keys.get(keyValue);
+            if (key != null) {
+                key.count++;
+                if (key.sortByValue < sortByValue) {
+                    this.keys.put(keyValue, new Key(absDoc, sortByValue, key.count));
+                }
                 return;
             }
-            this.keys.put(key, 1);
+            this.keys.put(keyValue, new Key(absDoc, sortByValue, 1));
         }
         this.delegate.collect(doc);
     }
@@ -86,6 +94,12 @@ public class DeDupFilterCollector extends Collector {
         this.keyValues = context.reader().getNumericDocValues(this.keyName);
         if (this.keyValues == null)
             this.keyValues = NumericDocValues.EMPTY;
+
+        this.sortByValues = NumericDocValues.EMPTY;
+        if (this.sortByFieldName != null) {
+            this.sortByValues = context.reader().getNumericDocValues(this.sortByFieldName);
+        }
+
         this.delegate.setNextReader(context);
     }
 
@@ -100,10 +114,37 @@ public class DeDupFilterCollector extends Collector {
         NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
         if (docValues == null)
             return 0;
-        Long key = docValues.get(docId - context.docBase);
-        if (key == null)
+        Long keyValue = docValues.get(docId - context.docBase);
+        if (keyValue == null)
             return 0;
-        Integer count = this.keys.get(key);
-        return count == null ? 0 : count;
+        Key key = this.keys.get(keyValue);
+        return key == null ? 0 : key.count;
+    }
+
+    public int docIdFor(int docId) throws IOException {
+        List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
+        AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
+        NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
+        if (docValues == null)
+            return docId;
+        Long keyValue = docValues.get(docId - context.docBase);
+        if (keyValue == null)
+            return docId;
+        Key key = this.keys.get(keyValue);
+        if (key == null)
+            return docId;
+        return key.docId;
+    }
+
+    private class Key {
+        public int docId;
+        public long sortByValue;
+        public int count;
+
+        public Key(int docId, long sortByValue, int count) {
+            this.docId = docId;
+            this.sortByValue = sortByValue;
+            this.count = count;
+        }
     }
 }

@@ -84,7 +84,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, **kwargs):
+        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -93,7 +93,7 @@ class Lucene(object):
         resultsCollector = topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
         dedupCollector = None
         if dedupField:
-            resultsCollector = dedupCollector = DeDupFilterCollector(dedupField, topCollector)
+            resultsCollector = dedupCollector = DeDupFilterCollector(dedupField, dedupSortField, topCollector)
         collectors.append(resultsCollector)
 
         if facets:
@@ -151,9 +151,12 @@ class Lucene(object):
         hits = []
         if hasattr(collector, "topDocs"):
             for scoreDoc in collector.topDocs(start).scoreDocs:
-                hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
                 if dedupCollector:
+                    newDocId = dedupCollector.docIdFor(scoreDoc.doc)
+                    hit = Hit(self._index.getDocument(newDocId).get(IDFIELD))
                     hit.duplicateCount = {dedupCollector.keyName: dedupCollector.countFor(scoreDoc.doc)}
+                else:
+                    hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
                 hits.append(hit)
         return collector.getTotalHits(), hits
 

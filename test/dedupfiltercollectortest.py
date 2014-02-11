@@ -71,7 +71,6 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         docId = topDocsResult.scoreDocs[0].doc
         key = c.keyForDocId(docId)
         self.assertEquals(0, key.docId)
-        self.assertEquals(0, key.sortByValue)
         self.assertEquals(2, key.count)
 
     def testCollectorFiltersTwoTimesTwoSimilarOneNot(self):

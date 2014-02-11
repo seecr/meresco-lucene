@@ -126,7 +126,7 @@ public class DeDupFilterCollector extends Collector {
 
     public class Key {
         public int docId;
-        public long sortByValue;
+        private long sortByValue;
         public int count;
 
         public Key(int docId, long sortByValue, int count) {

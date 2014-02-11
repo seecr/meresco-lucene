@@ -54,6 +54,11 @@ public class DeDupFilterCollector extends Collector {
         this.sortByFieldName = sortByFieldName;
     }
 
+    public DeDupFilterCollector(String keyName, Collector delegate) {
+        this.delegate = delegate;
+        this.keyName = keyName;
+    }
+
     @Override
     public void setScorer(Scorer scorer) throws IOException {
         this.delegate.setScorer(scorer);

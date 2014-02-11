@@ -90,16 +90,16 @@ class Lucene(object):
         start = 0 if start is None else start
 
         collectors = []
-        topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
-        collectors.append(topCollector)
+        resultsCollector = topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
+        dedupCollector = None
+        if dedupField:
+            resultsCollector = dedupCollector = DeDupFilterCollector(dedupField, topCollector)
+        collectors.append(resultsCollector)
 
         if facets:
             facetCollector = self._facetCollector(facets)
             collectors.append(facetCollector)
         collector = MultiCollector.wrap(collectors)
-
-        if dedupField:
-            collector = dedupCollector = DeDupFilterCollector(dedupField, collector)
 
         if filterCollector:
             filterCollector.setDelegate(collector)

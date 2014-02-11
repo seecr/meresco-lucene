@@ -356,12 +356,17 @@ class LuceneTest(SeecrTestCase):
         doc.add(NumericDocValuesField("__key__", long(42)))
         doc.add(NumericDocValuesField("__key__.date", long(2013)))
         consume(self.lucene.addDocument("urn:2", doc, categories(cat="cat-A")))
+        doc = document(field0='v2')
+        doc.add(NumericDocValuesField("__key__", long(42)))
+        consume(self.lucene.addDocument("urn:3", doc, categories(cat="cat-A")))
+        doc = document(field0='v3')
+        consume(self.lucene.addDocument("urn:4", doc, categories(cat="cat-A")))
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
                         dedupField="__key__", dedupSortField='__key__.date', facets=facets(cat=10)))
-        self.assertEquals([Hit(id=u'urn:2', duplicateCount={'__key__': 2})], result.hits)
-        self.assertEquals(1, result.total)
-        self.assertEquals({'count': 2, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
+        self.assertEquals([Hit(id='urn:2', duplicateCount={'__key__': 3}), Hit(id='urn:4', duplicateCount={'__key__': 0})], result.hits)
+        self.assertEquals(2, result.total)
+        self.assertEquals({'count': 4, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
 
 
 def facets(**fields):

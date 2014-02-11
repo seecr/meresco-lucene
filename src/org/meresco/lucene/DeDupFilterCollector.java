@@ -96,10 +96,11 @@ public class DeDupFilterCollector extends Collector {
         if (this.keyValues == null)
             this.keyValues = NumericDocValues.EMPTY;
 
-        this.sortByValues = NumericDocValues.EMPTY;
-        if (this.sortByFieldName != null) {
+        this.sortByValues = null;
+        if (this.sortByFieldName != null)
             this.sortByValues = context.reader().getNumericDocValues(this.sortByFieldName);
-        }
+        if (this.sortByValues == null)
+            this.sortByValues = NumericDocValues.EMPTY;
 
         this.delegate.setNextReader(context);
     }
@@ -115,8 +116,8 @@ public class DeDupFilterCollector extends Collector {
         NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
         if (docValues == null)
             return null;
-        Long keyValue = docValues.get(docId - context.docBase);
-        if (keyValue == null)
+        long keyValue = docValues.get(docId - context.docBase);
+        if (keyValue == 0)
             return null;
         Key key = this.keys.get(keyValue);
         if (key == null)

@@ -40,63 +40,65 @@ import org.apache.lucene.search.Scorer;
 
 
 public class DeDupFilterCollector extends Collector {
-  private int currentDocBase;
-  private Collector delegate;
-  public String keyName;
-  private NumericDocValues keyValues;
-  private Map<Long, Integer> keys = new HashMap<Long, Integer>();
-  private IndexReaderContext topLevelReaderContext = null;
+    private int currentDocBase;
+    private Collector delegate;
+    public String keyName;
+    private String sortByFieldName;
+    private NumericDocValues keyValues;
+    private Map<Long, Integer> keys = new HashMap<Long, Integer>();
+    private IndexReaderContext topLevelReaderContext = null;
 
-  public DeDupFilterCollector(String keyName, Collector delegate) {
-    this.delegate = delegate;
-    this.keyName = keyName;
-  }
-
-  @Override
-  public void setScorer(Scorer scorer) throws IOException {
-    this.delegate.setScorer(scorer);
-  }
-
-  @Override
-  public void collect(int doc) throws IOException {
-    long key = this.keyValues.get(doc);
-    if (key > 0) {
-        Integer count = this.keys.get(key);
-        if (count != null) {
-            this.keys.put(key, count + 1);
-            return;
-        }
-        this.keys.put(key, 1);
+    public DeDupFilterCollector(String keyName, String sortByFieldName, Collector delegate) {
+        this.delegate = delegate;
+        this.keyName = keyName;
+        this.sortByFieldName = sortByFieldName;
     }
-    this.delegate.collect(doc);
-  }
 
-  @Override
-  public void setNextReader(AtomicReaderContext context) throws IOException {
-    if (this.topLevelReaderContext == null)
-        this.topLevelReaderContext = ReaderUtil.getTopLevelContext(context);
-    this.currentDocBase = context.docBase;
-    this.keyValues = context.reader().getNumericDocValues(this.keyName);
-    if (this.keyValues == null)
-        this.keyValues = NumericDocValues.EMPTY;
-    this.delegate.setNextReader(context);
-  }
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+        this.delegate.setScorer(scorer);
+    }
 
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return this.delegate.acceptsDocsOutOfOrder();
-  }
+    @Override
+    public void collect(int doc) throws IOException {
+        long key = this.keyValues.get(doc);
+        if (key > 0) {
+            Integer count = this.keys.get(key);
+            if (count != null) {
+                this.keys.put(key, count + 1);
+                return;
+            }
+            this.keys.put(key, 1);
+        }
+        this.delegate.collect(doc);
+    }
 
-  public int countFor(int docId) throws IOException {
-    List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
-    AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
-    NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
-    if (docValues == null)
-      return 0;
-    Long key = docValues.get(docId - context.docBase);
-    if (key == null)
-      return 0;
-    Integer count = this.keys.get(key);
-    return count == null ? 0 : count;
-  }
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        if (this.topLevelReaderContext == null)
+            this.topLevelReaderContext = ReaderUtil.getTopLevelContext(context);
+        this.currentDocBase = context.docBase;
+        this.keyValues = context.reader().getNumericDocValues(this.keyName);
+        if (this.keyValues == null)
+            this.keyValues = NumericDocValues.EMPTY;
+        this.delegate.setNextReader(context);
+    }
+
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+        return this.delegate.acceptsDocsOutOfOrder();
+    }
+
+    public int countFor(int docId) throws IOException {
+        List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
+        AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
+        NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
+        if (docValues == null)
+            return 0;
+        Long key = docValues.get(docId - context.docBase);
+        if (key == null)
+            return 0;
+        Integer count = this.keys.get(key);
+        return count == null ? 0 : count;
+    }
 }

@@ -90,12 +90,13 @@ public class DeDupFilterCollector extends Collector {
   public int countFor(int docId) throws IOException {
     List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
     AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
-    try {
-      long key = context.reader().getNumericDocValues(this.keyName).get(docId);
-      Integer count = this.keys.get(key);
-      return count == null ? 0 : count;
-    } catch (ArrayIndexOutOfBoundsException e) {
+    NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
+    if (docValues == null)
       return 0;
-    }
+    Long key = docValues.get(docId - context.docBase);
+    if (key == null)
+      return 0;
+    Integer count = this.keys.get(key);
+    return count == null ? 0 : count;
   }
 }

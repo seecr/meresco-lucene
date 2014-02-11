@@ -48,6 +48,8 @@ public class DeDupFilterCollector extends Collector {
     private Map<Long, Key> keys = new HashMap<Long, Key>();
     private IndexReaderContext topLevelReaderContext = null;
 
+    public int totalHits = 0;
+
     private String sortByFieldName = null;
     private NumericDocValues sortByValues;
 
@@ -69,6 +71,7 @@ public class DeDupFilterCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
+        this.totalHits++;
         long keyValue = this.keyValues.get(doc);
         if (keyValue > 0) {
             int absDoc = this.currentDocBase + doc;

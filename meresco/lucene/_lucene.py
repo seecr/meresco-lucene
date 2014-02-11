@@ -113,6 +113,9 @@ class Lucene(object):
 
         response = LuceneResponse(total=total, hits=hits, drilldownData=[])
 
+        if dedupCollector:
+            response.totalWithDuplicates = dedupCollector.totalHits
+
         if facets:
             response.drilldownData.extend(self._facetResult(facetCollector))
 

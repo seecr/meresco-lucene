@@ -366,6 +366,7 @@ class LuceneTest(SeecrTestCase):
                         dedupField="__key__", dedupSortField='__key__.date', facets=facets(cat=10)))
         self.assertEquals([Hit(id='urn:2', duplicateCount={'__key__': 3}), Hit(id='urn:4', duplicateCount={'__key__': 0})], result.hits)
         self.assertEquals(2, result.total)
+        self.assertEquals(4, result.totalWithDuplicates)
         self.assertEquals({'count': 4, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
 
 

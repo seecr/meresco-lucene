@@ -77,7 +77,8 @@ public class DeDupFilterCollector extends Collector {
             if (key != null) {
                 key.count++;
                 if (key.sortByValue < sortByValue) {
-                    this.keys.put(keyValue, new Key(absDoc, sortByValue, key.count));
+                    key.sortByValue = sortByValue;
+                    key.docId = absDoc;
                 }
                 return;
             }
@@ -108,35 +109,22 @@ public class DeDupFilterCollector extends Collector {
         return this.delegate.acceptsDocsOutOfOrder();
     }
 
-    public int countFor(int docId) throws IOException {
+    public Key keyForDocId(int docId) throws IOException {
         List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
         AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
         NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
         if (docValues == null)
-            return 0;
+            return null;
         Long keyValue = docValues.get(docId - context.docBase);
         if (keyValue == null)
-            return 0;
-        Key key = this.keys.get(keyValue);
-        return key == null ? 0 : key.count;
-    }
-
-    public int docIdFor(int docId) throws IOException {
-        List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
-        AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
-        NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
-        if (docValues == null)
-            return docId;
-        Long keyValue = docValues.get(docId - context.docBase);
-        if (keyValue == null)
-            return docId;
+            return null;
         Key key = this.keys.get(keyValue);
         if (key == null)
-            return docId;
-        return key.docId;
+            return null;
+        return key;
     }
 
-    private class Key {
+    public class Key {
         public int docId;
         public long sortByValue;
         public int count;

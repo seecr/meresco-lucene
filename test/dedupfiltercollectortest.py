@@ -69,7 +69,10 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         self.assertEquals(1, len(topDocsResult.scoreDocs))
 
         docId = topDocsResult.scoreDocs[0].doc
-        self.assertEquals(2, c.countFor(docId))
+        key = c.keyForDocId(docId)
+        self.assertEquals(0, key.docId)
+        self.assertEquals(0, key.sortByValue)
+        self.assertEquals(2, key.count)
 
     def testCollectorFiltersTwoTimesTwoSimilarOneNot(self):
         self._addDocument("urn:1", 1)
@@ -88,9 +91,9 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         index = self.lucene._index
         identifierAndDocIds = [(d, index.getDocument(d).get(IDFIELD)) for d in docIds]
         self.assertEquals([(0, "urn:1"), (1, "urn:2"), (2, "urn:3")], identifierAndDocIds)
-        self.assertEquals(2, c.countFor(docIds[0]))
-        self.assertEquals(2, c.countFor(docIds[1]))
-        self.assertEquals(1, c.countFor(docIds[2]))
+        self.assertEquals(2, c.keyForDocId(docIds[0]).count)
+        self.assertEquals(2, c.keyForDocId(docIds[1]).count)
+        self.assertEquals(1, c.keyForDocId(docIds[2]).count)
 
     def testSilentyYieldsWrongResultWhenFieldNameDoesNotMatch(self):
         self._addDocument("urn:1", 2)

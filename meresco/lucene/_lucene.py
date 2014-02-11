@@ -152,9 +152,10 @@ class Lucene(object):
         if hasattr(collector, "topDocs"):
             for scoreDoc in collector.topDocs(start).scoreDocs:
                 if dedupCollector:
-                    newDocId = dedupCollector.docIdFor(scoreDoc.doc)
+                    keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc)
+                    newDocId = keyForDocId.docId if keyForDocId else scoreDoc.doc
                     hit = Hit(self._index.getDocument(newDocId).get(IDFIELD))
-                    hit.duplicateCount = {dedupCollector.keyName: dedupCollector.countFor(scoreDoc.doc)}
+                    hit.duplicateCount = {dedupCollector.keyName: keyForDocId.count if keyForDocId else 0}
                 else:
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
                 hits.append(hit)

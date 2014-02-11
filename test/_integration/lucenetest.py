@@ -140,7 +140,7 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals([
                 Hit(id='record:1', duplicateCount={'__key__.field': 0}),
                 Hit(id='record:10', duplicateCount={'__key__.field': 1}),
-                Hit(id='record:100', duplicateCount={'__key__.field': 0})
+                Hit(id='record:100', duplicateCount={'__key__.field': 1})
             ], response.hits)
 
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru'):

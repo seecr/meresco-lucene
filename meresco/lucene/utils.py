@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -31,17 +31,18 @@ IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
 KEY_PREFIX = "__key__."
+NUMERIC_PREFIX = "__numeric__."
 
 LONGTYPE = 'long'
 TEXTTYPE = 'text'
 STRINGTYPE = 'string'
-KEYTYPE = 'key'
+NUMERICTYPE = 'numeric'
 
 typeToField = {
     LONGTYPE: lambda fieldname, value, store: LongField(fieldname, long(value), store),
     TEXTTYPE: TextField,
     STRINGTYPE: StringField,
-    KEYTYPE: lambda fieldname, value, store: NumericDocValuesField(fieldname, long(value)),
+    NUMERICTYPE: lambda fieldname, value, store: NumericDocValuesField(fieldname, long(value)),
 }
 typeToSortFieldType = {
     LONGTYPE: SortField.Type.LONG,
@@ -57,7 +58,9 @@ def fieldType(fieldname):
     if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
         return STRINGTYPE
     if fieldname.startswith(KEY_PREFIX):
-        return KEYTYPE
+        return NUMERICTYPE
+    if fieldname.startswith(NUMERIC_PREFIX):
+        return NUMERICTYPE
     return TEXTTYPE
 
 def createField(fieldname, value):

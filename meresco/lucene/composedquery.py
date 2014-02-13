@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -140,7 +140,7 @@ class ComposedQuery(object):
         self._unites = [(core, keyName, convertQuery(query)) for core, keyName, query in self._unites]
 
     def otherKwargs(self):
-        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField)
+        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField)
 
     def _prop(name, defaultValue=None):
         def fget(self):
@@ -153,6 +153,7 @@ class ComposedQuery(object):
     sortKeys = property(**_prop('sortKeys'))
     suggestionRequest = property(**_prop('suggestionRequest'))
     dedupField = property(**_prop('dedupField'))
+    dedupSortField = property(**_prop('dedupSortField'))
 
     def asDict(self):
         result = dict(vars(self))

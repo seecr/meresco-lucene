@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -54,7 +54,7 @@ except ValueError:
 from meresco_lucene import initVM
 VMM = initVM()
 
-from utils import SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX
+from utils import SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX, NUMERIC_PREFIX
 from _version import version
 from luceneresponse import LuceneResponse
 from _analyzer import createAnalyzer

@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -34,12 +34,13 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             'sorted.field3': ['value3'],
             'untokenized.field4': ['value4'],
             '__key__.field5': ["12345"],
+            '__numeric__.field6': ["12345"],
         }
         fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFieldnames=[])
         observer = CallTrace(returnValues={'numerateTerm': 1})
         fields2LuceneDoc.addObserver(observer)
         document = fields2LuceneDoc._createDocument(fields)
-        self.assertEquals(set(['field1', 'field2', 'sorted.field3', 'untokenized.field4', '__key__.field5']), set([f.name() for f in document.getFields()]))
+        self.assertEquals(set(['field1', 'field2', 'sorted.field3', 'untokenized.field4', '__key__.field5', '__numeric__.field6']), set([f.name() for f in document.getFields()]))
 
         field1 = document.getField("field1")
         self.assertEquals('value1', field1.stringValue())
@@ -66,6 +67,12 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         self.assertFalse(field5.fieldType().indexed())
         self.assertFalse(field5.fieldType().stored())
         self.assertTrue(field5.fieldType().tokenized())
+
+        field6 = document.getField("__numeric__.field6")
+        self.assertEquals(12345, field6.numericValue().longValue())
+        self.assertFalse(field6.fieldType().indexed())
+        self.assertFalse(field6.fieldType().stored())
+        self.assertTrue(field6.fieldType().tokenized())
 
     def testCreateFacet(self):
         fields = {

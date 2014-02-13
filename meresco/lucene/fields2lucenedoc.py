@@ -48,7 +48,6 @@ class Fields2LuceneDoc(Observable):
         tx = self.ctx.tx
         valueList = tx.objectScope(self).setdefault(name, [])
         valueList.append(value)
-        print ("Fields2LuceneDoc", name, value)
 
     def commit(self, id):
         tx = self.ctx.tx
@@ -65,8 +64,6 @@ class Fields2LuceneDoc(Observable):
         doc = Document()
         for field, values in fields.items():
             for value in values:
-                if field == "__key__.untokenized.dcterms:date.year":
-                    print ("createField", field, value)
                 if field.startswith(KEY_PREFIX):
                     value = self.call.numerateTerm(value)
                 if field == IDFIELD:

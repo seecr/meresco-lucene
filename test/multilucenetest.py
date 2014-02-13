@@ -440,7 +440,7 @@ class MultiLuceneTest(SeecrTestCase):
         consume(self.luceneA.search(query=query('Q=true'), collector=matchKeyCollector))
         keyFilterCollector = KeyFilterCollector(matchKeyCollector.getCollectedKeys(), KEY_PREFIX + 'B')
         result = returnValueFromGenerator(self.luceneB.executeQuery(luceneQuery=query('O=false'), filter=uniteDocIdCollector.getDocIdFilter(), filterCollector=keyFilterCollector))
-        self.assertEquals([Hit(u'B-N>A-MQU'), Hit(u'B-P>A-MQU')], sorted(result.hits))
+        self.assertEquals([Hit(u'B-N>A-MQU'), Hit(u'B-P>A-MQU')], sorted(result.hits, key=lambda h: h.id))
 
     def NOT_YET_SUPPORTED_testUniteAndFacetsCoreB(self):
         q = ComposedQuery('coreB')

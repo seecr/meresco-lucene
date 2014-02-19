@@ -35,61 +35,27 @@ from cqlparser import CqlVisitor, UnsupportedCQL
 from re import compile
 
 
-def _analyzeToken(token):
-    result = []
-    reader = StringReader(unicode(token))
-    stda = createAnalyzer()
-    ts = stda.tokenStream("dummy field name", reader)
-    termAtt = ts.addAttribute(CharTermAttribute.class_)
-    try:
-        ts.reset()
-        while ts.incrementToken():
-            result.append(termAtt.toString())
-        ts.end()
-    finally:
-        ts.close()
-    return result
+class LuceneQueryComposer(object):
+    def __init__(self, unqualifiedTermFields, isUntokenizedMethod=None, analyzer=None):
+        self._unqualifiedTermFields = unqualifiedTermFields
+        self._isUntokenized = (lambda name: False) if isUntokenizedMethod is None else isUntokenizedMethod
+        self._analyzer = analyzer
 
-prefixRegexp = compile(r'^([\w-]{2,})\*$') # pr*, prefix* ....
+    def compose(self, ast):
+        (result, ) = _Cql2LuceneQueryVisitor(
+            unqualifiedTermFields=self._unqualifiedTermFields, 
+            node=ast, 
+            isUntokenized=self._isUntokenized, 
+            analyzer=self._analyzer).visit()
+        return result
 
-def _termOrPhraseQuery(index, termString):
-    if fieldType(index) == LONGTYPE:
-        return NumericRangeQuery.newLongRange(index, long(termString), long(termString), True, True)
-    listOfTermStrings = _analyzeToken(termString.lower())
-    if len(listOfTermStrings) == 1:
-        if prefixRegexp.match(termString):
-            return PrefixQuery(Term(index, listOfTermStrings[0]))
-        return TermQuery(Term(index, listOfTermStrings[0]))
-    result = PhraseQuery()
-    for term in listOfTermStrings:
-        result.add(Term(index, term))
-    return result
-
-def _termRangeQuery(index, relation, termString):
-    field = index
-    if '<' in relation:
-        lowerTerm, upperTerm = None, termString
-    else:
-        lowerTerm, upperTerm = termString, None
-    includeLower, includeUpper = relation == '>=', relation == '<='
-    return TermRangeQuery.newStringRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
-
-LHS_OCCUR = {
-    "AND": BooleanClause.Occur.MUST,
-    "OR" : BooleanClause.Occur.SHOULD,
-    "NOT": BooleanClause.Occur.MUST
-}
-RHS_OCCUR = {
-    "AND": BooleanClause.Occur.MUST,
-    "OR" : BooleanClause.Occur.SHOULD,
-    "NOT": BooleanClause.Occur.MUST_NOT
-}
 
 class _Cql2LuceneQueryVisitor(CqlVisitor):
-    def __init__(self, unqualifiedTermFields, node, isUntokenized):
+    def __init__(self, unqualifiedTermFields, node, isUntokenized, analyzer):
         CqlVisitor.__init__(self, node)
         self._unqualifiedTermFields = unqualifiedTermFields
         self._isUntokenized = isUntokenized
+        self._analyzer = analyzer
 
     def visitSCOPED_CLAUSE(self, node):
         clause = CqlVisitor.visitSCOPED_CLAUSE(self, node)
@@ -114,12 +80,12 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
                 return MatchAllDocsQuery()
             if len(self._unqualifiedTermFields) == 1:
                 fieldname, boost = self._unqualifiedTermFields[0]
-                query = _termOrPhraseQuery(fieldname, unqualifiedRhs)
+                query = self._termOrPhraseQuery(fieldname, unqualifiedRhs)
                 query.setBoost(boost)
             else:
                 query = BooleanQuery()
                 for fieldname, boost in self._unqualifiedTermFields:
-                    subQuery = _termOrPhraseQuery(fieldname, unqualifiedRhs)
+                    subQuery = self._termOrPhraseQuery(fieldname, unqualifiedRhs)
                     subQuery.setBoost(boost)
                     query.add(subQuery, BooleanClause.Occur.SHOULD)
             return query
@@ -128,9 +94,9 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
             if relation in ['==', 'exact'] or (relation == '=' and self._isUntokenized(left)):
                 query = TermQuery(Term(left, right))
             elif relation == '=':
-                query = _termOrPhraseQuery(left, right)
+                query = self._termOrPhraseQuery(left, right)
             elif relation in ['<','<=','>=','>']:
-                query = _termRangeQuery(left, relation, right)
+                query = self._termRangeQuery(left, relation, right)
             else:
                 raise UnsupportedCQL("'%s' not supported for the field '%s'" % (relation, left))
 
@@ -150,12 +116,53 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
             boost = float(value)
         return relation, boost
 
-class LuceneQueryComposer(object):
-    def __init__(self, unqualifiedTermFields, isUntokenizedMethod=None):
-        self._unqualifiedTermFields = unqualifiedTermFields
-        self._isUntokenized = (lambda name: False) if isUntokenizedMethod is None else isUntokenizedMethod
-
-    def compose(self, ast):
-        (result, ) = _Cql2LuceneQueryVisitor(unqualifiedTermFields=self._unqualifiedTermFields, node=ast, isUntokenized=self._isUntokenized).visit()
+    def _termOrPhraseQuery(self, index, termString):
+        if fieldType(index) == LONGTYPE:
+            return NumericRangeQuery.newLongRange(index, long(termString), long(termString), True, True)
+        listOfTermStrings = self._analyzeToken(termString.lower())
+        if len(listOfTermStrings) == 1:
+            if prefixRegexp.match(termString):
+                return PrefixQuery(Term(index, listOfTermStrings[0]))
+            return TermQuery(Term(index, listOfTermStrings[0]))
+        result = PhraseQuery()
+        for term in listOfTermStrings:
+            result.add(Term(index, term))
         return result
 
+    def _termRangeQuery(self, index, relation, termString):
+        field = index
+        if '<' in relation:
+            lowerTerm, upperTerm = None, termString
+        else:
+            lowerTerm, upperTerm = termString, None
+        includeLower, includeUpper = relation == '>=', relation == '<='
+        return TermRangeQuery.newStringRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
+
+    def _analyzeToken(self, token):
+        result = []
+        reader = StringReader(unicode(token))
+        stda = createAnalyzer(self._analyzer)
+        ts = stda.tokenStream("dummy field name", reader)
+        termAtt = ts.addAttribute(CharTermAttribute.class_)
+        try:
+            ts.reset()
+            while ts.incrementToken():
+                result.append(termAtt.toString())
+            ts.end()
+        finally:
+            ts.close()
+        return result
+
+
+prefixRegexp = compile(r'^([\w-]{2,})\*$') # pr*, prefix* ....
+
+LHS_OCCUR = {
+    "AND": BooleanClause.Occur.MUST,
+    "OR" : BooleanClause.Occur.SHOULD,
+    "NOT": BooleanClause.Occur.MUST
+}
+RHS_OCCUR = {
+    "AND": BooleanClause.Occur.MUST,
+    "OR" : BooleanClause.Occur.SHOULD,
+    "NOT": BooleanClause.Occur.MUST_NOT
+}

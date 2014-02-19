@@ -34,6 +34,9 @@ from meresco.lucene.utils import TIMESTAMPFIELD
 from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
 from org.apache.lucene.index import Term
 
+from org.meresco.lucene import MerescoDutchStemmingAnalyzer
+
+
 class LuceneQueryComposerTest(TestCase):
     def setUp(self):
         super(LuceneQueryComposerTest, self).setUp()
@@ -53,6 +56,13 @@ class LuceneQueryComposerTest(TestCase):
         query.add(Term("unqualified", "cats"))
         query.add(Term("unqualified", "dogs"))
         self.assertConversion(query,'"cats dogs"')
+
+    def testPhraseOutputDutchStemming(self):
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], analyzer=MerescoDutchStemmingAnalyzer)
+        query = PhraseQuery()
+        query.add(Term("unqualified", "kat"))
+        query.add(Term("unqualified", "hond"))
+        self.assertConversion(query, '"katten honden"')
 
     def testPhraseQueryIsStandardAnalyzed(self):
         expected = PhraseQuery()

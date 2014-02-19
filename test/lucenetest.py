@@ -24,23 +24,30 @@
 #
 ## end license ##
 
-from seecr.test import SeecrTestCase, CallTrace
-from seecr.test.io import stdout_replaced
+
 from os.path import join
 from time import sleep
+import gc
+
+from cqlparser import parseString as parseCql
+
+from weightless.core import consume, retval
+
 from meresco.lucene import Lucene, VM
 from meresco.lucene.hit import Hit
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.utils import createField
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
-from cqlparser import parseString as parseCql
+
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
 from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.taxonomy import CategoryPath
+from org.meresco.lucene import MerescoDutchStemmingAnalyzer
+
+from seecr.test import SeecrTestCase, CallTrace
+from seecr.test.io import stdout_replaced
 from seecr.utils.generatorutils import returnValueFromGenerator
-from weightless.core import consume, retval
-import gc
 
 
 class LuceneTest(SeecrTestCase):
@@ -368,6 +375,19 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals(4, result.totalWithDuplicates)
         self.assertEquals({'count': 4, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
+
+    def testDutchStemming(self):
+        self.lucene.close()
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor, analyzer=MerescoDutchStemmingAnalyzer)
+        doc = document(field0='katten en honden')
+        consume(self.lucene.addDocument("urn:1", doc))
+        self.lucene.commit()
+
+        result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("field0", 'katten'))))
+        self.assertEquals(0, result.total)
+
+        result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("field0", 'kat'))))
+        self.assertEquals(1, result.total)
 
 
 def facets(**fields):

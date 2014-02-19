@@ -26,5 +26,7 @@
 from org.apache.lucene.util import Version
 from org.meresco.lucene import MerescoStandardAnalyzer
 
-def createAnalyzer():
-    return MerescoStandardAnalyzer(Version.LUCENE_43)
+
+def createAnalyzer(analyzer=None):
+    analyzer = analyzer or MerescoStandardAnalyzer
+    return analyzer(Version.LUCENE_43)

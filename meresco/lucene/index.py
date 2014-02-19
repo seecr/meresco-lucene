@@ -51,7 +51,7 @@ from meresco.lucene.utils import fieldType, LONGTYPE
 # Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html
 
 class Index(object):
-    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000):
+    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None):
         self._reactor = reactor
         self._maxCommitCount = commitCount or 1000
         self._commitCount = 0
@@ -61,7 +61,7 @@ class Index(object):
         self._checker = DirectSpellChecker()
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
         self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
-        self._analyzer = createAnalyzer()
+        self._analyzer = createAnalyzer(analyzer=analyzer)
         conf = IndexWriterConfig(Version.LUCENE_43, self._analyzer)
         conf.setSimilarity(BM25Similarity())
         self._indexWriter = IndexWriter(indexDirectory, conf)

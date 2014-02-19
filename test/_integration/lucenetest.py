@@ -143,6 +143,10 @@ class LuceneTest(IntegrationTestCase):
                 Hit(id='record:100', duplicateCount={'__key__.field': 1})
             ], response.hits)
 
+    def testDutchStemming(self):
+        self.assertEquals(1, self.numberOfRecords("field5=katten"))
+        self.assertEquals(1, self.numberOfRecords("field4=kat"))
+
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru'):
         arguments={'version': '1.2',
             'operation': 'searchRetrieve',

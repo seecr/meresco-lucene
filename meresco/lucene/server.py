@@ -40,6 +40,8 @@ from meresco.core.processtools import setSignalHandlers
 from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 
+from org.meresco.lucene import MerescoDutchStemmingAnalyzer
+
 from weightless.io import Reactor
 from weightless.core import compose, be
 
@@ -87,7 +89,7 @@ def uploadHelix(lucene, termNumerator, storageComponent):
     )
 
 def main(reactor, port, databasePath):
-    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, commitCount=30, name='main')
+    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, commitCount=30, name='main', analyzer=MerescoDutchStemmingAnalyzer)
     lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, commitTimeout=0.1, name='main2')
 
     termNumerator = TermNumerator(path=join(databasePath, 'termNumerator'))
@@ -142,7 +144,7 @@ def main(reactor, port, databasePath):
                     (PathFilter('/sru'),
                         (SruParser(defaultRecordSchema='record'),
                             (SruHandler(),
-                                (CqlToLuceneQuery([]),
+                                (CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer),
                                     multiLuceneHelix,
                                 ),
                                 (SRUTermDrilldown(defaultFormat='xml'),),

@@ -31,6 +31,7 @@ from time import time
 
 from utils import createField, createTimestampField, IDFIELD, KEY_PREFIX
 
+
 class Fields2LuceneDoc(Observable):
     def __init__(self, transactionName, drilldownFieldnames, addTimestamp=False):
         Observable.__init__(self)
@@ -79,4 +80,15 @@ class Fields2LuceneDoc(Observable):
         return int(time()*1000000)
 
     def _createFacetCategories(self, fields):
-        return [CategoryPath([f, str(v)]) for f, vs in fields.items() for v in vs if f in self._drilldownFieldnames]
+        categoryPaths = []
+        for f, vs in fields.items():
+            if not f in self._drilldownFieldnames:
+                continue
+            for v in vs:
+                path = [f]
+                if hasattr(v, 'extend'):
+                    path.extend(v)
+                else:
+                    path.append(str(v))
+                categoryPaths.append(CategoryPath(path))
+        return categoryPaths

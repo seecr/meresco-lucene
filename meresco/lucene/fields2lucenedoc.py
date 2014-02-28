@@ -87,7 +87,7 @@ class Fields2LuceneDoc(Observable):
             for v in vs:
                 path = [f]
                 if hasattr(v, 'extend'):
-                    path.extend(v)
+                    path.extend(str(category) for category in v)
                 else:
                     path.append(str(v))
                 categoryPaths.append(CategoryPath(path))

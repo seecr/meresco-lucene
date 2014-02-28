@@ -173,6 +173,16 @@ class Lucene(object):
         return ChainedFilter(filters, ChainedFilter.AND)
 
     def _facetResult(self, facetCollector):
+        def termsFromResultNode(resultNode, terms, fieldname):
+            for resultNode in resultNode.subResults.iterator():
+                resultNode = FacetResultNode.cast_(resultNode)
+                termDict = dict(term=resultNode.label.components[-1], count=int(resultNode.value))
+                pivotTerms = []
+                termsFromResultNode(resultNode=resultNode, terms=pivotTerms, fieldname=fieldname)
+                if pivotTerms:
+                    termDict['pivot'] = dict(fieldname=fieldname, terms=pivotTerms)
+                terms.append(termDict)
+
         facetResults = facetCollector.getFacetResults()
         if facetResults.size() == 0:
             return []
@@ -181,9 +191,7 @@ class Lucene(object):
             resultNode = facetResult.getFacetResultNode()
             fieldname = resultNode.label.toString()
             terms = []
-            for resultNode in resultNode.subResults.iterator():
-                resultNode = FacetResultNode.cast_(resultNode)
-                terms.append(dict(term=resultNode.label.components[-1], count=int(resultNode.value)))
+            termsFromResultNode(resultNode=resultNode, terms=terms, fieldname=fieldname)
             result.append(dict(fieldname=fieldname, terms=terms))
         return result
 
@@ -195,7 +203,9 @@ class Lucene(object):
             sortBy = f.get('sortBy')
             if not (sortBy is None or sortBy in self.SUPPORTED_SORTBY_VALUES):
                 raise ValueError('Value of "sortBy" should be in %s' % self.SUPPORTED_SORTBY_VALUES)
-            facetRequests.append(CountFacetRequest(CategoryPath([f['fieldname']]), f['maxTerms']))
+            facetRequest = CountFacetRequest(CategoryPath([f['fieldname']]), f['maxTerms'])
+            facetRequest.setDepth(MAX_FACET_DEPTH)
+            facetRequests.append(facetRequest)
         facetSearchParams = FacetSearchParams(facetRequests)
         return self._index.createFacetCollector(facetSearchParams)
 
@@ -229,3 +239,6 @@ def _topCollector(start, stop, sortKeys):
     else:
         return TopScoreDocCollector.create(stop, docsScoredInOrder)
     return TopFieldCollector.create(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)
+
+
+MAX_FACET_DEPTH = 10

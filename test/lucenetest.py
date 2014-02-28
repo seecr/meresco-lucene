@@ -196,7 +196,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first item0'), ('field3', 'second item')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')]), categories=createCategories([('field2', 'first item1'), ('field3', 'other value')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')]), categories=createCategories([('field2', 'first item2'), ('field3', 'second item')])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:3", document=createDocument([('field1', 'id:3')]), categories=createCategories([('field2', ['first item3', 'second item2'])])))
+
         # does not crash!!!
         returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         sleep(0.1)
@@ -220,6 +220,23 @@ class LuceneTest(SeecrTestCase):
                     {'term': 'other value', 'count': 1},
                 ],
             }],result.drilldownData)
+
+    def testFacetsWithCategoryPathHierarchy(self):
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', ['item0', 'item1'])])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')]), categories=createCategories([('field2', ['item0', 'item2'])])))
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
+        self.assertEquals([{
+                'fieldname': 'field2',
+                'terms': [
+                    {'term': 'item0', 'count': 2, 'pivot': {
+                        'fieldname': 'field2',
+                        'terms': [
+                            {'term': 'item2', 'count': 1},
+                            {'term': 'item1', 'count': 1},
+                        ]
+                    }}
+                ],
+            }], result.drilldownData)
 
     def XX_testFacetsWithIllegalCharacters(self):
         categories = createCategories([('field', 'a/b')])

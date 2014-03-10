@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -32,11 +32,10 @@ def header(originalPath, **kwargs):
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="author" content="Seecr" />
     <title>Lucene Info</title>
-    <link rel="stylesheet" href="http://seecr.nl/static/css/seecr-banner.css"/>
+    <link rel="stylesheet" href="https://cdn.seecr.nl/css/seecr-banner.css"/>
     <link rel="stylesheet" href="https://cdn.seecr.nl/css/seecr-view.css"/>
     <link rel="stylesheet" href="%s/info/static/lucene-info.css"/>
-    <link rel="shortcut icon" href="http://seecr.nl/favicon.ico" />
-    <link rel="apple-touch-icon" href="http://seecr.nl/apple-touch-icon.png"/>
+    <link rel="shortcut icon" href="https://cdn.seecr.nl/favicon.ico" />
 </head>
 <body>""" % prefix
 

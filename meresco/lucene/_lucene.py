@@ -229,7 +229,7 @@ millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 
 def _termsFromFacetResult(facetResult, facet, path):
     r = facetResult.getTopChildren(facet['maxTerms'] or Integer.MAX_VALUE, facet['fieldname'], path)
     if r is None:
-        return
+        return []
     terms = []
     for l in r.labelValues:
         termDict = dict(term=str(l.label), count=l.value.intValue())

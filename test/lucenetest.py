@@ -232,6 +232,10 @@ class LuceneTest(SeecrTestCase):
         except ValueError, e:
             self.assertEquals("""Value of "sortBy" should be in ['count']""", str(e))
 
+    def testFacetsOnUnknownField(self):
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='fieldUnknonw')]))
+        self.assertEquals([{'terms': [], 'fieldname': 'fieldUnknonw'}], result.drilldownData)
+
     def testFacetsMaxTerms0(self):
         self.lucene._index._commitCount = 3
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first item0'), ('field3', 'second item')])))

@@ -29,16 +29,12 @@ from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields,
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
-# from org.apache.lucene.facet.index import FacetFields
 from org.apache.lucene.facet import FacetsCollector, FacetsConfig, Facets
 from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
 from org.apache.lucene.facet.taxonomy.writercache import LruTaxonomyWriterCache
-
-# from org.apache.lucene.facet.search import CachedOrdsCountingFacetsAggregator, FacetArrays
-# from org.meresco.lucene import MyFacetsAccumulator
 
 from java.io import File, StringReader
 
@@ -47,8 +43,6 @@ from os.path import join
 from indexandtaxonomy import IndexAndTaxonomy
 from meresco.lucene.utils import fieldType, LONGTYPE
 from org.apache.lucene.facet.taxonomy import FastTaxonomyFacetCounts
-
-# Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html
 
 class Index(object):
     def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, drilldownFields=None):
@@ -63,7 +57,7 @@ class Index(object):
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
         self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
         self._analyzer = createAnalyzer(analyzer=analyzer)
-        conf = IndexWriterConfig(Version.LUCENE_43, self._analyzer)
+        conf = IndexWriterConfig(Version.LUCENE_48, self._analyzer)
         conf.setSimilarity(similarity)
         self._indexWriter = IndexWriter(indexDirectory, conf)
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
@@ -160,12 +154,6 @@ class Index(object):
 
     def createFacetCollector(self):
         return FacetsCollector()
-        # aggregator = CachedOrdsCountingFacetsAggregator()
-        # arrays = FacetArrays(self._indexAndTaxonomy.taxoReader.getSize())
-        # accu = MyFacetsAccumulator(aggregator, facetSearchParams, self._indexAndTaxonomy.searcher.getIndexReader(), self._indexAndTaxonomy.taxoReader, arrays)
-        # # accu.getAggregator = lambda: aggregator
-        # return FacetsCollector.create(accu)
-        # return FacetsCollector.create(facetSearchParams, self._indexAndTaxonomy.searcher.getIndexReader(), self._indexAndTaxonomy.taxoReader)
 
     def facetResult(self, facetCollector):
         facetResult = FastTaxonomyFacetCounts(self._indexAndTaxonomy.taxoReader, self._facetsConfig, facetCollector);

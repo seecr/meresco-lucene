@@ -52,7 +52,7 @@ class ComposedQuery(object):
         self._matches[(coreASpec['core'], coreBSpec['core'])] = (coreASpec, coreBSpec)
 
     def unite(self, **kwargs):
-        if len(kwargs) != ComposedQuery.MAX_CORES:
+        if len(kwargs) != 2:
             raise ValueError("Expected unite(coreA=<luceneQueryA>, coreB=<luceneQueryA>)")
         cores = sorted(kwargs.keys())
         try:
@@ -114,23 +114,24 @@ class ComposedQuery(object):
             for core in self._coreQueries.keys():
                 if core != self._resultsFrom:
                     yield core
-        return tuple(_cores())
+        return list(_cores())
 
     def matchingCores(self):
         return set(core for coreTuple in self._matches.keys() for core in coreTuple)
 
     def validate(self):
-        if self.numberOfCores > ComposedQuery.MAX_CORES:
-            raise ValueError('Unsupported number of cores, expected at most %s.' % ComposedQuery.MAX_CORES)
-        if not self.isSingleCoreQuery() or self._matches:
+        if self.isSingleCoreQuery() and not self._matches:
+            return
+        for core in self.cores():
+            if core == self._resultsFrom:
+                continue
             try:
-                coreASpec, coreBSpec = self._matchCoreSpecs(*self.cores())
+                for coreSpec in self._matchCoreSpecs(self._resultsFrom, core):
+                    if coreSpec['core'] == self._resultsFrom:
+                        if not 'uniqueKey' in coreSpec:
+                            raise ValueError("Match for result core '%s', for which one or more queries apply, must have a uniqueKey specification." % self._resultsFrom)
             except KeyError:
-               raise ValueError("No match set for cores %s" % str(self.cores()))
-            for coreSpec in [coreASpec, coreBSpec]:
-                if coreSpec['core'] == self._resultsFrom:
-                    if not 'uniqueKey' in coreSpec:
-                        raise ValueError("Match for result core '%s', for which one or more queries apply, must have a uniqueKey specification." % self._resultsFrom)
+                raise ValueError("No match set for cores %s" % str((self._resultsFrom, core)))
 
     def convertWith(self, convert):
         convertQuery = lambda query: (query if query is None else convert(query))
@@ -182,8 +183,6 @@ class ComposedQuery(object):
 
     def __repr__(self):
         return "%s%s" % (self.__class__.__name__, self.asDict())
-
-    MAX_CORES = 2
 
 
 del ComposedQuery._prop

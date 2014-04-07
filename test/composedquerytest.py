@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -34,12 +34,26 @@ class ComposedQueryTest(SeecrTestCase):
         composedQuery.setCoreQuery(core='coreB', query='Q1')
         self.assertValueError(composedQuery, "No match set for cores ('coreA', 'coreB')")
         composedQuery.addMatch(dict(core='coreC', uniqueKey='keyC'), dict(core='coreD', key='keyE'))
-        self.assertValueError(composedQuery, 'Unsupported number of cores, expected at most 2.')
+        self.assertValueError(composedQuery, "No match set for cores ('coreA', 'coreB')")
 
-        composedQuery = ComposedQuery('coreA')        
+        composedQuery = ComposedQuery('coreA')
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         composedQuery.validate()
         self.assertEquals(2, composedQuery.numberOfCores)
+
+    def testValidateComposedQueryForThreeCores(self):
+        composedQuery = ComposedQuery('coreA')
+        composedQuery.setCoreQuery(core='coreA', query='Q0')
+        composedQuery.setCoreQuery(core='coreB', query='Q1')
+        composedQuery.setCoreQuery(core='coreC', query='Q2')
+        self.assertValueError(composedQuery, "No match set for cores ('coreA', 'coreB')")
+
+        composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
+        self.assertValueError(composedQuery, "No match set for cores ('coreA', 'coreC')")
+
+        composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreC', key='keyC'))
+        composedQuery.validate()
+        self.assertEquals(3, composedQuery.numberOfCores)
 
     def testUniqueKeyDoesntMatchResultsFrom(self):
         composedQuery = ComposedQuery('coreA')
@@ -159,7 +173,7 @@ class ComposedQueryTest(SeecrTestCase):
         cq.setCoreQuery('coreA', query='A')
         cq.unite(coreA='Q5', coreB='Q6')
         cq.validate()
-        self.assertEquals(('coreA', 'coreB'), cq.cores())
+        self.assertEquals(['coreA', 'coreB'], cq.cores())
 
     def testIsSingleCoreQuery(self):
         cq = ComposedQuery('coreA')
@@ -169,7 +183,7 @@ class ComposedQueryTest(SeecrTestCase):
         cq.setCoreQuery('coreA', query='A')
         self.assertTrue(cq.isSingleCoreQuery())
         cq.setCoreQuery('coreB', query=None)
-        self.assertTrue(cq.isSingleCoreQuery())        
+        self.assertTrue(cq.isSingleCoreQuery())
         cq.unite(coreA='Q5', coreB='Q6')
         self.assertFalse(cq.isSingleCoreQuery())
 

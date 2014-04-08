@@ -34,6 +34,8 @@ from meresco.lucene.synchronousremote import SynchronousRemote
 from cqlparser import parseString
 from meresco.lucene.hit import Hit
 from meresco.components import lxmltostring
+from org.apache.lucene.search import MatchAllDocsQuery
+from meresco.lucene.remote._conversion import jsonDumpMessage
 
 
 class LuceneTest(IntegrationTestCase):
@@ -109,12 +111,12 @@ class LuceneTest(IntegrationTestCase):
 
     def testJoin(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        q = ComposedQuery('main')
+        q = ComposedQuery('main', query=parseString('*'))
         q.addMatch(dict(core='main', uniqueKey=KEY_PREFIX+'field'), dict(core='main2', key=KEY_PREFIX+'field'))
         q.start=0
         q.stop=100
-        q.setCoreQuery(core='main', filterQueries=[parseString('field2=value0 OR field2=value1')])
-        q.setCoreQuery(core='main2', facets=[dict(fieldname='untokenized.field2', maxTerms=5)])
+        q.addFilterQuery(core='main', query=parseString('field2=value0 OR field2=value1'))
+        q.addFacet(core='main2', facet=dict(fieldname='untokenized.field2', maxTerms=5))
         response = remote.executeComposedQuery(query=q)
         self.assertEquals(19, response.total)
         self.assertEquals([

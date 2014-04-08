@@ -23,122 +23,131 @@
 #
 ## end license ##
 
+from collections import defaultdict
+
 
 class ComposedQuery(object):
-    def __init__(self, resultsFromCore):
-        self._resultsFrom = resultsFromCore
-        self._coreQueries = {}
-        self._ensureCore(resultsFromCore)
+    def __init__(self, resultsFromCore, query=None):
+        self.cores = set()
+        self._coreQueries = defaultdict(dict)
         self._matches = {}
         self._unites = []
+        self.resultsFrom = resultsFromCore
+        self.setCoreQuery(resultsFromCore, query=query)
 
-    def setCoreQuery(self, core, query=None, facets=None, filterQueries=None):
-        self._coreQueries[core] = dict(
-            query=query,
-            filterQueries=[] if filterQueries is None else filterQueries,
-            facets=[] if facets is None else facets)
+    def setCoreQuery(self, core, query, filterQueries=None, facets=None):
+        self.cores.add(core)
+        self._coreQueries[core]['query'] = query
+        if not filterQueries is None:
+            for filterQuery in filterQueries:
+                self.addFilterQuery(core, filterQuery)
+        if not facets is None:
+            for facet in facets:
+                self.addFacet(core, facet)
+        return self
 
     def addFilterQuery(self, core, query):
-        self._ensureCore(core)
-        self._coreQueries[core]['filterQueries'].append(query)
+        self.cores.add(core)
+        self._coreQueries[core].setdefault('filterQueries', []).append(query)
+        return self
 
     def addFacet(self, core, facet):
-        self._ensureCore(core)
-        self._coreQueries[core]['facets'].append(facet)
+        self.cores.add(core)
+        self._coreQueries[core].setdefault('facets', []).append(facet)
+        return self
 
-    def addMatch(self, coreASpec, coreBSpec):
-        for coreSpec in [coreASpec, coreBSpec]:
-            self._ensureCore(coreSpec['core'])
-        self._matches[(coreASpec['core'], coreBSpec['core'])] = (coreASpec, coreBSpec)
+    def addMatch(self, matchCoreASpec, matchCoreBSpec):
+        self._matches[(matchCoreASpec['core'], matchCoreBSpec['core'])] = (matchCoreASpec, matchCoreBSpec)
+        return self
 
-    def unite(self, **kwargs):
-        if len(kwargs) != 2:
-            raise ValueError("Expected unite(coreA=<luceneQueryA>, coreB=<luceneQueryA>)")
-        cores = sorted(kwargs.keys())
+    def addUnite(self, uniteCoreASpec, uniteCoreBSpec):
+        if len(self.unites) > 0:
+            raise ValueError("No more than 1 addUnite supported")
+        coreNames = uniteCoreASpec['core'], uniteCoreBSpec['core']
         try:
-            keyNames = self.keyNames(*cores)
+            keyNames = self.keyNames(*coreNames)
+            uniteCoreASpec['key'], uniteCoreBSpec['key'] = keyNames
         except KeyError:
-            raise ValueError('No match found for %s' % cores)
-        for core, keyName in zip(cores, keyNames):
-            self._unites.append((core, keyName, kwargs[core]))
+            raise ValueError('No match found for %s' % coreNames)
+        for uniteCoreSpec in (uniteCoreASpec, uniteCoreBSpec):
+            self.cores.add(uniteCoreSpec['core'])
+            self._unites.append(uniteCoreSpec)
+        return self
 
-    def isSingleCoreQuery(self):
-        usedCores = set([self._resultsFrom])
-        for core, coreQueryDict in self._coreQueries.items():
-            if coreQueryDict.get('query') != None or \
-                coreQueryDict.get('filterQueries') or \
-                coreQueryDict.get('facets'):
-                    usedCores.add(core)
-        for core, _, _ in self._unites:
-            usedCores.add(core)
-        return len(usedCores) == 1
 
-    def unites(self):
-        return self._unites
 
     def uniteQueriesFor(self, core):
-        return [uniteQuery for coreName, coreKeyName, uniteQuery in self._unites if coreName == core]
+        return [d['query'] for d in self._unites if d['core'] == core]
 
     def keyNames(self, *cores):
-        coreASpec, coreBSpec = self._matchCoreSpecs(*cores)
         keyNames = []
-        for coreSpec in [coreASpec, coreBSpec]:
+        for matchCoreSpec in self._matchCoreSpecs(*cores):
             for keyName in ['key', 'uniqueKey']:
-                if keyName in coreSpec:
-                    keyNames.append(coreSpec[keyName])
+                if keyName in matchCoreSpec:
+                    keyNames.append(matchCoreSpec[keyName])
                     break
             else:
-                raise KeyError('No key specificied in match for %s' % coreSpec['core'])
+                raise KeyError('No key specificied in match for %s' % matchCoreSpec['core'])
         return keyNames
 
+    def keyName(self, core):
+        # TODO: fail faster at addMatch time!
+        # Note: assumes (!) for now that for a given core the key is the same in each match the core participates in.
+        foundKeys = set()
+        for coreTuple, matchCoreSpecTuple in self._matches.items():
+            for coreName, matchCoreSpec in zip(coreTuple, matchCoreSpecTuple):
+                if coreName == core:
+                    foundKeys.add(matchCoreSpec.get('uniqueKey', matchCoreSpec.get('key')))
+        if len(foundKeys) > 1:
+            raise ValueError("Use of different keys for one core ('%s') not yet supported" % core)
+        return foundKeys.pop()
+
     def queryFor(self, core):
-        return self._coreQueries[core]['query']
+        return self._getCoreSpec(core).get('query')
 
     def queriesFor(self, core):
         return [q for q in [self.queryFor(core)] + self.filterQueriesFor(core) if q]
 
     def facetsFor(self, core):
-        return self._coreQueries[core]['facets']
+        return self._getCoreSpec(core).get('facets', [])
 
     def filterQueriesFor(self, core):
-        return self._coreQueries[core]['filterQueries']
+        return self._getCoreSpec(core).get('filterQueries', [])
 
     @property
-    def numberOfCores(self):
-        return len(self.cores())
+    def unites(self):
+        return self._unites
 
-    def cores(self):
-        def _cores():
-            if not self._resultsFrom is None:
-                yield self._resultsFrom
-            for core in self._coreQueries.keys():
-                if core != self._resultsFrom:
-                    yield core
-        return list(_cores())
+    @property
+    def numberOfUsedCores(self):
+        return len(self.cores)
 
-    def matchingCores(self):
-        return set(core for coreTuple in self._matches.keys() for core in coreTuple)
+    def isSingleCoreQuery(self):
+        return self.numberOfUsedCores == 1
 
     def validate(self):
-        if self.isSingleCoreQuery() and not self._matches:
-            return
-        for core in self.cores():
-            if core == self._resultsFrom:
+        if not self.resultsFrom in self._coreQueries:
+            raise ValueError("Should provide query for core '%s'" % self.resultsFrom)
+        for core in self.cores:
+            if core == self.resultsFrom:
                 continue
             try:
-                for coreSpec in self._matchCoreSpecs(self._resultsFrom, core):
-                    if coreSpec['core'] == self._resultsFrom:
-                        if not 'uniqueKey' in coreSpec:
-                            raise ValueError("Match for result core '%s', for which one or more queries apply, must have a uniqueKey specification." % self._resultsFrom)
+                for matchCoreSpec in self._matchCoreSpecs(self.resultsFrom, core):
+                    self.keyName(matchCoreSpec['core'])  # might raise ValueError if different keys were specified for same core
+                    if matchCoreSpec['core'] == self.resultsFrom:
+                        if not 'uniqueKey' in matchCoreSpec:
+                            raise ValueError("Match for result core '%s', for which one or more queries apply, must have a uniqueKey specification." % self.resultsFrom)
             except KeyError:
-                raise ValueError("No match set for cores %s" % str((self._resultsFrom, core)))
+                raise ValueError("No match set for cores %s" % str((self.resultsFrom, core)))
 
     def convertWith(self, convert):
         convertQuery = lambda query: (query if query is None else convert(query))
         for coreQuery in self._coreQueries.values():
-            coreQuery['query'] = convertQuery(coreQuery['query'])
-            coreQuery['filterQueries'] = [convertQuery(fq) for fq in coreQuery['filterQueries']]
-        self._unites = [(core, keyName, convertQuery(query)) for core, keyName, query in self._unites]
+            if 'query' in coreQuery:
+                coreQuery['query'] = convertQuery(coreQuery['query'])
+            if 'filterQueries' in coreQuery:
+                coreQuery['filterQueries'] = [convertQuery(fq) for fq in coreQuery['filterQueries']]
+        self._unites = [dict(d, query=convertQuery(d['query'])) for d in self._unites]
 
     def otherKwargs(self):
         return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField)
@@ -159,20 +168,21 @@ class ComposedQuery(object):
     def asDict(self):
         result = dict(vars(self))
         result['_matches'] = dict(('->'.join(key), value) for key, value in result['_matches'].items())
+        result['cores'] = list(self.cores)
         return result
 
     @classmethod
     def fromDict(cls, dct):
-        cq = cls(dct['_resultsFrom'])
+        cq = cls(dct['resultsFrom'])
         matches = dct['_matches']
         dct['_matches'] = dict((tuple(key.split('->')), value) for key, value in matches.items())
+        dct['cores'] = set(dct['cores'])
         for attr, value in dct.items():
             setattr(cq, attr, value)
         return cq
 
-    def _ensureCore(self, core):
-        if core not in self._coreQueries:
-            self.setCoreQuery(core)
+    def _getCoreSpec(self, core):
+        return self._coreQueries.get(core, {})
 
     def _matchCoreSpecs(self, *cores):
         try:

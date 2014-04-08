@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -83,7 +83,7 @@ class CqlToLuceneQueryTest(TestCase):
         q.setCoreQuery(core='A', query=parseString('fieldAQ exact valueAQ'))
         q.setCoreQuery(core='B', query=parseString('fieldBQ exact valueBQ'))
         q.addMatch(dict(core='A', uniqueKey='keyA'), dict(core='B', key='keyB'))
-        q.unite(A=parseString('fieldUA exact valueUA'), B=parseString('fieldUB exact valueUB'))
+        q.addUnite(dict(core='A', query=parseString('fieldUA exact valueUA')), dict(core='B', query=parseString('fieldUB exact valueUB')))
         q.validate()
         consume(self.dna.any.executeComposedQuery(query=q))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())

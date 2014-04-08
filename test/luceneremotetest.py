@@ -70,7 +70,7 @@ class LuceneRemoteTest(SeecrTestCase):
         message, kwargs = jsonLoadMessage(m.kwargs['body'])
         query = kwargs['query']
         self.assertEquals('executeComposedQuery', message)
-        self.assertEquals('coreA', query._resultsFrom)
+        self.assertEquals('coreA', query.resultsFrom)
         self.assertEquals([{'fieldname': 'field', 'maxTerms':5}], query.facetsFor('coreA'))
 
     def testRemoteExecuteQueryWithNoneValues(self):
@@ -271,7 +271,7 @@ class LuceneRemoteTest(SeecrTestCase):
         cq.setCoreQuery(core='coreA', query=parseString('Q0'), filterQueries=['Q1', 'Q2'], facets=['F0', 'F1'])
         cq.setCoreQuery(core='coreB', query='Q3', filterQueries=['Q4'])
         cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
-        cq.unite(coreA='AQuery', coreB='anotherQuery')
+        cq.addUnite(dict(core='coreA', query='AQuery'), dict(core='coreB', query='anotherQuery'))
         cq.start = 0
         cq.sortKeys = [dict(sortBy='field', sortDescending=True)]
 

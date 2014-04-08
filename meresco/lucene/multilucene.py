@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -48,8 +48,8 @@ class MultiLucene(Observable):
         return keyCollector
 
     def collectUniteKeyCollectors(self, query):
-        for coreName, coreKeyName, uniteQuery in query.unites():
-            yield self.collectKeys(uniteQuery, coreName, coreKeyName)
+        for d in query.unites:
+            yield self.collectKeys(d['query'], d['core'], d['key'])
 
     def orCollectors(self, collectors, keyName):
         booleanFilter = None
@@ -73,10 +73,18 @@ class MultiLucene(Observable):
         if query.isSingleCoreQuery():
             response = yield self._sinqleQuery(query)
             generatorReturn(response)
+        if query.numberOfUsedCores == 2:
+            response = yield self._doubleQuery(query)
+        else:
+            response = yield self._multipleCoreQuery(query)
+        generatorReturn(response)
 
+    def _doubleQuery(self, query):
         t0 = time()
 
-        resultCoreName, otherCoreName = query.cores()
+        resultCoreName = query.resultsFrom
+        otherCoreName = [coreName for coreName in query.cores if coreName != resultCoreName][0]
+
         resultMatchKeyName, otherMatchKeyName = query.keyNames(resultCoreName, otherCoreName)
 
         unitesKeyCollectors = list(self.collectUniteKeyCollectors(query))
@@ -113,9 +121,25 @@ class MultiLucene(Observable):
         result.queryTime = millis(time() - t0)
         generatorReturn(result)
 
+    def _multipleCoreQuery(self, query):
+        t0 = time()
+        resultCoreName = query.resultsFrom
+        otherCoreNames = [coreName for coreName in query.cores if coreName != resultCoreName]
+
+        unitesKeyCollectors = list(self.collectUniteKeyCollectors(query))
+
+        resultMatchKeyName = query.keyName(resultCoreName)
+        resultCoreBaseFilter = self.orCollectors(unitesKeyCollectors, resultMatchKeyName)
+
+        # WORK IN PROGRESS
+
+        result.queryTime = millis(time() - t0)
+        generatorReturn(result)
+
+
     def _sinqleQuery(self, query):
         t0 = time()
-        resultCoreName = query.cores()[0]
+        resultCoreName = query.resultsFrom
         resultCoreQuery = query.queryFor(core=resultCoreName)
         if resultCoreQuery is None:
             resultCoreQuery = MatchAllDocsQuery()

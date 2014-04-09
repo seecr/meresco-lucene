@@ -204,10 +204,18 @@ class ComposedQueryTest(SeecrTestCase):
         cq.addUnite(dict(core='coreA', query='Q5'), dict(core='coreB', query='Q6'))
         self.assertFalse(cq.isSingleCoreQuery())
 
+    def testAddRankQuery(self):
+        cq = ComposedQuery('coreA')
+        cq.addRankQuery('coreB', 'qB')
+        self.assertValidateRaisesValueError(cq, "No match set for cores ('coreA', 'coreB')")
+        cq.addMatch(dict(core='coreA', uniqueKey='kA'), dict(core='coreB', key='kB'))
+        self.assertEquals(['qB'], cq.rankQueriesFor('coreB'))
+        cq.convertWith(lambda q: "converted_" + q)
+        self.assertEquals(['converted_qB'], cq.rankQueriesFor('coreB'))
+
     def assertValidateRaisesValueError(self, composedQuery, message):
         try:
             composedQuery.validate()
             self.fail("should have raised ValueError")
         except ValueError, e:
             self.assertEquals(message, str(e))
-

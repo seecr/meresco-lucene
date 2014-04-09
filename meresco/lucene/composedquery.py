@@ -29,7 +29,10 @@ from collections import defaultdict
 class ComposedQuery(object):
     def __init__(self, resultsFromCore, query=None):
         self.cores = set()
-        self._coreQueries = defaultdict(dict)
+        self._queries = {}
+        self._filterQueries = defaultdict(list)
+        self._facets = defaultdict(list)
+        self._rankQueries = defaultdict(list)
         self._matches = {}
         self._coreKeys = {}
         self._unites = []
@@ -38,7 +41,7 @@ class ComposedQuery(object):
 
     def setCoreQuery(self, core, query, filterQueries=None, facets=None):
         self.cores.add(core)
-        self._coreQueries[core]['query'] = query
+        self._queries[core] = query
         if not filterQueries is None:
             for filterQuery in filterQueries:
                 self.addFilterQuery(core, filterQuery)
@@ -49,12 +52,17 @@ class ComposedQuery(object):
 
     def addFilterQuery(self, core, query):
         self.cores.add(core)
-        self._coreQueries[core].setdefault('filterQueries', []).append(query)
+        self._filterQueries[core].append(query)
         return self
 
     def addFacet(self, core, facet):
         self.cores.add(core)
-        self._coreQueries[core].setdefault('facets', []).append(facet)
+        self._facets[core].append(facet)
+        return self
+
+    def addRankQuery(self, core, query):
+        self.cores.add(core)
+        self._rankQueries[core].append(query)
         return self
 
     def addMatch(self, matchCoreASpec, matchCoreBSpec):
@@ -85,23 +93,26 @@ class ComposedQuery(object):
             self._unites.append(uniteCoreSpec)
         return self
 
+    def queryFor(self, core):
+        return self._queries.get(core)
+
+    def filterQueriesFor(self, core):
+        return self._filterQueries.get(core, [])
+
+    def facetsFor(self, core):
+        return self._facets.get(core, [])
+
+    def rankQueriesFor(self, core):
+        return self._rankQueries[core]
+
     def uniteQueriesFor(self, core):
         return [d['query'] for d in self._unites if d['core'] == core]
 
     def keyName(self, core):
         return self._coreKeys[core]
 
-    def queryFor(self, core):
-        return self._getCoreSpec(core).get('query')
-
     def queriesFor(self, core):
         return [q for q in [self.queryFor(core)] + self.filterQueriesFor(core) if q]
-
-    def facetsFor(self, core):
-        return self._getCoreSpec(core).get('facets', [])
-
-    def filterQueriesFor(self, core):
-        return self._getCoreSpec(core).get('filterQueries', [])
 
     @property
     def unites(self):
@@ -125,11 +136,9 @@ class ComposedQuery(object):
 
     def convertWith(self, convert):
         convertQuery = lambda query: (query if query is None else convert(query))
-        for coreQuery in self._coreQueries.values():
-            if 'query' in coreQuery:
-                coreQuery['query'] = convertQuery(coreQuery['query'])
-            if 'filterQueries' in coreQuery:
-                coreQuery['filterQueries'] = [convertQuery(fq) for fq in coreQuery['filterQueries']]
+        self._queries = dict((k, convertQuery(v)) for k, v in self._queries.items())
+        self._filterQueries = dict((k, [convertQuery(v) for v in values]) for k, values in self._filterQueries.items())
+        self._rankQueries = dict((k, [convertQuery(v) for v in values]) for k, values in self._rankQueries.items())
         self._unites = [dict(d, query=convertQuery(d['query'])) for d in self._unites]
 
     def otherKwargs(self):
@@ -163,9 +172,6 @@ class ComposedQuery(object):
         for attr, value in dct.items():
             setattr(cq, attr, value)
         return cq
-
-    def _getCoreSpec(self, core):
-        return self._coreQueries.get(core, {})
 
     def _matchCoreSpecs(self, *cores):
         try:

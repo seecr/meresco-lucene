@@ -605,9 +605,17 @@ class MultiLuceneTest(SeecrTestCase):
         q.setCoreQuery(core='coreC', query=luceneQueryFromCql('R=true'))
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
+        q.addFacet(core='coreA', facet=dict(fieldname='cat_M', maxTerms=10))
+        q.addFacet(core='coreB', facet=dict(fieldname='cat_N', maxTerms=10))
+        q.addFacet(core='coreC', facet=dict(fieldname='cat_R', maxTerms=10))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(1, result.total)
         self.assertEquals(set([Hit('A-M')]), set(result.hits))
+        self.assertEquals([
+               {'terms': [{'count': 1, 'term': u'true'}], 'fieldname': u'cat_M'},
+               {'terms': [{'count': 1, 'term': u'true'}], 'fieldname': u'cat_N'},
+               {'terms': [{'count': 1, 'term': u'true'}], 'fieldname': u'cat_R'},
+            ], result.drilldownData)
 
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(

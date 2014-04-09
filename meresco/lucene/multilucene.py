@@ -84,41 +84,38 @@ class MultiLucene(Observable):
     def _multipleCoreQuery(self, query):
         t0 = time()
         resultCoreName = query.resultsFrom
-        otherCoreSpecs = {}
-        for coreName in query.cores:
-            if coreName == resultCoreName:
-                continue
-            otherCoreSpecs[coreName] = dict(key=query.keyName(coreName))
+        otherCoreNames = [coreName for coreName in query.cores if coreName != resultCoreName]
+        coreBaseFilters = {}
 
-        resultMatchKeyName = query.keyName(resultCoreName)
+        resultCoreKey = query.keyName(resultCoreName)
 
         resultCoreBaseFilter = None
         if query.unites:
             unitesKeyCollectors = list(self.collectUniteKeyCollectors(query))
-            resultCoreBaseFilter = self.orCollectors(unitesKeyCollectors, resultMatchKeyName)
+            resultCoreBaseFilter = self.orCollectors(unitesKeyCollectors, resultCoreKey)
 
             uniteOtherCore = [d['core'] for d in query.unites if d['core'] != resultCoreName][0]
-            otherCoreSpecs[uniteOtherCore]['baseFilter'] = self.orCollectors(unitesKeyCollectors, otherCoreSpecs[uniteOtherCore]['key'])
+            coreBaseFilters[uniteOtherCore] = self.orCollectors(unitesKeyCollectors, query.keyName(uniteOtherCore))
 
         coreQuerySpecs = []
-        for otherCoreName, otherCoreSpec in otherCoreSpecs.items():
-            coreQuerySpecs.append((otherCoreName, otherCoreSpec["key"], query.queriesFor(otherCoreName)))
-        resultCoreIntermediateFilter = self.andQueries(coreQuerySpecs, resultMatchKeyName, resultCoreBaseFilter)
+        for otherCoreName in otherCoreNames:
+            coreQuerySpecs.append((otherCoreName, query.keyName(otherCoreName), query.queriesFor(otherCoreName)))
+        resultCoreIntermediateFilter = self.andQueries(coreQuerySpecs, resultCoreKey, resultCoreBaseFilter)
 
         drilldownData = []
         resultCoreQueries = query.queriesFor(resultCoreName)
         if not resultCoreQueries:
             resultCoreQueries = [MatchAllDocsQuery()]
-        for otherCoreName, otherCoreSpec in otherCoreSpecs.items():
+        for otherCoreName in otherCoreNames:
             if query.facetsFor(otherCoreName):
-                otherCoreBaseFilter = otherCoreSpec.get('baseFilter')
-                otherCoreIntermediateFilter = self.andQueries([(otherCoreName, otherCoreSpec["key"], query.queriesFor(otherCoreName))], otherCoreSpec["key"], otherCoreBaseFilter)
+                otherCoreKey = query.keyName(otherCoreName)
+                otherCoreIntermediateFilter = self.andQueries([(otherCoreName, otherCoreKey, query.queriesFor(otherCoreName))], otherCoreKey, coreBaseFilters.get(otherCoreName))
 
-                coreQuerySpecs = [(resultCoreName, resultMatchKeyName, resultCoreQueries)]
-                for name, spec in otherCoreSpecs.items():
+                coreQuerySpecs = [(resultCoreName, resultCoreKey, resultCoreQueries)]
+                for name in otherCoreNames:
                     if name != otherCoreName:
-                        coreQuerySpecs.append((name, spec["key"], query.queriesFor(name)))
-                otherCoreFinalFilter = self.andQueries(coreQuerySpecs, otherCoreSpec['key'], otherCoreIntermediateFilter)
+                        coreQuerySpecs.append((name, query.keyName(name), query.queriesFor(name)))
+                otherCoreFinalFilter = self.andQueries(coreQuerySpecs, otherCoreKey, otherCoreIntermediateFilter)
                 drilldownData.extend((yield self.any[otherCoreName].facets(
                         filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),
                         filter=otherCoreFinalFilter,

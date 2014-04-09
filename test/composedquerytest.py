@@ -33,8 +33,6 @@ class ComposedQueryTest(SeecrTestCase):
         composedQuery.setCoreQuery(core='coreA', query='Q0')
         composedQuery.setCoreQuery(core='coreB', query='Q1')
         self.assertValidateRaisesValueError(composedQuery, "No match set for cores ('coreA', 'coreB')")
-        composedQuery.addMatch(dict(core='coreC', uniqueKey='keyC'), dict(core='coreD', key='keyE'))
-        self.assertValidateRaisesValueError(composedQuery, "No match set for cores ('coreA', 'coreB')")
 
         composedQuery = ComposedQuery('coreA', query="A")
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
@@ -55,7 +53,7 @@ class ComposedQueryTest(SeecrTestCase):
         composedQuery.validate()
         self.assertEquals(3, composedQuery.numberOfUsedCores)
 
-    def testValidateSameCoreInDifferentMatchesRequiredToHaveSameKeyForNow(self):
+    def testSameCoreInDifferentMatchesRequiredToHaveSameKeyForNow(self):
         composedQuery = ComposedQuery('coreA', query='qA')
         composedQuery.setCoreQuery('coreB', query='qB')
         composedQuery.setCoreQuery('coreC', query='qC')
@@ -71,15 +69,18 @@ class ComposedQueryTest(SeecrTestCase):
 
     def testUniqueKeyDoesntMatchResultsFrom(self):
         composedQuery = ComposedQuery('coreA', query='A').setCoreQuery('coreB', query='bQ')
-        composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', key='keyB'))
-        self.assertValidateRaisesValueError(composedQuery, "Match for result core 'coreA', for which one or more queries apply, must have a uniqueKey specification.")
-
-        composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', uniqueKey='keyB'))
-        self.assertValidateRaisesValueError(composedQuery, "Match for result core 'coreA', for which one or more queries apply, must have a uniqueKey specification.")
+        self.assertRaises(ValueError, lambda: composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', key='keyB')))
+        self.assertRaises(ValueError, lambda: composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', uniqueKey='keyB')))
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         composedQuery.validate()
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', uniqueKey='keyB'))
         composedQuery.validate()
+
+    def testMatchesMustAlwaysIncludeResultsFrom(self):
+        composedQuery = ComposedQuery('coreA', query='qA')
+        composedQuery.setCoreQuery('coreB', query='qB')
+        composedQuery.setCoreQuery('coreC', query='qC')
+        self.assertRaises(ValueError, lambda: composedQuery.addMatch(dict(core='coreB', key='keyB'), dict(core='coreC', key='keyC')))
 
     def testKeyName(self):
         composedQuery = ComposedQuery('coreA')

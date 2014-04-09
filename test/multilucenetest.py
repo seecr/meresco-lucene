@@ -177,11 +177,10 @@ class MultiLuceneTest(SeecrTestCase):
                 dict(fieldname='cat_N', maxTerms=10),
                 dict(fieldname='cat_O', maxTerms=10),
             ])
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
         try:
-            result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
+            q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
         except ValueError, e:
-            self.assertEquals("Match for result core 'coreB', for which one or more queries apply, must have a uniqueKey specification.", str(e))
+            self.assertEquals("Match for result core 'coreB' must have a uniqueKey specification.", str(e))
             return
 
         # for future reference

@@ -59,12 +59,22 @@ class ComposedQuery(object):
 
     def addMatch(self, matchCoreASpec, matchCoreBSpec):
         self._matches[(matchCoreASpec['core'], matchCoreBSpec['core'])] = (matchCoreASpec, matchCoreBSpec)
+        resultsFromCoreSpecFound = False
         for matchCoreSpec in [matchCoreASpec, matchCoreBSpec]:
-            key = matchCoreSpec.get('uniqueKey', matchCoreSpec.get('key'))
             coreName = matchCoreSpec['core']
+            if coreName == self.resultsFrom:
+                resultsFromCoreSpecFound = True
+                try:
+                    key = matchCoreSpec['uniqueKey']
+                except KeyError:
+                    raise ValueError("Match for result core '%s' must have a uniqueKey specification." % self.resultsFrom)
+            else:
+                key = matchCoreSpec.get('uniqueKey', matchCoreSpec.get('key'))
             if self._coreKeys.get(coreName, key) != key:
                 raise ValueError("Use of different keys for one core ('%s') not yet supported" % coreName)
             self._coreKeys[coreName] = key
+        if not resultsFromCoreSpecFound:
+            raise ValueError("Match that does not include resultsFromCore ('%s') not yet supported" % self.resultsFrom)
         return self
 
     def addUnite(self, uniteCoreASpec, uniteCoreBSpec):
@@ -105,16 +115,11 @@ class ComposedQuery(object):
         return self.numberOfUsedCores == 1
 
     def validate(self):
-        if not self.resultsFrom in self._coreQueries:
-            raise ValueError("Should provide query for core '%s'" % self.resultsFrom)
         for core in self.cores:
             if core == self.resultsFrom:
                 continue
             try:
-                for matchCoreSpec in self._matchCoreSpecs(self.resultsFrom, core):
-                    if matchCoreSpec['core'] == self.resultsFrom:
-                        if not 'uniqueKey' in matchCoreSpec:
-                            raise ValueError("Match for result core '%s', for which one or more queries apply, must have a uniqueKey specification." % self.resultsFrom)
+                self._matchCoreSpecs(self.resultsFrom, core)
             except KeyError:
                 raise ValueError("No match set for cores %s" % str((self.resultsFrom, core)))
 

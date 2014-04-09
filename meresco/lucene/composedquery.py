@@ -31,6 +31,7 @@ class ComposedQuery(object):
         self.cores = set()
         self._coreQueries = defaultdict(dict)
         self._matches = {}
+        self._coreKeys = {}
         self._unites = []
         self.resultsFrom = resultsFromCore
         self.setCoreQuery(resultsFromCore, query=query)
@@ -58,49 +59,27 @@ class ComposedQuery(object):
 
     def addMatch(self, matchCoreASpec, matchCoreBSpec):
         self._matches[(matchCoreASpec['core'], matchCoreBSpec['core'])] = (matchCoreASpec, matchCoreBSpec)
+        for matchCoreSpec in [matchCoreASpec, matchCoreBSpec]:
+            key = matchCoreSpec.get('uniqueKey', matchCoreSpec.get('key'))
+            coreName = matchCoreSpec['core']
+            if self._coreKeys.get(coreName, key) != key:
+                raise ValueError("Use of different keys for one core ('%s') not yet supported" % coreName)
+            self._coreKeys[coreName] = key
         return self
 
     def addUnite(self, uniteCoreASpec, uniteCoreBSpec):
         if len(self.unites) > 0:
             raise ValueError("No more than 1 addUnite supported")
-        coreNames = uniteCoreASpec['core'], uniteCoreBSpec['core']
-        try:
-            keyNames = self.keyNames(*coreNames)
-            uniteCoreASpec['key'], uniteCoreBSpec['key'] = keyNames
-        except KeyError:
-            raise ValueError('No match found for %s' % coreNames)
         for uniteCoreSpec in (uniteCoreASpec, uniteCoreBSpec):
             self.cores.add(uniteCoreSpec['core'])
             self._unites.append(uniteCoreSpec)
         return self
 
-
-
     def uniteQueriesFor(self, core):
         return [d['query'] for d in self._unites if d['core'] == core]
 
-    def keyNames(self, *cores):
-        keyNames = []
-        for matchCoreSpec in self._matchCoreSpecs(*cores):
-            for keyName in ['key', 'uniqueKey']:
-                if keyName in matchCoreSpec:
-                    keyNames.append(matchCoreSpec[keyName])
-                    break
-            else:
-                raise KeyError('No key specificied in match for %s' % matchCoreSpec['core'])
-        return keyNames
-
     def keyName(self, core):
-        # TODO: fail faster at addMatch time!
-        # Note: assumes (!) for now that for a given core the key is the same in each match the core participates in.
-        foundKeys = set()
-        for coreTuple, matchCoreSpecTuple in self._matches.items():
-            for coreName, matchCoreSpec in zip(coreTuple, matchCoreSpecTuple):
-                if coreName == core:
-                    foundKeys.add(matchCoreSpec.get('uniqueKey', matchCoreSpec.get('key')))
-        if len(foundKeys) > 1:
-            raise ValueError("Use of different keys for one core ('%s') not yet supported" % core)
-        return foundKeys.pop()
+        return self._coreKeys[core]
 
     def queryFor(self, core):
         return self._getCoreSpec(core).get('query')
@@ -133,7 +112,6 @@ class ComposedQuery(object):
                 continue
             try:
                 for matchCoreSpec in self._matchCoreSpecs(self.resultsFrom, core):
-                    self.keyName(matchCoreSpec['core'])  # might raise ValueError if different keys were specified for same core
                     if matchCoreSpec['core'] == self.resultsFrom:
                         if not 'uniqueKey' in matchCoreSpec:
                             raise ValueError("Match for result core '%s', for which one or more queries apply, must have a uniqueKey specification." % self.resultsFrom)

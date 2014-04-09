@@ -372,7 +372,7 @@ class MultiLuceneTest(SeecrTestCase):
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
-        #self.assertEquals(3, result.total)
+        self.assertEquals(3, result.total)
         self.assertEquals(set([Hit('A-QU'), Hit('A-MQ'), Hit('A-MQU')]), set(result.hits))
 
     def testUniteAndFacets(self):

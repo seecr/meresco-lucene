@@ -60,8 +60,7 @@ class ComposedQueryTest(SeecrTestCase):
         composedQuery.setCoreQuery('coreB', query='qB')
         composedQuery.setCoreQuery('coreC', query='qC')
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
-        composedQuery.addMatch(dict(core='coreA', key='keyX'), dict(core='coreC', key='keyC'))
-        self.assertValidateRaisesValueError(composedQuery, "Use of different keys for one core ('coreA') not yet supported")
+        self.assertRaises(ValueError, lambda: composedQuery.addMatch(dict(core='coreA', key='keyX'), dict(core='coreC', key='keyC')))
 
     def testAtMostOneMultiCoreOr(self):
         composedQuery = ComposedQuery('coreA')
@@ -72,7 +71,7 @@ class ComposedQueryTest(SeecrTestCase):
 
     def testUniqueKeyDoesntMatchResultsFrom(self):
         composedQuery = ComposedQuery('coreA', query='A').setCoreQuery('coreB', query='bQ')
-        composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', key='ignored'))
+        composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', key='keyB'))
         self.assertValidateRaisesValueError(composedQuery, "Match for result core 'coreA', for which one or more queries apply, must have a uniqueKey specification.")
 
         composedQuery.addMatch(dict(core='coreA', key='keyA'), dict(core='coreB', uniqueKey='keyB'))
@@ -82,13 +81,11 @@ class ComposedQueryTest(SeecrTestCase):
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', uniqueKey='keyB'))
         composedQuery.validate()
 
-    def testKeyNames(self):
+    def testKeyName(self):
         composedQuery = ComposedQuery('coreA')
         composedQuery.setCoreQuery(core='coreA', query=None)
         composedQuery.setCoreQuery(core='coreB', query=None)
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
-        self.assertEquals(['keyA', 'keyB'], composedQuery.keyNames('coreA', 'coreB'))
-        self.assertEquals(['keyB', 'keyA'], composedQuery.keyNames('coreB', 'coreA'))
         self.assertEquals('keyA', composedQuery.keyName('coreA'))
         self.assertEquals('keyB', composedQuery.keyName('coreB'))
 
@@ -98,7 +95,7 @@ class ComposedQueryTest(SeecrTestCase):
         cq.setCoreQuery(core='coreB', query=None)
         cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         cq.addUnite(dict(core='coreA', query='AQuery'), dict(core='coreB', query='anotherQuery'))
-        self.assertEquals([{'query': 'AQuery', 'key': 'keyA', 'core': 'coreA'}, {'query': 'anotherQuery', 'key': 'keyB', 'core': 'coreB'}], cq.unites)
+        self.assertEquals([{'query': 'AQuery', 'core': 'coreA'}, {'query': 'anotherQuery', 'core': 'coreB'}], cq.unites)
 
     def testFilterQueries(self):
         cq = ComposedQuery('coreA')
@@ -143,8 +140,8 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(None, cq2.stop)
         self.assertEquals(['Q0', 'Q1', 'Q2'], cq2.queriesFor('coreA'))
         self.assertEquals(['F0', 'F1'], cq2.facetsFor('coreA'))
-        self.assertEquals(['keyA', 'keyB'], cq2.keyNames('coreA', 'coreB'))
-        self.assertEquals(['keyB', 'keyA'], cq2.keyNames('coreB', 'coreA'))
+        self.assertEquals('keyA', cq2.keyName('coreA'))
+        self.assertEquals('keyB', cq2.keyName('coreB'))
 
     def testAddFilterQueriesIncremental(self):
         cq = ComposedQuery('coreA')
@@ -175,7 +172,7 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(["Converted_Q1", "Converted_Q2"], cq.filterQueriesFor('coreA'))
         self.assertEquals("Converted_Q3", cq.queryFor('coreB'))
         self.assertEquals(["Converted_Q4"], cq.filterQueriesFor('coreB'))
-        self.assertEquals([{'query': 'Converted_Q5', 'key': 'keyA', 'core': 'coreA'}, {'query': 'Converted_Q6', 'key': 'keyB', 'core': 'coreB'}], cq.unites)
+        self.assertEquals([{'query': 'Converted_Q5', 'core': 'coreA'}, {'query': 'Converted_Q6', 'core': 'coreB'}], cq.unites)
 
     def testSingleCoreQuery(self):
         cq = ComposedQuery('coreA')

@@ -40,9 +40,8 @@ public class KeyScoreCollector extends Collector {
     private String keyName;
     private NumericDocValues keyValues;
     protected OpenBitSet keySet = new OpenBitSet();
-    protected byte[] scores;
+    protected byte[] scores = new byte[0];
     private Scorer scorer;
-    private int docBase;
 
     public KeyScoreCollector(String keyName) {
         this.keyName = keyName;
@@ -54,6 +53,9 @@ public class KeyScoreCollector extends Collector {
             int value = (int)this.keyValues.get(docId);
             if (value > 0) {
                 this.keySet.set(value);
+                if (value >= scores.length) {
+                    this.scores = resize(this.scores, value + 1);
+                }
                 this.scores[value] = SmallFloat.floatToByte315(scorer.score());
             }
         }
@@ -61,15 +63,6 @@ public class KeyScoreCollector extends Collector {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        if (this.scores == null) {
-            IndexReaderContext topLevelContext = context;
-            while (!topLevelContext.isTopLevel) {
-                topLevelContext = topLevelContext.parent;
-            }
-            // this.scores = new float[topLevelContext.reader().maxDoc()];
-            this.scores = new byte[100];
-        }
-        this.docBase = context.docBase;
         this.keyValues = context.reader().getNumericDocValues(this.keyName);
     }
 
@@ -84,10 +77,19 @@ public class KeyScoreCollector extends Collector {
     }
 
     public float score(int key) {
-        return SmallFloat.byte315ToFloat(this.scores[key]);
+        if (key < this.scores.length) {
+            return SmallFloat.byte315ToFloat(this.scores[key]);
+        }
+        return 0;
     }
 
     public OpenBitSet getCollectedKeys() {
         return this.keySet;
+    }
+
+    public byte[] resize(byte[] src, int newSize) {
+        byte[] dest = new byte[newSize];
+        System.arraycopy(src, 0, dest, 0, src.length);
+        return dest;
     }
 }

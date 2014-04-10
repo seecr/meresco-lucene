@@ -88,7 +88,7 @@ public class KeyScoreCollector extends Collector {
     }
 
     public byte[] resize(byte[] src, int newSize) {
-        byte[] dest = new byte[newSize];
+        byte[] dest = new byte[(int) (newSize * 1.25)];
         System.arraycopy(src, 0, dest, 0, src.length);
         return dest;
     }

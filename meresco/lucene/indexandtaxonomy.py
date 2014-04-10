@@ -31,9 +31,10 @@ from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyReader
 
 class IndexAndTaxonomy(object):
 
-    def __init__(self, indexWriter=None, taxoWriter=None):
+    def __init__(self, indexWriter=None, taxoWriter=None, similarity=None):
+        self._similarity = similarity or BM25Similarity()
         self.searcher = IndexSearcher(DirectoryReader.open(indexWriter, True))
-        self.searcher.setSimilarity(BM25Similarity())
+        self.searcher.setSimilarity(self._similarity)
         self.taxoReader = DirectoryTaxonomyReader(taxoWriter)
         self._bm25Arguments = None
         self.similarity = Similarity()
@@ -55,7 +56,7 @@ class IndexAndTaxonomy(object):
         self.taxoReader = taxoReader
 
     def _setSimilarityFor(self, searcher):
-        similarity = BM25Similarity()
+        similarity = self._similarity
         if self._bm25Arguments:
             similarity = BM25Similarity(*self._bm25Arguments)
         self.searcher.setSimilarity(similarity)

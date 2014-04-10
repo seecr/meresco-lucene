@@ -32,7 +32,7 @@ class ComposedQuery(object):
         self._queries = {}
         self._filterQueries = defaultdict(list)
         self._facets = defaultdict(list)
-        self._rankQueries = defaultdict(list)
+        self._rankQueries = {}
         self._matches = {}
         self._coreKeys = {}
         self._unites = []
@@ -60,9 +60,9 @@ class ComposedQuery(object):
         self._facets[core].append(facet)
         return self
 
-    def addRankQuery(self, core, query):
+    def setRankQuery(self, core, query):
         self.cores.add(core)
-        self._rankQueries[core].append(query)
+        self._rankQueries[core] = query
         return self
 
     def addMatch(self, matchCoreASpec, matchCoreBSpec):
@@ -102,8 +102,8 @@ class ComposedQuery(object):
     def facetsFor(self, core):
         return self._facets.get(core, [])
 
-    def rankQueriesFor(self, core):
-        return self._rankQueries[core]
+    def rankQueryFor(self, core):
+        return self._rankQueries.get(core)
 
     def uniteQueriesFor(self, core):
         return [d['query'] for d in self._unites if d['core'] == core]

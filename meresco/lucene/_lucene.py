@@ -84,7 +84,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, **kwargs):
+        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, combinedScoreCollector=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -104,6 +104,10 @@ class Lucene(object):
         if filterCollector:
             filterCollector.setDelegate(collector)
             collector = filterCollector
+
+        if combinedScoreCollector:
+            combinedScoreCollector.setDelegate(collector)
+            collector = combinedScoreCollector
 
         filter_ = self._filterFor(filterQueries, filter)
 

@@ -35,7 +35,7 @@ from meresco.core import Observable
 
 from org.meresco.lucene import KeyCollector, KeyFilterCollector, DocIdCollector
 
-from meresco.lucene import Lucene
+from meresco.lucene import Lucene, GivenBoostSimilarity
 from meresco.lucene.hit import Hit
 from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene.multilucene import MultiLucene
@@ -53,7 +53,7 @@ class MultiLuceneTest(SeecrTestCase):
         SeecrTestCase.setUp(self)
         self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), commitCount=1)
         self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), commitCount=1)
-        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1)
+        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1, similarity=GivenBoostSimilarity())
         self.dna = be((Observable(),
             (MultiLucene(defaultCore='coreA'),
                 (self.luceneA,),
@@ -104,6 +104,8 @@ class MultiLuceneTest(SeecrTestCase):
         self.addDocument(self.luceneB, identifier='B-P',       keys=[('B', k11)], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
 
         self.addDocument(self.luceneC, identifier='C-R', keys=[('C', k5)], fields=[('R', 'true')])
+        self.addDocument(self.luceneC, identifier='C-S', keys=[('C', k8)], fields=[('S', 'true')])
+        self.addDocument(self.luceneC, identifier='C-S2', keys=[('C', k7)], fields=[('S', 'false')])
 
         sleep(0.2)
 
@@ -615,6 +617,17 @@ class MultiLuceneTest(SeecrTestCase):
                {'terms': [{'count': 1, 'term': u'true'}], 'fieldname': u'cat_N'},
                {'terms': [{'count': 1, 'term': u'true'}], 'fieldname': u'cat_R'},
             ], result.drilldownData)
+
+    def testRankQuery(self):
+        q = ComposedQuery('coreA', query=MatchAllDocsQuery())
+        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
+        q.setRankQuery(core='coreC', query=luceneQueryFromCql('S=true'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(4, result.total)
+        self.assertEquals([Hit(u'A-MQU'), Hit('A-M'), Hit('A-MU'), Hit(u'A-MQ')], result.hits)
+
 
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(

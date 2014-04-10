@@ -51,7 +51,7 @@ from meresco.lucene.utils import fieldType, LONGTYPE
 # Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html
 
 class Index(object):
-    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None):
+    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None):
         self._reactor = reactor
         self._maxCommitCount = commitCount or 1000
         self._commitCount = 0
@@ -63,12 +63,12 @@ class Index(object):
         self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
         self._analyzer = createAnalyzer(analyzer=analyzer)
         conf = IndexWriterConfig(Version.LUCENE_43, self._analyzer)
-        conf.setSimilarity(BM25Similarity())
+        conf.setSimilarity(similarity or BM25Similarity())
         self._indexWriter = IndexWriter(indexDirectory, conf)
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
         self._taxoWriter.commit()
 
-        self._indexAndTaxonomy = IndexAndTaxonomy(self._indexWriter, self._taxoWriter)
+        self._indexAndTaxonomy = IndexAndTaxonomy(self._indexWriter, self._taxoWriter, similarity)
         self.similarity = self._indexAndTaxonomy.similarity
 
     def addDocument(self, term, document, categories=None):
@@ -81,8 +81,8 @@ class Index(object):
         self._indexWriter.deleteDocuments(term)
         self.commit()
 
-    def search(self, *args):
-        self._indexAndTaxonomy.searcher.search(*args)
+    def search(self, query, filter, collector):
+        self._indexAndTaxonomy.searcher.search(query, filter, collector)
 
     def suggest(self, query, count, field):
         suggestions = {}

@@ -57,19 +57,20 @@ class Index(object):
         self._commitCount = 0
         self._commitTimeout = commitTimeout or 1
         self._commitTimerToken = None
+        similarity = similarity or BM25Similarity()
 
         self._checker = DirectSpellChecker()
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
         self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
         self._analyzer = createAnalyzer(analyzer=analyzer)
         conf = IndexWriterConfig(Version.LUCENE_43, self._analyzer)
-        conf.setSimilarity(similarity or BM25Similarity())
+        conf.setSimilarity(similarity)
         self._indexWriter = IndexWriter(indexDirectory, conf)
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
         self._taxoWriter.commit()
 
         self._indexAndTaxonomy = IndexAndTaxonomy(self._indexWriter, self._taxoWriter, similarity)
-        self.similarity = self._indexAndTaxonomy.similarity
+        self.similarityWrapper = self._indexAndTaxonomy.similarityWrapper
 
     def addDocument(self, term, document, categories=None):
         if categories:

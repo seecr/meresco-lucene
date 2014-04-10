@@ -65,4 +65,4 @@ from multilucene import MultiLucene
 from termnumerator import TermNumerator
 from composedquery import ComposedQuery
 
-from org.meresco.lucene import GivenBoostSimilarity
+from org.meresco.lucene import TermFrequencySimilarity

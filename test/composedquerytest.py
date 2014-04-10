@@ -206,12 +206,12 @@ class ComposedQueryTest(SeecrTestCase):
 
     def testAddRankQuery(self):
         cq = ComposedQuery('coreA')
-        cq.addRankQuery('coreB', 'qB')
+        cq.setRankQuery('coreB', 'qB')
         self.assertValidateRaisesValueError(cq, "No match set for cores ('coreA', 'coreB')")
         cq.addMatch(dict(core='coreA', uniqueKey='kA'), dict(core='coreB', key='kB'))
-        self.assertEquals(['qB'], cq.rankQueriesFor('coreB'))
+        self.assertEquals('qB', cq.rankQueryFor('coreB'))
         cq.convertWith(lambda q: "converted_" + q)
-        self.assertEquals(['converted_qB'], cq.rankQueriesFor('coreB'))
+        self.assertEquals('converted_qB', cq.rankQueryFor('coreB'))
 
     def assertValidateRaisesValueError(self, composedQuery, message):
         try:

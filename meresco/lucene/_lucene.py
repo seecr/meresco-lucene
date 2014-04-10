@@ -48,7 +48,7 @@ class Lucene(object):
 
     def __init__(self, path, reactor, name=None, **kwargs):
         self._index = Index(path, reactor=reactor, **kwargs)
-        self.similarity = self._index.similarity
+        self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name
         self.coreName = name or basename(path)
@@ -84,7 +84,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, combinedScoreCollector=None, **kwargs):
+        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, averageScoreCollector=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -105,9 +105,9 @@ class Lucene(object):
             filterCollector.setDelegate(collector)
             collector = filterCollector
 
-        if combinedScoreCollector:
-            combinedScoreCollector.setDelegate(collector)
-            collector = combinedScoreCollector
+        if averageScoreCollector:
+            averageScoreCollector.setDelegate(collector)
+            collector = averageScoreCollector
 
         filter_ = self._filterFor(filterQueries, filter)
 

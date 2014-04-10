@@ -35,7 +35,7 @@ from meresco.core import Observable
 
 from org.meresco.lucene import KeyCollector, KeyFilterCollector, DocIdCollector
 
-from meresco.lucene import Lucene, GivenBoostSimilarity
+from meresco.lucene import Lucene, TermFrequencySimilarity
 from meresco.lucene.hit import Hit
 from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene.multilucene import MultiLucene
@@ -53,7 +53,7 @@ class MultiLuceneTest(SeecrTestCase):
         SeecrTestCase.setUp(self)
         self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), commitCount=1)
         self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), commitCount=1)
-        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1, similarity=GivenBoostSimilarity())
+        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1, similarity=TermFrequencySimilarity())
         self.dna = be((Observable(),
             (MultiLucene(defaultCore='coreA'),
                 (self.luceneA,),

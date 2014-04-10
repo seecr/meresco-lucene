@@ -35,13 +35,13 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.OpenBitSet;
 
 
-public class CombinedScoreCollector extends Collector {
+public class AverageScoreCollector extends Collector {
     private KeyScoreCollector keyScoreCollector;
     private Collector delegate;
     private String keyName;
     private NumericDocValues keyValues;
 
-    public CombinedScoreCollector(String keyName, KeyScoreCollector keyScoreCollector) {
+    public AverageScoreCollector(String keyName, KeyScoreCollector keyScoreCollector) {
         this.keyName = keyName;
         this.keyScoreCollector = keyScoreCollector;
     }
@@ -68,13 +68,13 @@ public class CombinedScoreCollector extends Collector {
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {
-        this.delegate.setScorer(new CombinedScoreCollector.CombinedScorer(scorer));
+        this.delegate.setScorer(new AverageScoreCollector.AverageScorer(scorer));
     }
 
-    class CombinedScorer extends Scorer {
+    class AverageScorer extends Scorer {
         Scorer scorer;
 
-        CombinedScorer(Scorer scorer) {
+        AverageScorer(Scorer scorer) {
             super(scorer.getWeight());
             this.scorer = scorer;
         }

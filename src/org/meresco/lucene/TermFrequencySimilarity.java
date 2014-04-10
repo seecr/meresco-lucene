@@ -33,7 +33,7 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.Similarity;
 
-public class GivenBoostSimilarity extends Similarity {
+public class TermFrequencySimilarity extends Similarity {
 
     @Override
     public long computeNorm(FieldInvertState state) {

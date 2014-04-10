@@ -138,7 +138,7 @@ class ComposedQuery(object):
         convertQuery = lambda query: (query if query is None else convert(query))
         self._queries = dict((k, convertQuery(v)) for k, v in self._queries.items())
         self._filterQueries = dict((k, [convertQuery(v) for v in values]) for k, values in self._filterQueries.items())
-        self._rankQueries = dict((k, [convertQuery(v) for v in values]) for k, values in self._rankQueries.items())
+        self._rankQueries = dict((k, convertQuery(v)) for k, v in self._rankQueries.items())
         self._unites = [dict(d, query=convertQuery(d['query'])) for d in self._unites]
 
     def otherKwargs(self):

@@ -126,8 +126,8 @@ class MultiLucene(Observable):
         for coreName in [resultCoreName] + otherCoreNames:
             rankQuery = query.rankQueryFor(coreName)
             if rankQuery:
-                scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName), query=rankQuery)
-                averageScoreCollector = AverageScoreCollector(resultCoreKey, scoreCollector)
+                scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName), query=rankQuery['query'])
+                averageScoreCollector = AverageScoreCollector(resultCoreKey, scoreCollector, rankQuery['boost'])
 
         resultCoreQuery = query.queryFor(core=resultCoreName)
         if resultCoreQuery is None:

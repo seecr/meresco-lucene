@@ -39,7 +39,7 @@ class Hit(object):
         h = md5()
         for k,v in self.__dict__.items():
             h.update(k)
-            h.update(v)
+            h.update(str(v))
         return hash(h.digest())
 
     def __str__(self):

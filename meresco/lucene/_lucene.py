@@ -177,6 +177,7 @@ class Lucene(object):
                     hit.duplicateCount = {dedupCollector.keyName: keyForDocId.count if keyForDocId else 0}
                 else:
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
+                hit.score = scoreDoc.score
                 hits.append(hit)
         return collector.getTotalHits(), hits
 

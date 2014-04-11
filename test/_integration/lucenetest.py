@@ -120,11 +120,11 @@ class LuceneTest(IntegrationTestCase):
         response = remote.executeComposedQuery(query=q)
         self.assertEquals(19, response.total)
         self.assertEquals([
-                Hit('record:10'), Hit('record:11'), Hit('record:20'), Hit('record:21'), Hit('record:30'),
-                Hit('record:31'), Hit('record:40'), Hit('record:41'), Hit('record:50'), Hit('record:51'),
-                Hit('record:60'), Hit('record:61'), Hit('record:70'), Hit('record:71'), Hit('record:80'),
-                Hit('record:81'), Hit('record:90'), Hit('record:91'), Hit('record:100')
-            ], response.hits)
+                'record:10', 'record:11', 'record:20', 'record:21', 'record:30',
+                'record:31', 'record:40', 'record:41', 'record:50', 'record:51',
+                'record:60', 'record:61', 'record:70', 'record:71', 'record:80',
+                'record:81', 'record:90', 'record:91', 'record:100'
+            ], [hit.id for hit in response.hits])
         self.assertEquals([{
                 'fieldname': 'untokenized.field2',
                 'terms': [
@@ -139,11 +139,11 @@ class LuceneTest(IntegrationTestCase):
     def testDedup(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
         response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.field", core="main", stop=3, sortKeys=[{'sortBy': '__id__', 'sortDescending': False}])
-        self.assertEquals([
-                Hit(id='record:1', duplicateCount={'__key__.field': 0}),
-                Hit(id='record:10', duplicateCount={'__key__.field': 1}),
-                Hit(id='record:100', duplicateCount={'__key__.field': 1})
-            ], response.hits)
+
+        self.assertEquals(
+            [('record:1', 0), ('record:10', 1), ('record:100', 1)],
+            [(hit.id, hit.duplicateCount['__key__.field']) for hit in response.hits]
+        )
 
     def testDutchStemming(self):
         self.assertEquals(1, self.numberOfRecords("field5=katten"))

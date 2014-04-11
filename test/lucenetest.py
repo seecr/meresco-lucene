@@ -72,6 +72,9 @@ class LuceneTest(SeecrTestCase):
         refs = VM._dumpRefs(classes=True)
         return set([(c, refs[c]) for c in refs.keys() if c != 'class java.lang.Class'])
 
+    def hitIds(self, hits):
+        return [hit.id for hit in hits]
+
     def testCreate(self):
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(0, result.total)
@@ -83,7 +86,7 @@ class LuceneTest(SeecrTestCase):
         sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(1, result.total)
-        self.assertEquals([Hit('identifier')], result.hits)
+        self.assertEquals(['identifier'], self.hitIds(result.hits))
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("title", 'title'))))
         self.assertEquals(1, result.total)
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("title", 'the'))))
@@ -98,7 +101,7 @@ class LuceneTest(SeecrTestCase):
         sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(2, result.total)
-        self.assertEquals(set([Hit('id:0'), Hit('id:2')]), set(result.hits))
+        self.assertEquals(set(['id:0', 'id:2']), set(self.hitIds(result.hits)))
 
     def testAddCommitAfterTimeout(self):
         self.lucene.close()
@@ -169,11 +172,11 @@ class LuceneTest(SeecrTestCase):
         sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field0', sortDescending=False)]))
         self.assertEquals(3, result.total)
-        self.assertEquals([Hit('id:0'), Hit('id:1'), Hit('id:2')], result.hits)
+        self.assertEquals(['id:0', 'id:1', 'id:2'], self.hitIds(result.hits))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field0', sortDescending=True)]))
-        self.assertEquals([Hit('id:2'), Hit('id:1'), Hit('id:0')], result.hits)
+        self.assertEquals(['id:2', 'id:1', 'id:0'], self.hitIds(result.hits))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field1', sortDescending=True), dict(sortBy='field0', sortDescending=True)]))
-        self.assertEquals([Hit('id:2'), Hit('id:0'), Hit('id:1')], result.hits)
+        self.assertEquals(['id:2', 'id:0', 'id:1'], self.hitIds(result.hits))
 
     def testStartStop(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')])))
@@ -182,15 +185,15 @@ class LuceneTest(SeecrTestCase):
         sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), start=1, stop=10, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
         self.assertEquals(3, result.total)
-        self.assertEquals([Hit('id:1'), Hit('id:2')], result.hits)
+        self.assertEquals(['id:1', 'id:2'], self.hitIds(result.hits))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), start=0, stop=2, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
-        self.assertEquals([Hit('id:0'), Hit('id:1')], result.hits)
+        self.assertEquals(['id:0', 'id:1'], self.hitIds(result.hits))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), start=0, stop=0))
         self.assertEquals(3, result.total)
-        self.assertEquals([], result.hits)
+        self.assertEquals([], self.hitIds(result.hits))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), start=2, stop=2))
         self.assertEquals(3, result.total)
-        self.assertEquals([], result.hits)
+        self.assertEquals([], self.hitIds(result.hits))
 
     def testFacets(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first item0'), ('field3', 'second item')])))
@@ -283,13 +286,13 @@ class LuceneTest(SeecrTestCase):
         sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), filterQueries=[TermQuery(Term('mod2', 'v0'))]))
         self.assertEquals(5, result.total)
-        self.assertEquals([Hit('id:0'), Hit('id:2'), Hit('id:4'), Hit('id:6'), Hit('id:8')], result.hits)
+        self.assertEquals(['id:0', 'id:2', 'id:4', 'id:6', 'id:8'], self.hitIds(result.hits))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), filterQueries=[
                 TermQuery(Term('mod2', 'v0')),
                 TermQuery(Term('mod3', 'v0')),
             ]))
         self.assertEquals(2, result.total)
-        self.assertEquals([Hit('id:0'), Hit('id:6')], result.hits)
+        self.assertEquals(['id:0', 'id:6'], self.hitIds(result.hits))
 
     def testPrefixSearch(self):
         response = returnValueFromGenerator(self.lucene.prefixSearch(fieldname='field1', prefix='valu'))
@@ -306,7 +309,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field3', 'value2')])))
         sleep(0.1)
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), suggestionRequest=dict(count=2, query="value0 and valeu", field="field3")))
-        self.assertEquals([Hit('id:0')], response.hits)
+        self.assertEquals(['id:0'], self.hitIds(response.hits))
         self.assertEquals({'value0': (0, 6, ['value2']), 'valeu': (11, 16, ['value2'])}, response.suggestions)
 
     def testRangeQuery(self):
@@ -316,16 +319,16 @@ class LuceneTest(SeecrTestCase):
         # (field, lowerTerm, upperTerm, includeLower, includeUpper)
         luceneQuery = TermRangeQuery.newStringRange('field', None, 'mies', False, False) # <
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
-        self.assertEquals(set([Hit('id:aap'), Hit('id:boom')]), set(response.hits))
+        self.assertEquals(set(['id:aap', 'id:boom']), set(self.hitIds(response.hits)))
         luceneQuery = TermRangeQuery.newStringRange('field', None, 'mies', False, True) # <=
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
-        self.assertEquals(set([Hit('id:aap'), Hit('id:boom'), Hit('id:mies')]), set(response.hits))
+        self.assertEquals(set(['id:aap', 'id:boom', 'id:mies']), set(self.hitIds(response.hits)))
         luceneQuery = TermRangeQuery.newStringRange('field', 'mies', None, False, True) # >
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
-        self.assertEquals(set([Hit('id:noot'), Hit('id:vis'), Hit('id:vuur')]), set(response.hits))
+        self.assertEquals(set(['id:noot', 'id:vis', 'id:vuur']), set(self.hitIds(response.hits)))
         luceneQuery = LuceneQueryComposer([]).compose(parseCql('field >= mies'))
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
-        self.assertEquals(set([Hit('id:mies'), Hit('id:noot'), Hit('id:vis'), Hit('id:vuur')]), set(response.hits))
+        self.assertEquals(set(['id:mies', 'id:noot', 'id:vis', 'id:vuur']), set(self.hitIds(response.hits)))
 
     def testFieldnames(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field0', 'value0')])))
@@ -368,8 +371,10 @@ class LuceneTest(SeecrTestCase):
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
                         dedupField="__key__", facets=facets(cat=10)))
-        self.assertEquals([Hit(id=u'urn:1', duplicateCount={'__key__': 2})], result.hits)
         self.assertEquals(1, result.total)
+        hit = result.hits[0]
+        self.assertEquals('urn:1', hit.id)
+        self.assertEquals({'__key__': 2}, hit.duplicateCount)
         self.assertEquals({'count': 2, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
 
     def testDedupFilterCollectorSortedByField(self):
@@ -389,9 +394,13 @@ class LuceneTest(SeecrTestCase):
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
                         dedupField="__key__", dedupSortField='__key__.date', facets=facets(cat=10)))
-        self.assertEquals([Hit(id='urn:2', duplicateCount={'__key__': 3}), Hit(id='urn:4', duplicateCount={'__key__': 0})], result.hits)
         self.assertEquals(2, result.total)
         self.assertEquals(4, result.totalWithDuplicates)
+
+        self.assertEquals('urn:2', result.hits[0].id)
+        self.assertEquals({'__key__': 3}, result.hits[0].duplicateCount)
+        self.assertEquals('urn:4', result.hits[1].id)
+        self.assertEquals({'__key__': 0}, result.hits[1].duplicateCount)
         self.assertEquals({'count': 4, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
 
     def testDutchStemming(self):

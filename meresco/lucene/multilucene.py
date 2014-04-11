@@ -28,10 +28,10 @@ from time import time
 from weightless.core import DeclineMessage
 from meresco.core import Observable
 
-from seecr.utils.generatorutils import consume, generatorReturn
+from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause
-from org.meresco.lucene import CachingKeyCollector, KeyBooleanFilter, KeyScoreCollector, AverageScoreCollector
+from org.meresco.lucene import CachingKeyCollector, KeyBooleanFilter, AverageScoreCollector
 
 from _lucene import millis
 
@@ -48,7 +48,7 @@ class MultiLucene(Observable):
 
     def collectKeys(self, query, coreName, keyName):
         keyCollector = CachingKeyCollector.create(query, keyName)
-        consume(self.any[coreName].search(query=query, collector=keyCollector))
+        self.do[coreName].search(query=query, collector=keyCollector)
         return keyCollector
 
     def collectUniteKeyCollectors(self, query):
@@ -69,7 +69,7 @@ class MultiLucene(Observable):
                 if not booleanFilter:
                     booleanFilter = KeyBooleanFilter()
                 keyCollector = CachingKeyCollector.create(q, keyName)
-                consume(self.any[coreName].search(query=q, collector=keyCollector))
+                self.do[coreName].search(query=q, collector=keyCollector)
                 booleanFilter.add(keyCollector.getFilter(filterKeyName), BooleanClause.Occur.MUST)
         return booleanFilter
 
@@ -126,9 +126,8 @@ class MultiLucene(Observable):
         for coreName in [resultCoreName] + otherCoreNames:
             rankQuery = query.rankQueryFor(coreName)
             if rankQuery:
-                rankingKeyScoreCollector = KeyScoreCollector(query.keyName(coreName))
-                consume(self.any[coreName].search(query=rankQuery, collector=rankingKeyScoreCollector))
-                averageScoreCollector = AverageScoreCollector(resultCoreKey, rankingKeyScoreCollector)
+                scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName), query=rankQuery)
+                averageScoreCollector = AverageScoreCollector(resultCoreKey, scoreCollector)
 
         resultCoreQuery = query.queryFor(core=resultCoreName)
         if resultCoreQuery is None:

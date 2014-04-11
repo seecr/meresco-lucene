@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -23,22 +23,25 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import CachingWrapperFilter
+from operator import eq
 
-class FilterCache(object):
-    def __init__(self, compareQueryFunction, createFilterFunction, size=50):
-        self._filters = []
-        self._compareQueryFunction = compareQueryFunction
-        self._createFilterFunction = createFilterFunction
+class LruCache(object):
+    def __init__(self, createFunction, keyEqualsFunction=None, size=50):
+        self._items = []
+        self._keyEqualsFunction = keyEqualsFunction or eq
+        self._createFunction = createFunction
         self._size = size
 
-    def getFilter(self, query):
-        for i, (q, f) in enumerate(self._filters):
-            if self._compareQueryFunction(query, q):
-                self._filters.append(self._filters.pop(i))
-                return f
-        f = CachingWrapperFilter(self._createFilterFunction(query))
-        self._filters.append((query, f))
-        if len(self._filters) > self._size:
-            self._filters.pop(0)
-        return f
+    def get(self, key):
+        for i, (k, v) in enumerate(self._items):
+            if self._keyEqualsFunction(key, k):
+                self._items.append(self._items.pop(i))
+                return v
+        v = self._createFunction(key)
+        self._items.append((key, v))
+        if len(self._items) > self._size:
+            self._items.pop(0)
+        return v
+
+    def clear(self):
+        del self._items[:]

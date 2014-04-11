@@ -36,14 +36,14 @@ import org.apache.lucene.util.OpenBitSet;
 
 
 public class AverageScoreCollector extends Collector {
-    private KeyScoreCollector keyScoreCollector;
+    private ScoreCollector scoreCollector;
     private Collector delegate;
     private String keyName;
     private NumericDocValues keyValues;
 
-    public AverageScoreCollector(String keyName, KeyScoreCollector keyScoreCollector) {
+    public AverageScoreCollector(String keyName, ScoreCollector scoreCollector) {
         this.keyName = keyName;
-        this.keyScoreCollector = keyScoreCollector;
+        this.scoreCollector = scoreCollector;
     }
 
     public void setDelegate(Collector delegate) {
@@ -82,7 +82,7 @@ public class AverageScoreCollector extends Collector {
         public float score() throws IOException {
             float score = this.scorer.score();
             int key = (int) keyValues.get(docID());
-            float otherScore = keyScoreCollector.score(key);
+            float otherScore = scoreCollector.score(key);
             return (score + otherScore) / 2;
         }
 

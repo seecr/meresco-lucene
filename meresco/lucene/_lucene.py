@@ -23,20 +23,20 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery, CachingWrapperFilter
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
 from org.apache.lucene.queries import ChainedFilter
-from org.meresco.lucene import DeDupFilterCollector
+from org.meresco.lucene import DeDupFilterCollector, ScoreCollector
 from time import time
 
 from os.path import basename
 
 from luceneresponse import LuceneResponse
 from index import Index
-from cache import FilterCache
+from cache import LruCache
 from utils import IDFIELD, createIdField, sortField
 from hit import Hit
 from seecr.utils.generatorutils import generatorReturn
@@ -52,9 +52,13 @@ class Lucene(object):
         if name is not None:
             self.observable_name = lambda: name
         self.coreName = name or basename(path)
-        self._filterCache = FilterCache(
-                compareQueryFunction=lambda q1, q2: q1.equals(q2),
-                createFilterFunction=lambda q: QueryWrapperFilter(q)
+        self._filterCache = LruCache(
+                keyEqualsFunction=lambda q1, q2: q1.equals(q2),
+                createFunction=lambda q: CachingWrapperFilter(QueryWrapperFilter(q))
+            )
+        self._scoreCollectorCache = LruCache(
+                keyEqualsFunction=lambda (k, q), (k2, q2): k == k2 and q.equals(q2),
+                createFunction=lambda args: self._scoreCollector(*args)
             )
 
     def commit(self):
@@ -63,18 +67,18 @@ class Lucene(object):
     def addDocument(self, identifier, document, categories=None):
         document.add(createIdField(identifier))
         self._index.addDocument(term=Term(IDFIELD, identifier), document=document, categories=categories)
+        self._scoreCollectorCache.clear()
         return
         yield
 
     def delete(self, identifier):
         self._index.deleteDocument(Term(IDFIELD, identifier))
+        self._scoreCollectorCache.clear()
         return
         yield
 
     def search(self, query=None, filter=None, collector=None):
         self._index.search(query, filter, collector)
-        return
-        yield
 
     def facets(self, facets, filterQueries, filter=None):
         facetCollector = self._facetCollector(facets)
@@ -145,6 +149,14 @@ class Lucene(object):
         raise StopIteration(response)
         yield
 
+    def scoreCollector(self, keyName, query):
+        return self._scoreCollectorCache.get((keyName, query))
+
+    def _scoreCollector(self, keyName, query):
+        scoreCollector = ScoreCollector(keyName)
+        self.search(query=query, collector=scoreCollector)
+        return scoreCollector
+
     def close(self):
         self._index.close()
 
@@ -171,7 +183,7 @@ class Lucene(object):
     def _filterFor(self, filterQueries, filter=None):
         if not filterQueries:
             return filter
-        filters = [self._filterCache.getFilter(f) for f in filterQueries]
+        filters = [self._filterCache.get(f) for f in filterQueries]
         if filter is not None:
             filters.append(filter)
         return ChainedFilter(filters, ChainedFilter.AND)

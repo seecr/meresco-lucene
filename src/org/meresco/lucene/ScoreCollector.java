@@ -36,14 +36,13 @@ import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.SmallFloat;
 
 
-public class KeyScoreCollector extends Collector {
+public class ScoreCollector extends Collector {
     private String keyName;
     private NumericDocValues keyValues;
-    protected OpenBitSet keySet = new OpenBitSet();
     protected byte[] scores = new byte[0];
     private Scorer scorer;
 
-    public KeyScoreCollector(String keyName) {
+    public ScoreCollector(String keyName) {
         this.keyName = keyName;
     }
 
@@ -52,7 +51,6 @@ public class KeyScoreCollector extends Collector {
         if (this.keyValues != null) {
             int value = (int)this.keyValues.get(docId);
             if (value > 0) {
-                this.keySet.set(value);
                 if (value >= scores.length) {
                     this.scores = resize(this.scores, value + 1);
                 }
@@ -81,10 +79,6 @@ public class KeyScoreCollector extends Collector {
             return SmallFloat.byte315ToFloat(this.scores[key]);
         }
         return 0;
-    }
-
-    public OpenBitSet getCollectedKeys() {
-        return this.keySet;
     }
 
     public byte[] resize(byte[] src, int newSize) {

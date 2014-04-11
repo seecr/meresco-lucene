@@ -423,7 +423,7 @@ class MultiLuceneTest(SeecrTestCase):
 
     def testReminderThatCollectingNonUniqueKeysGivesTooManyResults(self):
         keyBCollector = KeyCollector(KEY_PREFIX + 'B')
-        consume(self.luceneB.search(query=luceneQueryFromCql('N=true'), collector=keyBCollector))
+        self.luceneB.search(query=luceneQueryFromCql('N=true'), collector=keyBCollector)
         keyBSet = keyBCollector.getCollectedKeys()
         result = returnValueFromGenerator(self.luceneB.executeQuery(
                 MatchAllDocsQuery(),
@@ -434,15 +434,15 @@ class MultiLuceneTest(SeecrTestCase):
     def testNto1UniteExperiment(self):
         # unite B-N met A-U, query op A-Q en not B-O
         uniteDocIdCollector = DocIdCollector()
-        consume(self.luceneB.search(query=luceneQueryFromCql('N=true and O=false'), collector=uniteDocIdCollector))
+        self.luceneB.search(query=luceneQueryFromCql('N=true and O=false'), collector=uniteDocIdCollector)
         matchKeyCollector = KeyCollector(KEY_PREFIX + 'A')
-        consume(self.luceneA.search(query=luceneQueryFromCql('U=true and Q=true'), collector=matchKeyCollector))
+        self.luceneA.search(query=luceneQueryFromCql('U=true and Q=true'), collector=matchKeyCollector)
         keyFilterCollector = KeyFilterCollector(matchKeyCollector.getCollectedKeys(), KEY_PREFIX + 'B')
         keyFilterCollector.setDelegate(uniteDocIdCollector)
-        consume(self.luceneB.search(query=luceneQueryFromCql('O=false'), collector=keyFilterCollector))
+        self.luceneB.search(query=luceneQueryFromCql('O=false'), collector=keyFilterCollector)
 
         matchKeyCollector = KeyCollector(KEY_PREFIX + 'A')
-        consume(self.luceneA.search(query=luceneQueryFromCql('Q=true'), collector=matchKeyCollector))
+        self.luceneA.search(query=luceneQueryFromCql('Q=true'), collector=matchKeyCollector)
         keyFilterCollector = KeyFilterCollector(matchKeyCollector.getCollectedKeys(), KEY_PREFIX + 'B')
         result = returnValueFromGenerator(self.luceneB.executeQuery(luceneQuery=luceneQueryFromCql('O=false'), filter=uniteDocIdCollector.getDocIdFilter(), filterCollector=keyFilterCollector))
         self.assertEquals([Hit(u'B-N>A-MQU'), Hit(u'B-P>A-MQU')], sorted(result.hits, key=lambda h: h.id))
@@ -627,6 +627,24 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(4, result.total)
         self.assertEquals([Hit(u'A-MQU'), Hit('A-M'), Hit('A-MU'), Hit(u'A-MQ')], result.hits)
+
+    def testScoreCollectorCacheInvalidation(self):
+        q = ComposedQuery('coreA', query=MatchAllDocsQuery())
+        q.setRankQuery(core='coreC', query=luceneQueryFromCql('S=true'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(8, result.total)
+        self.assertEquals([Hit(id=u'A-MQU'), Hit(id=u'A'), Hit(id=u'A-U'), Hit(id=u'A-Q')], result.hits[:4])
+
+        self.addDocument(self.luceneC, identifier='C-S>A-MQ', keys=[('C', 7)], fields=[('S', 'true')])
+        sleep(0.2)
+        try:
+            result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+            self.assertEquals(8, result.total)
+            self.assertEquals([Hit(id=u'A-MQ'), Hit(id=u'A-MQU'), Hit(id=u'A'), Hit(id=u'A-U')], result.hits[:4])
+        finally:
+            self.luceneC.delete(identifier='C-S>A-MQ')
+            sleep(0.2)
 
 
     def addDocument(self, lucene, identifier, keys, fields):

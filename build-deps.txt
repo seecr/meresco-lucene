@@ -1,4 +1,5 @@
 jcc (>= 2.16)
+jcc (<< 2.17)
 python-setuptools
 gcc
 gcc-c++

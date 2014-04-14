@@ -3,3 +3,5 @@ python-setuptools
 gcc
 gcc-c++
 python-devel
+pylucene (>= 4.3.0)
+pylucene (<< 4.4)

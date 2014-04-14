@@ -35,14 +35,14 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.OpenBitSet;
 
 
-public class AverageScoreCollector extends Collector {
+public class AggregateScoreCollector extends Collector {
     private ScoreCollector otherScoreCollector;
     private Collector delegate;
     private String keyName;
     private float otherScoreBoost;
     private NumericDocValues keyValues;
 
-    public AverageScoreCollector(String keyName, ScoreCollector otherScoreCollector, float otherScoreBoost) {
+    public AggregateScoreCollector(String keyName, ScoreCollector otherScoreCollector, float otherScoreBoost) {
         this.keyName = keyName;
         this.otherScoreCollector = otherScoreCollector;
         this.otherScoreBoost = otherScoreBoost;
@@ -70,14 +70,14 @@ public class AverageScoreCollector extends Collector {
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {
-        this.delegate.setScorer(new AverageScoreCollector.AverageScorer(scorer));
+        this.delegate.setScorer(new AggregateScoreCollector.AggregateScorer(scorer));
     }
 
 
-    class AverageScorer extends Scorer {
+    class AggregateScorer extends Scorer {
         Scorer scorer;
 
-        AverageScorer(Scorer scorer) {
+        AggregateScorer(Scorer scorer) {
             super(scorer.getWeight());
             this.scorer = scorer;
         }
@@ -86,7 +86,7 @@ public class AverageScoreCollector extends Collector {
             float score = this.scorer.score();
             int key = (int) keyValues.get(docID());
             float otherScore = otherScoreCollector.score(key);
-            return (score + otherScore * otherScoreBoost) / 2;
+            return (score * (float) Math.pow((1 + otherScore), otherScoreBoost));
         }
 
         public int freq() throws IOException {

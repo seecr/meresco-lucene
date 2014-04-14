@@ -31,7 +31,7 @@ from meresco.core import Observable
 from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause
-from org.meresco.lucene import CachingKeyCollector, KeyBooleanFilter, AverageScoreCollector
+from org.meresco.lucene import CachingKeyCollector, KeyBooleanFilter, AggregateScoreCollector
 
 from _lucene import millis
 
@@ -122,12 +122,12 @@ class MultiLucene(Observable):
                         facets=query.facetsFor(otherCoreName)
                     )))
 
-        averageScoreCollector = None
+        aggregateScoreCollector = None
         for coreName in [resultCoreName] + otherCoreNames:
             rankQuery = query.rankQueryFor(coreName)
             if rankQuery:
                 scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName), query=rankQuery['query'])
-                averageScoreCollector = AverageScoreCollector(resultCoreKey, scoreCollector, rankQuery['boost'])
+                aggregateScoreCollector = AggregateScoreCollector(resultCoreKey, scoreCollector, rankQuery['boost'])
 
         resultCoreQuery = query.queryFor(core=resultCoreName)
         if resultCoreQuery is None:
@@ -137,7 +137,7 @@ class MultiLucene(Observable):
                 filter=resultCoreIntermediateFilter,
                 facets=query.facetsFor(resultCoreName),
                 filterQueries=query.filterQueriesFor(resultCoreName),
-                averageScoreCollector=averageScoreCollector,
+                scoreCollector=aggregateScoreCollector,
                 **query.otherKwargs()
             )
 

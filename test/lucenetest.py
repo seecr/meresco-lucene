@@ -26,7 +26,6 @@
 
 
 from os.path import join
-from time import sleep
 import gc
 
 from cqlparser import parseString as parseCql
@@ -83,7 +82,6 @@ class LuceneTest(SeecrTestCase):
         document = Document()
         document.add(TextField('title', 'The title', Field.Store.NO))
         returnValueFromGenerator(self.lucene.addDocument(identifier="identifier", document=document))
-        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(1, result.total)
         self.assertEquals(['identifier'], self.hitIds(result.hits))
@@ -98,7 +96,6 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=Document()))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=Document()))
         returnValueFromGenerator(self.lucene.delete(identifier="id:1"))
-        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(2, result.total)
         self.assertEquals(set(['id:0', 'id:2']), set(self.hitIds(result.hits)))
@@ -147,7 +144,6 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([
             ('field1', 'value1'),
             ])))
-        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field1', 'value1'))))
         self.assertEquals(1, result.total)
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field0', 'value0'))))
@@ -169,7 +165,6 @@ class LuceneTest(SeecrTestCase):
                 ('field1', 'ZZ'),
                 ('field2', 'ZZ'),
             ])))
-        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field0', sortDescending=False)]))
         self.assertEquals(3, result.total)
         self.assertEquals(['id:0', 'id:1', 'id:2'], self.hitIds(result.hits))
@@ -182,7 +177,6 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')])))
-        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), start=1, stop=10, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
         self.assertEquals(3, result.total)
         self.assertEquals(['id:1', 'id:2'], self.hitIds(result.hits))
@@ -202,7 +196,6 @@ class LuceneTest(SeecrTestCase):
 
         # does not crash!!!
         returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
-        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals([], result.drilldownData)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
@@ -216,6 +209,21 @@ class LuceneTest(SeecrTestCase):
                 ],
             }],result.drilldownData)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field3')]))
+        self.assertEquals([{
+                'fieldname': 'field3',
+                'terms': [
+                    {'term': 'second item', 'count': 2},
+                    {'term': 'other value', 'count': 1},
+                ],
+            }],result.drilldownData)
+
+    def testFacetsMaxTerms0(self):
+        self.lucene._index._commitCount = 3
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first item0'), ('field3', 'second item')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')]), categories=createCategories([('field2', 'first item1'), ('field3', 'other value')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')]), categories=createCategories([('field2', 'first item2'), ('field3', 'second item')])))
+
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=0, fieldname='field3')]))
         self.assertEquals([{
                 'fieldname': 'field3',
                 'terms': [
@@ -247,7 +255,6 @@ class LuceneTest(SeecrTestCase):
         # It keeps on working.
         self.assertEquals('[<CategoryPath: class org.apache.lucene.facet.taxonomy.CategoryPath>]', str(categories))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([]), categories=categories))
-        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field')]))
         self.assertEquals([{
                 'fieldname': 'field',
@@ -258,7 +265,6 @@ class LuceneTest(SeecrTestCase):
 
     def testEscapeFacets(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first/item0')])))
-        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         self.assertEquals([{
                 'terms': [{'count': 1, 'term': u'first/item0'}],
@@ -267,7 +273,6 @@ class LuceneTest(SeecrTestCase):
 
     def testDiacritics(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier='hendrik', document=createDocument([('title', 'Waar is Morée vandaag?')])))
-        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('title', 'moree'))))
         self.assertEquals(1, result.total)
         query = LuceneQueryComposer(unqualifiedTermFields=[]).compose(parseCql("title=morée"))
@@ -283,7 +288,6 @@ class LuceneTest(SeecrTestCase):
         # id     0  1  2  3  4  5  6  7  8  9
         # mod2  v0 v1 v0 v1 v0 v1 v0 v1 v0 v1
         # mod3  v0 v1 v2 v0 v1 v2 v0 v1 v2 v0
-        sleep(0.1)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), filterQueries=[TermQuery(Term('mod2', 'v0'))]))
         self.assertEquals(5, result.total)
         self.assertEquals(['id:0', 'id:2', 'id:4', 'id:6', 'id:8'], self.hitIds(result.hits))
@@ -300,14 +304,12 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value1')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value1')])))
-        sleep(0.1)
         response = returnValueFromGenerator(self.lucene.prefixSearch(fieldname='field1', prefix='valu'))
         self.assertEquals(['value1', 'value0'], response.hits)
         self.assertTrue(response.queryTime > 0, response.asJson())
 
     def testSuggestions(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field3', 'value2')])))
-        sleep(0.1)
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), suggestionRequest=dict(count=2, query="value0 and valeu", field="field3")))
         self.assertEquals(['id:0'], self.hitIds(response.hits))
         self.assertEquals({'value0': (0, 6, ['value2']), 'valeu': (11, 16, ['value2'])}, response.suggestions)
@@ -315,7 +317,6 @@ class LuceneTest(SeecrTestCase):
     def testRangeQuery(self):
         for f in ['aap', 'noot', 'mies', 'vis', 'vuur', 'boom']:
             returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % f, document=createDocument([('field', f)])))
-        sleep(0.1)
         # (field, lowerTerm, upperTerm, includeLower, includeUpper)
         luceneQuery = TermRangeQuery.newStringRange('field', None, 'mies', False, False) # <
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
@@ -334,7 +335,6 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field0', 'value0')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value0')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value0')])))
-        sleep(0.1)
         response = returnValueFromGenerator(self.lucene.fieldnames())
         self.assertEquals(set([IDFIELD, 'field0', 'field1']), set(response.hits))
         self.assertEquals(3, response.total)
@@ -342,7 +342,6 @@ class LuceneTest(SeecrTestCase):
     def testFilterCaching(self):
         for i in range(10):
             returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([('field%s' % i, 'value0')])))
-        sleep(0.1)
         query = BooleanQuery()
         [query.add(TermQuery(Term("field%s" % i, "value0")), BooleanClause.Occur.SHOULD) for i in range(100)]
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
@@ -354,7 +353,6 @@ class LuceneTest(SeecrTestCase):
         document = Document()
         document.add(TextField('title', 'The title', Field.Store.NO))
         returnValueFromGenerator(self.lucene.addDocument(identifier="identifier", document=document))
-        sleep(0.1)
         with stdout_replaced():
             self.lucene.handleShutdown()
         lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor)

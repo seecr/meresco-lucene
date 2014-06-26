@@ -23,7 +23,6 @@
 #
 ## end license ##
 
-from time import sleep
 from os.path import join
 
 from cqlparser import parseString as parseCql
@@ -106,8 +105,6 @@ class MultiLuceneTest(SeecrTestCase):
         self.addDocument(self.luceneC, identifier='C-R', keys=[('C', k5)], fields=[('R', 'true')])
         self.addDocument(self.luceneC, identifier='C-S', keys=[('C', k8)], fields=[('S', 'true')])
         self.addDocument(self.luceneC, identifier='C-S2', keys=[('C', k7)], fields=[('S', 'false')])
-
-        sleep(0.2)
 
     def tearDown(self):
         self.luceneA.close()
@@ -336,7 +333,6 @@ class MultiLuceneTest(SeecrTestCase):
             }], resultOne.drilldownData)
 
         self.addDocument(self.luceneA, identifier='A-MQU',  keys=[('A', 8 )], fields=[('M', 'true' ), ('Q', 'false' ), ('U', 'true' ), ('S', '8')])
-        sleep(0.2)
 
         q = ComposedQuery('coreA')
         q.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'), facets=[
@@ -537,14 +533,12 @@ class MultiLuceneTest(SeecrTestCase):
         q.setCoreQuery(core='coreB', query=luceneQueryFromCql("N=true"))
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        sleep(0.2)
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
         self.assertTrue(result.queryTime < 5)
         self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 80 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        sleep(0.2)
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ']), self.hitIds(result.hits))
 
@@ -555,14 +549,12 @@ class MultiLuceneTest(SeecrTestCase):
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        sleep(0.2)
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
         self.assertTrue(result.queryTime < 5)
         self.addDocument(self.luceneB, identifier='B-N>A-MU', keys=[('B', 60 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        sleep(0.2)
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
 
@@ -572,11 +564,9 @@ class MultiLuceneTest(SeecrTestCase):
         q.setCoreQuery(core='coreB', query=luceneQueryFromCql("N=true"))
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        sleep(0.2)
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
         consume(self.luceneB.delete(identifier='B-N>A-MU'))
-        sleep(0.2)
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
 
@@ -640,14 +630,12 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals([u'A-MQU', u'A', u'A-U', u'A-Q', u'A-QU', u'A-M', u'A-MU', u'A-MQ'], [hit.id for hit in result.hits])
 
         self.addDocument(self.luceneC, identifier='C-S>A-MQ', keys=[('C', 7)], fields=[('S', 'true')])
-        sleep(0.2)
         try:
             result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
             self.assertEquals(8, result.total)
             self.assertEquals([u'A-MQ', u'A-MQU', u'A', u'A-U', u'A-Q', u'A-QU', u'A-M', u'A-MU'], [hit.id for hit in result.hits])
         finally:
             self.luceneC.delete(identifier='C-S>A-MQ')
-            sleep(0.2)
 
 
     def addDocument(self, lucene, identifier, keys, fields):

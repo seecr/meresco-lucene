@@ -30,6 +30,9 @@ from org.apache.lucene.facet.taxonomy import CategoryPath
 from org.apache.lucene.facet.params import FacetSearchParams
 from org.apache.lucene.queries import ChainedFilter
 from org.meresco.lucene import DeDupFilterCollector, ScoreCollector
+
+from java.lang import Integer
+
 from time import time
 
 from os.path import basename
@@ -88,7 +91,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-        filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, **kwargs):
+            filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -220,7 +223,7 @@ class Lucene(object):
             sortBy = f.get('sortBy')
             if not (sortBy is None or sortBy in self.SUPPORTED_SORTBY_VALUES):
                 raise ValueError('Value of "sortBy" should be in %s' % self.SUPPORTED_SORTBY_VALUES)
-            facetRequest = CountFacetRequest(CategoryPath([f['fieldname']]), f['maxTerms'])
+            facetRequest = CountFacetRequest(CategoryPath([f['fieldname']]), f['maxTerms'] if not f['maxTerms'] == 0 else Integer.MAX_VALUE)  # TS: HCK
             facetRequest.setDepth(MAX_FACET_DEPTH)
             facetRequests.append(facetRequest)
         facetSearchParams = FacetSearchParams(facetRequests)

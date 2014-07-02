@@ -35,7 +35,6 @@ from meresco.core import Observable
 from org.meresco.lucene import KeyCollector, KeyFilterCollector, DocIdCollector
 
 from meresco.lucene import Lucene, TermFrequencySimilarity
-from meresco.lucene.hit import Hit
 from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.composedquery import ComposedQuery
@@ -620,6 +619,18 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(4, result.total)
         self.assertEquals([u'A-MQU', 'A-M', 'A-MU', u'A-MQ'], [hit.id for hit in result.hits])
+
+    def testMultipleRankQuery(self):
+        q = ComposedQuery('coreA', query=MatchAllDocsQuery())
+        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
+        q.setRankQuery(core='coreA', query=luceneQueryFromCql('Q=true'))
+        q.setRankQuery(core='coreC', query=luceneQueryFromCql('S=true'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(4, result.total)
+        self.assertEquals([u'A-MQU', u'A-MQ', 'A-M', 'A-MU'], [hit.id for hit in result.hits])
+
 
     def testScoreCollectorCacheInvalidation(self):
         q = ComposedQuery('coreA', query=MatchAllDocsQuery())

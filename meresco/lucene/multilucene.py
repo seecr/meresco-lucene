@@ -31,7 +31,8 @@ from meresco.core import Observable
 from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause
-from org.meresco.lucene import CachingKeyCollector, KeyBooleanFilter, AggregateScoreCollector
+from org.meresco.lucene import CachingKeyCollector, KeyBooleanFilter, AggregateScoreCollector, ScoreCollectorBoost
+from java.util import ArrayList
 
 from _lucene import millis
 
@@ -122,12 +123,13 @@ class MultiLucene(Observable):
                         facets=query.facetsFor(otherCoreName)
                     )))
 
-        aggregateScoreCollector = None
+        scoreCollectors = ArrayList().of_(ScoreCollectorBoost)
         for coreName in [resultCoreName] + otherCoreNames:
             rankQuery = query.rankQueryFor(coreName)
             if rankQuery:
                 scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName), query=rankQuery['query'])
-                aggregateScoreCollector = AggregateScoreCollector(resultCoreKey, scoreCollector, rankQuery['boost'])
+                scoreCollectors.add(ScoreCollectorBoost(scoreCollector, rankQuery['boost']))
+        aggregateScoreCollector = AggregateScoreCollector(resultCoreKey, scoreCollectors) if scoreCollectors.size() > 0 else None
 
         resultCoreQuery = query.queryFor(core=resultCoreName)
         if resultCoreQuery is None:

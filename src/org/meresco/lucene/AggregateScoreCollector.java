@@ -26,6 +26,7 @@
 package org.meresco.lucene;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -36,16 +37,14 @@ import org.apache.lucene.util.OpenBitSet;
 
 
 public class AggregateScoreCollector extends Collector {
-    private ScoreCollector otherScoreCollector;
+    private List<ScoreCollectorBoost> otherScoreCollectorBoosts;
     private Collector delegate;
     private String keyName;
-    private float otherScoreBoost;
     private NumericDocValues keyValues;
 
-    public AggregateScoreCollector(String keyName, ScoreCollector otherScoreCollector, float otherScoreBoost) {
+    public AggregateScoreCollector(String keyName, List<ScoreCollectorBoost> otherScoreCollectorBoosts) {
         this.keyName = keyName;
-        this.otherScoreCollector = otherScoreCollector;
-        this.otherScoreBoost = otherScoreBoost;
+        this.otherScoreCollectorBoosts = otherScoreCollectorBoosts;
     }
 
     public void setDelegate(Collector delegate) {
@@ -85,8 +84,11 @@ public class AggregateScoreCollector extends Collector {
         public float score() throws IOException {
             float score = this.scorer.score();
             int key = (int) keyValues.get(docID());
-            float otherScore = otherScoreCollector.score(key);
-            return (score * (float) Math.pow((1 + otherScore), otherScoreBoost));
+            for (ScoreCollectorBoost scb : otherScoreCollectorBoosts) {
+                float otherScore = scb.collector.score(key);
+                score *= (float) Math.pow((1 + otherScore), scb.boost);
+            }
+            return score;
         }
 
         public int freq() throws IOException {
@@ -109,4 +111,5 @@ public class AggregateScoreCollector extends Collector {
             return this.scorer.docID();
         }
     }
+
 }

@@ -25,6 +25,8 @@
 
 from seecr.test import IntegrationTestCase, CallTrace
 from meresco.lucene import Fields2LuceneDoc
+from meresco.core import Transaction
+from weightless.core import consume
 
 
 class Fields2LuceneDocTest(IntegrationTestCase):
@@ -108,6 +110,30 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         self.assertTrue(timestampField.fieldType().indexed())
         self.assertFalse(timestampField.fieldType().stored())
         self.assertTrue(timestampField.fieldType().tokenized())
+
+    def testAddDocument(self):
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFieldnames=[])
+        observer = CallTrace()
+        fields2LuceneDoc.addObserver(observer)
+        fields2LuceneDoc.ctx.tx = Transaction('tsname')
+        fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
+        fields2LuceneDoc.addField('field', 'value')
+        consume(fields2LuceneDoc.commit('unused'))
+
+        self.assertEquals(['addDocument'], observer.calledMethodNames())
+        self.assertEquals('identifier', observer.calledMethods[0].kwargs['identifier'])
+
+    def testRewriteIdentifier(self):
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFieldnames=[], identifierRewrite=lambda identifier: "test:" + identifier)
+        observer = CallTrace()
+        fields2LuceneDoc.addObserver(observer)
+        fields2LuceneDoc.ctx.tx = Transaction('tsname')
+        fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
+        fields2LuceneDoc.addField('field', 'value')
+        consume(fields2LuceneDoc.commit('unused'))
+
+        self.assertEquals(['addDocument'], observer.calledMethodNames())
+        self.assertEquals('test:identifier', observer.calledMethods[0].kwargs['identifier'])
 
 # TODO
 #

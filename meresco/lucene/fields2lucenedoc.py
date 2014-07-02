@@ -33,11 +33,12 @@ from utils import createField, createTimestampField, IDFIELD, KEY_PREFIX
 
 
 class Fields2LuceneDoc(Observable):
-    def __init__(self, transactionName, drilldownFieldnames, addTimestamp=False):
+    def __init__(self, transactionName, drilldownFieldnames, addTimestamp=False, identifierRewrite=None):
         Observable.__init__(self)
         self._transactionName = transactionName
         self._drilldownFieldnames = drilldownFieldnames
         self._addTimestamp = addTimestamp
+        self._identifierRewrite = identifierRewrite or (lambda identifier: identifier)
 
     def begin(self, name):
         if name != self._transactionName:
@@ -55,8 +56,9 @@ class Fields2LuceneDoc(Observable):
         fields = tx.objectScope(self)
         if not fields:
             return
+        identifier = self._identifierRewrite(tx.locals['id'])
         yield self.all.addDocument(
-                identifier=tx.locals["id"],
+                identifier=identifier,
                 document=self._createDocument(fields),
                 categories=self._createFacetCategories(fields)
             )

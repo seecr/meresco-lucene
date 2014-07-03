@@ -42,26 +42,17 @@ public class TermFrequencySimilarity extends Similarity {
 
     @Override
     public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-        return new SimWeight() {
-
-            @Override
-            public float getValueForNormalization() {
-                return 1.0f;
-            }
-
-            @Override
-            public void normalize(float queryNorm, float topLevelBoost) {
-            }
-        };
+        return new TermFrequencySimilarityWeight(queryBoost);
     }
 
     @Override
     public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+        final TermFrequencySimilarityWeight tfsWeight = (TermFrequencySimilarityWeight) weight;
         return new ExactSimScorer() {
 
             @Override
             public float score(int doc, int freq) {
-                return freq / 1000.0f;
+                return freq / 1000.0f * tfsWeight.queryBoost;
             }
         };
     }
@@ -69,6 +60,23 @@ public class TermFrequencySimilarity extends Similarity {
     @Override
     public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
         return null;
+    }
+
+    class TermFrequencySimilarityWeight extends SimWeight {
+        float queryBoost;
+
+        public TermFrequencySimilarityWeight(float queryBoost) {
+            this.queryBoost = queryBoost;
+        }
+
+        @Override
+        public float getValueForNormalization() {
+            return 1.0f;
+        }
+
+        @Override
+        public void normalize(float queryNorm, float topLevelBoost) {
+        }
     }
 
 }

@@ -51,6 +51,7 @@ from luceneresponsetest import LuceneResponseTest
 from lrucachetest import LruCacheTest
 from termnumeratortest import TermNumeratorTest
 from dedupfiltercollectortest import DeDupFilterCollectorTest
+from termfrequencysimilaritytest import TermFrequencySimilarityTest
 
 if __name__ == '__main__':
     unittest.main()

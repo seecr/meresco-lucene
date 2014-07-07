@@ -60,9 +60,9 @@ class ComposedQuery(object):
         self._facets[core].append(facet)
         return self
 
-    def setRankQuery(self, core, query, boost=1.0):
+    def setRankQuery(self, core, query):
         self.cores.add(core)
-        self._rankQueries[core] = dict(query=query, boost=boost)
+        self._rankQueries[core] = query
         return self
 
     def addMatch(self, matchCoreASpec, matchCoreBSpec):
@@ -138,7 +138,7 @@ class ComposedQuery(object):
         convertQuery = lambda query: (query if query is None else convert(query))
         self._queries = dict((k, convertQuery(v)) for k, v in self._queries.items())
         self._filterQueries = dict((k, [convertQuery(v) for v in values]) for k, values in self._filterQueries.items())
-        self._rankQueries = dict((k, dict(d, query=convertQuery(d['query']))) for k, d in self._rankQueries.items())
+        self._rankQueries = dict((k, convertQuery(v)) for k, v in self._rankQueries.items())
         self._unites = [dict(d, query=convertQuery(d['query'])) for d in self._unites]
 
     def otherKwargs(self):

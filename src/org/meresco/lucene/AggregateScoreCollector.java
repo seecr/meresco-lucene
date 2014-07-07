@@ -37,14 +37,14 @@ import org.apache.lucene.util.OpenBitSet;
 
 
 public class AggregateScoreCollector extends Collector {
-    private List<ScoreCollectorBoost> otherScoreCollectorBoosts;
+    private List<ScoreCollector> otherScoreCollectors;
     private Collector delegate;
     private String keyName;
     private NumericDocValues keyValues;
 
-    public AggregateScoreCollector(String keyName, List<ScoreCollectorBoost> otherScoreCollectorBoosts) {
+    public AggregateScoreCollector(String keyName, List<ScoreCollector> otherScoreCollectors) {
         this.keyName = keyName;
-        this.otherScoreCollectorBoosts = otherScoreCollectorBoosts;
+        this.otherScoreCollectors = otherScoreCollectors;
     }
 
     public void setDelegate(Collector delegate) {
@@ -84,9 +84,9 @@ public class AggregateScoreCollector extends Collector {
         public float score() throws IOException {
             float score = this.scorer.score();
             int key = (int) keyValues.get(docID());
-            for (ScoreCollectorBoost scb : otherScoreCollectorBoosts) {
-                float otherScore = scb.collector.score(key);
-                score *= (float) Math.pow((1 + otherScore), scb.boost);
+            for (ScoreCollector sc : otherScoreCollectors) {
+                float otherScore = sc.score(key);
+                score *= (float) (1 + otherScore);
             }
             return score;
         }

@@ -76,3 +76,8 @@ def createIdField(value):
 
 def createTimestampField(value):
     return createField(TIMESTAMPFIELD, value)
+
+def rankToTermFreq(value, rank):
+    rank = max(0, min(1, rank))
+    return '{0} '.format(value) * int(rank * 1000)
+

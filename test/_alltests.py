@@ -40,18 +40,19 @@ if version >= '2.7':
     simplefilter('default')
 
 
-from cqltolucenequerytest import CqlToLuceneQueryTest
-from lucenequerycomposertest import LuceneQueryComposerTest
-from fields2lucenedoctest import Fields2LuceneDocTest
-from lucenetest import LuceneTest
-from multilucenetest import MultiLuceneTest
 from composedquerytest import ComposedQueryTest
+from cqltolucenequerytest import CqlToLuceneQueryTest
+from dedupfiltercollectortest import DeDupFilterCollectorTest
+from fields2lucenedoctest import Fields2LuceneDocTest
+from lrucachetest import LruCacheTest
+from lucenequerycomposertest import LuceneQueryComposerTest
 from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
-from lrucachetest import LruCacheTest
-from termnumeratortest import TermNumeratorTest
-from dedupfiltercollectortest import DeDupFilterCollectorTest
+from lucenetest import LuceneTest
+from multicqltolucenequerytest import MultiCqlToLuceneQueryTest
+from multilucenetest import MultiLuceneTest
 from termfrequencysimilaritytest import TermFrequencySimilarityTest
+from termnumeratortest import TermNumeratorTest
 
 if __name__ == '__main__':
     unittest.main()

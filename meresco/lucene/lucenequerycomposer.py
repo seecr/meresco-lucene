@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -43,9 +43,9 @@ class LuceneQueryComposer(object):
 
     def compose(self, ast):
         (result, ) = _Cql2LuceneQueryVisitor(
-            unqualifiedTermFields=self._unqualifiedTermFields, 
-            node=ast, 
-            isUntokenized=self._isUntokenized, 
+            unqualifiedTermFields=self._unqualifiedTermFields,
+            node=ast,
+            isUntokenized=self._isUntokenized,
             analyzer=self._analyzer).visit()
         return result
 
@@ -119,7 +119,7 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
     def _termOrPhraseQuery(self, index, termString):
         if fieldType(index) == LONGTYPE:
             return NumericRangeQuery.newLongRange(index, long(termString), long(termString), True, True)
-        listOfTermStrings = self._analyzeToken(termString.lower())
+        listOfTermStrings = self._analyzeToken(termString)
         if len(listOfTermStrings) == 1:
             if prefixRegexp.match(termString):
                 return PrefixQuery(Term(index, listOfTermStrings[0]))

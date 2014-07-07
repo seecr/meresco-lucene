@@ -134,12 +134,12 @@ class ComposedQuery(object):
             except KeyError:
                 raise ValueError("No match set for cores %s" % str((self.resultsFrom, core)))
 
-    def convertWith(self, convert):
-        convertQuery = lambda query: (query if query is None else convert(query))
-        self._queries = dict((k, convertQuery(v)) for k, v in self._queries.items())
-        self._filterQueries = dict((k, [convertQuery(v) for v in values]) for k, values in self._filterQueries.items())
-        self._rankQueries = dict((k, convertQuery(v)) for k, v in self._rankQueries.items())
-        self._unites = [dict(d, query=convertQuery(d['query'])) for d in self._unites]
+    def convertWith(self, **converts):
+        convertQuery = lambda core, query: converts[core](query) if query is not None else None
+        self._queries = dict((core, convertQuery(core, v)) for core, v in self._queries.items())
+        self._filterQueries = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._filterQueries.items())
+        self._rankQueries = dict((core, convertQuery(core, v)) for core, v in self._rankQueries.items())
+        self._unites = [dict(d, query=convertQuery(d['core'], d['query'])) for d in self._unites]
 
     def otherKwargs(self):
         return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField)

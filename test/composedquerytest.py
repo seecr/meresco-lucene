@@ -167,13 +167,15 @@ class ComposedQueryTest(SeecrTestCase):
         cq.addFilterQuery('coreB', 'Q4')
         cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         cq.addUnite(dict(core='coreA', query='Q5'), dict(core='coreB', query='Q6'))
-        cq.convertWith(lambda query: "Converted_%s" % query)
+        convertCoreA = lambda query: "Converted_A_{0}".format(query)
+        convertCoreB = lambda query: "Converted_B_{0}".format(query)
+        cq.convertWith(coreA=convertCoreA, coreB=convertCoreB)
 
-        self.assertEquals("Converted_Q0", cq.queryFor('coreA'))
-        self.assertEquals(["Converted_Q1", "Converted_Q2"], cq.filterQueriesFor('coreA'))
-        self.assertEquals("Converted_Q3", cq.queryFor('coreB'))
-        self.assertEquals(["Converted_Q4"], cq.filterQueriesFor('coreB'))
-        self.assertEquals([{'query': 'Converted_Q5', 'core': 'coreA'}, {'query': 'Converted_Q6', 'core': 'coreB'}], cq.unites)
+        self.assertEquals("Converted_A_Q0", cq.queryFor('coreA'))
+        self.assertEquals(["Converted_A_Q1", "Converted_A_Q2"], cq.filterQueriesFor('coreA'))
+        self.assertEquals("Converted_B_Q3", cq.queryFor('coreB'))
+        self.assertEquals(["Converted_B_Q4"], cq.filterQueriesFor('coreB'))
+        self.assertEquals([{'query': 'Converted_A_Q5', 'core': 'coreA'}, {'query': 'Converted_B_Q6', 'core': 'coreB'}], cq.unites)
 
     def testSingleCoreQuery(self):
         cq = ComposedQuery('coreA')
@@ -210,7 +212,7 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertValidateRaisesValueError(cq, "No match set for cores ('coreA', 'coreB')")
         cq.addMatch(dict(core='coreA', uniqueKey='kA'), dict(core='coreB', key='kB'))
         self.assertEquals('qB', cq.rankQueryFor('coreB'))
-        cq.convertWith(lambda q: "converted_" + q)
+        cq.convertWith(coreB=lambda q: "converted_" + q)
         self.assertEquals('converted_qB', cq.rankQueryFor('coreB'))
 
     def assertValidateRaisesValueError(self, composedQuery, message):

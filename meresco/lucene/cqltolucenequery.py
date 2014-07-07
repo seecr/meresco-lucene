@@ -43,11 +43,6 @@ class CqlToLuceneQuery(Transparent, Logger):
         response = yield self.any.executeQuery(luceneQuery=self._convert(cqlAbstractSyntaxTree), filterQueries=filterQueries, **kwargs)
         generatorReturn(response)
 
-    def executeComposedQuery(self, query):
-        query.convertWith(self._convert)
-        response = yield self.any.executeComposedQuery(query=query)
-        generatorReturn(response)
-
     def _convert(self, ast):
         ClauseCollector(ast, self.log).visit()
         return self._cqlComposer.compose(ast)

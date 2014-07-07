@@ -44,6 +44,7 @@ from org.meresco.lucene import MerescoDutchStemmingAnalyzer
 
 from weightless.io import Reactor
 from weightless.core import compose, be
+from meresco.lucene.multicqltolucenequery import MultiCqlToLuceneQuery
 
 
 myPath = abspath(dirname(__file__))
@@ -144,7 +145,13 @@ def main(reactor, port, databasePath):
                     (PathFilter('/sru'),
                         (SruParser(defaultRecordSchema='record'),
                             (SruHandler(),
-                                (CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer),
+                                (MultiCqlToLuceneQuery(
+                                    defaultCore='main',
+                                    coreToCqlLuceneQueries={
+                                        "main": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer),
+                                        "main2": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer),
+                                        "empty-core": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer),
+                                    }),
                                     multiLuceneHelix,
                                 ),
                                 (SRUTermDrilldown(defaultFormat='xml'),),
@@ -165,7 +172,13 @@ def main(reactor, port, databasePath):
                     ),
                     (PathFilter('/remote'),
                         (LuceneRemoteService(reactor=reactor),
-                            (CqlToLuceneQuery([]),
+                            (MultiCqlToLuceneQuery(
+                                    defaultCore='main',
+                                    coreToCqlLuceneQueries={
+                                        "main": CqlToLuceneQuery([]),
+                                        "main2": CqlToLuceneQuery([]),
+                                        "empty-core": CqlToLuceneQuery([]),
+                                    }),
                                 multiLuceneHelix,
                             )
                         )

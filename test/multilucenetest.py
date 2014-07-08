@@ -631,6 +631,13 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(4, result.total)
         self.assertEquals([u'A-MQU', u'A-MQ', 'A-M', 'A-MU'], [hit.id for hit in result.hits])
 
+    def XXX_NOT_YET_IMPLEMENTED_testRankQueryInSingleCoreQuery(self):
+        q = ComposedQuery('coreA', query=MatchAllDocsQuery())
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        q.setRankQuery(core='coreA', query=luceneQueryFromCql('Q=true'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(8, result.total)
+        self.assertEquals([u'A-Q', u'A-QU', u'A-MQ', u'A-MQU', u'A', u'A-U', u'A-M', u'A-MU'], [hit.id for hit in result.hits])
 
     def testScoreCollectorCacheInvalidation(self):
         q = ComposedQuery('coreA', query=MatchAllDocsQuery())
@@ -647,7 +654,6 @@ class MultiLuceneTest(SeecrTestCase):
             self.assertEquals([u'A-MQ', u'A-MQU', u'A', u'A-U', u'A-Q', u'A-QU', u'A-M', u'A-MU'], [hit.id for hit in result.hits])
         finally:
             self.luceneC.delete(identifier='C-S>A-MQ')
-
 
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(

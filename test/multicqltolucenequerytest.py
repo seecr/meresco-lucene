@@ -41,7 +41,7 @@ class MultiCqlToLuceneQueryTest(TestCase):
     def setUp(self):
         coreAConverter = CqlToLuceneQuery([('fieldA', 1.0)])
         coreBConverter = CqlToLuceneQuery([('fieldB', 1.0)])
-        self.converter = MultiCqlToLuceneQuery(dict(A=coreAConverter, B=coreBConverter))
+        self.converter = MultiCqlToLuceneQuery(defaultCore='A', coreToCqlLuceneQueries=dict(A=coreAConverter, B=coreBConverter))
         self.observer = CallTrace('Query responder', methods={'executeQuery': executeQueryMock})
         self.dna = be((Observable(),
             (self.converter,

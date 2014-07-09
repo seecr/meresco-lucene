@@ -45,6 +45,7 @@ from org.meresco.lucene import MerescoDutchStemmingAnalyzer
 from weightless.io import Reactor
 from weightless.core import compose, be
 from meresco.lucene.multicqltolucenequery import MultiCqlToLuceneQuery
+from meresco.xml import namespaces
 
 
 myPath = abspath(dirname(__file__))
@@ -52,7 +53,7 @@ dynamicPath = join(myPath, 'html', 'dynamic')
 staticPath = join(myPath, 'html', 'static')
 
 def uploadHelix(lucene, termNumerator, storageComponent):
-    indexHelix = (Fields2LuceneDoc('record', drilldownFieldnames=['untokenized.field2'], addTimestamp=True),
+    indexHelix = (Fields2LuceneDoc('record', drilldownFieldnames=['untokenized.field2', 'untokenized.fieldHier'], addTimestamp=True),
         (termNumerator,),
         (lucene,)
     )
@@ -68,7 +69,9 @@ def uploadHelix(lucene, termNumerator, storageComponent):
                 (FilterMessages(allowed=['add']),
                     (Xml2Fields(),
                         (RenameField(lambda name: name.split('.', 1)[-1]),
-                            indexHelix,
+                            (FilterField(lambda name: 'fieldHier' not in name),
+                                indexHelix,
+                            ),
                             (FilterField(lambda name: name == 'intfield1'),
                                 (RenameField(lambda name: SORTED_PREFIX + name),
                                     indexHelix,
@@ -81,6 +84,9 @@ def uploadHelix(lucene, termNumerator, storageComponent):
                             ),
                         )
                     ),
+                    (FieldHier(),
+                        indexHelix,
+                    )
                 ),
                 (XmlPrintLxml(fromKwarg='lxmlNode', toKwarg='data'),
                     (storageComponent,)
@@ -194,7 +200,15 @@ def main(reactor, port, databasePath):
     )
 
 
-
+class FieldHier(Observable):
+    ns = namespaces.copyUpdate(dict(x='http://meresco.org/namespace/example'))
+    def add(self, lxmlNode, **kwargs):
+        hierarchicalFields = self.ns.xpath(lxmlNode, '/x:document/x:fieldHier')
+        for field in hierarchicalFields:
+            values = self.ns.xpath(field, 'x:value/text()')
+            self.do.addField(name=UNTOKENIZED_PREFIX+'fieldHier', value=values)
+        return
+        yield
 
 def startServer(port, stateDir, **kwargs):
     setSignalHandlers()

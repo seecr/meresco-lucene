@@ -149,7 +149,20 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(1, self.numberOfRecords("field5=katten"))
         self.assertEquals(1, self.numberOfRecords("field4=kat"))
 
-    def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru'):
+    def testFieldHierarchicalDrilldown(self):
+        response = self.doSruQuery('*', facet='untokenized.fieldHier', drilldownFormat='json')
+        json = xpathFirst(response, '/srw:searchRetrieveResponse/srw:extraResponseData/drilldown:drilldown/drilldown:term-drilldown/drilldown:json/text()')
+        result = loads(json)
+        self.assertEquals(1, len(result))
+        drilldown = result[0]
+        self.assertEquals('untokenized.fieldHier', drilldown['fieldname'])
+        self.assertEquals(set([('parent0', 50), ('parent1', 50)]), set([(t['term'], t['count']) for t in drilldown['terms']]))
+
+    def testFieldHierarchicalSearch(self):
+        response = self.doSruQuery('untokenized.fieldHier exact "parent0/child1/grandchild2"', facet='untokenized.fieldHier', drilldownFormat='json')
+        self.assertEquals('3', xpathFirst(response, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))
+
+    def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru', drilldownFormat='xml'):
         arguments={'version': '1.2',
             'operation': 'searchRetrieve',
             'query': query,
@@ -162,6 +175,7 @@ class LuceneTest(IntegrationTestCase):
             arguments["sortKeys"] =sortKeys
         if facet is not None:
             arguments["x-term-drilldown"] = facet
+        arguments['x-drilldown-format'] = drilldownFormat
         header, body = getRequest(port=self.httpPort, path=path, arguments=arguments )
         return body
 

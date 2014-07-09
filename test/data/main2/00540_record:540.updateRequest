@@ -13,6 +13,11 @@
 <intfield3>5002</intfield3>
 <field3>B3SB1KP 7QsBAyAP0oon tbr8L4fVeQ dnH Zbk UjK87fVOC jZt PKLWEj2JFgg f6x2ey M6J1irK4pjDK</field3>
 <__key__.field>40</__key__.field>
+<fieldHier>
+            <value>parent0</value>
+            <value>child0</value>
+            <value>grandchild0</value>
+        </fieldHier>
 </document></srw:recordData>
     </srw:record>
 </ucp:updateRequest>

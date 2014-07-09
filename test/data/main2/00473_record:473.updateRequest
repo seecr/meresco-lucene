@@ -13,6 +13,11 @@
 <intfield3>5006</intfield3>
 <field3>TECgid 7R SeAB TQb75 j9jVO1vuB CBLjP4hqa06k m6sIPuD Bdg3rV7X9c HKC IEs7cFV6WdTX</field3>
 <__key__.field>77</__key__.field>
+<fieldHier>
+            <value>parent1</value>
+            <value>child2</value>
+            <value>grandchild3</value>
+        </fieldHier>
 </document></srw:recordData>
     </srw:record>
 </ucp:updateRequest>

@@ -88,7 +88,18 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             'untokenized.field8': [['grandparent', 'parent', 'child'], ['parent2', 'child']]
         }
         fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFieldnames=['untokenized.field4', 'untokenized.field5', 'untokenized.field6', 'untokenized.field8'])
-        categories = fields2LuceneDoc._createFacetCategories(fields)
+        observer = CallTrace()
+        fields2LuceneDoc.addObserver(observer)
+        fields2LuceneDoc.ctx.tx = Transaction('tsname')
+        fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
+        for field, values in fields.items():
+            for value in values:
+                fields2LuceneDoc.addField(field, value)
+
+        consume(fields2LuceneDoc.commit('unused'))
+
+        categories = observer.calledMethods[0].kwargs['categories']
+        document = observer.calledMethods[0].kwargs['document']
         self.assertEquals(6, len(categories))
         self.assertEquals(set([
                 ('untokenized.field5', 'value5'),
@@ -98,6 +109,8 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                 ('untokenized.field8', 'grandparent', 'parent', 'child'),
                 ('untokenized.field8', 'parent2', 'child')
             ]), set(tuple(c.components) for c in categories))
+        self.assertEquals(['value5/value6'], [f.stringValue() for f in document.getFields('untokenized.field6')])
+        self.assertEquals(['grandparent', 'grandparent/parent', 'grandparent/parent/child', 'parent2', 'parent2/child'], [f.stringValue() for f in document.getFields('untokenized.field8')])
 
     def testAddTimeStamp(self):
         fields = {'field1': ['value1']}
@@ -134,6 +147,23 @@ class Fields2LuceneDocTest(IntegrationTestCase):
 
         self.assertEquals(['addDocument'], observer.calledMethodNames())
         self.assertEquals('test:identifier', observer.calledMethods[0].kwargs['identifier'])
+
+    def testRewriteFields(self):
+        def rewriteFields(fields):
+            fields['keys'] = list(sorted(fields.keys()))
+            return fields
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFieldnames=[], rewriteFields=rewriteFields)
+        observer = CallTrace()
+        fields2LuceneDoc.addObserver(observer)
+        fields2LuceneDoc.ctx.tx = Transaction('tsname')
+        fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
+        fields2LuceneDoc.addField('field1', 'value1')
+        fields2LuceneDoc.addField('field2', 'value2')
+        consume(fields2LuceneDoc.commit('unused'))
+        self.assertEquals(['addDocument'], observer.calledMethodNames())
+        doc = observer.calledMethods[0].kwargs['document']
+        self.assertEquals(set(['field1', 'field2', 'keys']), set([f.name() for f in doc.getFields()]))
+        self.assertEquals(['field1', 'field2'], [f.stringValue() for f in doc.getFields('keys')])
 
 # TODO
 #

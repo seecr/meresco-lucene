@@ -33,12 +33,13 @@ from utils import createField, createTimestampField, IDFIELD, KEY_PREFIX
 
 
 class Fields2LuceneDoc(Observable):
-    def __init__(self, transactionName, drilldownFieldnames, addTimestamp=False, identifierRewrite=None):
+    def __init__(self, transactionName, drilldownFieldnames, addTimestamp=False, identifierRewrite=None, rewriteFields=None):
         Observable.__init__(self)
         self._transactionName = transactionName
         self._drilldownFieldnames = drilldownFieldnames
         self._addTimestamp = addTimestamp
-        self._identifierRewrite = identifierRewrite or (lambda identifier: identifier)
+        self._identifierRewrite = (lambda identifier: identifier) if identifierRewrite is None else identifierRewrite
+        self._rewriteFields = (lambda fields: fields) if rewriteFields is None else rewriteFields
 
     def begin(self, name):
         if name != self._transactionName:
@@ -57,6 +58,7 @@ class Fields2LuceneDoc(Observable):
         if not fields:
             return
         identifier = self._identifierRewrite(tx.locals['id'])
+        fields = self._rewriteFields(fields)
         yield self.all.addDocument(
                 identifier=identifier,
                 document=self._createDocument(fields),
@@ -72,8 +74,11 @@ class Fields2LuceneDoc(Observable):
                 if field == IDFIELD:
                     raise ValueError("Field '%s' is protected and created by Lucene(..)")
                 else:
-                    f = createField(field, value)
-                doc.add(f)
+                    if hasattr(value, 'extend'):
+                        for v in ['/'.join(value[:i]) for i in xrange(1,len(value)+1)]:
+                            doc.add(createField(field, v))
+                    else:
+                        doc.add(createField(field, value))
         if self._addTimestamp:
             doc.add(createTimestampField(self._time()))
         return doc

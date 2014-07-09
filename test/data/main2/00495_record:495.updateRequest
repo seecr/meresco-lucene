@@ -13,6 +13,11 @@
 <intfield3>5001</intfield3>
 <field3>rNVl y6alB4Az VqtZooV0RV 1ZgNIa6 Ejz5 yIdHkYtd GhEZ7VNpOACt yp cfb if</field3>
 <__key__.field>13</__key__.field>
+<fieldHier>
+            <value>parent1</value>
+            <value>child0</value>
+            <value>grandchild0</value>
+        </fieldHier>
 </document></srw:recordData>
     </srw:record>
 </ucp:updateRequest>

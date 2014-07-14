@@ -35,6 +35,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.search.Scorer;
@@ -97,13 +98,13 @@ public class DeDupFilterCollector extends Collector {
         this.currentDocBase = context.docBase;
         this.keyValues = context.reader().getNumericDocValues(this.keyName);
         if (this.keyValues == null)
-            this.keyValues = NumericDocValues.EMPTY;
+            this.keyValues = DocValues.EMPTY_NUMERIC;
 
         this.sortByValues = null;
         if (this.sortByFieldName != null)
             this.sortByValues = context.reader().getNumericDocValues(this.sortByFieldName);
         if (this.sortByValues == null)
-            this.sortByValues = NumericDocValues.EMPTY;
+            this.sortByValues = DocValues.EMPTY_NUMERIC;
 
         this.delegate.setNextReader(context);
     }

@@ -2,8 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
- * Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+ * Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.facet.collections.LRUHashMap;
+import org.apache.lucene.facet.taxonomy.LRUHashMap;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Query;

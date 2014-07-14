@@ -32,6 +32,7 @@ import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.BytesRef;
 
 public class TermFrequencySimilarity extends Similarity {
 
@@ -46,20 +47,25 @@ public class TermFrequencySimilarity extends Similarity {
     }
 
     @Override
-    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+    public SimScorer simScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
         final TermFrequencySimilarityWeight tfsWeight = (TermFrequencySimilarityWeight) weight;
-        return new ExactSimScorer() {
+        return new SimScorer() {
 
             @Override
-            public float score(int doc, int freq) {
+            public float score(int doc, float freq) {
                 return freq / 1000.0f * tfsWeight.queryBoost;
             }
-        };
-    }
 
-    @Override
-    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-        return null;
+            @Override
+            public float computeSlopFactor(int distance) {
+                return 1;
+            }
+
+            @Override
+            public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
+                return 1;
+            }
+        };
     }
 
     class TermFrequencySimilarityWeight extends SimWeight {

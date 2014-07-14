@@ -2,8 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
- * Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+ * Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -25,26 +25,26 @@
 
 package org.meresco.lucene;
 
-import org.apache.lucene.facet.search.FacetsAggregator;
-import org.apache.lucene.facet.search.FacetsAccumulator;
-import org.apache.lucene.facet.params.FacetSearchParams;
-import org.apache.lucene.facet.search.FacetsAggregator;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.search.FacetArrays;
+// import org.apache.lucene.facet.search.FacetsAggregator;
+// import org.apache.lucene.facet.search.FacetsAccumulator;
+// import org.apache.lucene.facet.params.FacetSearchParams;
+// import org.apache.lucene.facet.search.FacetsAggregator;
+// import org.apache.lucene.index.IndexReader;
+// import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+// import org.apache.lucene.facet.search.FacetArrays;
 
-public class MyFacetsAccumulator extends FacetsAccumulator {
+// public class MyFacetsAccumulator extends FacetsAccumulator {
 
-    private FacetsAggregator aggregator;
+//     private FacetsAggregator aggregator;
 
-    public MyFacetsAccumulator(FacetsAggregator aggregator, FacetSearchParams searchParams, IndexReader indexReader, TaxonomyReader taxonomyReader, FacetArrays facetArrays)
-    {
-        super(searchParams, indexReader, taxonomyReader, facetArrays);
-        this.aggregator = aggregator;
-    }
+//     public MyFacetsAccumulator(FacetsAggregator aggregator, FacetSearchParams searchParams, IndexReader indexReader, TaxonomyReader taxonomyReader, FacetArrays facetArrays)
+//     {
+//         super(searchParams, indexReader, taxonomyReader, facetArrays);
+//         this.aggregator = aggregator;
+//     }
 
-    @Override
-    public FacetsAggregator getAggregator() {
-        return this.aggregator;
-    }
-}
+//     @Override
+//     public FacetsAggregator getAggregator() {
+//         return this.aggregator;
+//     }
+// }

@@ -2,8 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
- * Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+ * Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -68,7 +68,7 @@ public class KeyBooleanFilter extends BooleanFilter {
       }
     }
     if (hasShouldClauses && res == null)
-      return DocIdSet.EMPTY_DOCIDSET;
+      return null;
 
     for (final FilterClause fc : clauses) {
       if (fc.getOccur() == Occur.MUST) {
@@ -81,7 +81,7 @@ public class KeyBooleanFilter extends BooleanFilter {
       }
     }
 
-    return res != null ? BitsFilteredDocIdSet.wrap(res, acceptDocs) : DocIdSet.EMPTY_DOCIDSET;
+    return res != null ? BitsFilteredDocIdSet.wrap(res, acceptDocs) : null;
   }
 
   private static OpenBitSet getBitSet(Filter filter, AtomicReaderContext context)

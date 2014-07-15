@@ -28,8 +28,6 @@ from org.apache.lucene.index import Term
 # from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 # from org.apache.lucene.facet.taxonomy import CategoryPath
 # from org.apache.lucene.facet.params import FacetSearchParams
-from org.apache.lucene.facet import Facets
-from org.apache.lucene.facet.taxonomy import FastTaxonomyFacetCounts
 from org.apache.lucene.queries import ChainedFilter
 from org.meresco.lucene import DeDupFilterCollector, ScoreCollector
 
@@ -195,10 +193,12 @@ class Lucene(object):
         return ChainedFilter(filters, ChainedFilter.AND)
 
     def _facetResult(self, facetCollector, facets):
-        facetResult = FastTaxonomyFacetCounts(self._index._indexAndTaxonomy.taxoReader, self._index._facetsConfig, facetCollector);
-        facetResult = Facets.cast_(facetResult)
+        facetResult = self._index.facetResult(facetCollector)
         result = []
         for f in facets:
+            sortBy = f.get('sortBy')
+            if not (sortBy is None or sortBy in self.SUPPORTED_SORTBY_VALUES):
+                raise ValueError('Value of "sortBy" should be in %s' % self.SUPPORTED_SORTBY_VALUES)
             maxTerms = f['maxTerms'] if not f['maxTerms'] == 0 else Integer.MAX_VALUE
             r = facetResult.getTopChildren(maxTerms, f['fieldname'], [])
             result.append(dict(fieldname=f['fieldname'], terms=[dict(term=str(l.label), count=l.value.intValue()) for l in r.labelValues]))
@@ -225,17 +225,7 @@ class Lucene(object):
         return result
 
     def _facetCollector(self):
-        facetRequests = []
-        # for f in facets:
-        #     sortBy = f.get('sortBy')
-        #     if not (sortBy is None or sortBy in self.SUPPORTED_SORTBY_VALUES):
-        #         raise ValueError('Value of "sortBy" should be in %s' % self.SUPPORTED_SORTBY_VALUES)
-        #     facetRequest = CountFacetRequest(CategoryPath([f['fieldname']]), f['maxTerms'] if not f['maxTerms'] == 0 else Integer.MAX_VALUE)  # TS: HCK
-        #     facetRequest.setDepth(MAX_FACET_DEPTH)
-        #     facetRequests.append(facetRequest)
-        # facetSearchParams = FacetSearchParams(facetRequests)
-        # return self._index.createFacetCollector(facetSearchParams)
-        return self._index.createFacetCollector(None)
+        return self._index.createFacetCollector()
 
     def coreInfo(self):
         yield self.LuceneInfo(self)

@@ -30,7 +30,7 @@ from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
 # from org.apache.lucene.facet.index import FacetFields
-from org.apache.lucene.facet import FacetsCollector, FacetsConfig
+from org.apache.lucene.facet import FacetsCollector, FacetsConfig, Facets
 from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.search.similarities import BM25Similarity
@@ -41,12 +41,12 @@ from org.apache.lucene.facet.taxonomy.writercache import LruTaxonomyWriterCache
 # from org.meresco.lucene import MyFacetsAccumulator
 
 from java.io import File, StringReader
-from java.util import Arrays
 
 from os.path import join
 
 from indexandtaxonomy import IndexAndTaxonomy
 from meresco.lucene.utils import fieldType, LONGTYPE
+from org.apache.lucene.facet.taxonomy import FastTaxonomyFacetCounts
 
 # Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html
 
@@ -155,7 +155,7 @@ class Index(object):
     def getDocument(self, docId):
         return self._indexAndTaxonomy.searcher.doc(docId)
 
-    def createFacetCollector(self, facetSearchParams):
+    def createFacetCollector(self):
         return FacetsCollector()
         # aggregator = CachedOrdsCountingFacetsAggregator()
         # arrays = FacetArrays(self._indexAndTaxonomy.taxoReader.getSize())
@@ -163,6 +163,10 @@ class Index(object):
         # # accu.getAggregator = lambda: aggregator
         # return FacetsCollector.create(accu)
         # return FacetsCollector.create(facetSearchParams, self._indexAndTaxonomy.searcher.getIndexReader(), self._indexAndTaxonomy.taxoReader)
+
+    def facetResult(self, facetCollector):
+        facetResult = FastTaxonomyFacetCounts(self._indexAndTaxonomy.taxoReader, self._facetsConfig, facetCollector);
+        return Facets.cast_(facetResult)
 
     def close(self):
         if self._commitTimerToken is not None:

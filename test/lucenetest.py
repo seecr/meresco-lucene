@@ -217,6 +217,12 @@ class LuceneTest(SeecrTestCase):
                 ],
             }],result.drilldownData)
 
+    def testFacetsWithUnsupportedSortBy(self):
+        try:
+            returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2', sortBy='incorrectSort')]))
+        except ValueError, e:
+            self.assertEquals("""Value of "sortBy" should be in ['count']""", str(e))
+
     def testFacetsMaxTerms0(self):
         self.lucene._index._commitCount = 3
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first item0'), ('field3', 'second item')])))

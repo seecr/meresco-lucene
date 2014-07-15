@@ -27,6 +27,7 @@ from seecr.test import IntegrationTestCase, CallTrace
 from meresco.lucene import Fields2LuceneDoc
 from meresco.core import Transaction
 from weightless.core import consume
+from org.apache.lucene.facet import FacetField
 
 
 class Fields2LuceneDocTest(IntegrationTestCase):
@@ -85,7 +86,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             'untokenized.field5': ['value5', 'value6'],
             'untokenized.field6': ['value5/value6'],
             'untokenized.field7': ['valuex'],
-            'untokenized.field8': [['grandparent', 'parent', 'child'], ['parent2', 'child']]
+            # 'untokenized.field8': [['grandparent', 'parent', 'child'], ['parent2', 'child']]
         }
         fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFieldnames=['untokenized.field4', 'untokenized.field5', 'untokenized.field6', 'untokenized.field8'])
         observer = CallTrace()
@@ -98,19 +99,16 @@ class Fields2LuceneDocTest(IntegrationTestCase):
 
         consume(fields2LuceneDoc.commit('unused'))
 
-        categories = observer.calledMethods[0].kwargs['categories']
         document = observer.calledMethods[0].kwargs['document']
-        self.assertEquals(6, len(categories))
-        self.assertEquals(set([
-                ('untokenized.field5', 'value5'),
-                ('untokenized.field5', 'value6'),
-                ('untokenized.field4', 'value4'),
-                ('untokenized.field6', 'value5/value6'),
-                ('untokenized.field8', 'grandparent', 'parent', 'child'),
-                ('untokenized.field8', 'parent2', 'child')
-            ]), set(tuple(c.components) for c in categories))
-        self.assertEquals(['value5/value6'], [f.stringValue() for f in document.getFields('untokenized.field6')])
-        self.assertEquals(['grandparent', 'grandparent/parent', 'grandparent/parent/child', 'parent2', 'parent2/child'], [f.stringValue() for f in document.getFields('untokenized.field8')])
+        facetsfields = [FacetField.cast_(f) for f in document.getFields() if FacetField.instance_(f)]
+        self.assertEquals(4, len(facetsfields))
+        self.assertEquals([
+                ('untokenized.field6', ['value5/value6']),
+                ('untokenized.field4', ['value4']),
+                ('untokenized.field5', ['value5']),
+                ('untokenized.field5', ['value6']),
+            ], [(f.dim, list(f.path)) for f in facetsfields])
+        # self.assertEquals(['grandparent', 'grandparent/parent', 'grandparent/parent/child', 'parent2', 'parent2/child'], [f.stringValue() for f in document.getFields('untokenized.field8')])
 
     def testAddTimeStamp(self):
         fields = {'field1': ['value1']}

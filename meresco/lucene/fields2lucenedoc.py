@@ -25,7 +25,7 @@
 
 from meresco.core import Observable
 from org.apache.lucene.document import Document
-from org.apache.lucene.facet.taxonomy import FacetLabel
+from org.apache.lucene.facet import FacetField
 
 from time import time
 
@@ -62,7 +62,6 @@ class Fields2LuceneDoc(Observable):
         yield self.all.addDocument(
                 identifier=identifier,
                 document=self._createDocument(fields),
-                categories=self._createFacetCategories(fields)
             )
 
     def _createDocument(self, fields):
@@ -79,23 +78,16 @@ class Fields2LuceneDoc(Observable):
                             doc.add(createField(field, v))
                     else:
                         doc.add(createField(field, value))
+            if field in self._drilldownFieldnames:
+                for v in values:
+                    if hasattr(v, 'extend'):
+                        path = [str(category) for category in v]
+                    else:
+                        path = [str(v)]
+                    doc.add(FacetField(field, path))
         if self._addTimestamp:
             doc.add(createTimestampField(self._time()))
         return doc
 
     def _time(self):
         return int(time()*1000000)
-
-    def _createFacetCategories(self, fields):
-        categoryPaths = []
-        for f, vs in fields.items():
-            if not f in self._drilldownFieldnames:
-                continue
-            for v in vs:
-                path = [f]
-                if hasattr(v, 'extend'):
-                    path.extend(str(category) for category in v)
-                else:
-                    path.append(str(v))
-                categoryPaths.append(FacetLabel(path))
-        return categoryPaths

@@ -438,14 +438,3 @@ def createDocument(fields, facets=None):
             path = [str(value)]
         document.add(FacetField(facet, path))
     return document
-
-def createCategories(fields):
-    result = []
-    for name, value in fields:
-        path = [name]
-        if hasattr(value, 'extend'):
-            path.extend(str(category) for category in value)
-        else:
-            path.append(str(value))
-        result.append(FacetField("$facets", path))
-    return result

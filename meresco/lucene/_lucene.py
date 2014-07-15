@@ -86,7 +86,7 @@ class Lucene(object):
         self._index.search(query, filter, collector)
 
     def facets(self, facets, filterQueries, filter=None):
-        facetCollector = self._facetCollector(facets)
+        facetCollector = self._facetCollector() if facets else None
         filter_ = self._filterFor(filterQueries, filter=filter)
         self._index.search(MatchAllDocsQuery(), filter_, facetCollector)
         generatorReturn(self._facetResult(facetCollector, facets))
@@ -106,7 +106,7 @@ class Lucene(object):
         collectors.append(resultsCollector)
 
         if facets:
-            facetCollector = self._facetCollector(facets)
+            facetCollector = self._facetCollector()
             collectors.append(facetCollector)
         collector = MultiCollector.wrap(collectors)
 
@@ -224,9 +224,7 @@ class Lucene(object):
         #     result.append(dict(fieldname=fieldname, terms=terms))
         return result
 
-    def _facetCollector(self, facets):
-        if not facets:
-            return
+    def _facetCollector(self):
         facetRequests = []
         # for f in facets:
         #     sortBy = f.get('sortBy')

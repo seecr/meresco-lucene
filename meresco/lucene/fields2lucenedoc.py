@@ -25,7 +25,7 @@
 
 from meresco.core import Observable
 from org.apache.lucene.document import Document
-from org.apache.lucene.facet.taxonomy import CategoryPath
+from org.apache.lucene.facet.taxonomy import FacetLabel
 
 from time import time
 
@@ -97,5 +97,5 @@ class Fields2LuceneDoc(Observable):
                     path.extend(str(category) for category in v)
                 else:
                     path.append(str(v))
-                categoryPaths.append(CategoryPath(path))
+                categoryPaths.append(FacetLabel(path))
         return categoryPaths

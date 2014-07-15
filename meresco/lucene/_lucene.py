@@ -28,8 +28,10 @@ from org.apache.lucene.index import Term
 # from org.apache.lucene.facet.search import FacetResultNode, CountFacetRequest
 # from org.apache.lucene.facet.taxonomy import CategoryPath
 # from org.apache.lucene.facet.params import FacetSearchParams
+from org.apache.lucene.facet import Facets
+from org.apache.lucene.facet.taxonomy import FastTaxonomyFacetCounts
 from org.apache.lucene.queries import ChainedFilter
-# from org.meresco.lucene import DeDupFilterCollector, ScoreCollector
+from org.meresco.lucene import DeDupFilterCollector, ScoreCollector
 
 from java.lang import Integer
 
@@ -67,9 +69,9 @@ class Lucene(object):
     def commit(self):
         return self._index.commit()
 
-    def addDocument(self, identifier, document, categories=None):
+    def addDocument(self, identifier, document):
         document.add(createIdField(identifier))
-        self._index.addDocument(term=Term(IDFIELD, identifier), document=document, categories=categories)
+        self._index.addDocument(term=Term(IDFIELD, identifier), document=document)
         self._scoreCollectorCache.clear()
         return
         yield
@@ -128,7 +130,7 @@ class Lucene(object):
             response.totalWithDuplicates = dedupCollector.totalHits
 
         if facets:
-            response.drilldownData.extend(self._facetResult(facetCollector))
+            response.drilldownData.extend(self._facetResult(facetCollector, facets))
 
         if suggestionRequest:
             response.suggestions = self._index.suggest(**suggestionRequest)
@@ -192,42 +194,50 @@ class Lucene(object):
             filters.append(filter)
         return ChainedFilter(filters, ChainedFilter.AND)
 
-    def _facetResult(self, facetCollector):
-        def termsFromResultNode(resultNode, terms, fieldname):
-            for resultNode in resultNode.subResults.iterator():
-                resultNode = FacetResultNode.cast_(resultNode)
-                termDict = dict(term=resultNode.label.components[-1], count=int(resultNode.value))
-                pivotTerms = []
-                termsFromResultNode(resultNode=resultNode, terms=pivotTerms, fieldname=fieldname)
-                if pivotTerms:
-                    termDict['pivot'] = dict(fieldname=fieldname, terms=pivotTerms)
-                terms.append(termDict)
-
-        facetResults = facetCollector.getFacetResults()
-        if facetResults.size() == 0:
-            return []
+    def _facetResult(self, facetCollector, facets):
+        facetResult = FastTaxonomyFacetCounts(self._index._indexAndTaxonomy.taxoReader, self._index._facetsConfig, facetCollector);
+        facetResult = Facets.cast_(facetResult)
         result = []
-        for facetResult in facetResults:
-            resultNode = facetResult.getFacetResultNode()
-            fieldname = resultNode.label.toString()
-            terms = []
-            termsFromResultNode(resultNode=resultNode, terms=terms, fieldname=fieldname)
-            result.append(dict(fieldname=fieldname, terms=terms))
+        for f in facets:
+            maxTerms = f['maxTerms'] if not f['maxTerms'] == 0 else Integer.MAX_VALUE
+            r = facetResult.getTopChildren(maxTerms, f['fieldname'], [])
+            result.append(dict(fieldname=f['fieldname'], terms=[dict(term=str(l.label), count=l.value.intValue()) for l in r.labelValues]))
+        # def termsFromResultNode(resultNode, terms, fieldname):
+        #     for resultNode in resultNode.subResults.iterator():
+        #         resultNode = FacetResultNode.cast_(resultNode)
+        #         termDict = dict(term=resultNode.label.components[-1], count=int(resultNode.value))
+        #         pivotTerms = []
+        #         termsFromResultNode(resultNode=resultNode, terms=pivotTerms, fieldname=fieldname)
+        #         if pivotTerms:
+        #             termDict['pivot'] = dict(fieldname=fieldname, terms=pivotTerms)
+        #         terms.append(termDict)
+
+        # facetResults = facetCollector.getFacetResults()
+        # if facetResults.size() == 0:
+        #     return []
+        # result = []
+        # for facetResult in facetResults:
+        #     resultNode = facetResult.getFacetResultNode()
+        #     fieldname = resultNode.label.toString()
+        #     terms = []
+        #     termsFromResultNode(resultNode=resultNode, terms=terms, fieldname=fieldname)
+        #     result.append(dict(fieldname=fieldname, terms=terms))
         return result
 
     def _facetCollector(self, facets):
         if not facets:
             return
         facetRequests = []
-        for f in facets:
-            sortBy = f.get('sortBy')
-            if not (sortBy is None or sortBy in self.SUPPORTED_SORTBY_VALUES):
-                raise ValueError('Value of "sortBy" should be in %s' % self.SUPPORTED_SORTBY_VALUES)
-            facetRequest = CountFacetRequest(CategoryPath([f['fieldname']]), f['maxTerms'] if not f['maxTerms'] == 0 else Integer.MAX_VALUE)  # TS: HCK
-            facetRequest.setDepth(MAX_FACET_DEPTH)
-            facetRequests.append(facetRequest)
-        facetSearchParams = FacetSearchParams(facetRequests)
-        return self._index.createFacetCollector(facetSearchParams)
+        # for f in facets:
+        #     sortBy = f.get('sortBy')
+        #     if not (sortBy is None or sortBy in self.SUPPORTED_SORTBY_VALUES):
+        #         raise ValueError('Value of "sortBy" should be in %s' % self.SUPPORTED_SORTBY_VALUES)
+        #     facetRequest = CountFacetRequest(CategoryPath([f['fieldname']]), f['maxTerms'] if not f['maxTerms'] == 0 else Integer.MAX_VALUE)  # TS: HCK
+        #     facetRequest.setDepth(MAX_FACET_DEPTH)
+        #     facetRequests.append(facetRequest)
+        # facetSearchParams = FacetSearchParams(facetRequests)
+        # return self._index.createFacetCollector(facetSearchParams)
+        return self._index.createFacetCollector(None)
 
     def coreInfo(self):
         yield self.LuceneInfo(self)

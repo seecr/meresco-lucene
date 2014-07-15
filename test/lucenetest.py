@@ -41,7 +41,7 @@ from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
 from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
 from org.apache.lucene.index import Term
-from org.apache.lucene.facet.taxonomy import CategoryPath
+from org.apache.lucene.facet import FacetField
 from org.meresco.lucene import MerescoDutchStemmingAnalyzer
 
 from seecr.test import SeecrTestCase, CallTrace
@@ -138,11 +138,11 @@ class LuceneTest(SeecrTestCase):
 
     def testAddTwiceUpdatesDocument(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([
-            ('field0', 'value0'),
-            ('field1', 'value1'),
+                ('field0', 'value0'),
+                ('field1', 'value1'),
             ])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([
-            ('field1', 'value1'),
+                ('field1', 'value1'),
             ])))
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('field1', 'value1'))))
         self.assertEquals(1, result.total)
@@ -190,9 +190,9 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals([], self.hitIds(result.hits))
 
     def testFacets(self):
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first item0'), ('field3', 'second item')])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')]), categories=createCategories([('field2', 'first item1'), ('field3', 'other value')])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')]), categories=createCategories([('field2', 'first item2'), ('field3', 'second item')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first item0'), ('field3', 'second item')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field2', 'first item1'), ('field3', 'other value')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('field2', 'first item2'), ('field3', 'second item')])))
 
         # does not crash!!!
         returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
@@ -203,9 +203,9 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals([{
                 'fieldname': 'field2',
                 'terms': [
-                    {'term': 'first item2', 'count': 1},
-                    {'term': 'first item1', 'count': 1},
                     {'term': 'first item0', 'count': 1},
+                    {'term': 'first item1', 'count': 1},
+                    {'term': 'first item2', 'count': 1},
                 ],
             }],result.drilldownData)
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field3')]))
@@ -219,9 +219,9 @@ class LuceneTest(SeecrTestCase):
 
     def testFacetsMaxTerms0(self):
         self.lucene._index._commitCount = 3
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first item0'), ('field3', 'second item')])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')]), categories=createCategories([('field2', 'first item1'), ('field3', 'other value')])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')]), categories=createCategories([('field2', 'first item2'), ('field3', 'second item')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first item0'), ('field3', 'second item')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field2', 'first item1'), ('field3', 'other value')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('field2', 'first item2'), ('field3', 'second item')])))
 
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=0, fieldname='field3')]))
         self.assertEquals([{
@@ -233,8 +233,8 @@ class LuceneTest(SeecrTestCase):
             }],result.drilldownData)
 
     def testFacetsWithCategoryPathHierarchy(self):
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', ['item0', 'item1'])])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')]), categories=createCategories([('field2', ['item0', 'item2'])])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', ['item0', 'item1'])])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field2', ['item0', 'item2'])])))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         self.assertEquals([{
                 'fieldname': 'field2',
@@ -264,7 +264,7 @@ class LuceneTest(SeecrTestCase):
             }],result.drilldownData)
 
     def testEscapeFacets(self):
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')]), categories=createCategories([('field2', 'first/item0')])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first/item0')])))
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         self.assertEquals([{
                 'terms': [{'count': 1, 'term': u'first/item0'}],
@@ -362,10 +362,12 @@ class LuceneTest(SeecrTestCase):
     def testResultsFilterCollector(self):
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:1", doc, categories(cat="cat-A")))
+        doc.add(FacetField("cat", ["cat-A"]))
+        consume(self.lucene.addDocument("urn:1", doc))
         doc = document(field0='v1')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:2", doc, categories(cat="cat-A")))
+        doc.add(FacetField("cat", ["cat-A"]))
+        consume(self.lucene.addDocument("urn:2", doc))
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
                         dedupField="__key__", facets=facets(cat=10)))
@@ -379,16 +381,20 @@ class LuceneTest(SeecrTestCase):
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))
         doc.add(NumericDocValuesField("__key__.date", long(2012)))
-        consume(self.lucene.addDocument("urn:1", doc, categories(cat="cat-A")))
+        doc.add(FacetField("cat", ["cat-A"]))
+        consume(self.lucene.addDocument("urn:1", doc))
         doc = document(field0='v1')
         doc.add(NumericDocValuesField("__key__", long(42)))
         doc.add(NumericDocValuesField("__key__.date", long(2013)))
-        consume(self.lucene.addDocument("urn:2", doc, categories(cat="cat-A")))
+        doc.add(FacetField("cat", ["cat-A"]))
+        consume(self.lucene.addDocument("urn:2", doc))
         doc = document(field0='v2')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:3", doc, categories(cat="cat-A")))
+        doc.add(FacetField("cat", ["cat-A"]))
+        consume(self.lucene.addDocument("urn:3", doc))
         doc = document(field0='v3')
-        consume(self.lucene.addDocument("urn:4", doc, categories(cat="cat-A")))
+        doc.add(FacetField("cat", ["cat-A"]))
+        consume(self.lucene.addDocument("urn:4", doc))
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
                         dedupField="__key__", dedupSortField='__key__.date', facets=facets(cat=10)))
@@ -421,14 +427,17 @@ def facets(**fields):
 def document(**fields):
     return createDocument(fields.items())
 
-def createDocument(fields):
+def createDocument(fields, facets=None):
     document = Document()
     for name, value in fields:
         document.add(createField(name, value))
+    for facet, value in facets or []:
+        if hasattr(value, 'extend'):
+            path = [str(category) for category in value]
+        else:
+            path = [str(value)]
+        document.add(FacetField(facet, path))
     return document
-
-def categories(**fields):
-    return createCategories(fields.items())
 
 def createCategories(fields):
     result = []
@@ -438,5 +447,5 @@ def createCategories(fields):
             path.extend(str(category) for category in value)
         else:
             path.append(str(value))
-        result.append(CategoryPath(path))
+        result.append(FacetField("$facets", path))
     return result

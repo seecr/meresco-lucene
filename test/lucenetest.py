@@ -32,7 +32,7 @@ from cqlparser import parseString as parseCql
 
 from weightless.core import consume, retval
 
-from meresco.lucene import Lucene, VM
+from meresco.lucene import Lucene, VM, DrilldownField
 from meresco.lucene.hit import Hit
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.utils import createField
@@ -54,8 +54,17 @@ class LuceneTest(SeecrTestCase):
         super(LuceneTest, self).setUp()
         self._javaObjects = self._getJavaObjects()
         self._reactor = CallTrace('reactor')
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor)
-
+        self.lucene = Lucene(
+                join(self.tempdir, 'lucene'),
+                commitCount=1,
+                reactor=self._reactor,
+                drilldownFields=[
+                    DrilldownField(name='field1'),
+                    DrilldownField(name='field2'),
+                    DrilldownField('field3'),
+                    DrilldownField('fieldHier', hierarchical=True),
+                ]
+            )
     def tearDown(self):
         try:
             self._reactor.calledMethods.reset() # don't keep any references.
@@ -239,19 +248,20 @@ class LuceneTest(SeecrTestCase):
             }],result.drilldownData)
 
     def testFacetsWithCategoryPathHierarchy(self):
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', ['item0', 'item1'])])))
-        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field2', ['item0', 'item2'])])))
-        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('fieldHier', ['item0', 'item1'])])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('fieldHier', ['item0', 'item2'])])))
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='fieldHier')]))
         self.assertEquals([{
-                'fieldname': 'field2',
+                'fieldname': 'fieldHier',
                 'terms': [
-                    {'term': 'item0', 'count': 2, 'pivot': {
-                        'fieldname': 'field2',
-                        'terms': [
-                            {'term': 'item2', 'count': 1},
+                    {
+                        'term': 'item0',
+                        'count': 2,
+                        'subterms': [
                             {'term': 'item1', 'count': 1},
+                            {'term': 'item2', 'count': 1},
                         ]
-                    }}
+                    }
                 ],
             }], result.drilldownData)
 

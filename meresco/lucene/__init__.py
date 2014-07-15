@@ -64,5 +64,6 @@ from cqltolucenequery import CqlToLuceneQuery
 from multilucene import MultiLucene
 from termnumerator import TermNumerator
 from composedquery import ComposedQuery
+from drilldownfield import DrilldownField
 
 from org.meresco.lucene import TermFrequencySimilarity

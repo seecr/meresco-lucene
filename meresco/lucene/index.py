@@ -51,7 +51,7 @@ from org.apache.lucene.facet.taxonomy import FastTaxonomyFacetCounts
 # Facet documentation: http://lucene.apache.org/core/4_3_0/facet/org/apache/lucene/facet/doc-files/userguide.html
 
 class Index(object):
-    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None):
+    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, drilldownFields=None):
         self._reactor = reactor
         self._maxCommitCount = commitCount or 1000
         self._commitCount = 0
@@ -73,6 +73,9 @@ class Index(object):
         self.similarityWrapper = self._indexAndTaxonomy.similarityWrapper
 
         self._facetsConfig = FacetsConfig()
+        for field in drilldownFields or []:
+            self._facetsConfig.setMultiValued(field.name, field.multiValued)
+            self._facetsConfig.setHierarchical(field.name, field.hierarchical)
 
     def addDocument(self, term, document):
         document = self._facetsConfig.build(self._taxoWriter, document)

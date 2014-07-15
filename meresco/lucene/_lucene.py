@@ -199,29 +199,14 @@ class Lucene(object):
             sortBy = f.get('sortBy')
             if not (sortBy is None or sortBy in self.SUPPORTED_SORTBY_VALUES):
                 raise ValueError('Value of "sortBy" should be in %s' % self.SUPPORTED_SORTBY_VALUES)
-            maxTerms = f['maxTerms'] if not f['maxTerms'] == 0 else Integer.MAX_VALUE
-            r = facetResult.getTopChildren(maxTerms, f['fieldname'], [])
-            result.append(dict(fieldname=f['fieldname'], terms=[dict(term=str(l.label), count=l.value.intValue()) for l in r.labelValues]))
-        # def termsFromResultNode(resultNode, terms, fieldname):
-        #     for resultNode in resultNode.subResults.iterator():
-        #         resultNode = FacetResultNode.cast_(resultNode)
-        #         termDict = dict(term=resultNode.label.components[-1], count=int(resultNode.value))
-        #         pivotTerms = []
-        #         termsFromResultNode(resultNode=resultNode, terms=pivotTerms, fieldname=fieldname)
-        #         if pivotTerms:
-        #             termDict['pivot'] = dict(fieldname=fieldname, terms=pivotTerms)
-        #         terms.append(termDict)
-
-        # facetResults = facetCollector.getFacetResults()
-        # if facetResults.size() == 0:
-        #     return []
-        # result = []
-        # for facetResult in facetResults:
-        #     resultNode = facetResult.getFacetResultNode()
-        #     fieldname = resultNode.label.toString()
-        #     terms = []
-        #     termsFromResultNode(resultNode=resultNode, terms=terms, fieldname=fieldname)
-        #     result.append(dict(fieldname=fieldname, terms=terms))
+            result.append(dict(
+                    fieldname=f['fieldname'],
+                    terms=_termsFromFacetResult(
+                            facetResult=facetResult,
+                            facet=f,
+                            path=[]
+                        )
+                ))
         return result
 
     def _facetCollector(self):
@@ -240,6 +225,19 @@ def defaults(parameter, default):
     return default if parameter is None else parameter
 
 millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 millisecs
+
+def _termsFromFacetResult(facetResult, facet, path):
+    r = facetResult.getTopChildren(facet['maxTerms'] or Integer.MAX_VALUE, facet['fieldname'], path)
+    if r is None:
+        return
+    terms = []
+    for l in r.labelValues:
+        termDict = dict(term=str(l.label), count=l.value.intValue())
+        subterms = _termsFromFacetResult(facetResult, facet, path + [termDict['term']])
+        if subterms:
+            termDict['subterms'] = subterms
+        terms.append(termDict)
+    return terms
 
 def _topCollector(start, stop, sortKeys):
     if stop <= start:

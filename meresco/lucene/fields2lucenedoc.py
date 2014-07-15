@@ -33,10 +33,10 @@ from utils import createField, createTimestampField, IDFIELD, KEY_PREFIX
 
 
 class Fields2LuceneDoc(Observable):
-    def __init__(self, transactionName, drilldownFieldnames, addTimestamp=False, identifierRewrite=None, rewriteFields=None):
+    def __init__(self, transactionName, drilldownFields, addTimestamp=False, identifierRewrite=None, rewriteFields=None):
         Observable.__init__(self)
         self._transactionName = transactionName
-        self._drilldownFieldnames = drilldownFieldnames
+        self._drilldownFieldnames = [df.name for df in drilldownFields]
         self._addTimestamp = addTimestamp
         self._identifierRewrite = (lambda identifier: identifier) if identifierRewrite is None else identifierRewrite
         self._rewriteFields = (lambda fields: fields) if rewriteFields is None else rewriteFields

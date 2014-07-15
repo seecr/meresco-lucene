@@ -130,9 +130,9 @@ class LuceneTest(IntegrationTestCase):
                 'terms': [
                     {'count': 27, 'term': 'value3'},
                     {'count': 22, 'term': 'value0'},
-                    {'count': 19, 'term': 'value9'},
-                    {'count': 19, 'term': 'value7'},
                     {'count': 19, 'term': 'value5'},
+                    {'count': 19, 'term': 'value7'},
+                    {'count': 19, 'term': 'value9'},
                 ]
             }], response.drilldownData)
 

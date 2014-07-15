@@ -43,7 +43,7 @@ from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from seecr.test import SeecrTestCase, CallTrace
 from seecr.utils.generatorutils import returnValueFromGenerator, consume
 
-from lucenetest import createDocument, createCategories
+from lucenetest import createDocument
 
 
 class MultiLuceneTest(SeecrTestCase):
@@ -159,14 +159,14 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(4, result.total)
         self.assertEquals([{
                 'terms': [
-                        {'count': 2, 'term': u'false'},
                         {'count': 2, 'term': u'true'},
+                        {'count': 2, 'term': u'false'},
                     ],
                 'fieldname': u'cat_N'
             }, {
                 'terms': [
-                    {'count': 2, 'term': u'false'},
                     {'count': 2, 'term': u'true'},
+                    {'count': 2, 'term': u'false'},
                 ],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
@@ -212,8 +212,8 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(8, result.total)
         self.assertEquals([{
                 'terms': [
-                    {'count': 4, 'term': u'false'},
                     {'count': 4, 'term': u'true'},
+                    {'count': 4, 'term': u'false'},
                 ],
                 'fieldname': u'cat_N'
             }], result.drilldownData)
@@ -236,8 +236,8 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_N'
             }, {
                 'terms': [
-                    {'count': 2, 'term': u'false'},
                     {'count': 2, 'term': u'true'},
+                    {'count': 2, 'term': u'false'},
                 ],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
@@ -326,8 +326,8 @@ class MultiLuceneTest(SeecrTestCase):
                 ], 'fieldname': u'cat_N'
             }, {
                 'terms': [
+                    {'count': 1, 'term': u'true'},
                     {'count': 1, 'term': u'false'},
-                    {'count': 1, 'term': u'true'}
                 ], 'fieldname': u'cat_O'
             }], resultOne.drilldownData)
 
@@ -352,8 +352,8 @@ class MultiLuceneTest(SeecrTestCase):
                 ], 'fieldname': u'cat_Q'
             }, {
                 'terms': [
+                    {'count': 1, 'term': u'false'},
                     {'count': 1, 'term': u'true'},
-                    {'count': 1, 'term': u'false'}
                 ], 'fieldname': u'cat_U'
             }, {
                 'terms': [
@@ -406,8 +406,8 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_N'
             }, {
                 'terms': [
-                    {'count': 1, 'term': u'false'},
                     {'count': 1, 'term': u'true'},
+                    {'count': 1, 'term': u'false'},
                 ],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
@@ -658,8 +658,7 @@ class MultiLuceneTest(SeecrTestCase):
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(
             identifier=identifier,
-            document=createDocument([(KEY_PREFIX + keyField, keyValue) for (keyField, keyValue) in keys]+fields),
-            categories=createCategories([('cat_'+field, value) for field, value in fields])
+            document=createDocument([(KEY_PREFIX + keyField, keyValue) for (keyField, keyValue) in keys]+fields, facets=[('cat_'+field, value) for field, value in fields]),
             ))
 
 def luceneQueryFromCql(cqlString):

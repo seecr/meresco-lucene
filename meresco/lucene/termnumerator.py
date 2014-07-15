@@ -25,7 +25,7 @@
 
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter, DirectoryTaxonomyReader
-from org.apache.lucene.facet.taxonomy import CategoryPath
+from org.apache.lucene.facet.taxonomy import FacetLabel
 from org.apache.lucene.index import IndexWriterConfig
 from org.apache.lucene.facet.taxonomy.writercache import LruTaxonomyWriterCache
 from java.io import File
@@ -42,7 +42,7 @@ class TermNumerator(Observable):
     def numerateTerm(self, term):
         if not term:
             return
-        return self._taxoWriter.addCategory(CategoryPath([term]))
+        return self._taxoWriter.addCategory(FacetLabel([term]))
 
     def getTerm(self, nr):
         if not hasattr(self, "_taxoReader"):

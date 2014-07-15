@@ -89,7 +89,7 @@ class Lucene(object):
         facetCollector = self._facetCollector(facets)
         filter_ = self._filterFor(filterQueries, filter=filter)
         self._index.search(MatchAllDocsQuery(), filter_, facetCollector)
-        generatorReturn(self._facetResult(facetCollector))
+        generatorReturn(self._facetResult(facetCollector, facets))
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,

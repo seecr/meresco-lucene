@@ -44,10 +44,10 @@ typeToField = {
     STRINGTYPE: StringField,
     NUMERICTYPE: lambda fieldname, value, store: NumericDocValuesField(fieldname, long(value)),
 }
-typeToSortFieldType = {
-    LONGTYPE: SortField.Type.LONG,
-    TEXTTYPE: SortField.Type.STRING,
-    STRINGTYPE: SortField.Type.STRING,
+typeToSortFieldTypeAndMissingValue = {
+    LONGTYPE: (SortField.Type.LONG, None),
+    TEXTTYPE: (SortField.Type.STRING, (SortField.STRING_LAST, SortField.STRING_FIRST)),
+    STRINGTYPE: (SortField.Type.STRING, (SortField.STRING_LAST, SortField.STRING_FIRST)),
 }
 
 def fieldType(fieldname):
@@ -69,7 +69,12 @@ def createField(fieldname, value):
     return fieldFactory(fieldname, value, store)
 
 def sortField(fieldname, sortDescending):
-    return SortField(fieldname, typeToSortFieldType[fieldType(fieldname)], sortDescending)
+    sortType, missingValues = typeToSortFieldTypeAndMissingValue[fieldType(fieldname)]
+    result = SortField(fieldname, sortType, sortDescending)
+    if missingValues is not None:
+        valueAsc, valueDesc = missingValues
+        result.setMissingValue(valueDesc if sortDescending else valueAsc)
+    return result
 
 def createIdField(value):
     return createField(IDFIELD, value)

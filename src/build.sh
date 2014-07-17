@@ -25,6 +25,12 @@
 ## end license ##
 
 set -o errexit
+
+if ! javac -version 2>&1 | grep 1.7 > /dev/null; then
+    echo "javac should be java 7"
+    exit 1
+fi
+
 mydir=$(cd $(dirname $0); pwd)
 buildDir=$mydir/build
 libDir=$1

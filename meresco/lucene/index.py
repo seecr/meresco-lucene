@@ -42,7 +42,7 @@ from os.path import join
 
 from indexandtaxonomy import IndexAndTaxonomy
 from meresco.lucene.utils import fieldType, LONGTYPE
-from org.apache.lucene.facet.taxonomy import FastTaxonomyFacetCounts
+from org.apache.lucene.facet.taxonomy import FastTaxonomyFacetCounts, TaxonomyFacetCounts, CachedOrdinalsReader, DocValuesOrdinalsReader
 
 class Index(object):
     def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, drilldownFields=None):
@@ -70,6 +70,8 @@ class Index(object):
         for field in drilldownFields or []:
             self._facetsConfig.setMultiValued(field.name, field.multiValued)
             self._facetsConfig.setHierarchical(field.name, field.hierarchical)
+
+        self._ordinalsReader = CachedOrdinalsReader(DocValuesOrdinalsReader())
 
     def addDocument(self, term, document):
         document = self._facetsConfig.build(self._taxoWriter, document)
@@ -156,7 +158,8 @@ class Index(object):
         return FacetsCollector()
 
     def facetResult(self, facetCollector):
-        facetResult = FastTaxonomyFacetCounts(self._indexAndTaxonomy.taxoReader, self._facetsConfig, facetCollector);
+        # facetResult = FastTaxonomyFacetCounts(self._indexAndTaxonomy.taxoReader, self._facetsConfig, facetCollector);
+        facetResult = TaxonomyFacetCounts(self._ordinalsReader, self._indexAndTaxonomy.taxoReader, self._facetsConfig, facetCollector)
         return Facets.cast_(facetResult)
 
     def close(self):

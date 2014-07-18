@@ -216,10 +216,11 @@ class Lucene(object):
                 return 0.0
             return intersectionSize / float(len(s1.union(s2)))
 
-        def avgDistance(d):
-            return sqrt(sum(distance ** 2 for distance in d.values()) / len(d))
+        def aggregateDistance(d):
+            # return sqrt(sum(distance ** 2 for distance in d.values()) / len(d))
+            return max(d.values())
 
-        THRESHOLD = 0.6
+        THRESHOLD = 0.3
 
         clusterFound = False
         for cluster in clusters:
@@ -227,7 +228,7 @@ class Lucene(object):
             fieldDistances = {}
             for field, terms in fieldTermSets.items():
                 fieldDistances[field] = overlap(terms, clusterFieldTerms[field])
-            if avgDistance(fieldDistances) > THRESHOLD:
+            if fieldDistances and aggregateDistance(fieldDistances) > THRESHOLD:
                 hits.append(hit)
                 clusterFound = True
 

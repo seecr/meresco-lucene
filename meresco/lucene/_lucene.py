@@ -23,6 +23,8 @@
 #
 ## end license ##
 
+from math import sqrt
+
 from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery, CachingWrapperFilter
 from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
@@ -40,6 +42,7 @@ from cache import LruCache
 from utils import IDFIELD, createIdField, sortField
 from hit import Hit
 from seecr.utils.generatorutils import generatorReturn
+from org.apache.lucene.util import BytesRefIterator
 
 
 class Lucene(object):
@@ -88,7 +91,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-            filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, **kwargs):
+            filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, clusterFields=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -120,6 +123,9 @@ class Lucene(object):
         total, hits = self._topDocsResponse(topCollector, start=start, dedupCollector=dedupCollector if dedupField else None)
 
         response = LuceneResponse(total=total, hits=hits, drilldownData=[])
+
+        if clusterFields is not None:
+            self._clusterResponse(response, clusterFields)
 
         if dedupCollector:
             response.totalWithDuplicates = dedupCollector.totalHits
@@ -170,16 +176,64 @@ class Lucene(object):
         hits = []
         if hasattr(collector, "topDocs"):
             for scoreDoc in collector.topDocs(start).scoreDocs:
+                docId = scoreDoc.doc
                 if dedupCollector:
-                    keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc)
-                    newDocId = keyForDocId.docId if keyForDocId else scoreDoc.doc
-                    hit = Hit(self._index.getDocument(newDocId).get(IDFIELD))
+                    keyForDocId = dedupCollector.keyForDocId(docId)
+                    docId = keyForDocId.docId if keyForDocId else docId
+                    hit = Hit(self._index.getDocument(docId).get(IDFIELD))
                     hit.duplicateCount = {dedupCollector.keyName: keyForDocId.count if keyForDocId else 0}
                 else:
-                    hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
+                    hit = Hit(self._index.getDocument(docId).get(IDFIELD))
+                hit.docId = docId
                 hit.score = scoreDoc.score
                 hits.append(hit)
         return collector.getTotalHits(), hits
+
+    def _clusterResponse(self, response, clusterFields):
+        reader = self._index._indexAndTaxonomy.searcher.getIndexReader()
+        clusters = []
+        for hit in response.hits:
+            fieldTermSets = {}
+            for field in clusterFields:
+                termSet = set()
+                terms = reader.getTermVector(hit.docId, field)
+                if terms is not None:
+                    iterator = BytesRefIterator.cast_(terms.iterator(None))
+                    try:
+                        while True:
+                            termSet.add(iterator.next().utf8ToString())
+                    except StopIteration:
+                        pass
+                fieldTermSets[field] = termSet
+            self._addToClusters(clusters, fieldTermSets, hit)
+        response.clusters = [{'hits': hits, 'label': None} for _, hits in clusters]
+
+
+    def _addToClusters(self, clusters, fieldTermSets, hit):
+        def overlap(s1, s2):
+            intersectionSize = len(s1.intersection(s2))
+            if intersectionSize == 0:
+                return 0.0
+            return intersectionSize / float(len(s1.union(s2)))
+
+        def avgDistance(d):
+            return sqrt(sum(distance ** 2 for distance in d.values()) / len(d))
+
+        THRESHOLD = 0.6
+
+        clusterFound = False
+        for cluster in clusters:
+            clusterFieldTerms, hits = cluster
+            fieldDistances = {}
+            for field, terms in fieldTermSets.items():
+                fieldDistances[field] = overlap(terms, clusterFieldTerms[field])
+            if avgDistance(fieldDistances) > THRESHOLD:
+                hits.append(hit)
+                clusterFound = True
+
+        if not clusterFound:
+            clusters.append((fieldTermSets, [hit]))
+
 
     def _filterFor(self, filterQueries, filter=None):
         if not filterQueries:

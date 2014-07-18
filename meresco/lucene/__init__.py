@@ -54,7 +54,7 @@ except ValueError:
 from meresco_lucene import initVM
 VMM = initVM()
 
-from utils import SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX, NUMERIC_PREFIX
+from utils import SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX, NUMERIC_PREFIX, TERMVECTOR_PREFIX
 from _version import version
 from luceneresponse import LuceneResponse
 from _analyzer import createAnalyzer

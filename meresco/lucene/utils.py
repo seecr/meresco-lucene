@@ -23,8 +23,9 @@
 #
 ## end license ##
 
-from org.apache.lucene.document import TextField, StringField, Field, LongField, NumericDocValuesField
+from org.apache.lucene.document import TextField, StringField, Field, LongField, FieldType, NumericDocValuesField
 from org.apache.lucene.search import SortField
+from org.apache.lucene.index import FieldInfo
 
 TIMESTAMPFIELD = '__timestamp__'
 IDFIELD = '__id__'
@@ -32,17 +33,31 @@ SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
 KEY_PREFIX = "__key__."
 NUMERIC_PREFIX = "__numeric__."
+TERMVECTOR_PREFIX = "termvector."
 
 LONGTYPE = 'long'
 TEXTTYPE = 'text'
 STRINGTYPE = 'string'
 NUMERICTYPE = 'numeric'
+TERMVECTORTYPE = 'termvector'
+
+termVectorType = FieldType()
+termVectorType.setIndexed(True)
+termVectorType.setStored(False)
+termVectorType.setStoreTermVectors(True)
+termVectorType.setStoreTermVectorOffsets(False)
+termVectorType.setStoreTermVectorPositions(False)
+termVectorType.setStoreTermVectorPayloads(False)
+termVectorType.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS)
+termVectorType.setTokenized(True)  # Eh?? ... depends ... ?!
+termVectorType.freeze()
 
 typeToField = {
     LONGTYPE: lambda fieldname, value, store: LongField(fieldname, long(value), store),
     TEXTTYPE: TextField,
     STRINGTYPE: StringField,
     NUMERICTYPE: lambda fieldname, value, store: NumericDocValuesField(fieldname, long(value)),
+    TERMVECTORTYPE: lambda fieldname, value, store: Field(fieldname, value, termVectorType),
 }
 typeToSortFieldTypeAndMissingValue = {
     LONGTYPE: (SortField.Type.LONG, None),
@@ -61,6 +76,8 @@ def fieldType(fieldname):
         return NUMERICTYPE
     if fieldname.startswith(NUMERIC_PREFIX):
         return NUMERICTYPE
+    if fieldname.startswith(TERMVECTOR_PREFIX):
+        return TERMVECTORTYPE
     return TEXTTYPE
 
 def createField(fieldname, value):

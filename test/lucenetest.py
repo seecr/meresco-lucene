@@ -443,6 +443,30 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("field0", 'kat'))))
         self.assertEquals(1, result.total)
 
+    def testClusters(self):
+        doc = document(**{'termvector.field': ['value0', 'value1']})
+        consume(self.lucene.addDocument("urn:1", doc))
+        doc = document(**{'termvector.field': ['value0', 'value1', 'value2']})
+        consume(self.lucene.addDocument("urn:2", doc))
+        doc = document(**{'termvector.field': ['other']})
+        consume(self.lucene.addDocument("urn:3", doc))
+        doc = document(**{'termvector.field': ['other']})
+        consume(self.lucene.addDocument("urn:4", doc))
+        doc = document(**{'field': ['other']})
+        consume(self.lucene.addDocument("urn:5", doc))
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=['termvector.field']))
+        self.assertClusteringEquals([
+                {'label': None, 'hits': [Hit('urn:1'), Hit('urn:2')]},
+                {'label': None, 'hits': [Hit('urn:3'), Hit('urn:4')]},
+                {'label': None, 'hits': [Hit('urn:5')]},
+            ], result.clusters)
+
+
+    def assertClusteringEquals(self, expected, clustering):
+        self.assertEquals(len(expected), len(clustering), clustering)
+        for i, cluster in enumerate(expected):
+            self.assertEquals(cluster['label'], clustering[i]['label'])
+            self.assertEquals([hit.id for hit in cluster['hits']], [hit.id for hit in clustering[i]['hits']])
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]
@@ -452,8 +476,11 @@ def document(**fields):
 
 def createDocument(fields, facets=None):
     document = Document()
-    for name, value in fields:
-        document.add(createField(name, value))
+    for name, values in fields:
+        if not hasattr(values, 'extend'):
+            values = [values]
+        for value in values:
+            document.add(createField(name, value))
     for facet, value in facets or []:
         if hasattr(value, 'extend'):
             path = [str(category) for category in value]

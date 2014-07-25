@@ -45,7 +45,7 @@ from meresco.lucene.utils import fieldType, LONGTYPE
 from org.apache.lucene.facet.taxonomy import TaxonomyFacetCounts, CachedOrdinalsReader, DocValuesOrdinalsReader
 
 class Index(object):
-    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None):
+    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, executor=None):
         self._reactor = reactor
         self._maxCommitCount = commitCount or 1000
         self._commitCount = 0
@@ -63,7 +63,7 @@ class Index(object):
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
         self._taxoWriter.commit()
 
-        self._indexAndTaxonomy = IndexAndTaxonomy(self._indexWriter, self._taxoWriter, similarity)
+        self._indexAndTaxonomy = IndexAndTaxonomy(self._indexWriter, self._taxoWriter, similarity, executor)
         self.similarityWrapper = self._indexAndTaxonomy.similarityWrapper
 
         self._facetsConfig = facetsConfig

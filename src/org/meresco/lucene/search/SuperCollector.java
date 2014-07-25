@@ -1,5 +1,6 @@
 package org.meresco.lucene.search;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,7 +8,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 
 public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 
-	private List<SubCollectorType> subs = new ArrayList<SubCollectorType>();
+	protected List<SubCollectorType> subs = new ArrayList<SubCollectorType>();
 
 	/**
 	 * Called before collecting from each {@link AtomicReaderContext} in a
@@ -19,8 +20,9 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 	 * 
 	 * @param context
 	 *            next atomic reader context
+	 * @throws IOException 
 	 */
-	public SubCollector subCollector(AtomicReaderContext context) {
+	public SubCollector subCollector(AtomicReaderContext context) throws IOException {
 		SubCollectorType sub = this.createSubCollector(context);
 		this.subs.add(sub);
 		return sub;
@@ -32,15 +34,7 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 	 * @param context
 	 *            is an AtomicReaderContext
 	 * @return SubCollector for this context
+	 * @throws IOException 
 	 */
-	abstract protected SubCollectorType createSubCollector(AtomicReaderContext context);
-
-	/**
-	 * Gives access to all SubCollectors of this SuperCollector.
-	 * 
-	 * @return an Iterable containing SubCollectors
-	 */
-	protected Iterable<SubCollectorType> subCollectors() {
-		return subs;
-	}
+	abstract protected SubCollectorType createSubCollector(AtomicReaderContext context) throws IOException;
 }

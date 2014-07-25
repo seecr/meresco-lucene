@@ -14,11 +14,11 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
 
-public class ThreadedIndexSearcher extends IndexSearcher {
+public class SuperIndexSearcher extends IndexSearcher {
 
 	private ExecutorService executor;
 
-	public ThreadedIndexSearcher(DirectoryReader reader, ExecutorService executor) {
+	public SuperIndexSearcher(DirectoryReader reader, ExecutorService executor) {
 		super(reader);
 		this.executor = executor;
 	}
@@ -28,7 +28,8 @@ public class ThreadedIndexSearcher extends IndexSearcher {
 		Weight weight = super.createNormalizedWeight(wrapFilter(Q, F));
 		ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(this.executor);
 		// IDEA 1: group small leaves and sumbit those groups to avoid overhead
-		// IDEA 2: submit large leaves to pool, do small leaves her in main thread
+		// IDEA 2: submit large leaves to pool, do small leaves her in main
+		// thread
 		for (AtomicReaderContext ctx : super.leafContexts) {
 			ecs.submit(new SearchTask(ctx, weight, C.subCollector(ctx)), "Done");
 		}
@@ -51,7 +52,7 @@ public class ThreadedIndexSearcher extends IndexSearcher {
 		@Override
 		public void run() {
 			try {
-				ThreadedIndexSearcher.this.search(this.contexts, this.weight, this.subCollector);
+				SuperIndexSearcher.this.search(this.contexts, this.weight, this.subCollector);
 				this.subCollector.complete();
 			} catch (IOException e) {
 				throw new RuntimeException(e);

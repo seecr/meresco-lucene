@@ -24,16 +24,16 @@
 ## end license ##
 
 from org.apache.lucene.index import DirectoryReader
-from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyReader
+from org.meresco.lucene.search import SuperIndexSearcher
 
 
 class IndexAndTaxonomy(object):
 
-    def __init__(self, indexWriter=None, taxoWriter=None, similarity=None):
+    def __init__(self, indexWriter=None, taxoWriter=None, similarity=None, executor=None):
         self._similarity = similarity
-        self.searcher = IndexSearcher(DirectoryReader.open(indexWriter, True))
+        self.searcher = SuperIndexSearcher(DirectoryReader.open(indexWriter, True), executor)
         self.searcher.setSimilarity(self._similarity)
         self.taxoReader = DirectoryTaxonomyReader(taxoWriter)
         self._bm25Arguments = None

@@ -43,6 +43,7 @@ class LuceneResponseJsonEncoder(JSONEncoder):
         if type(o) is Hit:
             d = {"__class__": Hit.__name__}
             d.update(o.__dict__)
+            d.pop('local', None)
             return d
         return JSONEncoder.default(self, o)
 

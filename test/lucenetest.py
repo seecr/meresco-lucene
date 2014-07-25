@@ -32,7 +32,7 @@ from cqlparser import parseString as parseCql
 
 from weightless.core import consume, retval
 
-from meresco.lucene import Lucene, VM, DrilldownField
+from meresco.lucene import Lucene, VM, DrilldownField, Clusters
 from meresco.lucene.hit import Hit
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.utils import createField
@@ -444,6 +444,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(1, result.total)
 
     def testClusters(self):
+        self.lucene.addObserver(Clusters())
         doc = document(**{'termvector.field': ['value0', 'value1']})
         consume(self.lucene.addDocument("urn:1", doc))
         doc = document(**{'termvector.field': ['value0', 'value1', 'value2']})

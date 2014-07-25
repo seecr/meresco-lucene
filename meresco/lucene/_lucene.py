@@ -23,8 +23,11 @@
 #
 ## end license ##
 
+from meresco.core import Observable
+
 from math import sqrt
 
+from org.apache.lucene.util import BytesRefIterator
 from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery, CachingWrapperFilter
 from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
@@ -42,18 +45,16 @@ from cache import LruCache
 from utils import IDFIELD, createIdField, sortField
 from hit import Hit
 from seecr.utils.generatorutils import generatorReturn
-from org.apache.lucene.util import BytesRefIterator
 
 
-class Lucene(object):
+class Lucene(Observable):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
     def __init__(self, path, reactor, name=None, **kwargs):
+        Observable.__init__(self, name=name)
         self._index = Index(path, reactor=reactor, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
-        if name is not None:
-            self.observable_name = lambda: name
         self.coreName = name or basename(path)
         self._filterCache = LruCache(
                 keyEqualsFunction=lambda q1, q2: q1.equals(q2),
@@ -124,8 +125,8 @@ class Lucene(object):
 
         response = LuceneResponse(total=total, hits=hits, drilldownData=[])
 
-        if clusterFields is not None:
-            self._clusterResponse(response, clusterFields)
+        if clusterFields:
+            yield self._clusterResponse(response, clusterFields)
 
         if dedupCollector:
             response.totalWithDuplicates = dedupCollector.totalHits
@@ -189,53 +190,6 @@ class Lucene(object):
                 hits.append(hit)
         return collector.getTotalHits(), hits
 
-    def _clusterResponse(self, response, clusterFields):
-        reader = self._index._indexAndTaxonomy.searcher.getIndexReader()
-        clusters = []
-        for hit in response.hits:
-            fieldTermSets = {}
-            for field in clusterFields:
-                termSet = set()
-                terms = reader.getTermVector(hit.docId, field)
-                if terms is not None:
-                    iterator = BytesRefIterator.cast_(terms.iterator(None))
-                    try:
-                        while True:
-                            termSet.add(iterator.next().utf8ToString())
-                    except StopIteration:
-                        pass
-                fieldTermSets[field] = termSet
-            self._addToClusters(clusters, fieldTermSets, hit)
-        response.clusters = [{'hits': hits, 'label': None} for _, hits in clusters]
-
-
-    def _addToClusters(self, clusters, fieldTermSets, hit):
-        def overlap(s1, s2):
-            intersectionSize = len(s1.intersection(s2))
-            if intersectionSize == 0:
-                return 0.0
-            return intersectionSize / float(len(s1.union(s2)))
-
-        def aggregateDistance(d):
-            # return sqrt(sum(distance ** 2 for distance in d.values()) / len(d))
-            return max(d.values())
-
-        THRESHOLD = 0.3
-
-        clusterFound = False
-        for cluster in clusters:
-            clusterFieldTerms, hits = cluster
-            fieldDistances = {}
-            for field, terms in fieldTermSets.items():
-                fieldDistances[field] = overlap(terms, clusterFieldTerms[field])
-            if fieldDistances and aggregateDistance(fieldDistances) > THRESHOLD:
-                hits.append(hit)
-                clusterFound = True
-
-        if not clusterFound:
-            clusters.append((fieldTermSets, [hit]))
-
-
     def _filterFor(self, filterQueries, filter=None):
         if not filterQueries:
             return filter
@@ -263,6 +217,24 @@ class Lucene(object):
 
     def _facetCollector(self):
         return self._index.createFacetCollector()
+
+    def _clusterResponse(self, response, clusterFields):
+        reader = self._index._indexAndTaxonomy.searcher.getIndexReader()
+        for hit in response.hits:
+            fieldTermSets = {}
+            for field in clusterFields:
+                termSet = set()
+                terms = reader.getTermVector(hit.docId, field)
+                if terms is not None:
+                    iterator = BytesRefIterator.cast_(terms.iterator(None))
+                    try:
+                        while True:
+                            termSet.add(iterator.next().utf8ToString())
+                    except StopIteration:
+                        pass
+                fieldTermSets[field] = termSet
+            hit.local['fieldTermSets'] = fieldTermSets
+        yield self.do.clusterResponse(response)
 
     def coreInfo(self):
         yield self.LuceneInfo(self)

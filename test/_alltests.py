@@ -40,6 +40,7 @@ if version >= '2.7':
     simplefilter('default')
 
 
+from clusterstest import ClustersTest
 from composedquerytest import ComposedQueryTest
 from cqltolucenequerytest import CqlToLuceneQueryTest
 from dedupfiltercollectortest import DeDupFilterCollectorTest

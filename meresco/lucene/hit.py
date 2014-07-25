@@ -25,10 +25,11 @@
 
 from hashlib import md5
 
-class Hit(object):
 
+class Hit(object):
     def __init__(self, id, **kwargs):
         self.id = id
+        self.local = {}
         self.__dict__.update(kwargs)
 
     def __eq__(self, other):

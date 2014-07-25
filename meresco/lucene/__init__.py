@@ -59,6 +59,7 @@ from _version import version
 from luceneresponse import LuceneResponse
 from _analyzer import createAnalyzer
 from _lucene import Lucene
+from clusters import Clusters
 from fields2lucenedoc import Fields2LuceneDoc
 from cqltolucenequery import CqlToLuceneQuery
 from multilucene import MultiLucene

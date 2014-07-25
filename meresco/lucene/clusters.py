@@ -1,6 +1,19 @@
 from meresco.core import Observable
 
 
+# TODO:
+# - cluster per axis
+# - move centroid (?)
+# - label cluster's common ground (?)
+#       - e.g. axis name + actual overlapping terms
+# - tune THRESHOLD
+#    - could something more dynamic be preferrable?
+# - tune distance measure
+# - tune which terms should be indexed for which axis based on contents (vocabulary/ontology)
+# - tune cluster relevance (?)
+# - alternatives for this 'single pass' approach?
+# - etc.
+
 class Clusters(Observable):
     def clusterResponse(self, response):
         clusters = []

@@ -23,7 +23,7 @@
  *
  * end license */
 
-package org.meresco.lucene;
+package org.meresco.lucene.search;
 
 import java.io.IOException;
 import java.util.List;

@@ -23,39 +23,42 @@
  *
  * end license */
 
-package org.meresco.lucene;
+package org.meresco.lucene.search;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.WeakHashMap;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.Bits;
 
 
-public class KeyCollector extends Collector {
-    private String keyName;
-    private NumericDocValues keyValues;
-    protected OpenBitSet keySet = new OpenBitSet();
-
-    public KeyCollector(String keyName) {
-        this.keyName = keyName;
-    }
+public class DocIdCollector extends Collector {
+    private AtomicReaderContext readerContext = null;
+    private Map<Object, OpenBitSet> segmentDocIdSets = new WeakHashMap<Object, OpenBitSet>();
+    private OpenBitSet docIdSet = new OpenBitSet();
 
     @Override
     public void collect(int docId) throws IOException {
-        if (this.keyValues != null) {
-            int value = (int)this.keyValues.get(docId);
-            if (value > 0) {
-                this.keySet.set(value);
-            }
-        }
+        int doc = this.readerContext.docBase + docId;
+        this.docIdSet.set(doc);
+        this.segmentDocIdSets.get(this.readerContext).set(docId);
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.keyValues = context.reader().getNumericDocValues(this.keyName);
+        this.readerContext = context;
+        OpenBitSet segmentDocIdSet = segmentDocIdSets.get(context);
+        if (segmentDocIdSet == null) {
+            segmentDocIdSet = new OpenBitSet();
+        }
+        segmentDocIdSets.put(context, segmentDocIdSet);
     }
 
     @Override
@@ -67,7 +70,16 @@ public class KeyCollector extends Collector {
     public void setScorer(Scorer scorer) throws IOException {
     }
 
-    public OpenBitSet getCollectedKeys() {
-        return this.keySet;
+    public OpenBitSet getDocIdSet() {
+        return this.docIdSet;
+    }
+
+    public Filter getDocIdFilter() {
+        return new Filter() {
+            @Override
+            public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+                return DocIdCollector.this.segmentDocIdSets.get(context);
+            }
+        };
     }
 }

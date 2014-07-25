@@ -23,7 +23,7 @@
  *
  * end license */
 
-package org.meresco.lucene;
+package org.meresco.lucene.analysis;
 
 import java.io.StringReader;
 

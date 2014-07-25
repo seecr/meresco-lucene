@@ -23,7 +23,7 @@
  *
  * end license */
 
-package org.meresco.lucene;
+package org.meresco.lucene.search;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -98,13 +98,13 @@ public class DeDupFilterCollector extends Collector {
         this.currentDocBase = context.docBase;
         this.keyValues = context.reader().getNumericDocValues(this.keyName);
         if (this.keyValues == null)
-            this.keyValues = DocValues.EMPTY_NUMERIC;
+            this.keyValues = DocValues.emptyNumeric();
 
         this.sortByValues = null;
         if (this.sortByFieldName != null)
             this.sortByValues = context.reader().getNumericDocValues(this.sortByFieldName);
         if (this.sortByValues == null)
-            this.sortByValues = DocValues.EMPTY_NUMERIC;
+            this.sortByValues = DocValues.emptyNumeric();
 
         this.delegate.setNextReader(context);
     }

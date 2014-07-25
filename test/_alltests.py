@@ -53,6 +53,7 @@ from multicqltolucenequerytest import MultiCqlToLuceneQueryTest
 from multilucenetest import MultiLuceneTest
 from termfrequencysimilaritytest import TermFrequencySimilarityTest
 from termnumeratortest import TermNumeratorTest
+from supercollectortest import SuperCollectorTest
 
 if __name__ == '__main__':
     unittest.main()

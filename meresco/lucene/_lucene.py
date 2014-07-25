@@ -27,7 +27,7 @@ from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, Qu
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
 from org.apache.lucene.queries import ChainedFilter
-from org.meresco.lucene import DeDupFilterCollector, ScoreCollector
+from org.meresco.lucene.search import DeDupFilterCollector, ScoreCollector
 
 from java.lang import Integer
 
@@ -73,7 +73,7 @@ class Lucene(object):
     def addDocument(self, identifier, document):
         document.add(createIdField(identifier))
         self._index.addDocument(term=Term(IDFIELD, identifier), document=document)
-        self._scoreCollectorCache.clear()
+        self._scoreCollectorCache.clear()  #WTF?! #TODO #FIXME
         return
         yield
 

@@ -34,7 +34,7 @@ from meresco.lucene.utils import TIMESTAMPFIELD
 from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
 from org.apache.lucene.index import Term
 
-from org.meresco.lucene import MerescoDutchStemmingAnalyzer
+from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 
 
 class LuceneQueryComposerTest(TestCase):

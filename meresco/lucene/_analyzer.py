@@ -24,7 +24,7 @@
 ## end license ##
 
 from org.apache.lucene.util import Version
-from org.meresco.lucene import MerescoStandardAnalyzer
+from org.meresco.lucene.analysis import MerescoStandardAnalyzer
 
 
 def createAnalyzer(analyzer=None):

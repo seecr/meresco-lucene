@@ -2,8 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
- * Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+ * Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -23,42 +23,45 @@
  *
  * end license */
 
-package org.meresco.lucene;
+package org.meresco.lucene.search;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.WeakHashMap;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.SmallFloat;
 
 
-public class DocIdCollector extends Collector {
-    private AtomicReaderContext readerContext = null;
-    private Map<Object, OpenBitSet> segmentDocIdSets = new WeakHashMap<Object, OpenBitSet>();
-    private OpenBitSet docIdSet = new OpenBitSet();
+public class ScoreCollector extends Collector {
+    private String keyName;
+    private NumericDocValues keyValues;
+    protected byte[] scores = new byte[0];
+    private Scorer scorer;
+
+    public ScoreCollector(String keyName) {
+        this.keyName = keyName;
+    }
 
     @Override
     public void collect(int docId) throws IOException {
-        int doc = this.readerContext.docBase + docId;
-        this.docIdSet.set(doc);
-        this.segmentDocIdSets.get(this.readerContext).set(docId);
+        if (this.keyValues != null) {
+            int value = (int)this.keyValues.get(docId);
+            if (value > 0) {
+                if (value >= scores.length) {
+                    this.scores = resize(this.scores, value + 1);
+                }
+                this.scores[value] = SmallFloat.floatToByte315(scorer.score());
+            }
+        }
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.readerContext = context;
-        OpenBitSet segmentDocIdSet = segmentDocIdSets.get(context);
-        if (segmentDocIdSet == null) {
-            segmentDocIdSet = new OpenBitSet();
-        }
-        segmentDocIdSets.put(context, segmentDocIdSet);
+        this.keyValues = context.reader().getNumericDocValues(this.keyName);
     }
 
     @Override
@@ -68,18 +71,19 @@ public class DocIdCollector extends Collector {
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
     }
 
-    public OpenBitSet getDocIdSet() {
-        return this.docIdSet;
+    public float score(int key) {
+        if (key < this.scores.length) {
+            return SmallFloat.byte315ToFloat(this.scores[key]);
+        }
+        return 0;
     }
 
-    public Filter getDocIdFilter() {
-        return new Filter() {
-            @Override
-            public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-                return DocIdCollector.this.segmentDocIdSets.get(context);
-            }
-        };
+    public byte[] resize(byte[] src, int newSize) {
+        byte[] dest = new byte[(int) (newSize * 1.25)];
+        System.arraycopy(src, 0, dest, 0, src.length);
+        return dest;
     }
 }

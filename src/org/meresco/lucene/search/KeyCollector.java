@@ -2,8 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
- * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+ * Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -23,26 +23,23 @@
  *
  * end license */
 
-package org.meresco.lucene;
+package org.meresco.lucene.search;
 
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.SmallFloat;
 
 
-public class ScoreCollector extends Collector {
+public class KeyCollector extends Collector {
     private String keyName;
     private NumericDocValues keyValues;
-    protected byte[] scores = new byte[0];
-    private Scorer scorer;
+    protected OpenBitSet keySet = new OpenBitSet();
 
-    public ScoreCollector(String keyName) {
+    public KeyCollector(String keyName) {
         this.keyName = keyName;
     }
 
@@ -51,10 +48,7 @@ public class ScoreCollector extends Collector {
         if (this.keyValues != null) {
             int value = (int)this.keyValues.get(docId);
             if (value > 0) {
-                if (value >= scores.length) {
-                    this.scores = resize(this.scores, value + 1);
-                }
-                this.scores[value] = SmallFloat.floatToByte315(scorer.score());
+                this.keySet.set(value);
             }
         }
     }
@@ -71,19 +65,9 @@ public class ScoreCollector extends Collector {
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {
-        this.scorer = scorer;
     }
 
-    public float score(int key) {
-        if (key < this.scores.length) {
-            return SmallFloat.byte315ToFloat(this.scores[key]);
-        }
-        return 0;
-    }
-
-    public byte[] resize(byte[] src, int newSize) {
-        byte[] dest = new byte[(int) (newSize * 1.25)];
-        System.arraycopy(src, 0, dest, 0, src.length);
-        return dest;
+    public OpenBitSet getCollectedKeys() {
+        return this.keySet;
     }
 }

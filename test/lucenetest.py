@@ -41,7 +41,7 @@ from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuer
 from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import FacetField
-from org.meresco.lucene import MerescoDutchStemmingAnalyzer
+from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 
 from seecr.test import SeecrTestCase, CallTrace
 from seecr.test.io import stdout_replaced

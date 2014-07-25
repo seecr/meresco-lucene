@@ -23,7 +23,7 @@
  *
  * end license */
 
-package org.meresco.lucene;
+package org.meresco.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,6 +37,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.OpenBitSet;
+import org.meresco.lucene.queries.KeyFilter;
 
 
 /**

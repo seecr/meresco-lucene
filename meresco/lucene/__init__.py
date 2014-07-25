@@ -24,15 +24,17 @@
 ## end license ##
 
 from os.path import dirname, abspath, join, isfile                               #DO_NOT_DISTRIBUTE
-from os import stat, system                                                      #DO_NOT_DISTRIBUTE
+from os import stat, system, walk                                                #DO_NOT_DISTRIBUTE
 from glob import glob                                                            #DO_NOT_DISTRIBUTE
 from sys import exit, path as sysPath                                            #DO_NOT_DISTRIBUTE
+from itertools import chain                                                      #DO_NOT_DISTRIBUTE
 mydir = dirname(abspath(__file__))                                               #DO_NOT_DISTRIBUTE
 srcDir = join(dirname(dirname(mydir)), 'src')                                    #DO_NOT_DISTRIBUTE
 libDir = join(dirname(dirname(mydir)), 'lib')                                    #DO_NOT_DISTRIBUTE
 sofile = join(libDir, 'meresco_lucene', '_meresco_lucene.so')                    #DO_NOT_DISTRIBUTE
-merescoLuceneFiles = join(srcDir, 'org','meresco','lucene', '*.java')            #DO_NOT_DISTRIBUTE
-lastMtime = max(stat(f).st_mtime for f in glob(merescoLuceneFiles))              #DO_NOT_DISTRIBUTE
+merescoLuceneFiles = chain(*[[join(d,f) for f in fs if f.endswith(".java")]      #DO_NOT_DISTRIBUTE
+                        for d, _, fs in walk(join(srcDir, 'org'))])              #DO_NOT_DISTRIBUTE
+lastMtime = max(stat(f).st_mtime for f in merescoLuceneFiles)                    #DO_NOT_DISTRIBUTE
 if not isfile(sofile) or stat(sofile).st_mtime < lastMtime:                      #DO_NOT_DISTRIBUTE
     result = system('cd %s; ./build.sh' % srcDir)                                #DO_NOT_DISTRIBUTE
     if result:                                                                   #DO_NOT_DISTRIBUTE
@@ -66,4 +68,4 @@ from termnumerator import TermNumerator
 from composedquery import ComposedQuery
 from drilldownfield import DrilldownField
 
-from org.meresco.lucene import TermFrequencySimilarity
+from org.meresco.lucene.search import TermFrequencySimilarity

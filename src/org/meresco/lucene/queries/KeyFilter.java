@@ -23,7 +23,7 @@
  *
  * end license */
 
-package org.meresco.lucene;
+package org.meresco.lucene.queries;
 
 import java.io.IOException;
 import java.util.BitSet;
@@ -38,6 +38,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.OpenBitSet;
+import org.meresco.lucene.search.CachingKeyCollector;
 
 
 public class KeyFilter extends Filter {
@@ -46,12 +47,12 @@ public class KeyFilter extends Filter {
     private CachingKeyCollector keyCollector;
     private Map<Object, DocIdSet> docSetCache = new WeakHashMap<Object, DocIdSet>();
 
-    KeyFilter(CachingKeyCollector cachingKeyCollector, String keyName) {
+    public KeyFilter(CachingKeyCollector cachingKeyCollector, String keyName) {
         this.keyCollector = cachingKeyCollector;
         this.keyName = keyName;
     }
 
-    void reset() {
+    public void reset() {
         OpenBitSet keySet = this.keyCollector.getCollectedKeys();
         if (keySet.equals(this.keySet))
             return;

@@ -25,7 +25,7 @@
 
 from org.apache.lucene.search import TopScoreDocCollector, MatchAllDocsQuery
 from org.apache.lucene.document import Document, NumericDocValuesField
-from org.meresco.lucene import DeDupFilterCollector
+from org.meresco.lucene.search import DeDupFilterCollector
 
 from seecr.test import SeecrTestCase, CallTrace
 from weightless.core import consume

@@ -38,7 +38,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.OpenBitSet;
-import org.meresco.lucene.search.CachingKeyCollector;
+import org.meresco.lucene.search.join.CachingKeyCollector;
 
 
 public class KeyFilter extends Filter {

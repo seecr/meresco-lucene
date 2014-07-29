@@ -27,7 +27,8 @@ from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, Qu
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
 from org.apache.lucene.queries import ChainedFilter
-from org.meresco.lucene.search import DeDupFilterCollector, ScoreCollector
+from org.meresco.lucene.search import DeDupFilterCollector
+from org.meresco.lucene.search.join import ScoreCollector
 
 from java.lang import Integer
 

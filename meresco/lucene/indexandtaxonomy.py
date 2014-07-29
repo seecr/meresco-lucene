@@ -33,6 +33,7 @@ class IndexAndTaxonomy(object):
 
     def __init__(self, indexWriter=None, taxoWriter=None, similarity=None, executor=None):
         self._similarity = similarity
+        self._excexutor = executor
         self.searcher = SuperIndexSearcher(DirectoryReader.open(indexWriter, True), executor)
         self.searcher.setSimilarity(self._similarity)
         self.taxoReader = DirectoryTaxonomyReader(taxoWriter)
@@ -47,7 +48,7 @@ class IndexAndTaxonomy(object):
         if reader is None:
             return
         currentReader.close()
-        self.searcher = IndexSearcher(reader)
+        self.searcher = SuperIndexSearcher(reader, self._excexutor)
         self._setSimilarityFor(self.searcher)
         taxoReader = DirectoryTaxonomyReader.openIfChanged(self.taxoReader)
         if taxoReader is None:

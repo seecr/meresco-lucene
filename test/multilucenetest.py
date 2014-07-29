@@ -32,7 +32,8 @@ from org.apache.lucene.search import MatchAllDocsQuery
 from weightless.core import be, compose
 from meresco.core import Observable
 
-from org.meresco.lucene.search import KeyCollector, KeyFilterCollector, DocIdCollector
+from org.meresco.lucene.search import DocIdCollector
+from org.meresco.lucene.search.join import KeyCollector, KeyFilterCollector
 
 from meresco.lucene import Lucene, TermFrequencySimilarity
 from meresco.lucene.utils import KEY_PREFIX

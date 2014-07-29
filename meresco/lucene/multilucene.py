@@ -31,7 +31,7 @@ from meresco.core import Observable
 from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause
-from org.meresco.lucene.search import CachingKeyCollector, AggregateScoreCollector, ScoreCollector
+from org.meresco.lucene.search.join import CachingKeyCollector, AggregateScoreCollector, ScoreCollector
 from org.meresco.lucene.queries import KeyBooleanFilter
 from java.util import ArrayList
 

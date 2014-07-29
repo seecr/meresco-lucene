@@ -9,10 +9,12 @@ import org.apache.lucene.search.Scorer;
 public abstract class DelegatingSubCollector<CollectorType extends Collector> extends SubCollector {
 
 	protected CollectorType delegate;
+	protected SuperCollector parent;
 
-	public DelegatingSubCollector(AtomicReaderContext context, CollectorType delegate) throws IOException {
+	public DelegatingSubCollector(AtomicReaderContext context, CollectorType delegate, SuperCollector parent) throws IOException {
 		super(context);
 		this.delegate = delegate;
+		this.parent = parent;
 		if (context != null)
 			this.delegate.setNextReader(context);
 	}

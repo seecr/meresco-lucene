@@ -1,7 +1,7 @@
 from seecr.test import SeecrTestCase
 from java.util.concurrent import Executors
 from org.apache.lucene.search import MatchAllDocsQuery
-from org.meresco.lucene.search import SuperCollector, SubCollector, CountingSuperCollector, TopDocsSuperCollector
+from org.meresco.lucene.search import SuperCollector, SubCollector, CountingSuperCollector, TopDocsSuperCollector, FacetSuperCollector
 from meresco.lucene.index import Index
 
 from lucenetest import document
@@ -44,7 +44,6 @@ class SuperCollectorTest(SeecrTestCase):
         S = C.subCollector(None)
         self.assertTrue(S.acceptsDocsOutOfOrder())
 
-
     def testSearchTopDocs(self):
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
         I._indexWriter.addDocument(document(name="one", price="aap noot mies"))
@@ -59,3 +58,12 @@ class SuperCollectorTest(SeecrTestCase):
         self.assertEquals(3, td.totalHits)
         self.assertEquals(1, len(td.scoreDocs))
 
+    def testFacetSuperCollector(self):
+        I = Index(path=self.tempdir, reactor=None, executor=self.E)
+        C = FacetSuperCollector()
+        Q = MatchAllDocsQuery()
+        I.search(Q, None, C)
+        td = C.getTopChildren(99, "field1", ["path"])
+        self.assertTrue(td)
+       
+        

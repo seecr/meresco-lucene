@@ -19,7 +19,7 @@ public class TopDocsSuperCollector extends SuperCollector<TopDocsSubCollector> {
 
 	@Override
 	protected TopDocsSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-		return new TopDocsSubCollector(context, this.numHits, this.docsScoredInOrder);
+		return new TopDocsSubCollector(context, this, this.numHits, this.docsScoredInOrder);
 	}
 
 	public TopDocs topDocs() throws IOException {
@@ -30,12 +30,12 @@ public class TopDocsSuperCollector extends SuperCollector<TopDocsSubCollector> {
 	}
 }
 
-class TopDocsSubCollector extends DelegatingSubCollector<TopScoreDocCollector> {
+class TopDocsSubCollector extends DelegatingSubCollector<TopScoreDocCollector, TopDocsSuperCollector> {
 
 	TopDocs topdocs;
 
-	public TopDocsSubCollector(AtomicReaderContext context, int numHits, boolean docsScoredInOrder) throws IOException {
-		super(context, TopScoreDocCollector.create(numHits, docsScoredInOrder));
+	public TopDocsSubCollector(AtomicReaderContext context, TopDocsSuperCollector parent, int numHits, boolean docsScoredInOrder) throws IOException {
+		super(context, TopScoreDocCollector.create(numHits, docsScoredInOrder), parent);
 	}
 
 	@Override

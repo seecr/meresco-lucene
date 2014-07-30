@@ -10,7 +10,6 @@ import org.apache.lucene.facet.taxonomy.DocValuesOrdinalsReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.Collector;
 
 public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
@@ -20,7 +19,7 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 	final int topN;
 	final String path;
 
-	public FacetSuperCollector(TaxonomyReader taxoReader, FacetsConfig facetConfig, String dim, int topN, String path) {
+	public FacetSuperCollector(TaxonomyReader taxoReader, FacetsConfig facetConfig, String dim, int topN, String path, Object... collectorArgs) {
 		super();
 		this.taxoReader = taxoReader;
 		this.facetConfig = facetConfig;
@@ -34,25 +33,29 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 		return new FacetSubCollector(context, new FacetsCollector(), this);
 	}
 
-	public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+	public FacetResult getTopChildren() throws IOException {
+		for(FacetSubCollector sub : super.subs) {
+			FacetResult subResults = sub.results;
+			// merge
+		}
 		return null;
 	}
 }
 
-class FacetSubCollector extends DelegatingSubCollector {
+class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSuperCollector> {
 
-	public FacetSubCollector(AtomicReaderContext context, Collector delegate, SuperCollector parent) throws IOException {
+	FacetResult results;
+
+	public FacetSubCollector(AtomicReaderContext context, FacetsCollector delegate, FacetSuperCollector parent)
+			throws IOException {
 		super(context, delegate, parent);
 	}
 
 	@Override
-	public void complete() {
-		// TaxonomyFacetCounts(self._ordinalsReader,
-		// self._indexAndTaxonomy.taxoReader, self._facetsConfig,
-		// facetCollector)
-		TaxonomyFacetCounts facetResult = new TaxonomyFacetCounts(new CachedOrdinalsReader(
+	public void complete() throws IOException {
+		TaxonomyFacetCounts counts = new TaxonomyFacetCounts(new CachedOrdinalsReader(
 				new DocValuesOrdinalsReader()), this.parent.taxoReader, this.parent.facetConfig,
 				(FacetsCollector) this.delegate);
-		facetResult.getTopChildren(this.parent.topN, this.parent.dim, this.path);
+		this.results = counts.getTopChildren(this.parent.topN, this.parent.dim, this.parent.path);
 	}
 }

@@ -1,10 +1,13 @@
 from seecr.test import SeecrTestCase
-from java.util.concurrent import Executors
-from org.apache.lucene.search import MatchAllDocsQuery
-from org.meresco.lucene.search import SuperCollector, SubCollector, CountingSuperCollector, TopDocsSuperCollector, FacetSuperCollector
-from meresco.lucene.index import Index
 
+from java.util.concurrent import Executors
 from lucenetest import document
+from meresco.lucene.index import Index
+from org.apache.lucene.search import MatchAllDocsQuery
+from org.apache.lucene.facet import FacetsConfig
+from org.meresco.lucene.search import SuperCollector, SubCollector, \
+    CountingSuperCollector, TopDocsSuperCollector, FacetSuperCollector
+
 
 class SuperCollectorTest(SeecrTestCase):
 
@@ -60,10 +63,14 @@ class SuperCollectorTest(SeecrTestCase):
 
     def testFacetSuperCollector(self):
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
-        C = FacetSuperCollector()
+        facetConfig = FacetsConfig()
+        dim = "field1"
+        topN = 10
+        path = "path"
+        C = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, facetConfig, dim, topN, path)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
-        td = C.getTopChildren(99, "field1", ["path"])
+        td = C.getTopChildren()
         self.assertTrue(td)
-       
-        
+
+

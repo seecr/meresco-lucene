@@ -117,6 +117,22 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             ], [(f.dim, list(f.path)) for f in facetsfields])
         self.assertEquals(['grandparent', 'grandparent/parent', 'grandparent/parent/child', 'parent2', 'parent2/child'], [f.stringValue() for f in document.getFields('untokenized.field8')])
 
+    def testAddFacetField(self):
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[
+                DrilldownField('untokenized.field'),
+            ])
+        observer = CallTrace()
+        fields2LuceneDoc.addObserver(observer)
+        fields2LuceneDoc.ctx.tx = Transaction('tsname')
+        fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
+        fields2LuceneDoc.addField('field', 'value')
+        fields2LuceneDoc.addFacetField('untokenized.field', 'untokenized value')
+        consume(fields2LuceneDoc.commit('unused'))
+        document = observer.calledMethods[0].kwargs['document']
+        facetsfields = [FacetField.cast_(f) for f in document.getFields() if FacetField.instance_(f)]
+        self.assertEquals(1, len(facetsfields))
+
+
     def testAddTimeStamp(self):
         fields = {'field1': ['value1']}
         fields2LuceneDoc = Fields2LuceneDoc('tsname', addTimestamp=True, drilldownFields=[])

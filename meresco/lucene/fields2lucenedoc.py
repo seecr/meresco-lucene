@@ -49,22 +49,30 @@ class Fields2LuceneDoc(Observable):
 
     def addField(self, name, value):
         tx = self.ctx.tx
-        valueList = tx.objectScope(self).setdefault(name, [])
+        valueList = tx.objectScope(self).setdefault('fields', {}).setdefault(name, [])
+        valueList.append(value)
+
+    def addFacetField(self, name, value):
+        print 'addFacetField(', name, value, ')'
+        from sys import stdout; stdout.flush()
+        tx = self.ctx.tx
+        valueList = tx.objectScope(self).setdefault('facet_fields', {}).setdefault(name, [])
         valueList.append(value)
 
     def commit(self, id):
         tx = self.ctx.tx
-        fields = tx.objectScope(self)
-        if not fields:
+        fields = tx.objectScope(self).get('fields', {})
+        facet_fields = tx.objectScope(self).get('facet_fields', {})
+        if not (fields or facet_fields):
             return
         identifier = self._identifierRewrite(tx.locals['id'])
         fields = self._rewriteFields(fields)
         yield self.all.addDocument(
                 identifier=identifier,
-                document=self._createDocument(fields),
+                document=self._createDocument(fields, facet_fields),
             )
 
-    def _createDocument(self, fields):
+    def _createDocument(self, fields, facet_fields):
         doc = Document()
         for field, values in fields.items():
             for value in values:
@@ -78,6 +86,14 @@ class Fields2LuceneDoc(Observable):
                             doc.add(createField(field, v))
                     else:
                         doc.add(createField(field, value))
+            if field in self._drilldownFieldnames:
+                for v in values:
+                    if hasattr(v, 'extend'):
+                        path = [str(category) for category in v]
+                    else:
+                        path = [str(v)]
+                    doc.add(FacetField(field, path))
+        for field, values in facet_fields.items():
             if field in self._drilldownFieldnames:
                 for v in values:
                     if hasattr(v, 'extend'):

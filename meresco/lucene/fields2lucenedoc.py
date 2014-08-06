@@ -53,8 +53,6 @@ class Fields2LuceneDoc(Observable):
         valueList.append(value)
 
     def addFacetField(self, name, value):
-        print 'addFacetField(', name, value, ')'
-        from sys import stdout; stdout.flush()
         tx = self.ctx.tx
         valueList = tx.objectScope(self).setdefault('facet_fields', {}).setdefault(name, [])
         valueList.append(value)
@@ -72,7 +70,8 @@ class Fields2LuceneDoc(Observable):
                 document=self._createDocument(fields, facet_fields),
             )
 
-    def _createDocument(self, fields, facet_fields):
+    def _createDocument(self, fields, facet_fields=None):
+        facet_fields = facet_fields or {}
         doc = Document()
         for field, values in fields.items():
             for value in values:

@@ -25,6 +25,7 @@
 
 from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery, CachingWrapperFilter
 from org.apache.lucene.index import Term
+from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
 from org.apache.lucene.queries import ChainedFilter
 from org.meresco.lucene import DeDupFilterCollector, ScoreCollector
 
@@ -46,8 +47,13 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, name=None, **kwargs):
-        self._index = Index(path, reactor=reactor, **kwargs)
+    def __init__(self, path, reactor, name=None, drilldownFields=None, **kwargs):
+        self._facetsConfig = FacetsConfig()
+        for field in drilldownFields or []:
+            self._facetsConfig.setMultiValued(field.name, field.multiValued)
+            self._facetsConfig.setHierarchical(field.name, field.hierarchical)
+
+        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name
@@ -88,7 +94,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-            filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, **kwargs):
+            filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -115,6 +121,11 @@ class Lucene(object):
 
         filter_ = self._filterFor(filterQueries, filter)
 
+        if drilldownQueries:
+            drilldownQuery = DrillDownQuery(self._facetsConfig, luceneQuery)
+            for field, path in drilldownQueries:
+                drilldownQuery.add(field, path)
+            luceneQuery = drilldownQuery
         self._index.search(luceneQuery, filter_, collector)
 
         total, hits = self._topDocsResponse(topCollector, start=start, dedupCollector=dedupCollector if dedupField else None)

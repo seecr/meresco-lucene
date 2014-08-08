@@ -33,7 +33,6 @@ from cqlparser import parseString as parseCql
 from weightless.core import consume, retval
 
 from meresco.lucene import Lucene, VM, DrilldownField
-from meresco.lucene.hit import Hit
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.utils import createField
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
@@ -63,6 +62,7 @@ class LuceneTest(SeecrTestCase):
                     DrilldownField(name='field2'),
                     DrilldownField('field3'),
                     DrilldownField('fieldHier', hierarchical=True),
+                    DrilldownField('cat'),
                 ]
             )
     def tearDown(self):
@@ -455,6 +455,19 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), drilldownQueries=[("cat", ["cat-A"])]))
         self.assertEquals(1, result.total)
 
+    def testMultipleDrilldownQueryOnSameField(self):
+        doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-A"), ("cat", "cat-B")])
+        consume(self.lucene.addDocument("urn:1", doc))
+        doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-B",)])
+        consume(self.lucene.addDocument("urn:2", doc))
+        doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-C",)])
+        consume(self.lucene.addDocument("urn:3", doc))
+
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(3, result.total)
+
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), drilldownQueries=[("cat", ["cat-A"]), ("cat", ["cat-B"])]))
+        self.assertEquals(1, result.total)
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

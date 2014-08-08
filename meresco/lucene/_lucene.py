@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery, CachingWrapperFilter
+from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
 from org.apache.lucene.queries import ChainedFilter
@@ -122,9 +122,16 @@ class Lucene(object):
         filter_ = self._filterFor(filterQueries, filter)
 
         if drilldownQueries:
-            drilldownQuery = DrillDownQuery(self._facetsConfig, luceneQuery)
+            dimQueries = {}
             for field, path in drilldownQueries:
-                drilldownQuery.add(field, path)
+                indexedField = self._facetsConfig.getDimConfig(field).indexFieldName;
+                if not field in dimQueries:
+                    dimQueries[field] = BooleanQuery(True)
+                dimQueries[field].add(TermQuery(DrillDownQuery.term(indexedField, field, path)), BooleanClause.Occur.MUST);
+
+            drilldownQuery = DrillDownQuery(self._facetsConfig, luceneQuery)
+            for dim, query in dimQueries.items():
+                drilldownQuery.add(dim, query)
             luceneQuery = drilldownQuery
         self._index.search(luceneQuery, filter_, collector)
 

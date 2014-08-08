@@ -142,7 +142,7 @@ class ComposedQuery(object):
         self._unites = [dict(d, query=convertQuery(d['core'], d['query'])) for d in self._unites]
 
     def otherKwargs(self):
-        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField)
+        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, drilldownQueries=self.drilldownQueries)
 
     def _prop(name, defaultValue=None):
         def fget(self):
@@ -156,6 +156,7 @@ class ComposedQuery(object):
     suggestionRequest = property(**_prop('suggestionRequest'))
     dedupField = property(**_prop('dedupField'))
     dedupSortField = property(**_prop('dedupSortField'))
+    drilldownQueries = property(**_prop('drilldownQueries'))
 
     def asDict(self):
         result = dict(vars(self))

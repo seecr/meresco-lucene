@@ -36,6 +36,10 @@ import org.apache.lucene.facet.taxonomy.TaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.facet.LabelAndValue;
+import org.apache.lucene.facet.taxonomy.OrdinalsReader;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
+import org.apache.lucene.facet.TopOrdAndIntQueue;
+import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -45,17 +49,11 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
 	final TaxonomyReader taxoReader;
 	final FacetsConfig facetConfig;
-	final String dim;
-	final int topN;
-	final String[] path;
 
-	public FacetSuperCollector(TaxonomyReader taxoReader, FacetsConfig facetConfig, String dim, int topN, String... path) {
+	public FacetSuperCollector(TaxonomyReader taxoReader, FacetsConfig facetConfig) {
 		super();
 		this.taxoReader = taxoReader;
 		this.facetConfig = facetConfig;
-		this.dim = dim;
-		this.topN = topN;
-		this.path = path;
 	}
 
 	@Override
@@ -63,37 +61,89 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 		return new FacetSubCollector(context, new FacetsCollector(), this);
 	}
 
-	public FacetResult getTopChildren() throws IOException {
-		Map<String, Integer> labelValues = new HashMap<String, Integer>();
-		for(FacetSubCollector sub : super.subs) {
-			FacetResult subResults = sub.results;
-			for (LabelAndValue label : subResults.labelValues) {
-				Integer currentValue = labelValues.get(label.label);
-				if (currentValue == null) {
-					labelValues.put(label.label, label.value.intValue());
-				} else {
-					labelValues.put(label.label, label.value.intValue() + currentValue);
-				}
+ 	public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+	    if (topN <= 0) {
+	      throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
+	    }
+	    FacetsConfig.DimConfig dimConfig = this.facetConfig.getDimConfig(dim);
+    	// if (!dimConfig.indexFieldName.equals(indexFieldName)) {
+     //  		throw new IllegalArgumentException("dimension \"" + dim + "\" was not indexed into field \"" + indexFieldName);
+    	// }
+
+	    FacetLabel cp = new FacetLabel(dim, path);
+	    int dimOrd = this.taxoReader.getOrdinal(cp);
+	    if (dimOrd == -1) {
+	      	return null;
+	    }
+
+	    TopOrdAndIntQueue q = new TopOrdAndIntQueue(Math.min(taxoReader.getSize(), topN));
+
+	    int totValue = 0;
+	    int childCount = 0;
+
+	    ParallelTaxonomyArrays pta = this.taxoReader.getParallelTaxonomyArrays();
+	    int[] children = pta.children();
+	    int[] siblings = pta.siblings();
+
+		int ord = children[dimOrd];
+	    TopOrdAndIntQueue.OrdAndValue reuse = null;
+	    int bottomValue = 0;
+
+	    while(ord != TaxonomyReader.INVALID_ORDINAL) {
+	    	int val = 0;
+			for(FacetSubCollector sub : super.subs) {
+				val += sub.values[ord];
 			}
-		}
-		TopStringAndIntQueue lv = new TopStringAndIntQueue(this.topN);
-		for (Map.Entry<String, Integer> entry : labelValues.entrySet()) {
-			TopStringAndIntQueue.StringAndValue sv = new TopStringAndIntQueue.StringAndValue(entry.getKey(), entry.getValue());
-			lv.insertWithOverflow(sv);
+		    if (val > 0) {
+		        totValue += val;
+		        childCount++;
+		        if (val > bottomValue) {
+		          	if (reuse == null) {
+		            	reuse = new TopOrdAndIntQueue.OrdAndValue();
+			        }
+			        reuse.ord = ord;
+			        reuse.value = val;
+			        reuse = q.insertWithOverflow(reuse);
+		          	if (q.size() == topN) {
+		            	bottomValue = q.top().value;
+		          	}
+		        }
+		    }
+	      	ord = siblings[ord];
 		}
 
-		LabelAndValue[] labelAndValues = new LabelAndValue[this.topN];
-		while (lv.size() > 0) {
-			TopStringAndIntQueue.StringAndValue sv = lv.pop();
-			labelAndValues[lv.size()] = new LabelAndValue(sv.ord, sv.value);
-		}
-		return new FacetResult(null, null, null, labelAndValues, 0);
-	}
+	    if (totValue == 0) {
+	      	return null;
+	    }
+
+	    if (dimConfig.multiValued) {
+			if (dimConfig.requireDimCount) {
+				totValue = 0;
+				for(FacetSubCollector sub : super.subs) {
+					totValue += sub.values[dimOrd];
+				}
+			} else {
+				// Our sum'd value is not correct, in general:
+				totValue = -1;
+			}
+	    } else {
+	      	// Our sum'd dim value is accurate, so we keep it
+	    }
+
+	    LabelAndValue[] labelValues = new LabelAndValue[q.size()];
+	    for(int i=labelValues.length-1;i>=0;i--) {
+	      	TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
+	      	FacetLabel child = this.taxoReader.getPath(ordAndValue.ord);
+	      	labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
+	    }
+
+	    return new FacetResult(dim, path, totValue, labelValues, childCount);
+	  }
 }
 
 class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSuperCollector> {
 
-	FacetResult results;
+    int[] values;
 
 	public FacetSubCollector(AtomicReaderContext context, FacetsCollector delegate, FacetSuperCollector parent)
 			throws IOException {
@@ -102,9 +152,19 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
 
 	@Override
 	public void complete() throws IOException {
-		TaxonomyFacetCounts counts = new TaxonomyFacetCounts(new CachedOrdinalsReader(
+		SubTaxonomyFacetCounts counts = new SubTaxonomyFacetCounts(new CachedOrdinalsReader(
 				new DocValuesOrdinalsReader()), this.parent.taxoReader, this.parent.facetConfig,
 				(FacetsCollector) this.delegate);
-		this.results = counts.getTopChildren(Integer.MAX_VALUE, this.parent.dim, this.parent.path);
+		this.values = counts.getValues();
 	}
+}
+
+class SubTaxonomyFacetCounts extends TaxonomyFacetCounts {
+  	public SubTaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
+  		super(ordinalsReader, taxoReader, config, fc);
+  	}
+
+  	public int[] getValues() {
+  		return this.values;
+  	}
 }

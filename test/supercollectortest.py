@@ -29,9 +29,8 @@ from java.util.concurrent import Executors
 from lucenetest import document, createDocument
 from meresco.lucene.index import Index
 from org.apache.lucene.search import MatchAllDocsQuery
-from org.apache.lucene.facet import FacetsConfig
 from org.meresco.lucene.search import SuperCollector, SubCollector, \
-    CountingSuperCollector, TopDocsSuperCollector, FacetSuperCollector
+    CountingSuperCollector, TopDocsSuperCollector, FacetSuperCollector, MultiSuperCollector
 
 
 class SuperCollectorTest(SeecrTestCase):
@@ -79,12 +78,12 @@ class SuperCollectorTest(SeecrTestCase):
         I._indexWriter.addDocument(document(name="three", price="noot boom mies"))
         I.close()
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
-        C = TopDocsSuperCollector(1, True)
+        C = TopDocsSuperCollector(2, True)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
         td = C.topDocs()
         self.assertEquals(3, td.totalHits)
-        self.assertEquals(1, len(td.scoreDocs))
+        self.assertEquals(2, len(td.scoreDocs))
 
     def testFacetSuperCollector(self):
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
@@ -98,7 +97,7 @@ class SuperCollectorTest(SeecrTestCase):
         C = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
-        td = C.getTopChildren(10, "facet1", [])
+        tc = C.getTopChildren(10, "facet1", [])
         self.assertEquals([
                 ('value90', 100),
                 ('value91', 100),
@@ -110,6 +109,38 @@ class SuperCollectorTest(SeecrTestCase):
                 ('value97', 100),
                 ('value98', 100),
                 ('value99', 100)
-            ], [(l.label, l.value.intValue()) for l in td.labelValues])
+            ], [(l.label, l.value.intValue()) for l in tc.labelValues])
 
+    def testFacetAndTopsMultiCollector(self):
+        I = Index(path=self.tempdir, reactor=None, executor=self.E)
+        for i in xrange(100):
+            document1 = createDocument(fields=[("field1", str(i)), ("field2", str(i)*1000)], facets=[("facet1", "value%s" % (i % 10))])
+            document1 = I._facetsConfig.build(I._taxoWriter, document1)
+            I._indexWriter.addDocument(document1)
+        I.close()
+        I = Index(path=self.tempdir, reactor=None, executor=self.E)
 
+        f = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig)
+        t = TopDocsSuperCollector(10, True)
+        C = MultiSuperCollector()
+        C.add(t)
+        C.add(f)
+        Q = MatchAllDocsQuery()
+        I.search(Q, None, C)
+
+        self.assertEquals(100, t.topDocs().totalHits)
+        self.assertEquals(10, len(t.topDocs().scoreDocs))
+        tc = f.getTopChildren(10, "facet1", [])
+
+        self.assertEquals([
+                ('value0', 10),
+                ('value1', 10),
+                ('value2', 10),
+                ('value3', 10),
+                ('value4', 10),
+                ('value5', 10),
+                ('value6', 10),
+                ('value7', 10),
+                ('value8', 10),
+                ('value9', 10)
+            ], [(l.label, l.value.intValue()) for l in tc.labelValues])

@@ -129,31 +129,30 @@ class TopFieldSuperScorer extends Scorer {
 
     public float score() {
         return this.score;
-
     }
 
     @Override
     public int freq() throws IOException {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int docID() {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int nextDoc() throws IOException {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int advance(int target) throws IOException {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public long cost() {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 }

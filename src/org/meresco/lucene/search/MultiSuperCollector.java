@@ -47,23 +47,25 @@ public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
 
     @Override
     protected MultiSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        return new MultiSubCollector(context, this);
+        ArrayList<SubCollector> subCollectors = new ArrayList<SubCollector>();
+        for (SuperCollector sc : collectors) {
+            subCollectors.add(sc.subCollector(context));
+        }
+        return new MultiSubCollector(context, subCollectors);
     }
 }
 
 class MultiSubCollector extends SubCollector {
-    private ArrayList<SubCollector> collectors = new ArrayList<SubCollector>();
+    private ArrayList<SubCollector> subCollectors = new ArrayList<SubCollector>();
 
-    public MultiSubCollector(AtomicReaderContext context, MultiSuperCollector parent) throws IOException {
+    public MultiSubCollector(AtomicReaderContext context, ArrayList<SubCollector> subCollectors) throws IOException {
         super(context);
-        for (SuperCollector c : parent.collectors) {
-            this.collectors.add(c.subCollector(context));
-        }
+        this.subCollectors = subCollectors;
     }
 
     @Override
     public boolean acceptsDocsOutOfOrder() {
-        for (SubCollector c : this.collectors) {
+        for (SubCollector c : this.subCollectors) {
             if (!c.acceptsDocsOutOfOrder()) {
                 return false;
             }
@@ -73,14 +75,14 @@ class MultiSubCollector extends SubCollector {
 
     @Override
     public void collect(int doc) throws IOException {
-        for (SubCollector c : this.collectors) {
+        for (SubCollector c : this.subCollectors) {
             c.collect(doc);
         }
     }
 
     @Override
     public void setScorer(Scorer s) throws IOException {
-        for (SubCollector c : this.collectors) {
+        for (SubCollector c : this.subCollectors) {
             c.setScorer(s);
         }
     }
@@ -88,7 +90,7 @@ class MultiSubCollector extends SubCollector {
 
     @Override
     public void complete() throws IOException {
-        for (SubCollector c : this.collectors) {
+        for (SubCollector c : this.subCollectors) {
             c.complete();
         }
     }

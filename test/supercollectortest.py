@@ -28,9 +28,10 @@ from seecr.test import SeecrTestCase
 from java.util.concurrent import Executors
 from lucenetest import document, createDocument
 from meresco.lucene.index import Index
-from org.apache.lucene.search import MatchAllDocsQuery
+from org.apache.lucene.search import MatchAllDocsQuery, Sort
 from org.meresco.lucene.search import SuperCollector, SubCollector, \
-    CountingSuperCollector, TopDocsSuperCollector, FacetSuperCollector, MultiSuperCollector
+    TotalHitCountSuperCollector, TopScoreDocSuperCollector, FacetSuperCollector, MultiSuperCollector, TopFieldSuperCollector
+from meresco.lucene.utils import sortField
 
 
 class SuperCollectorTest(SeecrTestCase):
@@ -44,30 +45,30 @@ class SuperCollectorTest(SeecrTestCase):
         super(SuperCollectorTest, self).tearDown()
 
     def testCreate(self):
-        C = CountingSuperCollector()
+        C = TotalHitCountSuperCollector()
         self.assertTrue(isinstance(C, SuperCollector))
         S = C.subCollector(None)
         self.assertTrue(isinstance(S, SubCollector))
 
     def testSearch(self):
-        C = CountingSuperCollector()
+        C = TotalHitCountSuperCollector()
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
-        self.assertEquals(0, C.count())
+        self.assertEquals(0, C.getTotalHits())
         I._indexWriter.addDocument(document(name="one", price="2"))
         I.close()
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
         I.search(Q, None, C)
-        self.assertEquals(1, C.count())
+        self.assertEquals(1, C.getTotalHits())
 
-    def testTopDocsSuperCollector(self):
-        C = TopDocsSuperCollector(10, True)
+    def testTopScoreDocSuperCollector(self):
+        C = TopScoreDocSuperCollector(10, True)
         self.assertTrue(isinstance(C, SuperCollector))
         S = C.subCollector(None)
         self.assertTrue(isinstance(S, SubCollector))
         self.assertFalse(S.acceptsDocsOutOfOrder())
-        C = TopDocsSuperCollector(10, False)
+        C = TopScoreDocSuperCollector(10, False)
         S = C.subCollector(None)
         self.assertTrue(S.acceptsDocsOutOfOrder())
 
@@ -78,7 +79,7 @@ class SuperCollectorTest(SeecrTestCase):
         I._indexWriter.addDocument(document(name="three", price="noot boom mies"))
         I.close()
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
-        C = TopDocsSuperCollector(2, True)
+        C = TopScoreDocSuperCollector(2, True)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
         td = C.topDocs()
@@ -121,7 +122,7 @@ class SuperCollectorTest(SeecrTestCase):
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
 
         f = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig)
-        t = TopDocsSuperCollector(10, True)
+        t = TopScoreDocSuperCollector(10, True)
         C = MultiSuperCollector()
         C.add(t)
         C.add(f)
@@ -144,3 +145,19 @@ class SuperCollectorTest(SeecrTestCase):
                 ('value8', 10),
                 ('value9', 10)
             ], [(l.label, l.value.intValue()) for l in tc.labelValues])
+
+    def testSearchTopField(self):
+        I = Index(path=self.tempdir, reactor=None, executor=self.E)
+        I._indexWriter.addDocument(document(__id__='1', name="one", price="aap noot mies"))
+        I._indexWriter.addDocument(document(__id__='2', name="two", price="aap vuur boom"))
+        I._indexWriter.addDocument(document(__id__='3', name="three", price="noot boom mies"))
+        I.close()
+        I = Index(path=self.tempdir, reactor=None, executor=self.E)
+        sort = Sort(sortField(fieldname="name", sortDescending=True))
+        C = TopFieldSuperCollector(sort, 2, False, True, False, True)
+        Q = MatchAllDocsQuery()
+        I.search(Q, None, C)
+        td = C.topDocs()
+        self.assertEquals(3, td.totalHits)
+        self.assertEquals(2, len(td.scoreDocs))
+        self.assertEquals(['2', '3'], [I.getDocument(s.doc).get("__id__") for s in td.scoreDocs])

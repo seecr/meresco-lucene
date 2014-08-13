@@ -25,41 +25,51 @@
 
 package org.meresco.lucene.search;
 
-import org.apache.lucene.util.PriorityQueue;
+import java.io.IOException;
 
-/** Keeps highest results, first by largest int value,
- *  then tie break by smallest ord. */
-public class TopStringAndIntQueue extends PriorityQueue<TopStringAndIntQueue.StringAndValue> {
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.search.Scorer;
 
-  /** Holds a single entry. */
-  public static final class StringAndValue {
+public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSubCollector> {
 
-    /** Ordinal of the entry. */
-    public String ord;
+	@Override
+	public TotalHitCountSubCollector createSubCollector(AtomicReaderContext context) {
+		return new TotalHitCountSubCollector(context);
+	}
 
-    /** Value associated with the ordinal. */
-    public int value;
+	public int getTotalHits() {
+		int n = 0;
+		for (TotalHitCountSubCollector sub : super.subs) {
+			n += sub.count;
+		}
+		return n;
+	}
 
-    /** Default constructor. */
-    public StringAndValue(String ord, int value) {
-      this.ord = ord;
-      this.value = value;
-    }
-  }
+}
 
-  /** Sole constructor. */
-  public TopStringAndIntQueue(int topN) {
-    super(topN, false);
-  }
+class TotalHitCountSubCollector extends SubCollector {
 
-  @Override
-  protected boolean lessThan(StringAndValue a, StringAndValue b) {
-    if (a.value < b.value) {
-      return true;
-    } else if (a.value > b.value) {
-      return false;
-    } else {
-      return true;//a.ord > b.ord;
-    }
-  }
+	int count = 0;
+
+	public TotalHitCountSubCollector(AtomicReaderContext context) {
+		super(context);
+	}
+
+	@Override
+	public void setScorer(Scorer scorer) throws IOException {
+	}
+
+	@Override
+	public void collect(int doc) throws IOException {
+		this.count++;
+	}
+
+	@Override
+	public boolean acceptsDocsOutOfOrder() {
+		return true;
+	}
+
+	@Override
+	public void complete() {
+	}
 }

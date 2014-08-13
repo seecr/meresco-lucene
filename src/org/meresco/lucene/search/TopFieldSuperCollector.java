@@ -27,10 +27,18 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopFieldCollector;
+import org.apache.lucene.search.FieldValueHitQueue;
+import org.apache.lucene.search.FieldValueHitQueue.Entry;
+import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.BytesRef;
 
 public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector> {
 
@@ -40,6 +48,7 @@ public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector>
     protected boolean trackDocScores;
     protected boolean trackMaxScore;
     protected boolean docsScoredInOrder;
+    private TopDocs topDocs;
 
     public TopFieldSuperCollector(Sort sort, int numHits, boolean fillFields, boolean trackDocScores, boolean trackMaxScore, boolean docsScoredInOrder) {
         super();
@@ -57,23 +66,94 @@ public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector>
     }
 
     public TopDocs topDocs() throws IOException {
-        TopDocs[] topdocs = new TopDocs[super.subs.size()];
-        for (int i = 0; i < topdocs.length; i++)
-            topdocs[i] = super.subs.get(i).topdocs;
-        return TopDocs.merge(null, this.numHits, topdocs);
+        if (this.topDocs == null) {
+            createTopDocs();
+        }
+        return this.topDocs;
+    }
+
+    private void createTopDocs() throws IOException {
+        int totalHits = 0;
+        TopFieldCollector tfc = TopFieldCollector.create(this.sort, this.numHits, this.fillFields, this.trackDocScores, this.trackMaxScore, this.docsScoredInOrder);
+        TopFieldSuperScorer scorer = new TopFieldSuperScorer();
+        tfc.setScorer(scorer);
+        for (TopFieldSubCollector sub : super.subs) {
+            totalHits += sub.topdocs.totalHits;
+            tfc.setNextReader(sub.context);
+            int docBase = sub.context.docBase;
+            for (ScoreDoc scoreDoc : sub.topdocs.scoreDocs) {
+                scorer.set(scoreDoc.score);
+                tfc.collect(scoreDoc.doc - docBase);
+            }
+        }
+        this.topDocs = tfc.topDocs();
+        this.topDocs.totalHits = totalHits;
+    }
+
+    public int getTotalHits() throws IOException {
+        if (this.topDocs == null) {
+            createTopDocs();
+        }
+        return this.topDocs.totalHits;
     }
 }
+
 
 class TopFieldSubCollector extends DelegatingSubCollector<TopFieldCollector, TopFieldSuperCollector> {
 
     TopDocs topdocs;
+    AtomicReaderContext context;
 
     public TopFieldSubCollector(AtomicReaderContext context, TopFieldSuperCollector parent) throws IOException {
         super(context, TopFieldCollector.create(parent.sort, parent.numHits, parent.fillFields, parent.trackDocScores, parent.trackMaxScore, parent.docsScoredInOrder), parent);
+        this.context = context;
     }
 
     @Override
     public void complete() {
         this.topdocs = this.delegate.topDocs();
+    }
+}
+
+class TopFieldSuperScorer extends Scorer {
+
+    private float score;
+
+    protected TopFieldSuperScorer() {
+        super(null);
+    }
+
+    public void set(float score) {
+        this.score = score;
+    }
+
+    public float score() {
+        return this.score;
+
+    }
+
+    @Override
+    public int freq() throws IOException {
+        return 0;
+    }
+
+    @Override
+    public int docID() {
+        return 0;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+        return 0;
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+        return 0;
+    }
+
+    @Override
+    public long cost() {
+        return 0;
     }
 }

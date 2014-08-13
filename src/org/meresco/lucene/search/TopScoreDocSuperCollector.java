@@ -35,6 +35,7 @@ public class TopScoreDocSuperCollector extends SuperCollector<TopScoreDocSubColl
 
 	private int numHits;
 	private boolean docsScoredInOrder;
+	private TopDocs topDocs;
 
 	public TopScoreDocSuperCollector(int numHits, boolean docsScoredInOrder) {
 		super();
@@ -48,10 +49,24 @@ public class TopScoreDocSuperCollector extends SuperCollector<TopScoreDocSubColl
 	}
 
 	public TopDocs topDocs() throws IOException {
+		if (this.topDocs == null) {
+			createTopDocs();
+		}
+		return this.topDocs;
+	}
+
+	private void createTopDocs() throws IOException {
 		TopDocs[] topdocs = new TopDocs[super.subs.size()];
 		for (int i = 0; i < topdocs.length; i++)
 			topdocs[i] = super.subs.get(i).topdocs;
-		return TopDocs.merge(null, this.numHits, topdocs);
+		this.topDocs = TopDocs.merge(null, this.numHits, topdocs);
+	}
+
+	public int getTotalHits() throws IOException {
+		if (this.topDocs == null) {
+			createTopDocs();
+		}
+		return this.topDocs.totalHits;
 	}
 }
 

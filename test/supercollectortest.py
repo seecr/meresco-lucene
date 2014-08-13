@@ -83,6 +83,7 @@ class SuperCollectorTest(SeecrTestCase):
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
         td = C.topDocs()
+        self.assertEquals(3, C.getTotalHits())
         self.assertEquals(3, td.totalHits)
         self.assertEquals(2, len(td.scoreDocs))
 

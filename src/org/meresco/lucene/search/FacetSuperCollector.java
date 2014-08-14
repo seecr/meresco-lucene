@@ -138,7 +138,7 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 	    }
 
 	    return new FacetResult(dim, path, totValue, labelValues, childCount);
-	  }
+	}
 }
 
 class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSuperCollector> {

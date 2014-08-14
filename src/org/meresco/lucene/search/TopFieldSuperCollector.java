@@ -48,7 +48,9 @@ public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector>
     protected boolean trackDocScores;
     protected boolean trackMaxScore;
     protected boolean docsScoredInOrder;
-    private TopDocs topDocs;
+
+    private TopFieldCollector tfc;
+    private int totalHits;
 
     public TopFieldSuperCollector(Sort sort, int numHits, boolean fillFields, boolean trackDocScores, boolean trackMaxScore, boolean docsScoredInOrder) {
         super();
@@ -65,36 +67,36 @@ public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector>
         return new TopFieldSubCollector(context, this);
     }
 
-    public TopDocs topDocs() throws IOException {
-        if (this.topDocs == null) {
-            createTopDocs();
-        }
-        return this.topDocs;
+    public TopDocs topDocs(int start) throws IOException {
+        return createTopDocs(start);
     }
 
-    private void createTopDocs() throws IOException {
-        int totalHits = 0;
-        TopFieldCollector tfc = TopFieldCollector.create(this.sort, this.numHits, this.fillFields, this.trackDocScores, this.trackMaxScore, this.docsScoredInOrder);
-        TopFieldSuperScorer scorer = new TopFieldSuperScorer();
-        tfc.setScorer(scorer);
-        for (TopFieldSubCollector sub : super.subs) {
-            totalHits += sub.topdocs.totalHits;
-            tfc.setNextReader(sub.context);
-            int docBase = sub.context.docBase;
-            for (ScoreDoc scoreDoc : sub.topdocs.scoreDocs) {
-                scorer.set(scoreDoc.score);
-                tfc.collect(scoreDoc.doc - docBase);
+    private TopDocs createTopDocs(int start) throws IOException {
+        if (this.tfc == null) {
+            this.totalHits = 0;
+            this.tfc = TopFieldCollector.create(this.sort, this.numHits, this.fillFields, this.trackDocScores, this.trackMaxScore, this.docsScoredInOrder);
+            TopFieldSuperScorer scorer = new TopFieldSuperScorer();
+            this.tfc.setScorer(scorer);
+            for (TopFieldSubCollector sub : super.subs) {
+                this.totalHits += sub.topdocs.totalHits;
+                this.tfc.setNextReader(sub.context);
+                int docBase = sub.context.docBase;
+                for (ScoreDoc scoreDoc : sub.topdocs.scoreDocs) {
+                    scorer.set(scoreDoc.score);
+                    this.tfc.collect(scoreDoc.doc - docBase);
+                }
             }
         }
-        this.topDocs = tfc.topDocs();
-        this.topDocs.totalHits = totalHits;
+        TopDocs topDocs = this.tfc.topDocs(start);
+        topDocs.totalHits = this.totalHits;
+        return topDocs;
     }
 
     public int getTotalHits() throws IOException {
-        if (this.topDocs == null) {
-            createTopDocs();
+        if (this.tfc != null) {
+            return this.totalHits;
         }
-        return this.topDocs.totalHits;
+        return createTopDocs(0).totalHits;
     }
 }
 

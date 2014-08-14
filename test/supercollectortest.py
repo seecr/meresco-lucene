@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from seecr.test import SeecrTestCase
+from seecr.test import SeecrTestCase, CallTrace
 
 from java.util.concurrent import Executors
 from lucenetest import document, createDocument
@@ -82,10 +82,26 @@ class SuperCollectorTest(SeecrTestCase):
         C = TopScoreDocSuperCollector(2, True)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
-        td = C.topDocs()
+        td = C.topDocs(0)
         self.assertEquals(3, C.getTotalHits())
         self.assertEquals(3, td.totalHits)
         self.assertEquals(2, len(td.scoreDocs))
+
+    def testSearchTopDocsWithStart(self):
+        I = Index(path=self.tempdir, reactor=None, executor=self.E)
+        I._indexWriter.addDocument(document(name="one", price="aap noot mies"))
+        I._indexWriter.addDocument(document(name="two", price="aap vuur boom"))
+        I._indexWriter.addDocument(document(name="three", price="noot boom mies"))
+        I.close()
+        I = Index(path=self.tempdir, reactor=None, executor=self.E)
+        C = TopScoreDocSuperCollector(2, True)
+        Q = MatchAllDocsQuery()
+        I.search(Q, None, C)
+        td = C.topDocs(1)
+        self.assertEquals(3, C.getTotalHits())
+        self.assertEquals(3, td.totalHits)
+        self.assertEquals(1, len(td.scoreDocs))
+        self.assertEquals([1], [sd.score for sd in td.scoreDocs])
 
     def testFacetSuperCollector(self):
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
@@ -114,11 +130,12 @@ class SuperCollectorTest(SeecrTestCase):
             ], [(l.label, l.value.intValue()) for l in tc.labelValues])
 
     def testFacetAndTopsMultiCollector(self):
-        I = Index(path=self.tempdir, reactor=None, executor=self.E)
-        for i in xrange(100):
+        I = Index(path=self.tempdir, commitCount=1, reactor=CallTrace(), executor=self.E)
+        for i in xrange(99):
             document1 = createDocument(fields=[("field1", str(i)), ("field2", str(i)*1000)], facets=[("facet1", "value%s" % (i % 10))])
             document1 = I._facetsConfig.build(I._taxoWriter, document1)
             I._indexWriter.addDocument(document1)
+            I.commit()
         I.close()
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
 
@@ -130,8 +147,8 @@ class SuperCollectorTest(SeecrTestCase):
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
 
-        self.assertEquals(100, t.topDocs().totalHits)
-        self.assertEquals(10, len(t.topDocs().scoreDocs))
+        self.assertEquals(99, t.topDocs(0).totalHits)
+        self.assertEquals(10, len(t.topDocs(0).scoreDocs))
         tc = f.getTopChildren(10, "facet1", [])
 
         self.assertEquals([
@@ -144,21 +161,24 @@ class SuperCollectorTest(SeecrTestCase):
                 ('value6', 10),
                 ('value7', 10),
                 ('value8', 10),
-                ('value9', 10)
+                ('value9', 9)
             ], [(l.label, l.value.intValue()) for l in tc.labelValues])
 
     def testSearchTopField(self):
-        I = Index(path=self.tempdir, reactor=None, executor=self.E)
+        I = Index(path=self.tempdir, executor=self.E, commitCount=1, reactor=CallTrace())
         I._indexWriter.addDocument(document(__id__='1', name="one", price="aap noot mies"))
+        I.commit()
         I._indexWriter.addDocument(document(__id__='2', name="two", price="aap vuur boom"))
+        I.commit()
         I._indexWriter.addDocument(document(__id__='3', name="three", price="noot boom mies"))
+        I.commit()
         I.close()
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
         sort = Sort(sortField(fieldname="name", sortDescending=True))
         C = TopFieldSuperCollector(sort, 2, False, True, False, True)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
-        td = C.topDocs()
+        td = C.topDocs(0)
         self.assertEquals(3, C.getTotalHits())
         self.assertEquals(3, td.totalHits)
         self.assertEquals(2, len(td.scoreDocs))

@@ -55,14 +55,18 @@ public class DeDupFilterCollector extends Collector {
     private NumericDocValues sortByValues;
 
     public DeDupFilterCollector(String keyName, Collector delegate) {
-        this.delegate = delegate;
-        this.keyName = keyName;
+        this(keyName, null, delegate);
     }
 
     public DeDupFilterCollector(String keyName, String sortByFieldName, Collector delegate) {
         this.delegate = delegate;
         this.keyName = keyName;
         this.sortByFieldName = sortByFieldName;
+    }
+
+    protected DeDupFilterCollector(String keyName, String sortByFieldName, Collector delegate, Map<Long, Key> keys) {
+        this(keyName, sortByFieldName, delegate);
+        this.keys = keys;
     }
 
     @Override

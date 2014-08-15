@@ -40,7 +40,7 @@ from meresco.core.processtools import setSignalHandlers
 from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator, DrilldownField
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 
-from org.meresco.lucene import MerescoDutchStemmingAnalyzer
+from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 
 from weightless.io import Reactor
 from weightless.core import compose, be

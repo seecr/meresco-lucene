@@ -32,10 +32,6 @@ from meresco.lucene.utils import KEY_PREFIX
 from meresco.lucene import ComposedQuery
 from meresco.lucene.synchronousremote import SynchronousRemote
 from cqlparser import parseString
-from meresco.lucene.hit import Hit
-from meresco.components import lxmltostring
-from org.apache.lucene.search import MatchAllDocsQuery
-from meresco.lucene.remote._conversion import jsonDumpMessage
 
 
 class LuceneTest(IntegrationTestCase):

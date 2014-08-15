@@ -133,22 +133,26 @@ class DeDupFilterSubCollector extends SubCollector {
             int absDoc = this.currentDocBase + doc;
             long sortByValue = this.sortByValues.get(doc);
             DeDupFilterSubCollector.Key key = this.keys.get(keyValue);
-            DeDupFilterSubCollector.Key value = null;
             if (key == null) {
                 key = new DeDupFilterSubCollector.Key(absDoc, sortByValue, 0);
-                value = this.keys.putIfAbsent(keyValue, key);
+                DeDupFilterSubCollector.Key value = this.keys.putIfAbsent(keyValue, key);
                 if (value != null) {
                     key = value;
                 }
             }
-            key.count.incrementAndGet();
-            long oldSortByValue = key.sortByValue.get();
-            int oldDocId = key.docId.get();
-            if (oldSortByValue < sortByValue) {
-                key.sortByValue.compareAndSet(oldSortByValue, sortByValue);
-                key.docId.compareAndSet(oldDocId, absDoc);
+            int result = key.count.incrementAndGet();
+            while (true) {
+                long oldSortByValue = key.getSortByValue();
+                int oldDocId = key.getDocId();
+                if (oldSortByValue < sortByValue) {
+                    if (key.sortByValue.compareAndSet(oldSortByValue, sortByValue) && key.docId.compareAndSet(oldDocId, absDoc)) {
+                        break;
+                    }
+                } else {
+                    break;
+                }
             }
-            if (value != null) {
+            if (result != 1) {
                 return;
             }
         }
@@ -188,5 +192,9 @@ class DeDupFilterSubCollector extends SubCollector {
 	    public int getCount() {
 	        return this.count.get();
 	    }
+
+        public long getSortByValue() {
+            return this.sortByValue.get();
+        }
 	}
 }

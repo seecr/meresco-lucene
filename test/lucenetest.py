@@ -50,7 +50,7 @@ from seecr.utils.generatorutils import returnValueFromGenerator
 
 class LuceneTest(SeecrTestCase):
     def setUp(self):
-        super(LuceneMultiThreadedTest, self).setUp()
+        super(LuceneTest, self).setUp()
         self._javaObjects = self._getJavaObjects()
         self._reactor = CallTrace('reactor')
         self.lucene = Lucene(

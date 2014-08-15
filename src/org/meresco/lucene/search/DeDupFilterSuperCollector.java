@@ -39,7 +39,7 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
 	public String keyName;
 	String sortByFieldName;
 	SuperCollector delegate;
-	Map<Long, DeDupFilterCollector.Key> keys = new ConcurrentHashMap<Long, DeDupFilterCollector.Key>();
+	ConcurrentHashMap<Long, DeDupFilterCollector.Key> keys = new ConcurrentHashMap<Long, DeDupFilterCollector.Key>();
 
 	public DeDupFilterSuperCollector(String keyName, SuperCollector delegate) {
 		super();
@@ -65,7 +65,7 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
 	@Override
 	protected DeDupFilterSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
 		SubCollector delegateSubCollector = this.delegate.subCollector(context);
-		return new DeDupFilterSubCollector(context, this, delegateSubCollector, keys);
+		return new DeDupFilterSubCollector(context, this, delegateSubCollector, this.keys);
 	}
 
 	public DeDupFilterCollector.Key keyForDocId(int docId) throws IOException {
@@ -77,7 +77,7 @@ class DeDupFilterSubCollector extends DelegatingSubCollector<DeDupFilterCollecto
 	SubCollector subCollector;
 	int totalHits;
 
-	public DeDupFilterSubCollector(AtomicReaderContext context, DeDupFilterSuperCollector parent, SubCollector subCollector, Map<Long, DeDupFilterCollector.Key> keys) throws IOException {
+	public DeDupFilterSubCollector(AtomicReaderContext context, DeDupFilterSuperCollector parent, SubCollector subCollector, ConcurrentHashMap<Long, DeDupFilterCollector.Key> keys) throws IOException {
 		super(context, new DeDupFilterCollector(parent.keyName, parent.sortByFieldName, subCollector, keys), parent);
 		this.subCollector = subCollector;
 	}

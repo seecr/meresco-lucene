@@ -39,14 +39,17 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.search.Scorer;
-
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class DeDupFilterCollector extends Collector {
     private int currentDocBase;
     private Collector delegate;
     public String keyName;
     private NumericDocValues keyValues;
-    private Map<Long, Key> keys = new HashMap<Long, Key>();
+    private ConcurrentHashMap<Long, Key> keys = new ConcurrentHashMap<Long, Key>();
     private IndexReaderContext topLevelReaderContext = null;
 
     public int totalHits = 0;
@@ -64,7 +67,7 @@ public class DeDupFilterCollector extends Collector {
         this.sortByFieldName = sortByFieldName;
     }
 
-    protected DeDupFilterCollector(String keyName, String sortByFieldName, Collector delegate, Map<Long, Key> keys) {
+    protected DeDupFilterCollector(String keyName, String sortByFieldName, Collector delegate, ConcurrentHashMap<Long, Key> keys) {
         this(keyName, sortByFieldName, delegate);
         this.keys = keys;
     }
@@ -81,16 +84,21 @@ public class DeDupFilterCollector extends Collector {
         if (keyValue > 0) {
             int absDoc = this.currentDocBase + doc;
             long sortByValue = this.sortByValues.get(doc);
-            Key key = this.keys.get(keyValue);
-            if (key != null) {
-                key.count++;
-                if (key.sortByValue < sortByValue) {
-                    key.sortByValue = sortByValue;
-                    key.docId = absDoc;
-                }
+            Key key = new Key(absDoc, sortByValue, 0);
+            Key value = this.keys.putIfAbsent(keyValue, key);
+            if (value != null) {
+                key = value;
+            }
+            key.count.incrementAndGet();
+            long oldSortByValue = key.sortByValue.get();
+            int oldDocId = key.docId.get();
+            if (oldSortByValue < sortByValue) {
+                key.sortByValue.compareAndSet(oldSortByValue, sortByValue);
+                key.docId.compareAndSet(oldDocId, absDoc);
+            }
+            if (value != null) {
                 return;
             }
-            this.keys.put(keyValue, new Key(absDoc, sortByValue, 1));
         }
         this.delegate.collect(doc);
     }
@@ -127,21 +135,26 @@ public class DeDupFilterCollector extends Collector {
         long keyValue = docValues.get(docId - context.docBase);
         if (keyValue == 0)
             return null;
-        Key key = this.keys.get(keyValue);
-        if (key == null)
-            return null;
-        return key;
+        return this.keys.get(keyValue);
     }
 
     public class Key {
-        public int docId;
-        private long sortByValue;
-        public int count;
+        public AtomicInteger docId;
+        private AtomicLong sortByValue;
+        public AtomicInteger count;
 
         public Key(int docId, long sortByValue, int count) {
-            this.docId = docId;
-            this.sortByValue = sortByValue;
-            this.count = count;
+            this.docId = new AtomicInteger(docId);
+            this.sortByValue = new AtomicLong(sortByValue);
+            this.count = new AtomicInteger(count);
+        }
+
+        public int getDocId() {
+            return this.docId.get();
+        }
+
+        public int getCount() {
+            return this.count.get();
         }
     }
 }

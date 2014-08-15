@@ -24,6 +24,7 @@
 ## end license ##
 
 from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause
+from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
 from org.apache.lucene.queries import ChainedFilter
@@ -31,6 +32,7 @@ from org.meresco.lucene.search import DeDupFilterCollector
 from org.meresco.lucene.search.join import ScoreCollector
 
 from java.lang import Integer
+from java.util.concurrent import Executors;
 
 from time import time
 
@@ -54,7 +56,8 @@ class Lucene(object):
             self._facetsConfig.setMultiValued(field.name, field.multiValued)
             self._facetsConfig.setHierarchical(field.name, field.hierarchical)
 
-        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, **kwargs)
+        executor = Executors.newFixedThreadPool(3);
+        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, executor=executor, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name
@@ -104,13 +107,15 @@ class Lucene(object):
         resultsCollector = topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
         dedupCollector = None
         if dedupField:
-            resultsCollector = dedupCollector = DeDupFilterCollector(dedupField, dedupSortField, topCollector)
+            resultsCollector = dedupCollector = DeDupFilterSuperCollector(dedupField, dedupSortField, topCollector)
         collectors.append(resultsCollector)
 
         if facets:
             facetCollector = self._facetCollector()
             collectors.append(facetCollector)
-        collector = MultiCollector.wrap(collectors)
+        collector = MultiSuperCollector()
+        for c in collectors:
+            collector.add(c)
 
         if filterCollector:
             filterCollector.setDelegate(collector)
@@ -209,7 +214,6 @@ class Lucene(object):
         return ChainedFilter(filters, ChainedFilter.AND)
 
     def _facetResult(self, facetCollector, facets):
-        facetResult = self._index.facetResult(facetCollector)
         result = []
         for f in facets:
             sortBy = f.get('sortBy')
@@ -218,7 +222,7 @@ class Lucene(object):
             result.append(dict(
                     fieldname=f['fieldname'],
                     terms=_termsFromFacetResult(
-                            facetResult=facetResult,
+                            facetResult=facetCollector,
                             facet=f,
                             path=[]
                         )
@@ -257,7 +261,7 @@ def _termsFromFacetResult(facetResult, facet, path):
 
 def _topCollector(start, stop, sortKeys):
     if stop <= start:
-        return TotalHitCountCollector()
+        return TotalHitCountSuperCollector()
     fillFields = False
     trackDocScores = True
     trackMaxScore = False
@@ -269,8 +273,8 @@ def _topCollector(start, stop, sortKeys):
         ]
         sort = Sort(sortFields)
     else:
-        return TopScoreDocCollector.create(stop, docsScoredInOrder)
-    return TopFieldCollector.create(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)
+        return TopScoreDocSuperCollector(stop, docsScoredInOrder)
+    return TopFieldSuperCollector(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)
 
 
 MAX_FACET_DEPTH = 10

@@ -50,7 +50,7 @@ from seecr.utils.generatorutils import returnValueFromGenerator
 
 class LuceneTest(SeecrTestCase):
     def setUp(self):
-        super(LuceneTest, self).setUp()
+        super(LuceneMultiThreadedTest, self).setUp()
         self._javaObjects = self._getJavaObjects()
         self._reactor = CallTrace('reactor')
         self.lucene = Lucene(
@@ -65,6 +65,7 @@ class LuceneTest(SeecrTestCase):
                     DrilldownField('cat'),
                 ]
             )
+
     def tearDown(self):
         try:
             self._reactor.calledMethods.reset() # don't keep any references.
@@ -443,6 +444,7 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("field0", 'kat'))))
         self.assertEquals(1, result.total)
 
+<<<<<<< HEAD
     def testDrilldownQuery(self):
         doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-A")])
         consume(self.lucene.addDocument("urn:1", doc))
@@ -469,6 +471,8 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), drilldownQueries=[("cat", ["cat-A"]), ("cat", ["cat-B"])]))
         self.assertEquals(1, result.total)
 
+=======
+>>>>>>> JJ/HM: MulitThreaded lucene
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]
 

@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubCollector> {
 
-	String keyName;
+	public String keyName;
 	String sortByFieldName;
 	SuperCollector delegate;
 	Map<Long, DeDupFilterCollector.Key> keys = new ConcurrentHashMap<Long, DeDupFilterCollector.Key>();
@@ -66,6 +66,10 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
 	protected DeDupFilterSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
 		SubCollector delegateSubCollector = this.delegate.subCollector(context);
 		return new DeDupFilterSubCollector(context, this, delegateSubCollector, keys);
+	}
+
+	public DeDupFilterCollector.Key keyForDocId(int docId) throws IOException {
+		return super.subs.get(super.subs.size() - 1).delegate.keyForDocId(docId);
 	}
 }
 

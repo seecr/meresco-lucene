@@ -35,7 +35,7 @@ from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
 from org.apache.lucene.facet.taxonomy.writercache import LruTaxonomyWriterCache
-
+from org.meresco.lucene.search import FacetSuperCollector
 from java.io import File, StringReader
 
 from os.path import join
@@ -152,7 +152,7 @@ class Index(object):
         return self._indexAndTaxonomy.searcher.doc(docId)
 
     def createFacetCollector(self):
-        return FacetsCollector()
+        return FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig)
 
     def facetResult(self, facetCollector):
         facetResult = TaxonomyFacetCounts(self._ordinalsReader, self._indexAndTaxonomy.taxoReader, self._facetsConfig, facetCollector)

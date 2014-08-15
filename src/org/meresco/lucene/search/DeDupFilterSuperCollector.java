@@ -132,10 +132,14 @@ class DeDupFilterSubCollector extends SubCollector {
         if (keyValue > 0) {
             int absDoc = this.currentDocBase + doc;
             long sortByValue = this.sortByValues.get(doc);
-            DeDupFilterSubCollector.Key key = new DeDupFilterSubCollector.Key(absDoc, sortByValue, 0);
-            DeDupFilterSubCollector.Key value = this.keys.putIfAbsent(keyValue, key);
-            if (value != null) {
-                key = value;
+            DeDupFilterSubCollector.Key key = this.keys.get(keyValue);
+            DeDupFilterSubCollector.Key value = null;
+            if (key == null) {
+                key = new DeDupFilterSubCollector.Key(absDoc, sortByValue, 0);
+                value = this.keys.putIfAbsent(keyValue, key);
+                if (value != null) {
+                    key = value;
+                }
             }
             key.count.incrementAndGet();
             long oldSortByValue = key.sortByValue.get();

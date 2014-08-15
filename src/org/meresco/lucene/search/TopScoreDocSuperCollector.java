@@ -56,7 +56,7 @@ public class TopScoreDocSuperCollector extends SuperCollector<TopScoreDocSubColl
 		TopDocs[] topdocs = new TopDocs[super.subs.size()];
 		for (int i = 0; i < topdocs.length; i++)
 			topdocs[i] = super.subs.get(i).topdocs;
-		return TopDocs.merge(null, start, this.numHits, topdocs);
+		return TopDocs.merge(null, start, this.numHits - start, topdocs);
 	}
 
 	public int getTotalHits() throws IOException {

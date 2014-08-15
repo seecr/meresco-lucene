@@ -202,6 +202,10 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(3, result.total)
         self.assertEquals([], self.hitIds(result.hits))
 
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), start=1, stop=2))
+        self.assertEquals(3, result.total)
+        self.assertEquals(['id:1'], self.hitIds(result.hits))
+
     def testFacets(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first item0'), ('field3', 'second item')])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field2', 'first item1'), ('field3', 'other value')])))

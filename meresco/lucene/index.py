@@ -152,11 +152,7 @@ class Index(object):
         return self._indexAndTaxonomy.searcher.doc(docId)
 
     def createFacetCollector(self):
-        return FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig)
-
-    def facetResult(self, facetCollector):
-        facetResult = TaxonomyFacetCounts(self._ordinalsReader, self._indexAndTaxonomy.taxoReader, self._facetsConfig, facetCollector)
-        return Facets.cast_(facetResult)
+        return FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig, self._ordinalsReader)
 
     def close(self):
         if self._commitTimerToken is not None:

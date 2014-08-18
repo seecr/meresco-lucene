@@ -49,11 +49,13 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
 	final TaxonomyReader taxoReader;
 	final FacetsConfig facetConfig;
+	final OrdinalsReader ordinalsReader;
 
-	public FacetSuperCollector(TaxonomyReader taxoReader, FacetsConfig facetConfig) {
+	public FacetSuperCollector(TaxonomyReader taxoReader, FacetsConfig facetConfig, OrdinalsReader ordinalsReader) {
 		super();
 		this.taxoReader = taxoReader;
 		this.facetConfig = facetConfig;
+		this.ordinalsReader = ordinalsReader;
 	}
 
 	@Override
@@ -152,8 +154,7 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
 
 	@Override
 	public void complete() throws IOException {
-		SubTaxonomyFacetCounts counts = new SubTaxonomyFacetCounts(new CachedOrdinalsReader(
-				new DocValuesOrdinalsReader()), this.parent.taxoReader, this.parent.facetConfig,
+		SubTaxonomyFacetCounts counts = new SubTaxonomyFacetCounts(this.parent.ordinalsReader, this.parent.taxoReader, this.parent.facetConfig,
 				(FacetsCollector) this.delegate);
 		this.values = counts.getValues();
 	}

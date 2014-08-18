@@ -40,7 +40,7 @@ public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSub
 	public int getTotalHits() {
 		int n = 0;
 		for (TotalHitCountSubCollector sub : super.subs) {
-			n += sub.count;
+			n += sub.getTotalHits();
 		}
 		return n;
 	}
@@ -49,7 +49,7 @@ public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSub
 
 class TotalHitCountSubCollector extends SubCollector {
 
-	int count = 0;
+	private int totalHits = 0;
 
 	public TotalHitCountSubCollector(AtomicReaderContext context) {
 		super(context);
@@ -61,13 +61,18 @@ class TotalHitCountSubCollector extends SubCollector {
 
 	@Override
 	public void collect(int doc) throws IOException {
-		this.count++;
+		this.totalHits++;
 	}
 
 	@Override
 	public boolean acceptsDocsOutOfOrder() {
 		return true;
 	}
+
+	public int getTotalHits() {
+    	return totalHits;
+  	}
+
 
 	@Override
 	public void complete() {

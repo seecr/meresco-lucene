@@ -47,18 +47,19 @@ public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
 
     @Override
     protected MultiSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        ArrayList<SubCollector> subCollectors = new ArrayList<SubCollector>();
+        SubCollector[] subCollectors = new SubCollector[this.collectors.size()];
+        int count = 0;
         for (SuperCollector sc : collectors) {
-            subCollectors.add(sc.subCollector(context));
+            subCollectors[count++] = sc.subCollector(context);
         }
         return new MultiSubCollector(context, subCollectors);
     }
 }
 
 class MultiSubCollector extends SubCollector {
-    private ArrayList<SubCollector> subCollectors = new ArrayList<SubCollector>();
+    private final SubCollector[] subCollectors;
 
-    public MultiSubCollector(AtomicReaderContext context, ArrayList<SubCollector> subCollectors) throws IOException {
+    public MultiSubCollector(AtomicReaderContext context, SubCollector[] subCollectors) throws IOException {
         super(context);
         this.subCollectors = subCollectors;
     }

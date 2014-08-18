@@ -29,4 +29,4 @@ from org.meresco.lucene.analysis import MerescoStandardAnalyzer
 
 def createAnalyzer(analyzer=None):
     analyzer = analyzer or MerescoStandardAnalyzer
-    return analyzer(Version.LUCENE_49)
+    return analyzer(Version.LUCENE_4_9)

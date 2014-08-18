@@ -30,24 +30,21 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.Scorer;
+import java.util.List;
 import java.util.ArrayList;
 
 public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
 
-    ArrayList<SuperCollector> collectors = new ArrayList<SuperCollector>();
+    private final SuperCollector[] collectors;
 
-    public MultiSuperCollector() {
+    public MultiSuperCollector(List<SuperCollector> collectors) {
         super();
-        // this.collectors = collectors;
-    }
-
-    public void add(SuperCollector collector) {
-        collectors.add(collector);
+        this.collectors = collectors.toArray(new SuperCollector[0]);
     }
 
     @Override
     protected MultiSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        SubCollector[] subCollectors = new SubCollector[this.collectors.size()];
+        SubCollector[] subCollectors = new SubCollector[this.collectors.length];
         int count = 0;
         for (SuperCollector sc : collectors) {
             subCollectors[count++] = sc.subCollector(context);

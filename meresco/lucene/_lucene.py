@@ -23,14 +23,13 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import MultiCollector, TopFieldCollector, Sort, QueryWrapperFilter, TotalHitCountCollector, TopScoreDocCollector, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause
+from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause
 from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector
 from org.meresco.lucene.search.join import ScoreSuperCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
 from org.apache.lucene.queries import ChainedFilter
-from org.meresco.lucene.search import DeDupFilterCollector
-from org.meresco.lucene.search.join import ScoreCollector
+from org.meresco.lucene.search import SuperCollector
 
 from java.lang import Integer
 from java.util.concurrent import Executors;
@@ -45,6 +44,7 @@ from cache import LruCache
 from utils import IDFIELD, createIdField, sortField
 from hit import Hit
 from seecr.utils.generatorutils import generatorReturn
+from java.util import ArrayList
 
 
 class Lucene(object):
@@ -114,9 +114,11 @@ class Lucene(object):
         if facets:
             facetCollector = self._facetCollector()
             collectors.append(facetCollector)
-        collector = MultiSuperCollector()
+
+        multiSubCollectors = ArrayList().of_(SuperCollector)
         for c in collectors:
-            collector.add(c)
+            multiSubCollectors.add(c)
+        collector = MultiSuperCollector(multiSubCollectors)
 
         if filterCollector:
             filterCollector.setDelegate(collector)

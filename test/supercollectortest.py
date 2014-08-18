@@ -29,8 +29,8 @@ from java.util.concurrent import Executors
 from lucenetest import document, createDocument
 from meresco.lucene.index import Index
 from org.apache.lucene.search import MatchAllDocsQuery, Sort
-from org.meresco.lucene.search import SuperCollector, SubCollector, \
-    TotalHitCountSuperCollector, TopScoreDocSuperCollector, FacetSuperCollector, MultiSuperCollector, TopFieldSuperCollector
+from org.meresco.lucene.search import SuperCollector, SubCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, FacetSuperCollector, MultiSuperCollector, TopFieldSuperCollector
+from java.util import ArrayList
 from meresco.lucene.utils import sortField
 
 
@@ -141,9 +141,10 @@ class SuperCollectorTest(SeecrTestCase):
 
         f = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, I._ordinalsReader)
         t = TopScoreDocSuperCollector(10, True)
-        C = MultiSuperCollector()
-        C.add(t)
-        C.add(f)
+        collectors = ArrayList().of_(SuperCollector)
+        collectors.add(t)
+        collectors.add(f)
+        C = MultiSuperCollector(collectors)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
 

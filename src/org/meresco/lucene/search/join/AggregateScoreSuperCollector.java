@@ -37,13 +37,13 @@ import org.meresco.lucene.search.SubCollector;
 
 public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreSubCollector> {
 
-    String keyName;
-    List<ScoreSuperCollector> otherScoreCollectors;
-    SuperCollector delegate;
+    private final String keyName;
+    private final ScoreSuperCollector[] otherScoreCollectors;
+    private SuperCollector delegate;
 
     public AggregateScoreSuperCollector(String keyName, List<ScoreSuperCollector> otherScoreCollectors) {
         this.keyName = keyName;
-        this.otherScoreCollectors = otherScoreCollectors;
+        this.otherScoreCollectors = otherScoreCollectors.toArray(new ScoreSuperCollector[0]);
     }
 
     public void setDelegate(SuperCollector delegate) {
@@ -52,22 +52,21 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
 
     @Override
     protected AggregateScoreSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        return new AggregateScoreSubCollector(context, this, this.delegate.subCollector(context));
+        return new AggregateScoreSubCollector(context, this.keyName, this.otherScoreCollectors, this.delegate.subCollector(context));
     }
 }
 
 class AggregateScoreSubCollector extends SubCollector {
 
-    private SubCollector delegate;
-    private NumericDocValues keyValues;
-    private List<ScoreSuperCollector> otherScoreCollectors;
+    private final SubCollector delegate;
+    private final NumericDocValues keyValues;
+    private final ScoreSuperCollector[] otherScoreCollectors;
 
-
-    public AggregateScoreSubCollector(AtomicReaderContext context, AggregateScoreSuperCollector parent, SubCollector delegate) throws IOException {
+    public AggregateScoreSubCollector(AtomicReaderContext context, String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate) throws IOException {
         super(context);
         this.delegate = delegate;
-        this.keyValues = context.reader().getNumericDocValues(parent.keyName);
-        this.otherScoreCollectors = parent.otherScoreCollectors;
+        this.keyValues = context.reader().getNumericDocValues(keyName);
+        this.otherScoreCollectors = otherScoreCollectors;
     }
 
     @Override
@@ -90,10 +89,10 @@ class AggregateScoreSubCollector extends SubCollector {
         this.delegate.complete();
     }
 
-    class AggregateSuperScorer extends Scorer {
-        Scorer scorer;
+    private class AggregateSuperScorer extends Scorer {
+        private final Scorer scorer;
 
-        AggregateSuperScorer(Scorer scorer) {
+        private AggregateSuperScorer(Scorer scorer) {
             super(scorer.getWeight());
             this.scorer = scorer;
         }

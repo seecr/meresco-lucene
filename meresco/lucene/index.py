@@ -29,7 +29,7 @@ from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields,
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
-from org.apache.lucene.facet import FacetsCollector, FacetsConfig, Facets
+from org.apache.lucene.facet import FacetsConfig
 from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.search.similarities import BM25Similarity
@@ -42,7 +42,7 @@ from os.path import join
 
 from indexandtaxonomy import IndexAndTaxonomy
 from meresco.lucene.utils import fieldType, LONGTYPE
-from org.apache.lucene.facet.taxonomy import TaxonomyFacetCounts, CachedOrdinalsReader, DocValuesOrdinalsReader
+from org.apache.lucene.facet.taxonomy import CachedOrdinalsReader, DocValuesOrdinalsReader
 
 class Index(object):
     def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, executor=None):
@@ -57,7 +57,7 @@ class Index(object):
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
         self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
         self._analyzer = createAnalyzer(analyzer=analyzer)
-        conf = IndexWriterConfig(Version.LUCENE_48, self._analyzer)
+        conf = IndexWriterConfig(Version.LUCENE_4_9, self._analyzer)
         conf.setSimilarity(similarity)
         self._indexWriter = IndexWriter(indexDirectory, conf)
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))

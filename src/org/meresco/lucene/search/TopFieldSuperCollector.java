@@ -42,12 +42,12 @@ import org.apache.lucene.util.BytesRef;
 
 public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector> {
 
-    protected Sort sort;
-    protected int numHits;
-    protected boolean fillFields;
-    protected boolean trackDocScores;
-    protected boolean trackMaxScore;
-    protected boolean docsScoredInOrder;
+    protected final Sort sort;
+    protected final int numHits;
+    protected final boolean fillFields;
+    protected final boolean trackDocScores;
+    protected final boolean trackMaxScore;
+    protected final boolean docsScoredInOrder;
 
     private TopFieldCollector tfc;
     private int totalHits;
@@ -104,7 +104,7 @@ public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector>
 class TopFieldSubCollector extends DelegatingSubCollector<TopFieldCollector, TopFieldSuperCollector> {
 
     TopDocs topdocs;
-    AtomicReaderContext context;
+    final AtomicReaderContext context;
 
     public TopFieldSubCollector(AtomicReaderContext context, TopFieldSuperCollector parent) throws IOException {
         super(context, TopFieldCollector.create(parent.sort, parent.numHits, parent.fillFields, parent.trackDocScores, parent.trackMaxScore, parent.docsScoredInOrder), parent);

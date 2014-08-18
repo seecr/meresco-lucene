@@ -47,125 +47,123 @@ import java.lang.Number;
 
 public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
-	final TaxonomyReader taxoReader;
-	final FacetsConfig facetConfig;
-	final OrdinalsReader ordinalsReader;
+    final TaxonomyReader taxoReader;
+    final FacetsConfig facetConfig;
+    final OrdinalsReader ordinalsReader;
 
-	public FacetSuperCollector(TaxonomyReader taxoReader, FacetsConfig facetConfig, OrdinalsReader ordinalsReader) {
-		super();
-		this.taxoReader = taxoReader;
-		this.facetConfig = facetConfig;
-		this.ordinalsReader = ordinalsReader;
-	}
+    public FacetSuperCollector(TaxonomyReader taxoReader, FacetsConfig facetConfig, OrdinalsReader ordinalsReader) {
+        super();
+        this.taxoReader = taxoReader;
+        this.facetConfig = facetConfig;
+        this.ordinalsReader = ordinalsReader;
+    }
 
-	@Override
-	protected FacetSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-		return new FacetSubCollector(context, new FacetsCollector(), this);
-	}
+    @Override
+    protected FacetSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
+        return new FacetSubCollector(context, new FacetsCollector(), this);
+    }
 
- 	public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
-	    if (topN <= 0) {
-	      throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
-	    }
-	    FacetsConfig.DimConfig dimConfig = this.facetConfig.getDimConfig(dim);
-    	// if (!dimConfig.indexFieldName.equals(indexFieldName)) {
-     //  		throw new IllegalArgumentException("dimension \"" + dim + "\" was not indexed into field \"" + indexFieldName);
-    	// }
+    public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
+        if (topN <= 0) {
+          throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
+        }
+        FacetsConfig.DimConfig dimConfig = this.facetConfig.getDimConfig(dim);
+        // if (!dimConfig.indexFieldName.equals(indexFieldName)) {
+     //         throw new IllegalArgumentException("dimension \"" + dim + "\" was not indexed into field \"" + indexFieldName);
+        // }
 
-	    FacetLabel cp = new FacetLabel(dim, path);
-	    int dimOrd = this.taxoReader.getOrdinal(cp);
-	    if (dimOrd == -1) {
-	      	return null;
-	    }
+        FacetLabel cp = new FacetLabel(dim, path);
+        int dimOrd = this.taxoReader.getOrdinal(cp);
+        if (dimOrd == -1) {
+            return null;
+        }
 
-	    TopOrdAndIntQueue q = new TopOrdAndIntQueue(Math.min(taxoReader.getSize(), topN));
+        TopOrdAndIntQueue q = new TopOrdAndIntQueue(Math.min(taxoReader.getSize(), topN));
 
-	    int totValue = 0;
-	    int childCount = 0;
+        int totValue = 0;
+        int childCount = 0;
 
-	    ParallelTaxonomyArrays pta = this.taxoReader.getParallelTaxonomyArrays();
-	    int[] children = pta.children();
-	    int[] siblings = pta.siblings();
+        ParallelTaxonomyArrays pta = this.taxoReader.getParallelTaxonomyArrays();
+        int[] children = pta.children();
+        int[] siblings = pta.siblings();
 
-		int ord = children[dimOrd];
-	    TopOrdAndIntQueue.OrdAndValue reuse = null;
-	    int bottomValue = 0;
+        int ord = children[dimOrd];
+        TopOrdAndIntQueue.OrdAndValue reuse = null;
+        int bottomValue = 0;
 
-	    while(ord != TaxonomyReader.INVALID_ORDINAL) {
-	    	int val = 0;
-			for(FacetSubCollector sub : super.subs) {
-				val += sub.values[ord];
-			}
-		    if (val > 0) {
-		        totValue += val;
-		        childCount++;
-		        if (val > bottomValue) {
-		          	if (reuse == null) {
-		            	reuse = new TopOrdAndIntQueue.OrdAndValue();
-			        }
-			        reuse.ord = ord;
-			        reuse.value = val;
-			        reuse = q.insertWithOverflow(reuse);
-		          	if (q.size() == topN) {
-		            	bottomValue = q.top().value;
-		          	}
-		        }
-		    }
-	      	ord = siblings[ord];
-		}
+        while(ord != TaxonomyReader.INVALID_ORDINAL) {
+            int val = 0;
+            for(FacetSubCollector sub : super.subs) {
+                val += sub.values[ord];
+            }
+            if (val > 0) {
+                totValue += val;
+                childCount++;
+                if (val > bottomValue) {
+                    if (reuse == null) {
+                        reuse = new TopOrdAndIntQueue.OrdAndValue();
+                    }
+                    reuse.ord = ord;
+                    reuse.value = val;
+                    reuse = q.insertWithOverflow(reuse);
+                    if (q.size() == topN) {
+                        bottomValue = q.top().value;
+                    }
+                }
+            }
+            ord = siblings[ord];
+        }
 
-	    if (totValue == 0) {
-	      	return null;
-	    }
+        if (totValue == 0) {
+            return null;
+        }
 
-	    if (dimConfig.multiValued) {
-			if (dimConfig.requireDimCount) {
-				totValue = 0;
-				for(FacetSubCollector sub : super.subs) {
-					totValue += sub.values[dimOrd];
-				}
-			} else {
-				// Our sum'd value is not correct, in general:
-				totValue = -1;
-			}
-	    } else {
-	      	// Our sum'd dim value is accurate, so we keep it
-	    }
+        if (dimConfig.multiValued) {
+            if (dimConfig.requireDimCount) {
+                totValue = 0;
+                for(FacetSubCollector sub : super.subs) {
+                    totValue += sub.values[dimOrd];
+                }
+            } else {
+                // Our sum'd value is not correct, in general:
+                totValue = -1;
+            }
+        } else {
+            // Our sum'd dim value is accurate, so we keep it
+        }
 
-	    LabelAndValue[] labelValues = new LabelAndValue[q.size()];
-	    for(int i=labelValues.length-1;i>=0;i--) {
-	      	TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
-	      	FacetLabel child = this.taxoReader.getPath(ordAndValue.ord);
-	      	labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
-	    }
+        LabelAndValue[] labelValues = new LabelAndValue[q.size()];
+        for(int i=labelValues.length-1;i>=0;i--) {
+            TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
+            FacetLabel child = this.taxoReader.getPath(ordAndValue.ord);
+            labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);
+        }
 
-	    return new FacetResult(dim, path, totValue, labelValues, childCount);
-	}
+        return new FacetResult(dim, path, totValue, labelValues, childCount);
+    }
 }
 
 class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSuperCollector> {
 
     int[] values;
 
-	public FacetSubCollector(AtomicReaderContext context, FacetsCollector delegate, FacetSuperCollector parent)
-			throws IOException {
-		super(context, delegate, parent);
-	}
+    public FacetSubCollector(AtomicReaderContext context, FacetsCollector delegate, FacetSuperCollector parent) throws IOException {
+        super(context, delegate, parent);
+    }
 
-	@Override
-	public void complete() throws IOException {
-		SubTaxonomyFacetCounts counts = new SubTaxonomyFacetCounts(this.parent.ordinalsReader, this.parent.taxoReader, this.parent.facetConfig,
-				(FacetsCollector) this.delegate);
-		this.values = counts.getValues();
-	}
+    @Override
+    public void complete() throws IOException {
+        SubTaxonomyFacetCounts counts = new SubTaxonomyFacetCounts(this.parent.ordinalsReader, this.parent.taxoReader, this.parent.facetConfig, (FacetsCollector) this.delegate);
+        this.values = counts.getValues();
+    }
 }
 
 class SubTaxonomyFacetCounts extends TaxonomyFacetCounts {
-  	public SubTaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
-  		super(ordinalsReader, taxoReader, config, fc);
-  	}
+    public SubTaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig config, FacetsCollector fc) throws IOException {
+        super(ordinalsReader, taxoReader, config, fc);
+    }
 
-  	public int[] getValues() {
-  		return this.values;
-  	}
+    public int[] getValues() {
+        return this.values;
+    }
 }

@@ -36,8 +36,8 @@ import org.meresco.lucene.search.SubCollector;
 
 public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
 
-    protected byte[] scores = new byte[0];
-    String keyName;
+    byte[] scores = new byte[0];
+    final String keyName;
 
     public ScoreSuperCollector(String keyName) {
         this.keyName = keyName;
@@ -66,9 +66,9 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
 }
 
 class ScoreSubCollector extends SubCollector {
-    Scorer scorer;
-    NumericDocValues keyValues;
-    ScoreSuperCollector parent;
+    private Scorer scorer;
+    private final NumericDocValues keyValues;
+    private final ScoreSuperCollector parent;
 
     public ScoreSubCollector(AtomicReaderContext context, ScoreSuperCollector parent) throws IOException {
         super(context);

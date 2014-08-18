@@ -31,7 +31,7 @@ from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
 from org.apache.lucene.queries import ChainedFilter
 from org.meresco.lucene.search import SuperCollector
 
-from java.lang import Integer
+from java.lang import Integer, Runtime
 from java.util.concurrent import Executors;
 
 from time import time
@@ -57,7 +57,8 @@ class Lucene(object):
             self._facetsConfig.setMultiValued(field.name, field.multiValued)
             self._facetsConfig.setHierarchical(field.name, field.hierarchical)
 
-        executor = Executors.newFixedThreadPool(3);
+        numberOfProcessors = Runtime.getRuntime().availableProcessors()
+        executor = Executors.newFixedThreadPool(numberOfProcessors);
         self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, executor=executor, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:

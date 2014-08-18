@@ -39,48 +39,45 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubCollector> {
 
-	public String keyName;
-	String sortByFieldName;
-	SuperCollector delegate;
-	ConcurrentHashMap<Long, DeDupFilterSubCollector.Key> keys = new ConcurrentHashMap<Long, DeDupFilterSubCollector.Key>();
+    private final String keyName;
+    private final String sortByFieldName;
+    private final SuperCollector delegate;
+    ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>> keys = new ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>>();
     private IndexReaderContext topLevelReaderContext = null;
 
-	public DeDupFilterSuperCollector(String keyName, SuperCollector delegate) {
-		super();
-		this.keyName = keyName;
-		this.delegate = delegate;
-	}
+    public DeDupFilterSuperCollector(String keyName, String sortByFieldName, SuperCollector delegate) {
+        super();
+        this.keyName = keyName;
+        this.sortByFieldName = sortByFieldName;
+        this.delegate = delegate;
+    }
 
-	public DeDupFilterSuperCollector(String keyName, String sortByFieldName, SuperCollector delegate) {
-		super();
-		this.keyName = keyName;
-		this.sortByFieldName = sortByFieldName;
-		this.delegate = delegate;
-	}
+    public String getKeyName() {
+        return this.keyName;
+    }
 
-	public int getTotalHits() {
-		int totalHits = 0;
-		for (DeDupFilterSubCollector dsc : this.subs) {
-			totalHits += dsc.totalHits;
-		}
-		return totalHits;
-	}
+    public int getTotalHits() {
+        int totalHits = 0;
+        for (DeDupFilterSubCollector dsc : this.subs) {
+            totalHits += dsc.getTotalHits();
+        }
+        return totalHits;
+    }
 
-	@Override
-	protected DeDupFilterSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-		if (this.topLevelReaderContext == null)
+    @Override
+    protected DeDupFilterSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
+        if (this.topLevelReaderContext == null)
             this.topLevelReaderContext = ReaderUtil.getTopLevelContext(context);
-		SubCollector delegateSubCollector = this.delegate.subCollector(context);
-		return new DeDupFilterSubCollector(context, this, delegateSubCollector, this.keys);
-	}
+        SubCollector delegateSubCollector = this.delegate.subCollector(context);
+        return new DeDupFilterSubCollector(context, this.keyName, this.sortByFieldName, delegateSubCollector, this.keys);
+    }
 
-	public DeDupFilterSubCollector.Key keyForDocId(int docId) throws IOException {
-		List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
+    public DeDupFilterSubCollector.Key keyForDocId(int docId) throws IOException {
+        List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
         AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
         NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
         if (docValues == null)
@@ -88,78 +85,75 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
         long keyValue = docValues.get(docId - context.docBase);
         if (keyValue == 0)
             return null;
-        return this.keys.get(keyValue);
-	}
+        return this.keys.get(keyValue).get();
+    }
 }
 
 class DeDupFilterSubCollector extends SubCollector {
-	private SubCollector delegate;
-	private ConcurrentHashMap<Long, DeDupFilterSubCollector.Key> keys;
+    private final SubCollector delegate;
+    private ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>> keys;
 
-    private int currentDocBase;
-    public String keyName;
-    private String sortByFieldName;
-    private NumericDocValues sortByValues;
-    private NumericDocValues keyValues;
+    private final int currentDocBase;
+    private final String keyName;
+    private final String sortByFieldName;
+    private final NumericDocValues sortByValues;
+    private final NumericDocValues keyValues;
 
-    public int totalHits = 0;
+    private int totalHits = 0;
 
+    public DeDupFilterSubCollector(AtomicReaderContext context, String keyName, String sortByFieldName, SubCollector delegate, ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>> keys) throws IOException {
+        super(context);
+        this.delegate = delegate;
+        this.keys = keys;
 
-	public DeDupFilterSubCollector(AtomicReaderContext context, DeDupFilterSuperCollector parent, SubCollector delegate, ConcurrentHashMap<Long, DeDupFilterSubCollector.Key> keys) throws IOException {
-		super(context);
-		this.delegate = delegate;
-		this.keys = keys;
-
-		this.keyName = parent.keyName;
-		this.sortByFieldName = parent.sortByFieldName;
+        this.keyName = keyName;
+        this.sortByFieldName = sortByFieldName;
 
         this.currentDocBase = context.docBase;
-        this.keyValues = context.reader().getNumericDocValues(this.keyName);
-        if (this.keyValues == null)
-            this.keyValues = DocValues.emptyNumeric();
+        NumericDocValues kv = context.reader().getNumericDocValues(this.keyName);
+        if (kv == null)
+            kv = DocValues.emptyNumeric();
+        this.keyValues = kv;
 
-        this.sortByValues = null;
+        NumericDocValues sbv = null;
         if (this.sortByFieldName != null)
-            this.sortByValues = context.reader().getNumericDocValues(this.sortByFieldName);
-        if (this.sortByValues == null)
-            this.sortByValues = DocValues.emptyNumeric();
-	}
+            sbv = context.reader().getNumericDocValues(this.sortByFieldName);
+        if (sbv == null)
+            sbv = DocValues.emptyNumeric();
+        this.sortByValues = sbv;
+    }
 
-	@Override
+    @Override
     public void collect(int doc) throws IOException {
         this.totalHits++;
         long keyValue = this.keyValues.get(doc);
         if (keyValue > 0) {
             int absDoc = this.currentDocBase + doc;
             long sortByValue = this.sortByValues.get(doc);
-            DeDupFilterSubCollector.Key key = this.keys.get(keyValue);
-            if (key == null) {
-                key = new DeDupFilterSubCollector.Key(absDoc, sortByValue, 0);
-                DeDupFilterSubCollector.Key value = this.keys.putIfAbsent(keyValue, key);
-                if (value != null) {
-                    key = value;
-                }
+
+            AtomicReference<DeDupFilterSubCollector.Key> ref = new AtomicReference<DeDupFilterSubCollector.Key>();
+            AtomicReference<DeDupFilterSubCollector.Key> newRef = this.keys.putIfAbsent(keyValue, ref);
+            if (newRef == null) {
+                newRef = ref;
             }
-            int result = key.count.incrementAndGet();
+
+            DeDupFilterSubCollector.Key key;
+            DeDupFilterSubCollector.Key newKey;
             while (true) {
-                long oldSortByValue = key.getSortByValue();
-                int oldDocId = key.getDocId();
-                if (oldSortByValue < sortByValue) {
-                    if (key.sortByValue.compareAndSet(oldSortByValue, sortByValue) && key.docId.compareAndSet(oldDocId, absDoc)) {
-                        break;
-                    }
-                } else {
+                key = newRef.get();
+                newKey = new DeDupFilterSubCollector.Key(key, absDoc, sortByValue);
+                if (newRef.compareAndSet(key, newKey)) {
                     break;
                 }
             }
-            if (result != 1) {
+            if (newKey.count != 1) {
                 return;
             }
         }
         this.delegate.collect(doc);
     }
 
-	@Override
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
         this.delegate.setScorer(scorer);
     }
@@ -169,32 +163,47 @@ class DeDupFilterSubCollector extends SubCollector {
         return this.delegate.acceptsDocsOutOfOrder();
     }
 
-	@Override
-	public void complete() throws IOException {
-		this.delegate.complete();
-	}
+    @Override
+    public void complete() throws IOException {
+        this.delegate.complete();
+    }
 
-	public class Key {
-	    public AtomicInteger docId;
-	    public AtomicLong sortByValue;
-	    public AtomicInteger count;
+    public int getTotalHits() {
+        return this.totalHits;
+    }
 
-	    public Key(int docId, long sortByValue, int count) {
-	        this.docId = new AtomicInteger(docId);
-	        this.sortByValue = new AtomicLong(sortByValue);
-	        this.count = new AtomicInteger(count);
-	    }
+    public class Key {
+        private int docId;
+        private long sortByValue;
+        private int count;
 
-	    public int getDocId() {
-	        return this.docId.get();
-	    }
+        public Key(int docId, long sortByValue, int count) {
+            this.docId = docId;
+            this.sortByValue = sortByValue;
+            this.count = count;
+        }
 
-	    public int getCount() {
-	        return this.count.get();
-	    }
+        public Key(Key key, int docId, long sortByValue) {
+            this(docId, sortByValue, 1);
+            if (key != null) {
+                if (key.sortByValue >= sortByValue) {
+                    this.sortByValue = key.sortByValue;
+                    this.docId = key.docId;
+                }
+                this.count = key.count + 1;
+            }
+        }
+
+        public int getDocId() {
+            return this.docId;
+        }
+
+        public int getCount() {
+            return this.count;
+        }
 
         public long getSortByValue() {
-            return this.sortByValue.get();
+            return this.sortByValue;
         }
-	}
+    }
 }

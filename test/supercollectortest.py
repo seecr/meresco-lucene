@@ -32,6 +32,7 @@ from org.apache.lucene.search import MatchAllDocsQuery, Sort
 from org.meresco.lucene.search import SuperCollector, SubCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, FacetSuperCollector, MultiSuperCollector, TopFieldSuperCollector
 from java.util import ArrayList
 from meresco.lucene.utils import sortField
+from org.apache.lucene.facet import FacetsConfig
 
 
 class SuperCollectorTest(SeecrTestCase):
@@ -104,13 +105,13 @@ class SuperCollectorTest(SeecrTestCase):
         self.assertEquals([1], [sd.score for sd in td.scoreDocs])
 
     def testFacetSuperCollector(self):
-        I = Index(path=self.tempdir, reactor=None, executor=self.E)
+        I = Index(path=self.tempdir, reactor=None, executor=self.E, facetsConfig=FacetsConfig())
         for i in xrange(10000):
             document1 = createDocument(fields=[("field1", str(i)), ("field2", str(i)*1000)], facets=[("facet1", "value%s" % (i % 100))])
             document1 = I._facetsConfig.build(I._taxoWriter, document1)
             I._indexWriter.addDocument(document1)
         I.close()
-        I = Index(path=self.tempdir, reactor=None, executor=self.E)
+        I = Index(path=self.tempdir, reactor=None, executor=self.E, facetsConfig=FacetsConfig())
 
         C = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, I._ordinalsReader)
         Q = MatchAllDocsQuery()
@@ -130,14 +131,14 @@ class SuperCollectorTest(SeecrTestCase):
             ], [(l.label, l.value.intValue()) for l in tc.labelValues])
 
     def testFacetAndTopsMultiCollector(self):
-        I = Index(path=self.tempdir, commitCount=1, reactor=CallTrace(), executor=self.E)
+        I = Index(path=self.tempdir, commitCount=1, reactor=CallTrace(), executor=self.E, facetsConfig=FacetsConfig())
         for i in xrange(99):
             document1 = createDocument(fields=[("field1", str(i)), ("field2", str(i)*1000)], facets=[("facet1", "value%s" % (i % 10))])
             document1 = I._facetsConfig.build(I._taxoWriter, document1)
             I._indexWriter.addDocument(document1)
             I.commit()
         I.close()
-        I = Index(path=self.tempdir, reactor=None, executor=self.E)
+        I = Index(path=self.tempdir, reactor=None, executor=self.E, facetsConfig=FacetsConfig())
 
         f = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, I._ordinalsReader)
         t = TopScoreDocSuperCollector(10, True)

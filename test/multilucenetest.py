@@ -420,32 +420,6 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU', 'B-P>A-MQU', 'B-P>A-MU', ], sorted(result.hits))
 
-    def xxxtestReminderThatCollectingNonUniqueKeysGivesTooManyResults(self):
-        keyBCollector = KeyCollector(KEY_PREFIX + 'B')
-        self.luceneB.search(query=luceneQueryFromCql('N=true'), collector=keyBCollector)
-        keyBSet = keyBCollector.getCollectedKeys()
-        result = returnValueFromGenerator(self.luceneB.executeQuery(
-                MatchAllDocsQuery(),
-                filterCollector=KeyFilterCollector(keyBSet, KEY_PREFIX + 'B'),
-            ))
-        self.assertEquals(['B-N', 'B-N>A-M', 'B-N>A-MQ', 'B-N>A-MQU', 'B-N>A-MU', 'B-P>A-M', 'B-P>A-MQ', 'B-P>A-MQU', 'B-P>A-MU'], sorted(self.hitIds(result.hits)))
-
-    def xxxtestNto1UniteExperiment(self):
-        # unite B-N met A-U, query op A-Q en not B-O
-        uniteDocIdCollector = DocIdCollector()
-        self.luceneB.search(query=luceneQueryFromCql('N=true and O=false'), collector=uniteDocIdCollector)
-        matchKeyCollector = KeyCollector(KEY_PREFIX + 'A')
-        self.luceneA.search(query=luceneQueryFromCql('U=true and Q=true'), collector=matchKeyCollector)
-        keyFilterCollector = KeyFilterCollector(matchKeyCollector.getCollectedKeys(), KEY_PREFIX + 'B')
-        keyFilterCollector.setDelegate(uniteDocIdCollector)
-        self.luceneB.search(query=luceneQueryFromCql('O=false'), collector=keyFilterCollector)
-
-        matchKeyCollector = KeyCollector(KEY_PREFIX + 'A')
-        self.luceneA.search(query=luceneQueryFromCql('Q=true'), collector=matchKeyCollector)
-        keyFilterCollector = KeyFilterCollector(matchKeyCollector.getCollectedKeys(), KEY_PREFIX + 'B')
-        result = returnValueFromGenerator(self.luceneB.executeQuery(luceneQuery=luceneQueryFromCql('O=false'), filter=uniteDocIdCollector.getDocIdFilter(), filterCollector=keyFilterCollector))
-        self.assertEquals([u'B-N>A-MQU', u'B-P>A-MQU'], sorted(self.hitIds(result.hits)))
-
     def NOT_YET_SUPPORTED_testUniteAndFacetsResultsFromCoreB(self):
         q = ComposedQuery('coreB')
         q.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'))

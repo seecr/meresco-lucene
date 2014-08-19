@@ -26,30 +26,26 @@
 package org.meresco.lucene.search;
 
 import java.io.IOException;
-
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.Scorer;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.search.Scorer;
 
 public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubCollector> {
 
     private final String keyName;
     private final String sortByFieldName;
-    private final SuperCollector delegate;
+    private final SuperCollector<SubCollector> delegate;
     ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>> keys = new ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>>();
     private IndexReaderContext topLevelReaderContext = null;
 
-    public DeDupFilterSuperCollector(String keyName, String sortByFieldName, SuperCollector delegate) {
+    public DeDupFilterSuperCollector(String keyName, String sortByFieldName, SuperCollector<SubCollector> delegate) {
         super();
         this.keyName = keyName;
         this.sortByFieldName = sortByFieldName;

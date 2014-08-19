@@ -30,8 +30,6 @@ import java.util.List;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.SmallFloat;
-
 import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.SubCollector;
 
@@ -39,14 +37,14 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
 
     private final String keyName;
     private final ScoreSuperCollector[] otherScoreCollectors;
-    private SuperCollector delegate;
+    private SuperCollector<?> delegate;
 
     public AggregateScoreSuperCollector(String keyName, List<ScoreSuperCollector> otherScoreCollectors) {
         this.keyName = keyName;
         this.otherScoreCollectors = otherScoreCollectors.toArray(new ScoreSuperCollector[0]);
     }
 
-    public void setDelegate(SuperCollector delegate) {
+    public void setDelegate(SuperCollector<?> delegate) {
         this.delegate = delegate;
     }
 

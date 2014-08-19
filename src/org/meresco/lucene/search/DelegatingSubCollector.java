@@ -6,7 +6,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 
-public abstract class DelegatingSubCollector<CollectorType extends Collector, SuperCollectorType extends SuperCollector> extends SubCollector {
+public abstract class DelegatingSubCollector<CollectorType extends Collector, SuperCollectorType extends SuperCollector<?>> extends SubCollector {
 
 	protected CollectorType delegate;
 	protected SuperCollectorType parent;

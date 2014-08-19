@@ -48,7 +48,7 @@ public class SuperIndexSearcher extends IndexSearcher {
 		this.executor = executor;
 	}
 
-	public void search(Query q, Filter f, SuperCollector c) throws IOException, InterruptedException,
+	public void search(Query q, Filter f, SuperCollector<?> c) throws IOException, InterruptedException,
 			ExecutionException {
 		Weight weight = super.createNormalizedWeight(wrapFilter(q, f));
 		ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(this.executor);
@@ -58,7 +58,7 @@ public class SuperIndexSearcher extends IndexSearcher {
 		for (AtomicReaderContext ctx : super.leafContexts) {
 			ecs.submit(new SearchTask(ctx, weight, c.subCollector(ctx)), "Done");
 		}
-		for (AtomicReaderContext _ : super.leafContexts) {
+		for (int i = 0; i < super.leafContexts.size(); i++) {
 			ecs.take().get();
 		}
 	}

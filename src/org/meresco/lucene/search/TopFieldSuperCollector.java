@@ -27,18 +27,12 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
-import org.apache.lucene.search.FieldValueHitQueue;
-import org.apache.lucene.search.FieldValueHitQueue.Entry;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.BytesRef;
 
 public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector> {
 

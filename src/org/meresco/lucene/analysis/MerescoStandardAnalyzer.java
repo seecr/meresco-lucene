@@ -26,13 +26,12 @@
 package org.meresco.lucene.analysis;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.standard.ClassicFilter;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.Version;
-import java.io.StringReader;
 
 public class MerescoStandardAnalyzer extends Analyzer {
     private Version matchVersion;

@@ -26,7 +26,6 @@
 package org.meresco.lucene.queries;
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -36,7 +35,6 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.OpenBitSet;
 import org.meresco.lucene.search.join.CachingKeyCollector;
 

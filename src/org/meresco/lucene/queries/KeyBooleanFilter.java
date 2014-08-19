@@ -26,21 +26,17 @@
 package org.meresco.lucene.queries;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Iterator;
 
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.queries.BooleanFilter;
+import org.apache.lucene.queries.FilterClause;
 import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.queries.FilterClause;
-import org.apache.lucene.queries.BooleanFilter;
 
 
 public class KeyBooleanFilter extends BooleanFilter {
@@ -52,8 +48,6 @@ public class KeyBooleanFilter extends BooleanFilter {
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
     OpenBitSet res = null;
-    final AtomicReader reader = context.reader();
-
     List<FilterClause> clauses = this.clauses();
     boolean hasShouldClauses = false;
     for (final FilterClause fc : clauses) {

@@ -26,18 +26,16 @@
 package org.meresco.lucene.search;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.Scorer;
-import java.util.List;
-import java.util.ArrayList;
 
 public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
 
-    private final SuperCollector[] collectors;
+    private final SuperCollector<?>[] collectors;
 
-    public MultiSuperCollector(List<SuperCollector> collectors) {
+    public MultiSuperCollector(List<SuperCollector<?>> collectors) {
         super();
         this.collectors = collectors.toArray(new SuperCollector[0]);
     }
@@ -46,7 +44,7 @@ public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
     protected MultiSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
         SubCollector[] subCollectors = new SubCollector[this.collectors.length];
         int count = 0;
-        for (SuperCollector sc : collectors) {
+        for (SuperCollector<?> sc : collectors) {
             subCollectors[count++] = sc.subCollector(context);
         }
         return new MultiSubCollector(context, subCollectors);

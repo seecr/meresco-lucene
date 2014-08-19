@@ -35,8 +35,7 @@ public class TopScoreDocSuperCollector extends SuperCollector<TopScoreDocSubColl
 
 	private final int numHits;
 	private final boolean docsScoredInOrder;
-	private TopDocs topDocs;
-
+	
 	public TopScoreDocSuperCollector(int numHits, boolean docsScoredInOrder) {
 		super();
 		this.numHits = numHits;

@@ -32,8 +32,6 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.OpenBitSet;
 
 
 public class AggregateScoreCollector extends Collector {

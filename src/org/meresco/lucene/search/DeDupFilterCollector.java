@@ -25,19 +25,16 @@
 
 package org.meresco.lucene.search;
 import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-import java.util.Map;
-import java.util.HashSet;
 import java.util.HashMap;
-import java.util.Iterator;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FieldCache;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 
 

@@ -25,17 +25,14 @@
 
 package org.meresco.lucene.analysis;
 
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
+import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.ClassicFilter;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.Version;
-
-import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.tartarus.snowball.ext.DutchStemmer;
 
 

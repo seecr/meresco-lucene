@@ -30,20 +30,14 @@ import java.io.IOException;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.facet.taxonomy.CachedOrdinalsReader;
-import org.apache.lucene.facet.taxonomy.DocValuesOrdinalsReader;
+import org.apache.lucene.facet.LabelAndValue;
+import org.apache.lucene.facet.TopOrdAndIntQueue;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
+import org.apache.lucene.facet.taxonomy.OrdinalsReader;
+import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.facet.LabelAndValue;
-import org.apache.lucene.facet.taxonomy.OrdinalsReader;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.TopOrdAndIntQueue;
-import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.lang.Number;
 
 public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 

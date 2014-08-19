@@ -23,9 +23,9 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import TopScoreDocCollector, MatchAllDocsQuery
+from org.apache.lucene.search import MatchAllDocsQuery
 from org.apache.lucene.document import Document, NumericDocValuesField
-from org.meresco.lucene.search import DeDupFilterCollector
+from org.meresco.lucene.search import DeDupFilterSuperCollector, TopScoreDocSuperCollector
 
 from seecr.test import SeecrTestCase, CallTrace
 from weightless.core import consume
@@ -46,31 +46,34 @@ class DeDupFilterCollectorTest(SeecrTestCase):
 
     def testCollectorTransparentlyDelegatesToNextCollector(self):
         self._addDocument("urn:1", 2)
-        tc = TopScoreDocCollector.create(100, True)
-        c = DeDupFilterCollector("__isformatof__", tc)
+        tc = TopScoreDocSuperCollector(100, True)
+        c = DeDupFilterSuperCollector("__isformatof__", "__sort__", tc)
         self.lucene.search(query=MatchAllDocsQuery(), collector=c)
-        self.assertEquals(1, tc.topDocs().totalHits)
+        self.assertEquals(1, tc.topDocs(0).totalHits)
 
-    def _addDocument(self, identifier, isformatof):
+    def _addDocument(self, identifier, isformatof, sort=None):
         doc = Document()
         if isformatof:
             doc.add(NumericDocValuesField("__isformatof__", long(isformatof)))
+        if sort:
+            doc.add(NumericDocValuesField("__sort__", long(sort)))
         consume(self.lucene.addDocument(identifier, doc))
         self.lucene.commit()  # Explicitly, not required: since commitCount=1.
 
     def testCollectorFiltersTwoSimilar(self):
-        self._addDocument("urn:1", 2)
-        self._addDocument("urn:2", 2)
-        tc = TopScoreDocCollector.create(100, True)
-        c = DeDupFilterCollector("__isformatof__", tc)
+        self._addDocument("urn:1", 2, 1)
+        self._addDocument("urn:2", 2, 2)
+        tc = TopScoreDocSuperCollector(100, True)
+        c = DeDupFilterSuperCollector("__isformatof__", "__sort__", tc)
         self.lucene.search(query=MatchAllDocsQuery(), collector=c)
-        topDocsResult = tc.topDocs()
+        topDocsResult = tc.topDocs(0)
         self.assertEquals(1, topDocsResult.totalHits)
         self.assertEquals(1, len(topDocsResult.scoreDocs))
 
         docId = topDocsResult.scoreDocs[0].doc
         key = c.keyForDocId(docId)
-        self.assertEquals(0, key.docId)
+        identifier = self.lucene._index.getDocument(key.getDocId()).get(IDFIELD)
+        self.assertEquals('urn:2', identifier)
         self.assertEquals(2, key.count)
 
     def testCollectorFiltersTwoTimesTwoSimilarOneNot(self):
@@ -79,10 +82,10 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         self._addDocument("urn:3", 50)
         self._addDocument("urn:4", 3)
         self._addDocument("urn:5", 1)
-        tc = TopScoreDocCollector.create(100, True)
-        c = DeDupFilterCollector("__isformatof__", tc)
+        tc = TopScoreDocSuperCollector(100, True)
+        c = DeDupFilterSuperCollector("__isformatof__", "__sort__", tc)
         self.lucene.search(query=MatchAllDocsQuery(), collector=c)
-        topDocsResult = tc.topDocs()
+        topDocsResult = tc.topDocs(0)
         self.assertEquals(3, topDocsResult.totalHits)
         self.assertEquals(3, len(topDocsResult.scoreDocs))
 
@@ -96,10 +99,10 @@ class DeDupFilterCollectorTest(SeecrTestCase):
 
     def testSilentyYieldsWrongResultWhenFieldNameDoesNotMatch(self):
         self._addDocument("urn:1", 2)
-        tc = TopScoreDocCollector.create(100, True)
-        c = DeDupFilterCollector("__wrong_field__", tc)
+        tc = TopScoreDocSuperCollector(100, True)
+        c = DeDupFilterSuperCollector("__wrong_field__", "__sort__", tc)
         self.lucene.search(query=MatchAllDocsQuery(), collector=c)
-        self.assertEquals(1, tc.topDocs().totalHits)
+        self.assertEquals(1, tc.topDocs(0).totalHits)
 
     def testShouldAddResultsWithoutIsFormatOf(self):
         self._addDocument("urn:1", 2)
@@ -113,8 +116,8 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         self._addDocument("urn:9", None)
         self._addDocument("urn:A", None)
         self._addDocument("urn:B", None) # trigger a merge
-        tc = TopScoreDocCollector.create(100, True)
-        c = DeDupFilterCollector("__isformatof__", tc)
+        tc = TopScoreDocSuperCollector(100, True)
+        c = DeDupFilterSuperCollector("__isformatof__", "__sort__", tc)
         self.lucene.search(query=MatchAllDocsQuery(), collector=c)
-        self.assertEquals(10, tc.topDocs().totalHits)
+        self.assertEquals(10, tc.topDocs(0).totalHits)
 

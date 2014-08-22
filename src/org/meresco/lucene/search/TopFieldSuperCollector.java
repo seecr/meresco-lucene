@@ -26,6 +26,8 @@
 package org.meresco.lucene.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.ScoreDoc;
@@ -72,13 +74,15 @@ public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector>
             TopFieldSuperScorer scorer = new TopFieldSuperScorer();
             this.tfc.setScorer(scorer);
             for (TopFieldSubCollector sub : super.subs) {
-                this.totalHits += sub.topdocs.totalHits;
-                this.tfc.setNextReader(sub.context);
-                int docBase = sub.context.docBase;
-                for (ScoreDoc scoreDoc : sub.topdocs.scoreDocs) {
-                    scorer.set(scoreDoc.score);
-                    this.tfc.collect(scoreDoc.doc - docBase);
-                }
+            	for (AtomicReaderContext context : sub.contexts) {
+	                this.totalHits += sub.topdocs.totalHits;
+	                this.tfc.setNextReader(context);
+	                int docBase = context.docBase;
+	                for (ScoreDoc scoreDoc : sub.topdocs.scoreDocs) {
+	                    scorer.set(scoreDoc.score);
+	                    this.tfc.collect(scoreDoc.doc - docBase);
+	                }
+            	}
             }
         }
         TopDocs topDocs = this.tfc.topDocs(start);
@@ -98,15 +102,16 @@ public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector>
 class TopFieldSubCollector extends DelegatingSubCollector<TopFieldCollector, TopFieldSuperCollector> {
 
     TopDocs topdocs;
-    AtomicReaderContext context;
+    List<AtomicReaderContext> contexts;
 
     public TopFieldSubCollector(TopFieldSuperCollector parent) throws IOException {
         super(TopFieldCollector.create(parent.sort, parent.numHits, parent.fillFields, parent.trackDocScores, parent.trackMaxScore, parent.docsScoredInOrder), parent);
+        this.contexts = new ArrayList<AtomicReaderContext>();
     }
 
     public void setNextReader(AtomicReaderContext context) throws IOException {
         super.setNextReader(context);
-        this.context = context;
+        this.contexts.add(context);
     }
 
     @Override

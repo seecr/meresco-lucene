@@ -26,7 +26,10 @@
 package org.meresco.lucene.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -42,10 +45,34 @@ import org.apache.lucene.search.Weight;
 public class SuperIndexSearcher extends IndexSearcher {
 
 	private ExecutorService executor;
+	private List<AtomicReaderContext> bigSegments;
+	private List<AtomicReaderContext> smallSegments;
 
 	public SuperIndexSearcher(DirectoryReader reader, ExecutorService executor) {
 		super(reader);
 		this.executor = executor;
+		findBigSegments();
+	}
+
+	private void findBigSegments() {
+		this.bigSegments = new ArrayList<AtomicReaderContext>(super.leafContexts);
+		Collections.sort(bigSegments, new Comparator<AtomicReaderContext>() {
+			public int compare(AtomicReaderContext lhs, AtomicReaderContext rhs) {
+				return Integer.compare(lhs.reader().maxDoc(), rhs.reader().maxDoc());
+			}
+		});
+		int totalSmallDocs = 0;
+		this.smallSegments = new ArrayList<AtomicReaderContext>();
+		if (this.bigSegments.isEmpty())
+			return;
+		int largestSegment = this.bigSegments.get(this.bigSegments.size() - 1).reader().maxDoc();
+		while (totalSmallDocs + this.bigSegments.get(0).reader().maxDoc() <= largestSegment) {
+			AtomicReaderContext context = this.bigSegments.remove(0);
+			totalSmallDocs += context.reader().maxDoc();
+			this.smallSegments.add(context);
+			if (this.bigSegments.isEmpty())
+				return;
+		}
 	}
 
 	public void search(Query q, Filter f, SuperCollector<?> c) throws IOException, InterruptedException,
@@ -54,14 +81,12 @@ public class SuperIndexSearcher extends IndexSearcher {
 		ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(this.executor);
 		// IDEA 1: group small leaves and sumbit those groups to avoid overhead
 		// IDEA 2: submit large leaves to pool, do small leaves her in main
-		// thread
-		System.out.println(this.getIndexReader().maxDoc());
-		// ecs.submit(new SearchTask(super.leafContexts, weight, c.subCollector(ctx)), "Done");
-		for (AtomicReaderContext ctx : super.leafContexts) {
-			System.out.println("Ctx: " + ctx.reader().maxDoc());
-			ecs.submit(new SearchTask(weight, c.subCollector(), ctx), "Done");
+		for (AtomicReaderContext ctx : this.bigSegments) {
+			ecs.submit(new SearchTask(weight, c.subCollector(), Arrays.asList(ctx)), "Done");
 		}
-		for (int i = 0; i < super.leafContexts.size(); i++) {
+		new SearchTask(weight, c.subCollector(), this.smallSegments).run();
+
+		for (int i = 0; i < this.bigSegments.size(); i++) {
 			ecs.take().get();
 		}
 	}
@@ -71,23 +96,20 @@ public class SuperIndexSearcher extends IndexSearcher {
 		private Weight weight;
 		private SubCollector subCollector;
 
-		public SearchTask(Weight weight, SubCollector subCollector, AtomicReaderContext... leaves) {
-			this.contexts = Arrays.asList(leaves);
+		public SearchTask(Weight weight, SubCollector subCollector, List<AtomicReaderContext> leaves) {
+			this.contexts = leaves;
 			this.weight = weight;
 			this.subCollector = subCollector;
 		}
 
 		@Override
 		public void run() {
-			long t0 = System.currentTimeMillis();
 			try {
 				SuperIndexSearcher.this.search(this.contexts, this.weight, this.subCollector);
 				this.subCollector.complete();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-			long t1 = System.currentTimeMillis();
-			System.out.println("Task took " + (t1 - t0) + " for docBase" + this.contexts.get(0).docBase);
 		}
 	}
 }

@@ -45,8 +45,8 @@ public class KeySuperCollector extends SuperCollector<KeySubCollector> {
     }
 
     @Override
-    protected KeySubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        return new KeySubCollector(context, this.keyName);
+    protected KeySubCollector createSubCollector() throws IOException {
+        return new KeySubCollector(this.keyName);
     }
 
     public OpenBitSet getCollectedKeys() {
@@ -62,12 +62,18 @@ public class KeySuperCollector extends SuperCollector<KeySubCollector> {
 }
 
 class KeySubCollector extends SubCollector {
-    private final NumericDocValues keyValues;
+    private NumericDocValues keyValues;
     protected OpenBitSet keySet = new OpenBitSet();
+    private final String keyName;
 
-    public KeySubCollector(AtomicReaderContext context, String keyName) throws IOException {
-        super(context);
-        this.keyValues = context.reader().getNumericDocValues(keyName);
+    public KeySubCollector(String keyName) throws IOException {
+        super();
+        this.keyName = keyName;
+    }
+
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        this.keyValues = context.reader().getNumericDocValues(this.keyName);
     }
 
     @Override

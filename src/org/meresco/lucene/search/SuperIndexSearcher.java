@@ -55,8 +55,11 @@ public class SuperIndexSearcher extends IndexSearcher {
 		// IDEA 1: group small leaves and sumbit those groups to avoid overhead
 		// IDEA 2: submit large leaves to pool, do small leaves her in main
 		// thread
+		System.out.println(this.getIndexReader().maxDoc());
+		// ecs.submit(new SearchTask(super.leafContexts, weight, c.subCollector(ctx)), "Done");
 		for (AtomicReaderContext ctx : super.leafContexts) {
-			ecs.submit(new SearchTask(ctx, weight, c.subCollector(ctx)), "Done");
+			System.out.println("Ctx: " + ctx.reader().maxDoc());
+			ecs.submit(new SearchTask(weight, c.subCollector(), ctx), "Done");
 		}
 		for (int i = 0; i < super.leafContexts.size(); i++) {
 			ecs.take().get();
@@ -68,20 +71,23 @@ public class SuperIndexSearcher extends IndexSearcher {
 		private Weight weight;
 		private SubCollector subCollector;
 
-		public SearchTask(AtomicReaderContext context, Weight weight, SubCollector subCollector) {
-			this.contexts = Arrays.asList(context);
+		public SearchTask(Weight weight, SubCollector subCollector, AtomicReaderContext... leaves) {
+			this.contexts = Arrays.asList(leaves);
 			this.weight = weight;
 			this.subCollector = subCollector;
 		}
 
 		@Override
 		public void run() {
+			long t0 = System.currentTimeMillis();
 			try {
 				SuperIndexSearcher.this.search(this.contexts, this.weight, this.subCollector);
 				this.subCollector.complete();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+			long t1 = System.currentTimeMillis();
+			System.out.println("Task took " + (t1 - t0) + " for docBase" + this.contexts.get(0).docBase);
 		}
 	}
 }

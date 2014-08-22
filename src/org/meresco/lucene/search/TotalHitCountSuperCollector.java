@@ -33,8 +33,8 @@ import org.apache.lucene.search.Scorer;
 public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSubCollector> {
 
 	@Override
-	public TotalHitCountSubCollector createSubCollector(AtomicReaderContext context) {
-		return new TotalHitCountSubCollector(context);
+	public TotalHitCountSubCollector createSubCollector() {
+		return new TotalHitCountSubCollector();
 	}
 
 	public int getTotalHits() {
@@ -51,8 +51,8 @@ class TotalHitCountSubCollector extends SubCollector {
 
 	private int totalHits = 0;
 
-	public TotalHitCountSubCollector(AtomicReaderContext context) {
-		super(context);
+	@Override
+	public void setNextReader(AtomicReaderContext context) {
 	}
 
 	@Override

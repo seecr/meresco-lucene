@@ -65,14 +65,15 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
     }
 
     @Override
-    protected DeDupFilterSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        if (this.topLevelReaderContext == null)
-            this.topLevelReaderContext = ReaderUtil.getTopLevelContext(context);
-        SubCollector delegateSubCollector = this.delegate.subCollector(context);
-        return new DeDupFilterSubCollector(context, this.keyName, this.sortByFieldName, delegateSubCollector, this.keys);
+    protected DeDupFilterSubCollector createSubCollector() throws IOException {
+        SubCollector delegateSubCollector = this.delegate.subCollector();
+        return new DeDupFilterSubCollector(this.keyName, this.sortByFieldName, delegateSubCollector, this.keys);
     }
 
     public DeDupFilterSubCollector.Key keyForDocId(int docId) throws IOException {
+        if (this.topLevelReaderContext == null)
+            this.topLevelReaderContext = ReaderUtil.getTopLevelContext(super.subs.get(0).context);
+
         List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
         AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
         NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
@@ -86,25 +87,31 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
 }
 
 class DeDupFilterSubCollector extends SubCollector {
+    AtomicReaderContext context;
     private final SubCollector delegate;
     private ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>> keys;
 
-    private final int currentDocBase;
     private final String keyName;
     private final String sortByFieldName;
-    private final NumericDocValues sortByValues;
-    private final NumericDocValues keyValues;
+    private int currentDocBase;
+    private NumericDocValues sortByValues;
+    private NumericDocValues keyValues;
 
     private int totalHits = 0;
 
-    public DeDupFilterSubCollector(AtomicReaderContext context, String keyName, String sortByFieldName, SubCollector delegate, ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>> keys) throws IOException {
-        super(context);
+    public DeDupFilterSubCollector(String keyName, String sortByFieldName, SubCollector delegate, ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>> keys) throws IOException {
+        super();
         this.delegate = delegate;
         this.keys = keys;
 
         this.keyName = keyName;
         this.sortByFieldName = sortByFieldName;
+    }
 
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        this.context = context;
+        this.delegate.setNextReader(context);
         this.currentDocBase = context.docBase;
         NumericDocValues kv = context.reader().getNumericDocValues(this.keyName);
         if (kv == null)

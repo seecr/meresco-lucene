@@ -35,7 +35,7 @@ public class TopScoreDocSuperCollector extends SuperCollector<TopScoreDocSubColl
 
 	private final int numHits;
 	private final boolean docsScoredInOrder;
-	
+
 	public TopScoreDocSuperCollector(int numHits, boolean docsScoredInOrder) {
 		super();
 		this.numHits = numHits;
@@ -43,8 +43,8 @@ public class TopScoreDocSuperCollector extends SuperCollector<TopScoreDocSubColl
 	}
 
 	@Override
-	protected TopScoreDocSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-		return new TopScoreDocSubCollector(context, this, this.numHits, this.docsScoredInOrder);
+	protected TopScoreDocSubCollector createSubCollector() throws IOException {
+		return new TopScoreDocSubCollector(this, this.numHits, this.docsScoredInOrder);
 	}
 
 	public TopDocs topDocs(int start) throws IOException {
@@ -67,8 +67,8 @@ class TopScoreDocSubCollector extends DelegatingSubCollector<TopScoreDocCollecto
 
 	TopDocs topdocs;
 
-	public TopScoreDocSubCollector(AtomicReaderContext context, TopScoreDocSuperCollector parent, int numHits, boolean docsScoredInOrder) throws IOException {
-		super(context, TopScoreDocCollector.create(numHits, docsScoredInOrder), parent);
+	public TopScoreDocSubCollector(TopScoreDocSuperCollector parent, int numHits, boolean docsScoredInOrder) throws IOException {
+		super(TopScoreDocCollector.create(numHits, docsScoredInOrder), parent);
 	}
 
 	@Override

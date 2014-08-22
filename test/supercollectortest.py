@@ -48,7 +48,7 @@ class SuperCollectorTest(SeecrTestCase):
     def testCreate(self):
         C = TotalHitCountSuperCollector()
         self.assertTrue(isinstance(C, SuperCollector))
-        S = C.subCollector(None)
+        S = C.subCollector()
         self.assertTrue(isinstance(S, SubCollector))
 
     def testSearch(self):
@@ -66,11 +66,11 @@ class SuperCollectorTest(SeecrTestCase):
     def testTopScoreDocSuperCollector(self):
         C = TopScoreDocSuperCollector(10, True)
         self.assertTrue(isinstance(C, SuperCollector))
-        S = C.subCollector(None)
+        S = C.subCollector()
         self.assertTrue(isinstance(S, SubCollector))
         self.assertFalse(S.acceptsDocsOutOfOrder())
         C = TopScoreDocSuperCollector(10, False)
-        S = C.subCollector(None)
+        S = C.subCollector()
         self.assertTrue(S.acceptsDocsOutOfOrder())
 
     def testSearchTopDocs(self):

@@ -49,22 +49,29 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
     }
 
     @Override
-    protected AggregateScoreSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        return new AggregateScoreSubCollector(context, this.keyName, this.otherScoreCollectors, this.delegate.subCollector(context));
+    protected AggregateScoreSubCollector createSubCollector() throws IOException {
+        return new AggregateScoreSubCollector(this.keyName, this.otherScoreCollectors, this.delegate.subCollector());
     }
 }
 
 class AggregateScoreSubCollector extends SubCollector {
 
     private final SubCollector delegate;
-    private final NumericDocValues keyValues;
+    private NumericDocValues keyValues;
     private final ScoreSuperCollector[] otherScoreCollectors;
+    private final String keyName;
 
-    public AggregateScoreSubCollector(AtomicReaderContext context, String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate) throws IOException {
-        super(context);
+    public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate) throws IOException {
+        super();
         this.delegate = delegate;
-        this.keyValues = context.reader().getNumericDocValues(keyName);
         this.otherScoreCollectors = otherScoreCollectors;
+        this.keyName = keyName;
+    }
+
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        this.delegate.setNextReader(context);
+        this.keyValues = context.reader().getNumericDocValues(this.keyName);
     }
 
     @Override

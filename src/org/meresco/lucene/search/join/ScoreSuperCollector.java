@@ -60,20 +60,24 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     }
 
     @Override
-    protected ScoreSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        return new ScoreSubCollector(context, this);
+    protected ScoreSubCollector createSubCollector() throws IOException {
+        return new ScoreSubCollector(this);
     }
 }
 
 class ScoreSubCollector extends SubCollector {
     private Scorer scorer;
-    private final NumericDocValues keyValues;
+    private NumericDocValues keyValues;
     private final ScoreSuperCollector parent;
 
-    public ScoreSubCollector(AtomicReaderContext context, ScoreSuperCollector parent) throws IOException {
-        super(context);
+    public ScoreSubCollector(ScoreSuperCollector parent) throws IOException {
+        super();
         this.parent = parent;
-        this.keyValues = context.reader().getNumericDocValues(parent.keyName);
+    }
+
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        this.keyValues = context.reader().getNumericDocValues(this.parent.keyName);
     }
 
     @Override

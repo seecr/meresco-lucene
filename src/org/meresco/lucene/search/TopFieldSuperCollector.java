@@ -57,8 +57,8 @@ public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector>
     }
 
     @Override
-    protected TopFieldSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        return new TopFieldSubCollector(context, this);
+    protected TopFieldSubCollector createSubCollector() throws IOException {
+        return new TopFieldSubCollector(this);
     }
 
     public TopDocs topDocs(int start) throws IOException {
@@ -98,10 +98,14 @@ public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector>
 class TopFieldSubCollector extends DelegatingSubCollector<TopFieldCollector, TopFieldSuperCollector> {
 
     TopDocs topdocs;
-    final AtomicReaderContext context;
+    AtomicReaderContext context;
 
-    public TopFieldSubCollector(AtomicReaderContext context, TopFieldSuperCollector parent) throws IOException {
-        super(context, TopFieldCollector.create(parent.sort, parent.numHits, parent.fillFields, parent.trackDocScores, parent.trackMaxScore, parent.docsScoredInOrder), parent);
+    public TopFieldSubCollector(TopFieldSuperCollector parent) throws IOException {
+        super(TopFieldCollector.create(parent.sort, parent.numHits, parent.fillFields, parent.trackDocScores, parent.trackMaxScore, parent.docsScoredInOrder), parent);
+    }
+
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        super.setNextReader(context);
         this.context = context;
     }
 

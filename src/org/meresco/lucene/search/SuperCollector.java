@@ -29,8 +29,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
-
 public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 
 	protected List<SubCollectorType> subs = new ArrayList<SubCollectorType>();
@@ -47,8 +45,8 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 	 *            next atomic reader context
 	 * @throws IOException
 	 */
-	public SubCollector subCollector(AtomicReaderContext context) throws IOException {
-		SubCollectorType sub = this.createSubCollector(context);
+	public SubCollector subCollector() throws IOException {
+		SubCollectorType sub = this.createSubCollector();
 		this.subs.add(sub);
 		return sub;
 	}
@@ -61,5 +59,5 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 	 * @return SubCollector for this context
 	 * @throws IOException
 	 */
-	abstract protected SubCollectorType createSubCollector(AtomicReaderContext context) throws IOException;
+	abstract protected SubCollectorType createSubCollector() throws IOException;
 }

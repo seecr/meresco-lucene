@@ -41,21 +41,21 @@ public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
     }
 
     @Override
-    protected MultiSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
+    protected MultiSubCollector createSubCollector() throws IOException {
         SubCollector[] subCollectors = new SubCollector[this.collectors.length];
         int count = 0;
         for (SuperCollector<?> sc : collectors) {
-            subCollectors[count++] = sc.subCollector(context);
+            subCollectors[count++] = sc.subCollector();
         }
-        return new MultiSubCollector(context, subCollectors);
+        return new MultiSubCollector(subCollectors);
     }
 }
 
 class MultiSubCollector extends SubCollector {
     private final SubCollector[] subCollectors;
 
-    public MultiSubCollector(AtomicReaderContext context, SubCollector[] subCollectors) throws IOException {
-        super(context);
+    public MultiSubCollector(SubCollector[] subCollectors) throws IOException {
+        super();
         this.subCollectors = subCollectors;
     }
 
@@ -67,6 +67,13 @@ class MultiSubCollector extends SubCollector {
             }
         }
         return true;
+    }
+
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        for (SubCollector c : this.subCollectors) {
+            c.setNextReader(context);
+        }
     }
 
     @Override

@@ -53,8 +53,8 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
     }
 
     @Override
-    protected FacetSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        return new FacetSubCollector(context, new FacetsCollector(), this);
+    protected FacetSubCollector createSubCollector() throws IOException {
+        return new FacetSubCollector(new FacetsCollector(), this);
     }
 
     public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
@@ -141,8 +141,8 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
 
     int[] values;
 
-    public FacetSubCollector(AtomicReaderContext context, FacetsCollector delegate, FacetSuperCollector parent) throws IOException {
-        super(context, delegate, parent);
+    public FacetSubCollector(FacetsCollector delegate, FacetSuperCollector parent) throws IOException {
+        super(delegate, parent);
     }
 
     @Override

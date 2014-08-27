@@ -28,127 +28,107 @@ package org.meresco.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 
-public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector> {
+public class TopFieldSuperCollector extends TopDocSuperCollector<TopFieldSubCollector> {
 
-    protected final Sort sort;
-    protected final int numHits;
-    protected final boolean fillFields;
-    protected final boolean trackDocScores;
-    protected final boolean trackMaxScore;
-    protected final boolean docsScoredInOrder;
+	protected final Sort sort;
+	protected final int numHits;
+	protected final boolean fillFields;
+	protected final boolean trackDocScores;
+	protected final boolean trackMaxScore;
+	protected final boolean docsScoredInOrder;
 
-    private TopFieldCollector tfc;
-    private int totalHits;
+	public TopFieldSuperCollector(Sort sort, int numHits, boolean fillFields, boolean trackDocScores,
+			boolean trackMaxScore, boolean docsScoredInOrder) {
+		super();
+		this.sort = sort;
+		this.numHits = numHits;
+		this.fillFields = true; // fillFields;
+		this.trackDocScores = trackDocScores;
+		this.trackMaxScore = trackMaxScore;
+		this.docsScoredInOrder = docsScoredInOrder;
+	}
 
-    public TopFieldSuperCollector(Sort sort, int numHits, boolean fillFields, boolean trackDocScores, boolean trackMaxScore, boolean docsScoredInOrder) {
-        super();
-        this.sort = sort;
-        this.numHits = numHits;
-        this.fillFields = fillFields;
-        this.trackDocScores = trackDocScores;
-        this.trackMaxScore = trackMaxScore;
-        this.docsScoredInOrder = docsScoredInOrder;
-    }
+	@Override
+	protected TopFieldSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
+		return new TopFieldSubCollector(context, this);
+	}
 
-    @Override
-    protected TopFieldSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        return new TopFieldSubCollector(context, this);
-    }
+	public TopDocs topDocs(int start) throws IOException {
+		return createTopDocs(start);
+	}
 
-    public TopDocs topDocs(int start) throws IOException {
-        return createTopDocs(start);
-    }
+	private TopDocs createTopDocs(int start) throws IOException {
+		TopDocs[] topdocs = new TopDocs[super.subs.size()];
+		for (int i = 0; i < topdocs.length; i++)
+			topdocs[i] = super.subs.get(i).topdocs;
+		return TopDocs.merge(this.sort, start, this.numHits - start, topdocs);
+	}
 
-    private TopDocs createTopDocs(int start) throws IOException {
-        if (this.tfc == null) {
-            this.totalHits = 0;
-            this.tfc = TopFieldCollector.create(this.sort, this.numHits, this.fillFields, this.trackDocScores, this.trackMaxScore, this.docsScoredInOrder);
-            TopFieldSuperScorer scorer = new TopFieldSuperScorer();
-            this.tfc.setScorer(scorer);
-            for (TopFieldSubCollector sub : super.subs) {
-                this.totalHits += sub.topdocs.totalHits;
-                this.tfc.setNextReader(sub.context);
-                int docBase = sub.context.docBase;
-                for (ScoreDoc scoreDoc : sub.topdocs.scoreDocs) {
-                    scorer.set(scoreDoc.score);
-                    this.tfc.collect(scoreDoc.doc - docBase);
-                }
-            }
-        }
-        TopDocs topDocs = this.tfc.topDocs(start);
-        topDocs.totalHits = this.totalHits;
-        return topDocs;
-    }
-
-    public int getTotalHits() throws IOException {
-        if (this.tfc != null) {
-            return this.totalHits;
-        }
-        return createTopDocs(0).totalHits;
-    }
+	public int getTotalHits() throws IOException {
+		return createTopDocs(0).totalHits;
+	}
 }
-
 
 class TopFieldSubCollector extends DelegatingSubCollector<TopFieldCollector, TopFieldSuperCollector> {
 
-    TopDocs topdocs;
-    final AtomicReaderContext context;
+	TopDocs topdocs;
+	final AtomicReaderContext context;
 
-    public TopFieldSubCollector(AtomicReaderContext context, TopFieldSuperCollector parent) throws IOException {
-        super(context, TopFieldCollector.create(parent.sort, parent.numHits, parent.fillFields, parent.trackDocScores, parent.trackMaxScore, parent.docsScoredInOrder), parent);
-        this.context = context;
-    }
+	public TopFieldSubCollector(AtomicReaderContext context, TopFieldSuperCollector parent) throws IOException {
+		super(context, TopFieldCollector.create(parent.sort, parent.numHits, parent.fillFields, parent.trackDocScores,
+				parent.trackMaxScore, parent.docsScoredInOrder), parent);
+		this.context = context;
+	}
 
-    @Override
-    public void complete() {
-        this.topdocs = this.delegate.topDocs();
-    }
+	@Override
+	public void complete() {
+		this.topdocs = this.delegate.topDocs();
+	}
 }
 
 class TopFieldSuperScorer extends Scorer {
 
-    private float score;
+	private float score;
 
-    protected TopFieldSuperScorer() {
-        super(null);
-    }
+	protected TopFieldSuperScorer() {
+		super(null);
+	}
 
-    public void set(float score) {
-        this.score = score;
-    }
+	public void set(float score) {
+		this.score = score;
+	}
 
-    public float score() {
-        return this.score;
-    }
+	public float score() {
+		return this.score;
+	}
 
-    @Override
-    public int freq() throws IOException {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public int freq() throws IOException {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public int docID() {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public int docID() {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public int nextDoc() throws IOException {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public int nextDoc() throws IOException {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public int advance(int target) throws IOException {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public int advance(int target) throws IOException {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public long cost() {
-        throw new UnsupportedOperationException();
-    }
+	@Override
+	public long cost() {
+		throw new UnsupportedOperationException();
+	}
 }

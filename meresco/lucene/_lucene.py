@@ -267,7 +267,7 @@ def _termsFromFacetResult(facetResult, facet, path):
 def _topCollector(start, stop, sortKeys):
     if stop <= start:
         return TotalHitCountSuperCollector()
-    fillFields = False
+    # fillFields = False # always true for multi-threading/sharding
     trackDocScores = True
     trackMaxScore = False
     docsScoredInOrder = True
@@ -279,7 +279,7 @@ def _topCollector(start, stop, sortKeys):
         sort = Sort(sortFields)
     else:
         return TopScoreDocSuperCollector(stop, docsScoredInOrder)
-    return TopFieldSuperCollector(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)
+    return TopFieldSuperCollector(sort, stop, trackDocScores, trackMaxScore, docsScoredInOrder)
 
 
 MAX_FACET_DEPTH = 10

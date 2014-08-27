@@ -177,7 +177,7 @@ class SuperCollectorTest(SeecrTestCase):
         I.close()
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
         sort = Sort(sortField(fieldname="name", sortDescending=True))
-        C = TopFieldSuperCollector(sort, 2, False, True, False, True)
+        C = TopFieldSuperCollector(sort, 2, True, False, True)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
         td = C.topDocs(0)

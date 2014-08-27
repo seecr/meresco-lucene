@@ -28,51 +28,29 @@ package org.meresco.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 
-public class TopScoreDocSuperCollector extends SuperCollector<TopScoreDocSubCollector> {
+public class TopScoreDocSuperCollector extends TopDocSuperCollector<TopScoreDocSubCollector> {
 
-	private final int numHits;
 	private final boolean docsScoredInOrder;
-	
+
 	public TopScoreDocSuperCollector(int numHits, boolean docsScoredInOrder) {
-		super();
-		this.numHits = numHits;
+		super(null, numHits);
 		this.docsScoredInOrder = docsScoredInOrder;
 	}
 
 	@Override
 	protected TopScoreDocSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-		return new TopScoreDocSubCollector(context, this, this.numHits, this.docsScoredInOrder);
-	}
-
-	public TopDocs topDocs(int start) throws IOException {
-		return createTopDocs(start);
-	}
-
-	private TopDocs createTopDocs(int start) throws IOException {
-		TopDocs[] topdocs = new TopDocs[super.subs.size()];
-		for (int i = 0; i < topdocs.length; i++)
-			topdocs[i] = super.subs.get(i).topdocs;
-		return TopDocs.merge(null, start, this.numHits - start, topdocs);
-	}
-
-	public int getTotalHits() throws IOException {
-		return createTopDocs(0).totalHits;
+		TopDocsCollector collector = TopScoreDocCollector.create(super.numHits, this.docsScoredInOrder);
+		return new TopScoreDocSubCollector(context, collector, this);
 	}
 }
 
-class TopScoreDocSubCollector extends DelegatingSubCollector<TopScoreDocCollector, TopScoreDocSuperCollector> {
+class TopScoreDocSubCollector extends TopDocSubCollector {
 
-	TopDocs topdocs;
-
-	public TopScoreDocSubCollector(AtomicReaderContext context, TopScoreDocSuperCollector parent, int numHits, boolean docsScoredInOrder) throws IOException {
-		super(context, TopScoreDocCollector.create(numHits, docsScoredInOrder), parent);
-	}
-
-	@Override
-	public void complete() {
-		this.topdocs = this.delegate.topDocs();
+	public TopScoreDocSubCollector(AtomicReaderContext context, TopDocsCollector collector,
+			TopDocSuperCollector<TopScoreDocSubCollector> parent) throws IOException {
+		super(context, collector, parent);
 	}
 }

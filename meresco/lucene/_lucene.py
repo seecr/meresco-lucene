@@ -216,7 +216,8 @@ class Lucene(object):
         filters = [self._filterCache.get(f) for f in filterQueries]
         if filter is not None:
             filters.append(filter)
-        return ChainedFilter(filters, ChainedFilter.AND)
+        # EG: bug? in PyLucene 4.9? The wrong ctor is called if second arg is not a list.
+        return ChainedFilter(filters, [ChainedFilter.AND] * len(filters))
 
     def _facetResult(self, facetCollector, facets):
         result = []

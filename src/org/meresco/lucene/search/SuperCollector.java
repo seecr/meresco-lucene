@@ -38,10 +38,10 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 	/**
 	 * Called before collecting from each {@link AtomicReaderContext} in a
 	 * separate thread. The returned {@link SubCollector} need not be thread
-	 * safe as it's scope is limited to one segment.
+	 * safe as its scope is limited to one segment.
 	 *
 	 * The SubCollector is kept in a list and accessible by
-	 * {@link #subCollectors()}.
+	 * {@link #subs}.
 	 *
 	 * @param context
 	 *            next atomic reader context

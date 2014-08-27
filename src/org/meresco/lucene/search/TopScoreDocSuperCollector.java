@@ -28,10 +28,9 @@ package org.meresco.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 
-public class TopScoreDocSuperCollector extends TopDocSuperCollector<TopScoreDocSubCollector> {
+public class TopScoreDocSuperCollector extends TopDocSuperCollector {
 
 	private final boolean docsScoredInOrder;
 
@@ -41,16 +40,8 @@ public class TopScoreDocSuperCollector extends TopDocSuperCollector<TopScoreDocS
 	}
 
 	@Override
-	protected TopScoreDocSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-		TopDocsCollector collector = TopScoreDocCollector.create(super.numHits, this.docsScoredInOrder);
-		return new TopScoreDocSubCollector(context, collector, this);
-	}
-}
-
-class TopScoreDocSubCollector extends TopDocSubCollector {
-
-	public TopScoreDocSubCollector(AtomicReaderContext context, TopDocsCollector collector,
-			TopDocSuperCollector<TopScoreDocSubCollector> parent) throws IOException {
-		super(context, collector, parent);
+	protected TopDocSubCollector<TopScoreDocSuperCollector> createSubCollector(AtomicReaderContext context) throws IOException {
+		return new TopDocSubCollector<TopScoreDocSuperCollector>(context, TopScoreDocCollector.create(super.numHits,
+				this.docsScoredInOrder), this);
 	}
 }

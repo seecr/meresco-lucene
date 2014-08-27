@@ -47,7 +47,7 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 	 *            next atomic reader context
 	 * @throws IOException
 	 */
-	public SubCollector subCollector(AtomicReaderContext context) throws IOException {
+	public SubCollectorType subCollector(AtomicReaderContext context) throws IOException {
 		SubCollectorType sub = this.createSubCollector(context);
 		this.subs.add(sub);
 		return sub;

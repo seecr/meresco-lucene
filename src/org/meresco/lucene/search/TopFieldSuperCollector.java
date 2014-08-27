@@ -31,7 +31,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopFieldCollector;
 
-public class TopFieldSuperCollector extends TopDocSuperCollector<TopFieldSubCollector> {
+public class TopFieldSuperCollector extends TopDocSuperCollector {
 
 	final boolean trackDocScores;
 	final boolean trackMaxScore;
@@ -46,15 +46,8 @@ public class TopFieldSuperCollector extends TopDocSuperCollector<TopFieldSubColl
 	}
 
 	@Override
-	protected TopFieldSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-		return new TopFieldSubCollector(context, this);
-	}
-}
-
-class TopFieldSubCollector extends TopDocSubCollector {
-
-	public TopFieldSubCollector(AtomicReaderContext context, TopFieldSuperCollector parent) throws IOException {
-		super(context, TopFieldCollector.create(parent.sort, parent.numHits, true, parent.trackDocScores,
-				parent.trackMaxScore, parent.docsScoredInOrder), parent);
+	protected TopDocSubCollector<TopFieldSuperCollector> createSubCollector(AtomicReaderContext context) throws IOException {
+		return new TopDocSubCollector<TopFieldSuperCollector>(context, TopFieldCollector.create(this.sort,
+				this.numHits, true, this.trackDocScores, this.trackMaxScore, this.docsScoredInOrder), this);
 	}
 }

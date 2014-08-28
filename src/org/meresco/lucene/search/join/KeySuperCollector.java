@@ -29,68 +29,71 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
-import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.SubCollector;
-
+import org.meresco.lucene.search.SuperCollector;
 
 public class KeySuperCollector extends SuperCollector<KeySubCollector> {
-    private final String keyName;
-    public OpenBitSet keySet;
+	private final String keyName;
+	public OpenBitSet keySet;
 
-    public KeySuperCollector(String keyName) {
-        this.keyName = keyName;
-    }
+	public KeySuperCollector(String keyName) {
+		this.keyName = keyName;
+	}
 
-    @Override
-    protected KeySubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        return new KeySubCollector(context, this.keyName);
-    }
+	@Override
+	protected KeySubCollector createSubCollector() throws IOException {
+		return new KeySubCollector(this.keyName);
+	}
 
-    public OpenBitSet getCollectedKeys() {
-        if (keySet == null) {
-            OpenBitSet keySet = super.subs.get(0).keySet;
-            for (int i = 1; i < super.subs.size(); i++) {
-                keySet.or(super.subs.get(i).keySet);
-            }
-            this.keySet = keySet;
-        }
-        return this.keySet;
-    }
+	public OpenBitSet getCollectedKeys() {
+		if (keySet == null) {
+			OpenBitSet keySet = super.subs.get(0).keySet;
+			for (int i = 1; i < super.subs.size(); i++) {
+				keySet.or(super.subs.get(i).keySet);
+			}
+			this.keySet = keySet;
+		}
+		return this.keySet;
+	}
 }
 
 class KeySubCollector extends SubCollector {
-    private final NumericDocValues keyValues;
-    protected OpenBitSet keySet = new OpenBitSet();
+	private NumericDocValues keyValues;
+	protected OpenBitSet keySet = new OpenBitSet();
+	private String keyName;
 
-    public KeySubCollector(AtomicReaderContext context, String keyName) throws IOException {
-        super(context);
-        this.keyValues = context.reader().getNumericDocValues(keyName);
-    }
+	public KeySubCollector(String keyName) throws IOException {
+		super();
+		this.keyName = keyName;
+	}
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-        return true;
-    }
+	@Override
+	public boolean acceptsDocsOutOfOrder() {
+		return true;
+	}
 
-    @Override
-    public void collect(int doc) throws IOException {
-        if (this.keyValues != null) {
-            int value = (int)this.keyValues.get(doc);
-            if (value > 0) {
-                this.keySet.set(value);
-            }
-        }
-    }
+	@Override
+	public void collect(int doc) throws IOException {
+		if (this.keyValues != null) {
+			int value = (int) this.keyValues.get(doc);
+			if (value > 0) {
+				this.keySet.set(value);
+			}
+		}
+	}
 
-    @Override
-    public void setScorer(Scorer s) throws IOException {
-    }
+	@Override
+	public void setScorer(Scorer s) throws IOException {
+	}
 
+	@Override
+	public void setNextReader(AtomicReaderContext context) throws IOException {
+		this.keyValues = context.reader().getNumericDocValues(keyName);
+	}
 
-    @Override
-    public void complete() throws IOException {
-    }
+	@Override
+	public void complete() throws IOException {
+	}
 }

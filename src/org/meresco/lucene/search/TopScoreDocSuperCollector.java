@@ -40,8 +40,8 @@ public class TopScoreDocSuperCollector extends TopDocSuperCollector {
 	}
 
 	@Override
-	protected TopDocSubCollector<TopScoreDocSuperCollector> createSubCollector(AtomicReaderContext context) throws IOException {
-		return new TopDocSubCollector<TopScoreDocSuperCollector>(context, TopScoreDocCollector.create(super.numHits,
+	protected TopDocSubCollector<TopScoreDocSuperCollector> createSubCollector() throws IOException {
+		return new TopDocSubCollector<TopScoreDocSuperCollector>(TopScoreDocCollector.create(super.numHits,
 				this.docsScoredInOrder), this);
 	}
 }

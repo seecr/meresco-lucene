@@ -401,7 +401,7 @@ class LuceneTest(SeecrTestCase):
                         dedupField="__key__", facets=facets(cat=10)))
         self.assertEquals(1, result.total)
         hit = result.hits[0]
-        self.assertEquals('urn:1', hit.id)
+        #self.assertEquals('urn:1', hit.id) # this is no longer deterministic since threading
         self.assertEquals({'__key__': 2}, hit.duplicateCount)
         self.assertEquals({'count': 2, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
 

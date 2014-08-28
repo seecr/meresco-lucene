@@ -26,80 +26,84 @@
 package org.meresco.lucene.search.join;
 
 import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.SmallFloat;
-
-import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.SubCollector;
+import org.meresco.lucene.search.SuperCollector;
 
 public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
 
-    byte[] scores = new byte[0];
-    final String keyName;
+	byte[] scores = new byte[0];
+	final String keyName;
 
-    public ScoreSuperCollector(String keyName) {
-        this.keyName = keyName;
-    }
+	public ScoreSuperCollector(String keyName) {
+		this.keyName = keyName;
+	}
 
-    public synchronized byte[] resize(byte[] src, int newSize) {
-        if (newSize < src.length) {
-            return src;
-        }
-        byte[] dest = new byte[(int) (newSize * 1.25)];
-        System.arraycopy(src, 0, dest, 0, src.length);
-        return dest;
-    }
+	public synchronized byte[] resize(byte[] src, int newSize) {
+		if (newSize < src.length) {
+			return src;
+		}
+		byte[] dest = new byte[(int) (newSize * 1.25)];
+		System.arraycopy(src, 0, dest, 0, src.length);
+		return dest;
+	}
 
-    public float score(int key) {
-        if (key < this.scores.length) {
-            return SmallFloat.byte315ToFloat(this.scores[key]);
-        }
-        return 0;
-    }
+	public float score(int key) {
+		if (key < this.scores.length) {
+			return SmallFloat.byte315ToFloat(this.scores[key]);
+		}
+		return 0;
+	}
 
-    @Override
-    protected ScoreSubCollector createSubCollector(AtomicReaderContext context) throws IOException {
-        return new ScoreSubCollector(context, this);
-    }
+	@Override
+	protected ScoreSubCollector createSubCollector() throws IOException {
+		return new ScoreSubCollector(this);
+	}
 }
 
 class ScoreSubCollector extends SubCollector {
-    private Scorer scorer;
-    private final NumericDocValues keyValues;
-    private final ScoreSuperCollector parent;
+	private Scorer scorer;
+	private NumericDocValues keyValues;
+	private final ScoreSuperCollector parent;
 
-    public ScoreSubCollector(AtomicReaderContext context, ScoreSuperCollector parent) throws IOException {
-        super(context);
-        this.parent = parent;
-        this.keyValues = context.reader().getNumericDocValues(parent.keyName);
-    }
+	public ScoreSubCollector(ScoreSuperCollector parent) throws IOException {
+		super();
+		this.parent = parent;
+	}
 
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
-        this.scorer = scorer;
-    }
+	@Override
+	public void setScorer(Scorer scorer) throws IOException {
+		this.scorer = scorer;
+	}
 
-    @Override
-    public void collect(int doc) throws IOException {
-        if (this.keyValues != null) {
-            int value = (int)this.keyValues.get(doc);
-            if (value > 0) {
-                if (value >= this.parent.scores.length) {
-                    this.parent.scores = this.parent.resize(this.parent.scores, value + 1);
-                }
-                this.parent.scores[value] = SmallFloat.floatToByte315(scorer.score());
-            }
-        }
-    }
+	@Override
+	public void setNextReader(AtomicReaderContext context) throws IOException {
+		this.keyValues = context.reader().getNumericDocValues(parent.keyName);
+	}
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-        return true;
-    }
+	@Override
+	public void collect(int doc) throws IOException {
+		if (this.keyValues != null) {
+			int value = (int) this.keyValues.get(doc);
+			if (value > 0) {
+				if (value >= this.parent.scores.length) {
+					this.parent.scores = this.parent.resize(this.parent.scores, value + 1);
+				}
+				this.parent.scores[value] = SmallFloat.floatToByte315(scorer.score());
+			}
+		}
+	}
 
-    @Override
-    public void complete() {
-    }
+	@Override
+	public boolean acceptsDocsOutOfOrder() {
+		return true;
+	}
+
+	@Override
+	public void complete() {
+	}
 }

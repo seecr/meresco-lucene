@@ -39,27 +39,26 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 	 * Called before collecting from each {@link AtomicReaderContext} in a
 	 * separate thread. The returned {@link SubCollector} need not be thread
 	 * safe as its scope is limited to one segment.
-	 *
-	 * The SubCollector is kept in a list and accessible by
-	 * {@link #subs}.
-	 *
+	 * 
+	 * The SubCollector is kept in a list and accessible by {@link #subs}.
+	 * 
 	 * @param context
 	 *            next atomic reader context
 	 * @throws IOException
 	 */
-	public SubCollectorType subCollector(AtomicReaderContext context) throws IOException {
-		SubCollectorType sub = this.createSubCollector(context);
+	public SubCollectorType subCollector() throws IOException {
+		SubCollectorType sub = this.createSubCollector();
 		this.subs.add(sub);
 		return sub;
 	}
 
 	/**
 	 * Lower level factory method for SubCollectors.
-	 *
+	 * 
 	 * @param context
 	 *            is an AtomicReaderContext
 	 * @return SubCollector for this context
 	 * @throws IOException
 	 */
-	abstract protected SubCollectorType createSubCollector(AtomicReaderContext context) throws IOException;
+	abstract protected SubCollectorType createSubCollector() throws IOException;
 }

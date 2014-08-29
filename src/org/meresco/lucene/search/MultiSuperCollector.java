@@ -33,67 +33,67 @@ import org.apache.lucene.search.Scorer;
 
 public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
 
-	private final SuperCollector<?>[] collectors;
+    private final SuperCollector<?>[] collectors;
 
-	public MultiSuperCollector(List<SuperCollector<?>> collectors) {
-		super();
-		this.collectors = collectors.toArray(new SuperCollector[0]);
-	}
+    public MultiSuperCollector(List<SuperCollector<?>> collectors) {
+        super();
+        this.collectors = collectors.toArray(new SuperCollector[0]);
+    }
 
-	@Override
-	protected MultiSubCollector createSubCollector() throws IOException {
-		SubCollector[] subCollectors = new SubCollector[this.collectors.length];
-		int count = 0;
-		for (SuperCollector<?> sc : collectors) {
-			subCollectors[count++] = sc.subCollector();
-		}
-		return new MultiSubCollector(subCollectors);
-	}
+    @Override
+    protected MultiSubCollector createSubCollector() throws IOException {
+        SubCollector[] subCollectors = new SubCollector[this.collectors.length];
+        int count = 0;
+        for (SuperCollector<?> sc : collectors) {
+            subCollectors[count++] = sc.subCollector();
+        }
+        return new MultiSubCollector(subCollectors);
+    }
 }
 
 class MultiSubCollector extends SubCollector {
-	private final SubCollector[] subCollectors;
+    private final SubCollector[] subCollectors;
 
-	public MultiSubCollector(SubCollector[] subCollectors) throws IOException {
-		super();
-		this.subCollectors = subCollectors;
-	}
+    public MultiSubCollector(SubCollector[] subCollectors) throws IOException {
+        super();
+        this.subCollectors = subCollectors;
+    }
 
-	@Override
-	public boolean acceptsDocsOutOfOrder() {
-		for (SubCollector c : this.subCollectors) {
-			if (!c.acceptsDocsOutOfOrder()) {
-				return false;
-			}
-		}
-		return true;
-	}
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+        for (SubCollector c : this.subCollectors) {
+            if (!c.acceptsDocsOutOfOrder()) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-	@Override
-	public void setScorer(Scorer s) throws IOException {
-		for (SubCollector c : this.subCollectors) {
-			c.setScorer(s);
-		}
-	}
+    @Override
+    public void setScorer(Scorer s) throws IOException {
+        for (SubCollector c : this.subCollectors) {
+            c.setScorer(s);
+        }
+    }
 
-	@Override
-	public void setNextReader(AtomicReaderContext context) throws IOException {
-		for (SubCollector c : this.subCollectors) {
-			c.setNextReader(context);
-		}
-	}
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        for (SubCollector c : this.subCollectors) {
+            c.setNextReader(context);
+        }
+    }
 
-	@Override
-	public void collect(int doc) throws IOException {
-		for (SubCollector c : this.subCollectors) {
-			c.collect(doc);
-		}
-	}
+    @Override
+    public void collect(int doc) throws IOException {
+        for (SubCollector c : this.subCollectors) {
+            c.collect(doc);
+        }
+    }
 
-	@Override
-	public void complete() throws IOException {
-		for (SubCollector c : this.subCollectors) {
-			c.complete();
-		}
-	}
+    @Override
+    public void complete() throws IOException {
+        for (SubCollector c : this.subCollectors) {
+            c.complete();
+        }
+    }
 }

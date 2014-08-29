@@ -36,74 +36,74 @@ import org.meresco.lucene.search.SuperCollector;
 
 public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
 
-	byte[] scores = new byte[0];
-	final String keyName;
+    byte[] scores = new byte[0];
+    final String keyName;
 
-	public ScoreSuperCollector(String keyName) {
-		this.keyName = keyName;
-	}
+    public ScoreSuperCollector(String keyName) {
+        this.keyName = keyName;
+    }
 
-	public synchronized byte[] resize(byte[] src, int newSize) {
-		if (newSize < src.length) {
-			return src;
-		}
-		byte[] dest = new byte[(int) (newSize * 1.25)];
-		System.arraycopy(src, 0, dest, 0, src.length);
-		return dest;
-	}
+    public synchronized byte[] resize(byte[] src, int newSize) {
+        if (newSize < src.length) {
+            return src;
+        }
+        byte[] dest = new byte[(int) (newSize * 1.25)];
+        System.arraycopy(src, 0, dest, 0, src.length);
+        return dest;
+    }
 
-	public float score(int key) {
-		if (key < this.scores.length) {
-			return SmallFloat.byte315ToFloat(this.scores[key]);
-		}
-		return 0;
-	}
+    public float score(int key) {
+        if (key < this.scores.length) {
+            return SmallFloat.byte315ToFloat(this.scores[key]);
+        }
+        return 0;
+    }
 
-	@Override
-	protected ScoreSubCollector createSubCollector() throws IOException {
-		return new ScoreSubCollector(this);
-	}
+    @Override
+    protected ScoreSubCollector createSubCollector() throws IOException {
+        return new ScoreSubCollector(this);
+    }
 }
 
 class ScoreSubCollector extends SubCollector {
-	private Scorer scorer;
-	private NumericDocValues keyValues;
-	private final ScoreSuperCollector parent;
+    private Scorer scorer;
+    private NumericDocValues keyValues;
+    private final ScoreSuperCollector parent;
 
-	public ScoreSubCollector(ScoreSuperCollector parent) throws IOException {
-		super();
-		this.parent = parent;
-	}
+    public ScoreSubCollector(ScoreSuperCollector parent) throws IOException {
+        super();
+        this.parent = parent;
+    }
 
-	@Override
-	public void setScorer(Scorer scorer) throws IOException {
-		this.scorer = scorer;
-	}
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
+    }
 
-	@Override
-	public void setNextReader(AtomicReaderContext context) throws IOException {
-		this.keyValues = context.reader().getNumericDocValues(parent.keyName);
-	}
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        this.keyValues = context.reader().getNumericDocValues(parent.keyName);
+    }
 
-	@Override
-	public void collect(int doc) throws IOException {
-		if (this.keyValues != null) {
-			int value = (int) this.keyValues.get(doc);
-			if (value > 0) {
-				if (value >= this.parent.scores.length) {
-					this.parent.scores = this.parent.resize(this.parent.scores, value + 1);
-				}
-				this.parent.scores[value] = SmallFloat.floatToByte315(scorer.score());
-			}
-		}
-	}
+    @Override
+    public void collect(int doc) throws IOException {
+        if (this.keyValues != null) {
+            int value = (int) this.keyValues.get(doc);
+            if (value > 0) {
+                if (value >= this.parent.scores.length) {
+                    this.parent.scores = this.parent.resize(this.parent.scores, value + 1);
+                }
+                this.parent.scores[value] = SmallFloat.floatToByte315(scorer.score());
+            }
+        }
+    }
 
-	@Override
-	public boolean acceptsDocsOutOfOrder() {
-		return true;
-	}
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+        return true;
+    }
 
-	@Override
-	public void complete() {
-	}
+    @Override
+    public void complete() {
+    }
 }

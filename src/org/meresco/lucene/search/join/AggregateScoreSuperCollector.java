@@ -36,101 +36,101 @@ import org.meresco.lucene.search.SuperCollector;
 
 public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreSubCollector> {
 
-	private final String keyName;
-	private final ScoreSuperCollector[] otherScoreCollectors;
-	private SuperCollector<?> delegate;
+    private final String keyName;
+    private final ScoreSuperCollector[] otherScoreCollectors;
+    private SuperCollector<?> delegate;
 
-	public AggregateScoreSuperCollector(String keyName, List<ScoreSuperCollector> otherScoreCollectors) {
-		this.keyName = keyName;
-		this.otherScoreCollectors = otherScoreCollectors.toArray(new ScoreSuperCollector[0]);
-	}
+    public AggregateScoreSuperCollector(String keyName, List<ScoreSuperCollector> otherScoreCollectors) {
+        this.keyName = keyName;
+        this.otherScoreCollectors = otherScoreCollectors.toArray(new ScoreSuperCollector[0]);
+    }
 
-	public void setDelegate(SuperCollector<?> delegate) {
-		this.delegate = delegate;
-	}
+    public void setDelegate(SuperCollector<?> delegate) {
+        this.delegate = delegate;
+    }
 
-	@Override
-	protected AggregateScoreSubCollector createSubCollector() throws IOException {
-		return new AggregateScoreSubCollector(this.keyName, this.otherScoreCollectors, this.delegate.subCollector());
-	}
+    @Override
+    protected AggregateScoreSubCollector createSubCollector() throws IOException {
+        return new AggregateScoreSubCollector(this.keyName, this.otherScoreCollectors, this.delegate.subCollector());
+    }
 }
 
 class AggregateScoreSubCollector extends SubCollector {
 
-	private final SubCollector delegate;
-	private NumericDocValues keyValues;
-	private final ScoreSuperCollector[] otherScoreCollectors;
-	private String keyName;
+    private final SubCollector delegate;
+    private NumericDocValues keyValues;
+    private final ScoreSuperCollector[] otherScoreCollectors;
+    private String keyName;
 
-	public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate)
-			throws IOException {
-		this.keyName = keyName;
-		this.delegate = delegate;
-		this.otherScoreCollectors = otherScoreCollectors;
-	}
+    public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate)
+            throws IOException {
+        this.keyName = keyName;
+        this.delegate = delegate;
+        this.otherScoreCollectors = otherScoreCollectors;
+    }
 
-	@Override
-	public void setScorer(Scorer scorer) throws IOException {
-		this.delegate.setScorer(new AggregateSuperScorer(scorer));
-	}
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+        this.delegate.setScorer(new AggregateSuperScorer(scorer));
+    }
 
-	@Override
-	public void setNextReader(AtomicReaderContext context) throws IOException {
-		this.keyValues = context.reader().getNumericDocValues(keyName);
-		this.delegate.setNextReader(context);
-	}
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        this.keyValues = context.reader().getNumericDocValues(keyName);
+        this.delegate.setNextReader(context);
+    }
 
-	@Override
-	public void collect(int doc) throws IOException {
-		this.delegate.collect(doc);
-	}
+    @Override
+    public void collect(int doc) throws IOException {
+        this.delegate.collect(doc);
+    }
 
-	@Override
-	public boolean acceptsDocsOutOfOrder() {
-		return this.delegate.acceptsDocsOutOfOrder();
-	}
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+        return this.delegate.acceptsDocsOutOfOrder();
+    }
 
-	@Override
-	public void complete() throws IOException {
-		this.delegate.complete();
-	}
+    @Override
+    public void complete() throws IOException {
+        this.delegate.complete();
+    }
 
-	private class AggregateSuperScorer extends Scorer {
-		private final Scorer scorer;
+    private class AggregateSuperScorer extends Scorer {
+        private final Scorer scorer;
 
-		private AggregateSuperScorer(Scorer scorer) {
-			super(scorer.getWeight());
-			this.scorer = scorer;
-		}
+        private AggregateSuperScorer(Scorer scorer) {
+            super(scorer.getWeight());
+            this.scorer = scorer;
+        }
 
-		public float score() throws IOException {
-			float score = this.scorer.score();
-			int key = (int) keyValues.get(docID());
-			for (ScoreSuperCollector sc : otherScoreCollectors) {
-				float otherScore = sc.score(key);
-				score *= (float) (1 + otherScore);
-			}
-			return score;
-		}
+        public float score() throws IOException {
+            float score = this.scorer.score();
+            int key = (int) keyValues.get(docID());
+            for (ScoreSuperCollector sc : otherScoreCollectors) {
+                float otherScore = sc.score(key);
+                score *= (float) (1 + otherScore);
+            }
+            return score;
+        }
 
-		public int freq() throws IOException {
-			return this.scorer.freq();
-		}
+        public int freq() throws IOException {
+            return this.scorer.freq();
+        }
 
-		public long cost() {
-			return this.scorer.cost();
-		}
+        public long cost() {
+            return this.scorer.cost();
+        }
 
-		public int advance(int target) throws IOException {
-			return this.scorer.advance(target);
-		}
+        public int advance(int target) throws IOException {
+            return this.scorer.advance(target);
+        }
 
-		public int nextDoc() throws IOException {
-			return this.scorer.nextDoc();
-		}
+        public int nextDoc() throws IOException {
+            return this.scorer.nextDoc();
+        }
 
-		public int docID() {
-			return this.scorer.docID();
-		}
-	}
+        public int docID() {
+            return this.scorer.docID();
+        }
+    }
 }

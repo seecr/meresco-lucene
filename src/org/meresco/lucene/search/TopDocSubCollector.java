@@ -7,16 +7,16 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 
 public class TopDocSubCollector<SuperCollectorType extends TopDocSuperCollector> extends
-		DelegatingSubCollector<TopDocsCollector<?>, SuperCollectorType> {
+        DelegatingSubCollector<TopDocsCollector<?>, SuperCollectorType> {
 
-	TopDocs topdocs;
+    TopDocs topdocs;
 
-	public TopDocSubCollector(TopDocsCollector<?> docCollector, SuperCollectorType parent) throws IOException {
-		super(docCollector, parent);
-	}
+    public TopDocSubCollector(TopDocsCollector<?> docCollector, SuperCollectorType parent) throws IOException {
+        super(docCollector, parent);
+    }
 
-	@Override
-	public void complete() {
-		this.topdocs = this.delegate.topDocs();
-	}
+    @Override
+    public void complete() {
+        this.topdocs = this.delegate.topDocs();
+    }
 }

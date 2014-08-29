@@ -32,16 +32,16 @@ import org.apache.lucene.search.TopScoreDocCollector;
 
 public class TopScoreDocSuperCollector extends TopDocSuperCollector {
 
-	private final boolean docsScoredInOrder;
+    private final boolean docsScoredInOrder;
 
-	public TopScoreDocSuperCollector(int numHits, boolean docsScoredInOrder) {
-		super(null, numHits);
-		this.docsScoredInOrder = docsScoredInOrder;
-	}
+    public TopScoreDocSuperCollector(int numHits, boolean docsScoredInOrder) {
+        super(null, numHits);
+        this.docsScoredInOrder = docsScoredInOrder;
+    }
 
-	@Override
-	protected TopDocSubCollector<TopScoreDocSuperCollector> createSubCollector() throws IOException {
-		return new TopDocSubCollector<TopScoreDocSuperCollector>(TopScoreDocCollector.create(super.numHits,
-				this.docsScoredInOrder), this);
-	}
+    @Override
+    protected TopDocSubCollector<TopScoreDocSuperCollector> createSubCollector() throws IOException {
+        return new TopDocSubCollector<TopScoreDocSuperCollector>(TopScoreDocCollector.create(super.numHits,
+                this.docsScoredInOrder), this);
+    }
 }

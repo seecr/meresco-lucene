@@ -33,21 +33,21 @@ import org.apache.lucene.search.TopFieldCollector;
 
 public class TopFieldSuperCollector extends TopDocSuperCollector {
 
-	final boolean trackDocScores;
-	final boolean trackMaxScore;
-	final boolean docsScoredInOrder;
+    final boolean trackDocScores;
+    final boolean trackMaxScore;
+    final boolean docsScoredInOrder;
 
-	public TopFieldSuperCollector(Sort sort, int numHits, boolean trackDocScores, boolean trackMaxScore,
-			boolean docsScoredInOrder) {
-		super(sort, numHits);
-		this.trackDocScores = trackDocScores;
-		this.trackMaxScore = trackMaxScore;
-		this.docsScoredInOrder = docsScoredInOrder;
-	}
+    public TopFieldSuperCollector(Sort sort, int numHits, boolean trackDocScores, boolean trackMaxScore,
+            boolean docsScoredInOrder) {
+        super(sort, numHits);
+        this.trackDocScores = trackDocScores;
+        this.trackMaxScore = trackMaxScore;
+        this.docsScoredInOrder = docsScoredInOrder;
+    }
 
-	@Override
-	protected TopDocSubCollector<TopFieldSuperCollector> createSubCollector() throws IOException {
-		return new TopDocSubCollector<TopFieldSuperCollector>(TopFieldCollector.create(this.sort,
-				this.numHits, /*fillFields*/ true, this.trackDocScores, this.trackMaxScore, this.docsScoredInOrder), this);
-	}
+    @Override
+    protected TopDocSubCollector<TopFieldSuperCollector> createSubCollector() throws IOException {
+        return new TopDocSubCollector<TopFieldSuperCollector>(TopFieldCollector.create(this.sort,
+                this.numHits, /*fillFields*/ true, this.trackDocScores, this.trackMaxScore, this.docsScoredInOrder), this);
+    }
 }

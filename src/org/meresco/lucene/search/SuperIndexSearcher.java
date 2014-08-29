@@ -45,8 +45,8 @@ import org.apache.lucene.search.Weight;
 public class SuperIndexSearcher extends IndexSearcher {
 
     private ExecutorService executor;
-    private ArrayList<AtomicReaderContext> bigSegments;
-    private ArrayList<AtomicReaderContext> smallSegments;
+    private List<AtomicReaderContext> bigSegments;
+    private List<AtomicReaderContext> smallSegments;
 
     public SuperIndexSearcher(DirectoryReader reader, ExecutorService executor) {
         super(reader);

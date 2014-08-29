@@ -62,8 +62,8 @@ class AggregateScoreSubCollector extends SubCollector {
     private final ScoreSuperCollector[] otherScoreCollectors;
     private String keyName;
 
-    public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate)
-            throws IOException {
+    public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate) throws IOException {
+        super();
         this.keyName = keyName;
         this.delegate = delegate;
         this.otherScoreCollectors = otherScoreCollectors;

@@ -98,8 +98,7 @@ class DeDupFilterSubCollector extends SubCollector {
     private int totalHits = 0;
     AtomicReaderContext context;
 
-    public DeDupFilterSubCollector(String keyName, String sortByFieldName, SubCollector delegate,
-            ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>> keys) throws IOException {
+    public DeDupFilterSubCollector(String keyName, String sortByFieldName, SubCollector delegate, ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>> keys) throws IOException {
         super();
         this.delegate = delegate;
         this.keys = keys;
@@ -110,6 +109,7 @@ class DeDupFilterSubCollector extends SubCollector {
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
         this.context = context;
+        this.delegate.setNextReader(context);
         this.currentDocBase = context.docBase;
         NumericDocValues kv = context.reader().getNumericDocValues(this.keyName);
         if (kv == null)

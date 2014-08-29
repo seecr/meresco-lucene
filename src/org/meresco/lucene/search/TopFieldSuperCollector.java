@@ -26,6 +26,8 @@
 package org.meresco.lucene.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Sort;

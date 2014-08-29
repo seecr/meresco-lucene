@@ -51,6 +51,10 @@ class TotalHitCountSubCollector extends SubCollector {
     private int totalHits = 0;
 
     @Override
+    public void setNextReader(AtomicReaderContext context) {
+    }
+
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
     }
 
@@ -70,11 +74,5 @@ class TotalHitCountSubCollector extends SubCollector {
 
     @Override
     public void complete() {
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-        // TODO Auto-generated method stub
-        
     }
 }

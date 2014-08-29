@@ -29,8 +29,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
-
 public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 
     protected List<SubCollectorType> subs = new ArrayList<SubCollectorType>();

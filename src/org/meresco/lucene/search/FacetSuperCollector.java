@@ -142,8 +142,7 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
 
     int[] values;
 
-    public FacetSubCollector(FacetsCollector delegate, FacetSuperCollector parent)
-            throws IOException {
+    public FacetSubCollector(FacetsCollector delegate, FacetSuperCollector parent) throws IOException {
         super(delegate, parent);
     }
 

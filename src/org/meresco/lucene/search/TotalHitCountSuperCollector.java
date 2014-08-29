@@ -32,49 +32,49 @@ import org.apache.lucene.search.Scorer;
 
 public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSubCollector> {
 
-	@Override
-	public TotalHitCountSubCollector createSubCollector() {
-		return new TotalHitCountSubCollector();
-	}
+    @Override
+    public TotalHitCountSubCollector createSubCollector() {
+        return new TotalHitCountSubCollector();
+    }
 
-	public int getTotalHits() {
-		int n = 0;
-		for (TotalHitCountSubCollector sub : super.subs) {
-			n += sub.getTotalHits();
-		}
-		return n;
-	}
+    public int getTotalHits() {
+        int n = 0;
+        for (TotalHitCountSubCollector sub : super.subs) {
+            n += sub.getTotalHits();
+        }
+        return n;
+    }
 
 }
 
 class TotalHitCountSubCollector extends SubCollector {
 
-	private int totalHits = 0;
+    private int totalHits = 0;
 
-	@Override
-	public void setNextReader(AtomicReaderContext context) {
-	}
+    @Override
+    public void setNextReader(AtomicReaderContext context) {
+    }
 
-	@Override
-	public void setScorer(Scorer scorer) throws IOException {
-	}
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+    }
 
-	@Override
-	public void collect(int doc) throws IOException {
-		this.totalHits++;
-	}
+    @Override
+    public void collect(int doc) throws IOException {
+        this.totalHits++;
+    }
 
-	@Override
-	public boolean acceptsDocsOutOfOrder() {
-		return true;
-	}
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+        return true;
+    }
 
-	public int getTotalHits() {
-    	return totalHits;
-  	}
+    public int getTotalHits() {
+        return totalHits;
+      }
 
 
-	@Override
-	public void complete() {
-	}
+    @Override
+    public void complete() {
+    }
 }

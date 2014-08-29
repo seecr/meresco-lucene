@@ -31,33 +31,33 @@ import java.util.List;
 
 public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 
-	protected List<SubCollectorType> subs = new ArrayList<SubCollectorType>();
+    protected List<SubCollectorType> subs = new ArrayList<SubCollectorType>();
 
-	/**
-	 * Called before collecting from each {@link AtomicReaderContext} in a
-	 * separate thread. The returned {@link SubCollector} need not be thread
-	 * safe as it's scope is limited to one segment.
-	 *
-	 * The SubCollector is kept in a list and accessible by
-	 * {@link #subCollectors()}.
-	 *
-	 * @param context
-	 *            next atomic reader context
-	 * @throws IOException
-	 */
-	public SubCollector subCollector() throws IOException {
-		SubCollectorType sub = this.createSubCollector();
-		this.subs.add(sub);
-		return sub;
-	}
+    /**
+     * Called before collecting from each {@link AtomicReaderContext} in a
+     * separate thread. The returned {@link SubCollector} need not be thread
+     * safe as it's scope is limited to one segment.
+     *
+     * The SubCollector is kept in a list and accessible by
+     * {@link #subCollectors()}.
+     *
+     * @param context
+     *            next atomic reader context
+     * @throws IOException
+     */
+    public SubCollector subCollector() throws IOException {
+        SubCollectorType sub = this.createSubCollector();
+        this.subs.add(sub);
+        return sub;
+    }
 
-	/**
-	 * Lower level factory method for SubCollectors.
-	 *
-	 * @param context
-	 *            is an AtomicReaderContext
-	 * @return SubCollector for this context
-	 * @throws IOException
-	 */
-	abstract protected SubCollectorType createSubCollector() throws IOException;
+    /**
+     * Lower level factory method for SubCollectors.
+     *
+     * @param context
+     *            is an AtomicReaderContext
+     * @return SubCollector for this context
+     * @throws IOException
+     */
+    abstract protected SubCollectorType createSubCollector() throws IOException;
 }

@@ -33,46 +33,46 @@ import org.apache.lucene.search.TopScoreDocCollector;
 
 public class TopScoreDocSuperCollector extends SuperCollector<TopScoreDocSubCollector> {
 
-	private final int numHits;
-	private final boolean docsScoredInOrder;
+    private final int numHits;
+    private final boolean docsScoredInOrder;
 
-	public TopScoreDocSuperCollector(int numHits, boolean docsScoredInOrder) {
-		super();
-		this.numHits = numHits;
-		this.docsScoredInOrder = docsScoredInOrder;
-	}
+    public TopScoreDocSuperCollector(int numHits, boolean docsScoredInOrder) {
+        super();
+        this.numHits = numHits;
+        this.docsScoredInOrder = docsScoredInOrder;
+    }
 
-	@Override
-	protected TopScoreDocSubCollector createSubCollector() throws IOException {
-		return new TopScoreDocSubCollector(this, this.numHits, this.docsScoredInOrder);
-	}
+    @Override
+    protected TopScoreDocSubCollector createSubCollector() throws IOException {
+        return new TopScoreDocSubCollector(this, this.numHits, this.docsScoredInOrder);
+    }
 
-	public TopDocs topDocs(int start) throws IOException {
-		return createTopDocs(start);
-	}
+    public TopDocs topDocs(int start) throws IOException {
+        return createTopDocs(start);
+    }
 
-	private TopDocs createTopDocs(int start) throws IOException {
-		TopDocs[] topdocs = new TopDocs[super.subs.size()];
-		for (int i = 0; i < topdocs.length; i++)
-			topdocs[i] = super.subs.get(i).topdocs;
-		return TopDocs.merge(null, start, this.numHits - start, topdocs);
-	}
+    private TopDocs createTopDocs(int start) throws IOException {
+        TopDocs[] topdocs = new TopDocs[super.subs.size()];
+        for (int i = 0; i < topdocs.length; i++)
+            topdocs[i] = super.subs.get(i).topdocs;
+        return TopDocs.merge(null, start, this.numHits - start, topdocs);
+    }
 
-	public int getTotalHits() throws IOException {
-		return createTopDocs(0).totalHits;
-	}
+    public int getTotalHits() throws IOException {
+        return createTopDocs(0).totalHits;
+    }
 }
 
 class TopScoreDocSubCollector extends DelegatingSubCollector<TopScoreDocCollector, TopScoreDocSuperCollector> {
 
-	TopDocs topdocs;
+    TopDocs topdocs;
 
-	public TopScoreDocSubCollector(TopScoreDocSuperCollector parent, int numHits, boolean docsScoredInOrder) throws IOException {
-		super(TopScoreDocCollector.create(numHits, docsScoredInOrder), parent);
-	}
+    public TopScoreDocSubCollector(TopScoreDocSuperCollector parent, int numHits, boolean docsScoredInOrder) throws IOException {
+        super(TopScoreDocCollector.create(numHits, docsScoredInOrder), parent);
+    }
 
-	@Override
-	public void complete() {
-		this.topdocs = this.delegate.topDocs();
-	}
+    @Override
+    public void complete() {
+        this.topdocs = this.delegate.topDocs();
+    }
 }

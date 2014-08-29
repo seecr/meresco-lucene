@@ -74,15 +74,15 @@ public class TopFieldSuperCollector extends SuperCollector<TopFieldSubCollector>
             TopFieldSuperScorer scorer = new TopFieldSuperScorer();
             this.tfc.setScorer(scorer);
             for (TopFieldSubCollector sub : super.subs) {
-            	for (AtomicReaderContext context : sub.contexts) {
-	                this.totalHits += sub.topdocs.totalHits;
-	                this.tfc.setNextReader(context);
-	                int docBase = context.docBase;
-	                for (ScoreDoc scoreDoc : sub.topdocs.scoreDocs) {
-	                    scorer.set(scoreDoc.score);
-	                    this.tfc.collect(scoreDoc.doc - docBase);
-	                }
-            	}
+                for (AtomicReaderContext context : sub.contexts) {
+                    this.totalHits += sub.topdocs.totalHits;
+                    this.tfc.setNextReader(context);
+                    int docBase = context.docBase;
+                    for (ScoreDoc scoreDoc : sub.topdocs.scoreDocs) {
+                        scorer.set(scoreDoc.score);
+                        this.tfc.collect(scoreDoc.doc - docBase);
+                    }
+                }
             }
         }
         TopDocs topDocs = this.tfc.topDocs(start);

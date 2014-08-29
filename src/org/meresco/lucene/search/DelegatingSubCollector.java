@@ -35,6 +35,7 @@ public abstract class DelegatingSubCollector<CollectorType extends Collector, Su
 
 	@Override
 	public void setNextReader(AtomicReaderContext context) throws IOException {
+		//System.out.println("Setting: " + context);
 		this.delegate.setNextReader(context);
 	}
 }

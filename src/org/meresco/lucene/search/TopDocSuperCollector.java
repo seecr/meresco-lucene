@@ -2,7 +2,6 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
@@ -22,6 +21,9 @@ public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubColle
 		TopDocs[] topdocs = new TopDocs[this.subs.size()];
 		for (int i = 0; i < topdocs.length; i++) {
 			topdocs[i] = this.subs.get(i).topdocs;
+			for (ScoreDoc d : topdocs[i].scoreDocs) {
+				System.out.println(d);
+			}
 		}
 		return TopDocs.merge(this.sort, start, this.numHits - start, topdocs);
 	}

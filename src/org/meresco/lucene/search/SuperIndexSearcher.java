@@ -63,7 +63,7 @@ public class SuperIndexSearcher extends IndexSearcher {
 		});
 		int totalSmallDocs = 0;
 		this.smallSegments = new ArrayList<AtomicReaderContext>();
-	/*	if (this.bigSegments.isEmpty())
+		if (this.bigSegments.isEmpty())
 			return;
 		int largestSegment = this.bigSegments.get(this.bigSegments.size() - 1).reader().maxDoc();
 		while (totalSmallDocs + this.bigSegments.get(0).reader().maxDoc() <= largestSegment) {
@@ -73,7 +73,7 @@ public class SuperIndexSearcher extends IndexSearcher {
 			if (this.bigSegments.isEmpty())
 				return;
 		}
-*/	}
+	}
 
 	public void search(Query q, Filter f, SuperCollector<?> c) throws IOException, InterruptedException,
 			ExecutionException {

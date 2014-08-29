@@ -617,6 +617,7 @@ class MultiLuceneTest(SeecrTestCase):
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(8, result.total)
+        print result.hits
         self.assertEquals([u'A-MQU', u'A', u'A-U', u'A-Q', u'A-QU', u'A-M', u'A-MU', u'A-MQ'], [hit.id for hit in result.hits])
 
         self.addDocument(self.luceneC, identifier='C-S>A-MQ', keys=[('C', 7)], fields=[('S', 'true')])

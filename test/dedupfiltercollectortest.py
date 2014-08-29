@@ -82,20 +82,20 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         self._addDocument("urn:3", 50, 2010) # result 1x
         self._addDocument("urn:4",  3, 2001)
         self._addDocument("urn:5",  1, 2009) # result 2x
-        #expected: urn:2, urn:3 and urn:5 in no particular order
+        #expected: "urn:2', "urn:3" and "urn:5" in no particular order
         tc = TopScoreDocSuperCollector(100, True)
         c = DeDupFilterSuperCollector("__isformatof__", "__sort__", tc)
         self.lucene.search(query=MatchAllDocsQuery(), collector=c)
         topDocsResult = tc.topDocs(0)
         self.assertEquals(3, topDocsResult.totalHits)
         self.assertEquals(3, len(topDocsResult.scoreDocs))
-        ids = set(self.lucene._index.getDocument(s.doc).get(IDFIELD) for s in topDocsResult.scoreDocs)
-        print ids
-        #self.assertEquals(set(["urn:2", "urn:3", "urn:5"]), ids)
-        print [(doc, c.keyForDocId(doc).docId, c.keyForDocId(doc).sortByValue, c.keyForDocId(doc).count) for doc in range(5)]
-        self.assertEquals(2, c.keyForDocId(docIds[0]).count)
-        self.assertEquals(2, c.keyForDocId(docIds[1]).count)
-        self.assertEquals(1, c.keyForDocId(docIds[2]).count)
+        rawDocIds = [scoreDoc.doc for scoreDoc in topDocsResult.scoreDocs]
+        netDocIds = [c.keyForDocId(rawDocId).docId for rawDocId in rawDocIds]
+        identifiers = set(self.lucene._index.getDocument(doc).get(IDFIELD) for doc in netDocIds)
+        self.assertEquals(set(["urn:2", "urn:3", "urn:5"]), identifiers)
+        self.assertEquals(2, c.keyForDocId(netDocIds[0]).count)
+        self.assertEquals(1, c.keyForDocId(netDocIds[1]).count)
+        self.assertEquals(2, c.keyForDocId(netDocIds[2]).count)
 
     def testSilentyYieldsWrongResultWhenFieldNameDoesNotMatch(self):
         self._addDocument("urn:1", 2)

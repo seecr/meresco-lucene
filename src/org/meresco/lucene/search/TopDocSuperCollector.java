@@ -19,12 +19,8 @@ public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubColle
 
 	public TopDocs topDocs(int start) throws IOException {
 		TopDocs[] topdocs = new TopDocs[this.subs.size()];
-		for (int i = 0; i < topdocs.length; i++) {
+		for (int i = 0; i < topdocs.length; i++)
 			topdocs[i] = this.subs.get(i).topdocs;
-			for (ScoreDoc d : topdocs[i].scoreDocs) {
-				System.out.println(d);
-			}
-		}
 		return TopDocs.merge(this.sort, start, this.numHits - start, topdocs);
 	}
 

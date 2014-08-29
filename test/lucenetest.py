@@ -34,6 +34,7 @@ from weightless.core import consume, retval
 
 from meresco.lucene import Lucene, VM, DrilldownField
 from meresco.lucene._lucene import IDFIELD
+from meresco.lucene.hit import Hit
 from meresco.lucene.utils import createField
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
@@ -411,28 +412,31 @@ class LuceneTest(SeecrTestCase):
         doc.add(NumericDocValuesField("__key__.date", long(2012)))
         doc.add(FacetField("cat", ["cat-A"]))
         consume(self.lucene.addDocument("urn:1", doc))
+
         doc = document(field0='v1')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        doc.add(NumericDocValuesField("__key__.date", long(2013)))
+        doc.add(NumericDocValuesField("__key__.date", long(2013))) # first hit of 3 duplicates
         doc.add(FacetField("cat", ["cat-A"]))
         consume(self.lucene.addDocument("urn:2", doc))
+
         doc = document(field0='v2')
         doc.add(NumericDocValuesField("__key__", long(42)))
         doc.add(FacetField("cat", ["cat-A"]))
         consume(self.lucene.addDocument("urn:3", doc))
+
         doc = document(field0='v3')
         doc.add(FacetField("cat", ["cat-A"]))
         consume(self.lucene.addDocument("urn:4", doc))
+
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
                         dedupField="__key__", dedupSortField='__key__.date', facets=facets(cat=10)))
+        # expected two hits: "urn:2" (3x) and "urn:4" in no particular order
         self.assertEquals(2, result.total)
         self.assertEquals(4, result.totalWithDuplicates)
-
-        self.assertEquals('urn:2', result.hits[0].id)
-        self.assertEquals({'__key__': 3}, result.hits[0].duplicateCount)
-        self.assertEquals('urn:4', result.hits[1].id)
-        self.assertEquals({'__key__': 0}, result.hits[1].duplicateCount)
+        expectedHits = set([Hit(score=1.0, id=u'urn:4', duplicateCount={u'__key__': 0}),
+                            Hit(score=1.0, id=u'urn:2', duplicateCount={u'__key__': 3})])
+        self.assertEquals(expectedHits, set(hit for hit in result.hits))
         self.assertEquals({'count': 4, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
 
     def testDutchStemming(self):

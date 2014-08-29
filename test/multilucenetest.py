@@ -617,14 +617,15 @@ class MultiLuceneTest(SeecrTestCase):
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(8, result.total)
-        print result.hits
-        self.assertEquals([u'A-MQU', u'A', u'A-U', u'A-Q', u'A-QU', u'A-M', u'A-MU', u'A-MQ'], [hit.id for hit in result.hits])
+        self.assertEquals(u'A-MQU', result.hits[0].id)
+        self.assertEquals(set([u'A', u'A-U', u'A-Q', u'A-QU', u'A-M', u'A-MU', u'A-MQ']), set([hit.id for hit in result.hits[1:]]))
 
         self.addDocument(self.luceneC, identifier='C-S>A-MQ', keys=[('C', 7)], fields=[('S', 'true')])
         try:
             result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
             self.assertEquals(8, result.total)
-            self.assertEquals([u'A-MQ', u'A-MQU', u'A', u'A-U', u'A-Q', u'A-QU', u'A-M', u'A-MU'], [hit.id for hit in result.hits])
+            self.assertEquals(set([u'A-MQ' , u'A-MQU']), set([hit.id for hit in result.hits[:2]]))
+            self.assertEquals(set([u'A', u'A-U', u'A-Q', u'A-QU', u'A-M', u'A-MU']), set([hit.id for hit in result.hits[2:]]))
         finally:
             self.luceneC.delete(identifier='C-S>A-MQ')
 

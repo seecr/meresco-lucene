@@ -33,7 +33,7 @@ from weightless.core import be, compose
 from meresco.core import Observable
 
 from meresco.lucene import Lucene, TermFrequencySimilarity
-from meresco.lucene.utils import KEY_PREFIX
+from meresco.lucene.fieldfactory import KEY_PREFIX
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.composedquery import ComposedQuery
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer

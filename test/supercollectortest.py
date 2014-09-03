@@ -28,10 +28,9 @@ from seecr.test import SeecrTestCase, CallTrace
 from java.util.concurrent import Executors
 from lucenetest import document, createDocument
 from meresco.lucene.index import Index
-from org.apache.lucene.search import MatchAllDocsQuery, Sort
+from org.apache.lucene.search import MatchAllDocsQuery, Sort, SortField
 from org.meresco.lucene.search import SuperCollector, SubCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, FacetSuperCollector, MultiSuperCollector, TopFieldSuperCollector
 from java.util import ArrayList
-from meresco.lucene.utils import sortField
 from org.apache.lucene.facet import FacetsConfig
 
 
@@ -176,7 +175,7 @@ class SuperCollectorTest(SeecrTestCase):
         I.commit()
         I.close()
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
-        sort = Sort(sortField(fieldname="name", sortDescending=True))
+        sort = Sort(SortField("name", SortField.Type.STRING, True))
         C = TopFieldSuperCollector(sort, 2, True, False, True)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)

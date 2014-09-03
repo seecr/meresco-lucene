@@ -23,43 +23,45 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause
-from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector
-from org.meresco.lucene.search.join import ScoreSuperCollector
-from org.apache.lucene.index import Term
 from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
+from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
+from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause
+from org.apache.lucene.search import SortField
+from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector
 from org.meresco.lucene.search import SuperCollector
+from org.meresco.lucene.search.join import ScoreSuperCollector
 
 from java.lang import Integer, Runtime
-from java.util.concurrent import Executors;
+from java.util.concurrent import Executors
+from java.util import ArrayList
 
 from time import time
 
 from os.path import basename
 
-from luceneresponse import LuceneResponse
-from index import Index
-from cache import LruCache
-from utils import IDFIELD, createIdField, sortField
-from hit import Hit
+from meresco.lucene.luceneresponse import LuceneResponse
+from meresco.lucene.index import Index
+from meresco.lucene.cache import LruCache
+from meresco.lucene.fieldfactory import LONGTYPE, TEXTTYPE, STRINGTYPE, DEFAULT_FACTORY, IDFIELD
+from meresco.lucene.hit import Hit
 from seecr.utils.generatorutils import generatorReturn
-from java.util import ArrayList
 
 
 class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, name=None, drilldownFields=None, **kwargs):
+    def __init__(self, path, reactor, name=None, drilldownFields=None, fieldFactory=DEFAULT_FACTORY, **kwargs):
         self._facetsConfig = FacetsConfig()
         for field in drilldownFields or []:
             self._facetsConfig.setMultiValued(field.name, field.multiValued)
             self._facetsConfig.setHierarchical(field.name, field.hierarchical)
 
+        self._fieldFactory = fieldFactory
         numberOfProcessors = Runtime.getRuntime().availableProcessors()
         executor = Executors.newFixedThreadPool(numberOfProcessors);
-        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, executor=executor, **kwargs)
+        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, executor=executor, fieldFactory=self._fieldFactory, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name
@@ -77,7 +79,7 @@ class Lucene(object):
         return self._index.commit()
 
     def addDocument(self, identifier, document):
-        document.add(createIdField(identifier))
+        document.add(self._fieldFactory.createIdField(identifier))
         self._index.addDocument(term=Term(IDFIELD, identifier), document=document)
         self._scoreCollectorCache.clear()  #WTF?! #TODO #FIXME
         return
@@ -106,7 +108,7 @@ class Lucene(object):
         start = 0 if start is None else start
 
         collectors = []
-        resultsCollector = topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
+        resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
         dedupCollector = None
         if dedupField:
             resultsCollector = dedupCollector = DeDupFilterSuperCollector(dedupField, dedupSortField, topCollector)
@@ -247,6 +249,31 @@ class Lucene(object):
             inner.name = self.coreName
             inner.numDocs = self._index.numDocs
 
+    def _topCollector(self, start, stop, sortKeys):
+        if stop <= start:
+            return TotalHitCountSuperCollector()
+        # fillFields = False # always true for multi-threading/sharding
+        trackDocScores = True
+        trackMaxScore = False
+        docsScoredInOrder = True
+        if sortKeys:
+            sortFields = [
+                self._sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending'])
+                    for sortKey in sortKeys
+            ]
+            sort = Sort(sortFields)
+        else:
+            return TopScoreDocSuperCollector(stop, docsScoredInOrder)
+        return TopFieldSuperCollector(sort, stop, trackDocScores, trackMaxScore, docsScoredInOrder)
+
+    def _sortField(self, fieldname, sortDescending):
+        sortType, missingValues = typeToSortFieldTypeAndMissingValue[self._fieldFactory.fieldType(fieldname)]
+        result = SortField(fieldname, sortType, sortDescending)
+        if missingValues is not None:
+            valueAsc, valueDesc = missingValues
+            result.setMissingValue(valueDesc if sortDescending else valueAsc)
+        return result
+
 def defaults(parameter, default):
     return default if parameter is None else parameter
 
@@ -265,22 +292,12 @@ def _termsFromFacetResult(facetResult, facet, path):
         terms.append(termDict)
     return terms
 
-def _topCollector(start, stop, sortKeys):
-    if stop <= start:
-        return TotalHitCountSuperCollector()
-    # fillFields = False # always true for multi-threading/sharding
-    trackDocScores = True
-    trackMaxScore = False
-    docsScoredInOrder = True
-    if sortKeys:
-        sortFields = [
-            sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending'])
-                for sortKey in sortKeys
-        ]
-        sort = Sort(sortFields)
-    else:
-        return TopScoreDocSuperCollector(stop, docsScoredInOrder)
-    return TopFieldSuperCollector(sort, stop, trackDocScores, trackMaxScore, docsScoredInOrder)
-
 
 MAX_FACET_DEPTH = 10
+
+typeToSortFieldTypeAndMissingValue = {
+    LONGTYPE: (SortField.Type.LONG, None),
+    TEXTTYPE: (SortField.Type.STRING, (SortField.STRING_LAST, SortField.STRING_FIRST)),
+    STRINGTYPE: (SortField.Type.STRING, (SortField.STRING_LAST, SortField.STRING_FIRST)),
+}
+

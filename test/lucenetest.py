@@ -35,7 +35,7 @@ from weightless.core import consume, retval
 from meresco.lucene import Lucene, VM, DrilldownField
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
-from meresco.lucene.utils import createField
+from meresco.lucene.fieldfactory import DEFAULT_FACTORY
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
@@ -510,7 +510,7 @@ def document(**fields):
 def createDocument(fields, facets=None):
     document = Document()
     for name, value in fields:
-        document.add(createField(name, value))
+        document.add(DEFAULT_FACTORY.createField(name, value))
     for facet, value in facets or []:
         if hasattr(value, 'extend'):
             path = [str(category) for category in value]

@@ -24,7 +24,7 @@
 ## end license ##
 
 from meresco.lucene import createAnalyzer
-from meresco.lucene.utils import fieldType, LONGTYPE
+from meresco.lucene.fieldfactory import LONGTYPE, DEFAULT_FACTORY
 
 from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
 from org.apache.lucene.index import Term
@@ -36,26 +36,28 @@ from re import compile
 
 
 class LuceneQueryComposer(object):
-    def __init__(self, unqualifiedTermFields, isUntokenizedMethod=None, analyzer=None):
-        self._unqualifiedTermFields = unqualifiedTermFields
-        self._isUntokenized = (lambda name: False) if isUntokenizedMethod is None else isUntokenizedMethod
-        self._analyzer = analyzer
+    def __init__(self, unqualifiedTermFields, isUntokenizedMethod=None, analyzer=None, fieldFactory=DEFAULT_FACTORY):
+        self._additionalKwargs = dict(
+                unqualifiedTermFields=unqualifiedTermFields,
+                isUntokenized=(lambda name: False) if isUntokenizedMethod is None else isUntokenizedMethod,
+                analyzer=analyzer,
+                fieldFactory=fieldFactory,
+            )
 
     def compose(self, ast):
         (result, ) = _Cql2LuceneQueryVisitor(
-            unqualifiedTermFields=self._unqualifiedTermFields,
             node=ast,
-            isUntokenized=self._isUntokenized,
-            analyzer=self._analyzer).visit()
+            **self._additionalKwargs).visit()
         return result
 
 
 class _Cql2LuceneQueryVisitor(CqlVisitor):
-    def __init__(self, unqualifiedTermFields, node, isUntokenized, analyzer):
+    def __init__(self, unqualifiedTermFields, node, isUntokenized, analyzer, fieldFactory):
         CqlVisitor.__init__(self, node)
         self._unqualifiedTermFields = unqualifiedTermFields
         self._isUntokenized = isUntokenized
         self._analyzer = analyzer
+        self._fieldFactory = fieldFactory
 
     def visitSCOPED_CLAUSE(self, node):
         clause = CqlVisitor.visitSCOPED_CLAUSE(self, node)
@@ -117,7 +119,7 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         return relation, boost
 
     def _termOrPhraseQuery(self, index, termString):
-        if fieldType(index) == LONGTYPE:
+        if self._fieldFactory.fieldType(index) == LONGTYPE:
             return NumericRangeQuery.newLongRange(index, long(termString), long(termString), True, True)
         listOfTermStrings = self._analyzeToken(termString)
         if len(listOfTermStrings) == 1:

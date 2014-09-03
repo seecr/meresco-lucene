@@ -31,7 +31,7 @@ from seecr.test import SeecrTestCase, CallTrace
 from weightless.core import consume
 
 from meresco.lucene import Lucene
-from meresco.lucene.utils import IDFIELD
+from meresco.lucene.fieldfactory import IDFIELD
 
 
 class DeDupFilterCollectorTest(SeecrTestCase):

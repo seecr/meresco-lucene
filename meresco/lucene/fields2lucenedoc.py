@@ -27,17 +27,14 @@ from meresco.core import Observable
 from org.apache.lucene.document import Document
 from org.apache.lucene.facet import FacetField
 
-from time import time
-
 from fieldfactory import DEFAULT_FACTORY, IDFIELD, KEY_PREFIX
 
 
 class Fields2LuceneDoc(Observable):
-    def __init__(self, transactionName, drilldownFields, addTimestamp=False, identifierRewrite=None, rewriteFields=None, fieldFactory=DEFAULT_FACTORY):
+    def __init__(self, transactionName, drilldownFields, identifierRewrite=None, rewriteFields=None, fieldFactory=DEFAULT_FACTORY):
         Observable.__init__(self)
         self._transactionName = transactionName
         self._drilldownFieldnames = [df.name for df in drilldownFields]
-        self._addTimestamp = addTimestamp
         self._identifierRewrite = (lambda identifier: identifier) if identifierRewrite is None else identifierRewrite
         self._rewriteFields = (lambda fields: fields) if rewriteFields is None else rewriteFields
         self._fieldFactory = fieldFactory
@@ -101,9 +98,4 @@ class Fields2LuceneDoc(Observable):
                     else:
                         path = [str(v)]
                     doc.add(FacetField(field, path))
-        if self._addTimestamp:
-            doc.add(self._fieldFactory.createTimestampField(self._time()))
         return doc
-
-    def _time(self):
-        return int(time()*1000000)

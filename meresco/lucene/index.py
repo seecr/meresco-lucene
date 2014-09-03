@@ -29,7 +29,7 @@ from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields,
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
-from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
+from org.apache.lucene.util import BytesRef, BytesRefIterator
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
@@ -40,11 +40,10 @@ from java.io import File, StringReader
 from os.path import join
 
 from indexandtaxonomy import IndexAndTaxonomy
-from meresco.lucene.fieldfactory import LONGTYPE
 from org.apache.lucene.facet.taxonomy import CachedOrdinalsReader, DocValuesOrdinalsReader
 
 class Index(object):
-    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, executor=None, fieldFactory=None):
+    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, executor=None):
         self._reactor = reactor
         self._maxCommitCount = commitCount or 1000
         self._commitCount = 0
@@ -52,7 +51,6 @@ class Index(object):
         self._commitTimerToken = None
         similarity = similarity or BM25Similarity()
 
-        self._fieldFactory = fieldFactory
         self._checker = DirectSpellChecker()
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
         self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
@@ -92,10 +90,6 @@ class Index(object):
 
     def termsForField(self, field, prefix=None, limit=10, **kwargs):
         convert = lambda term: term.utf8ToString()
-        if self._fieldFactory.fieldType(field) == LONGTYPE:
-            convert = lambda term: NumericUtils.prefixCodedToLong(term)
-            if prefix:
-                raise ValueError('No prefixSearch for number fields.')
         terms = []
         termsEnum = MultiFields.getTerms(self._indexAndTaxonomy.searcher.getIndexReader(), field)
         if termsEnum is None:

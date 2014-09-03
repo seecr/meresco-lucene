@@ -132,19 +132,6 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         facetsfields = [FacetField.cast_(f) for f in document.getFields() if FacetField.instance_(f)]
         self.assertEquals(1, len(facetsfields))
 
-
-    def testAddTimeStamp(self):
-        fields = {'field1': ['value1']}
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', addTimestamp=True, drilldownFields=[])
-        fields2LuceneDoc._time = lambda: 123456789
-        document = fields2LuceneDoc._createDocument(fields)
-        self.assertEquals(set(['field1', '__timestamp__']), set([f.name() for f in document.getFields()]))
-        timestampField = document.getField("__timestamp__")
-        self.assertEquals(123456789, timestampField.numericValue().intValue())
-        self.assertTrue(timestampField.fieldType().indexed())
-        self.assertFalse(timestampField.fieldType().stored())
-        self.assertTrue(timestampField.fieldType().tokenized())
-
     def testAddDocument(self):
         fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[])
         observer = CallTrace()

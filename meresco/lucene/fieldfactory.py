@@ -23,51 +23,36 @@
 #
 ## end license ##
 
-from org.apache.lucene.document import LongField, TextField, StringField, NumericDocValuesField, Field
+from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field
 
-TIMESTAMPFIELD = '__timestamp__'
 IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
 KEY_PREFIX = "__key__."
 NUMERIC_PREFIX = "__numeric__."
 
-LONGTYPE = 'long'
-TEXTTYPE = 'text'
-STRINGTYPE = 'string'
-NUMERICTYPE = 'numeric'
-
-typeToField = {
-    LONGTYPE: lambda fieldname, value, store: LongField(fieldname, long(value), store),
-    TEXTTYPE: TextField,
-    STRINGTYPE: StringField,
-    NUMERICTYPE: lambda fieldname, value, store: NumericDocValuesField(fieldname, long(value)),
-}
-
-
 class FieldFactory(object):
-    def fieldType(self, fieldname):
-        if fieldname == IDFIELD:
-            return STRINGTYPE
-        if fieldname == TIMESTAMPFIELD:
-            return LONGTYPE
+    def __init__(self):
+        self._buildField = {
+                IDFIELD: (lambda fieldname, value: StringField(fieldname, value, Field.Store.YES)),
+            }
+
+    def _oldBuild(self, fieldname, value):
         if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
-            return STRINGTYPE
+            return StringField(fieldname, value, Field.Store.NO)
         if fieldname.startswith(KEY_PREFIX):
-            return NUMERICTYPE
+            return NumericDocValuesField(fieldname, long(value))
         if fieldname.startswith(NUMERIC_PREFIX):
-            return NUMERICTYPE
-        return TEXTTYPE
+            return NumericDocValuesField(fieldname, long(value))
+        return TextField(fieldname, value, Field.Store.NO)
 
     def createField(self, fieldname, value):
-        store = Field.Store.YES if fieldname == IDFIELD else Field.Store.NO
-        fieldFactory = typeToField[self.fieldType(fieldname)]
-        return fieldFactory(fieldname, value, store)
+        buildField = self._buildField.get(fieldname)
+        if buildField is not None:
+            return buildField(fieldname, value)
+        return self._oldBuild(fieldname, value)
 
     def createIdField(self, value):
         return self.createField(IDFIELD, value)
-
-    def createTimestampField(self, value):
-        return self.createField(TIMESTAMPFIELD, value)
 
 DEFAULT_FACTORY = FieldFactory()

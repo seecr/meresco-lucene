@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -59,7 +59,7 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         self.assertTrue('Location: /remote/info/index' in headerLines, header)
 
     def testRemoteInfoField(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__timestamp__', name='main'), parse=False)
+        header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__id__', name='main'), parse=False)
         self.assertEquals(50, body.count(': 1'), body)
 
     def testRemoteInfoFieldWithPrefix(self):

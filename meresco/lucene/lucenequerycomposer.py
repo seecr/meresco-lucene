@@ -24,9 +24,7 @@
 ## end license ##
 
 from meresco.lucene import createAnalyzer
-from meresco.lucene.fieldfactory import LONGTYPE, DEFAULT_FACTORY
-
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
+from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
 from java.io import StringReader
@@ -36,12 +34,11 @@ from re import compile
 
 
 class LuceneQueryComposer(object):
-    def __init__(self, unqualifiedTermFields, isUntokenizedMethod=None, analyzer=None, fieldFactory=DEFAULT_FACTORY):
+    def __init__(self, unqualifiedTermFields, isUntokenizedMethod=None, analyzer=None):
         self._additionalKwargs = dict(
                 unqualifiedTermFields=unqualifiedTermFields,
                 isUntokenized=(lambda name: False) if isUntokenizedMethod is None else isUntokenizedMethod,
                 analyzer=analyzer,
-                fieldFactory=fieldFactory,
             )
 
     def compose(self, ast):
@@ -52,12 +49,11 @@ class LuceneQueryComposer(object):
 
 
 class _Cql2LuceneQueryVisitor(CqlVisitor):
-    def __init__(self, unqualifiedTermFields, node, isUntokenized, analyzer, fieldFactory):
+    def __init__(self, unqualifiedTermFields, node, isUntokenized, analyzer):
         CqlVisitor.__init__(self, node)
         self._unqualifiedTermFields = unqualifiedTermFields
         self._isUntokenized = isUntokenized
         self._analyzer = analyzer
-        self._fieldFactory = fieldFactory
 
     def visitSCOPED_CLAUSE(self, node):
         clause = CqlVisitor.visitSCOPED_CLAUSE(self, node)
@@ -119,8 +115,6 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         return relation, boost
 
     def _termOrPhraseQuery(self, index, termString):
-        if self._fieldFactory.fieldType(index) == LONGTYPE:
-            return NumericRangeQuery.newLongRange(index, long(termString), long(termString), True, True)
         listOfTermStrings = self._analyzeToken(termString)
         if len(listOfTermStrings) == 1:
             if prefixRegexp.match(termString):

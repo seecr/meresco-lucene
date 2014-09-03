@@ -43,7 +43,7 @@ from os.path import basename
 from meresco.lucene.luceneresponse import LuceneResponse
 from meresco.lucene.index import Index
 from meresco.lucene.cache import LruCache
-from meresco.lucene.fieldfactory import LONGTYPE, TEXTTYPE, STRINGTYPE, DEFAULT_FACTORY, IDFIELD
+from meresco.lucene.fieldfactory import DEFAULT_FACTORY, IDFIELD
 from meresco.lucene.hit import Hit
 from seecr.utils.generatorutils import generatorReturn
 
@@ -61,7 +61,7 @@ class Lucene(object):
         self._fieldFactory = fieldFactory
         numberOfProcessors = Runtime.getRuntime().availableProcessors()
         executor = Executors.newFixedThreadPool(numberOfProcessors);
-        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, executor=executor, fieldFactory=self._fieldFactory, **kwargs)
+        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, executor=executor, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name
@@ -267,11 +267,8 @@ class Lucene(object):
         return TopFieldSuperCollector(sort, stop, trackDocScores, trackMaxScore, docsScoredInOrder)
 
     def _sortField(self, fieldname, sortDescending):
-        sortType, missingValues = typeToSortFieldTypeAndMissingValue[self._fieldFactory.fieldType(fieldname)]
-        result = SortField(fieldname, sortType, sortDescending)
-        if missingValues is not None:
-            valueAsc, valueDesc = missingValues
-            result.setMissingValue(valueDesc if sortDescending else valueAsc)
+        result = SortField(fieldname, SortField.Type.STRING, sortDescending)
+        result.setMissingValue(SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST)
         return result
 
 def defaults(parameter, default):
@@ -294,10 +291,4 @@ def _termsFromFacetResult(facetResult, facet, path):
 
 
 MAX_FACET_DEPTH = 10
-
-typeToSortFieldTypeAndMissingValue = {
-    LONGTYPE: (SortField.Type.LONG, None),
-    TEXTTYPE: (SortField.Type.STRING, (SortField.STRING_LAST, SortField.STRING_FIRST)),
-    STRINGTYPE: (SortField.Type.STRING, (SortField.STRING_LAST, SortField.STRING_FIRST)),
-}
 

@@ -39,8 +39,8 @@ from meresco.lucene.utils import createField
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
-from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
-from org.apache.lucene.index import Term
+from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField, FieldType
+from org.apache.lucene.index import Term, FieldInfo
 from org.apache.lucene.facet import FacetField
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 
@@ -477,6 +477,29 @@ class LuceneTest(SeecrTestCase):
 
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), drilldownQueries=[("cat", ["cat-A"]), ("cat", ["cat-B"])]))
         self.assertEquals(1, result.total)
+
+    def testNoTermFrequency(self):
+        doc = Document()
+        fieldType = FieldType()
+        fieldType.setIndexed(True)
+        fieldType.setTokenized(True)
+        fieldType.setOmitNorms(True)
+        fieldType.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY)
+        doc.add(Field("no.term.frequency", "aap noot noot noot vuur", fieldType))
+        consume(self.lucene.addDocument("no.term.frequency", doc))
+
+        doc = createDocument(fields=[('term.frequency', "aap noot noot noot vuur")])
+        consume(self.lucene.addDocument("term.frequency", doc))
+
+        result1 = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("no.term.frequency", "aap"))))
+        result2 = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("no.term.frequency", "noot"))))
+        self.assertEquals(result1.hits[0].score, result2.hits[0].score)
+
+        result1 = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("term.frequency", "aap"))))
+        result2 = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("term.frequency", "noot"))))
+        self.assertNotEquals(result1.hits[0].score, result2.hits[0].score)
+        self.assertTrue(result1.hits[0].score < result2.hits[0].score)
+
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

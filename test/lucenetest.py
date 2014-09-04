@@ -35,12 +35,12 @@ from weightless.core import consume, retval
 from meresco.lucene import Lucene, VM, DrilldownField
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
-from meresco.lucene.fieldfactory import DEFAULT_FACTORY
+from meresco.lucene.fieldfactory import DEFAULT_FACTORY, createNoTermsFrequencyField
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
-from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
-from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField, FieldType
-from org.apache.lucene.index import Term, FieldInfo
+from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause, PhraseQuery
+from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
+from org.apache.lucene.index import Term
 from org.apache.lucene.facet import FacetField
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 
@@ -480,16 +480,17 @@ class LuceneTest(SeecrTestCase):
 
     def testNoTermFrequency(self):
         doc = Document()
-        fieldType = FieldType()
-        fieldType.setIndexed(True)
-        fieldType.setTokenized(True)
-        fieldType.setOmitNorms(True)
-        fieldType.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY)
-        doc.add(Field("no.term.frequency", "aap noot noot noot vuur", fieldType))
+        doc.add(createNoTermsFrequencyField("no.term.frequency", "aap noot noot noot vuur"))
         consume(self.lucene.addDocument("no.term.frequency", doc))
 
         doc = createDocument(fields=[('term.frequency', "aap noot noot noot vuur")])
         consume(self.lucene.addDocument("term.frequency", doc))
+
+        doc = Document()
+        doc.add(createNoTermsFrequencyField("no.term.frequency2", "aap noot"))
+        doc.add(createNoTermsFrequencyField("no.term.frequency2", "noot noot"))
+        doc.add(createNoTermsFrequencyField("no.term.frequency2", "vuur"))
+        consume(self.lucene.addDocument("no.term.frequency2", doc))
 
         result1 = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("no.term.frequency", "aap"))))
         result2 = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("no.term.frequency", "noot"))))
@@ -499,6 +500,15 @@ class LuceneTest(SeecrTestCase):
         result2 = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("term.frequency", "noot"))))
         self.assertNotEquals(result1.hits[0].score, result2.hits[0].score)
         self.assertTrue(result1.hits[0].score < result2.hits[0].score)
+
+        result1 = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("no.term.frequency2", "aap"))))
+        result2 = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("no.term.frequency2", "noot"))))
+        self.assertEquals(result1.hits[0].score, result2.hits[0].score)
+
+        bq = BooleanQuery()
+        bq.add(TermQuery(Term('no.term.frequency', 'aap')),BooleanClause.Occur.MUST)
+        bq.add(TermQuery(Term('no.term.frequency', 'noot')),BooleanClause.Occur.MUST)
+        self.assertEquals(1, len(returnValueFromGenerator(self.lucene.executeQuery(bq)).hits))
 
 
 def facets(**fields):

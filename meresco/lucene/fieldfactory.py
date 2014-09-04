@@ -23,7 +23,8 @@
 #
 ## end license ##
 
-from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field
+from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType
+from org.apache.lucene.index import FieldInfo
 
 IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
@@ -39,12 +40,12 @@ class FieldFactory(object):
 
     def _oldBuild(self, fieldname, value):
         if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
-            return StringField(fieldname, value, Field.Store.NO)
+            return createStringField(fieldname, value)
         if fieldname.startswith(KEY_PREFIX):
-            return NumericDocValuesField(fieldname, long(value))
+            return createNumericDocValuesField(fieldname, value)
         if fieldname.startswith(NUMERIC_PREFIX):
-            return NumericDocValuesField(fieldname, long(value))
-        return TextField(fieldname, value, Field.Store.NO)
+            return createNumericDocValuesField(fieldname, value)
+        return createTextField(fieldname, value)
 
     def createField(self, fieldname, value):
         buildField = self._buildField.get(fieldname)
@@ -55,4 +56,30 @@ class FieldFactory(object):
     def createIdField(self, value):
         return self.createField(IDFIELD, value)
 
+    def register(self, fieldname, buildField):
+        self._buildField[fieldname] = buildField
+
 DEFAULT_FACTORY = FieldFactory()
+
+def createStringField(fieldname, value):
+    return StringField(fieldname, value, Field.Store.NO)
+
+def createNumericDocValuesField(fieldname, value):
+    return NumericDocValuesField(fieldname, long(value))
+
+def createTextField(fieldname, value):
+    return TextField(fieldname, value, Field.Store.NO)
+
+def createNoTermsFrequencyField(fieldname, value):
+    return Field(fieldname, value, NO_TERMS_FREQUENCY_FIELD)
+
+def _createNoTermsFrequencyFieldType():
+    f = FieldType()
+    f.setIndexed(True)
+    f.setTokenized(True)
+    f.setOmitNorms(True)
+    f.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY)
+    f.freeze()
+    return f
+NO_TERMS_FREQUENCY_FIELD = _createNoTermsFrequencyFieldType()
+

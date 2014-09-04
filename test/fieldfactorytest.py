@@ -24,7 +24,9 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.fieldfactory import FieldFactory
+from meresco.lucene.fieldfactory import FieldFactory, createNoTermsFrequencyField
+from org.apache.lucene.index import FieldInfo
+
 
 class FieldFactoryTest(SeecrTestCase):
 
@@ -39,4 +41,13 @@ class FieldFactoryTest(SeecrTestCase):
         factory = FieldFactory()
         field = factory.createField('fieldname', 'value')
         self.assertTrue(field.fieldType().tokenized())
-        factory.registerField('fieldname',)
+        def create(fieldname, value):
+            return 'NEW FIELD'
+        factory.register('fieldname', create)
+        self.assertEquals('NEW FIELD', factory.createField('fieldname', 'value'))
+
+    def testNoTermsFreqField(self):
+        factory = FieldFactory()
+        factory.register('fieldname', createNoTermsFrequencyField)
+        field = factory.createField('fieldname', 'value')
+        self.assertEquals(FieldInfo.IndexOptions.DOCS_ONLY, field.fieldType().indexOptions())

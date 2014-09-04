@@ -24,8 +24,9 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.fieldfactory import FieldFactory, createNoTermsFrequencyField
+from meresco.lucene.fieldfactory import FieldFactory, NO_TERMS_FREQUENCY_FIELDTYPE
 from org.apache.lucene.index import FieldInfo
+from org.apache.lucene.document import StringField, TextField
 
 
 class FieldFactoryTest(SeecrTestCase):
@@ -36,18 +37,31 @@ class FieldFactoryTest(SeecrTestCase):
         self.assertFalse(field.fieldType().tokenized())
         self.assertTrue(field.fieldType().stored())
         self.assertTrue(field.fieldType().indexed())
+        self.assertTrue(factory.isUntokenized('__id__'))
 
     def testSpecificField(self):
         factory = FieldFactory()
         field = factory.createField('fieldname', 'value')
         self.assertTrue(field.fieldType().tokenized())
-        def create(fieldname, value):
-            return 'NEW FIELD'
-        factory.register('fieldname', create)
+        factory.register('fieldname', StringField.TYPE_NOT_STORED, build=lambda fieldname, value: 'NEW FIELD')
         self.assertEquals('NEW FIELD', factory.createField('fieldname', 'value'))
 
     def testNoTermsFreqField(self):
         factory = FieldFactory()
-        factory.register('fieldname', createNoTermsFrequencyField)
+        factory.register('fieldname', NO_TERMS_FREQUENCY_FIELDTYPE)
         field = factory.createField('fieldname', 'value')
         self.assertEquals(FieldInfo.IndexOptions.DOCS_ONLY, field.fieldType().indexOptions())
+
+    def testPhraseQueryPossible(self):
+        factory = FieldFactory()
+        factory.register('fieldname', NO_TERMS_FREQUENCY_FIELDTYPE)
+        self.assertFalse(factory.phraseQueryPossible('fieldname'))
+        self.assertTrue(factory.phraseQueryPossible('other.fieldname'))
+
+    def testIsUntokenized(self):
+        factory = FieldFactory()
+        self.assertTrue(factory.isUntokenized('untokenized.some.field'))
+        factory.register('fieldname', StringField.TYPE_NOT_STORED)
+        self.assertTrue(factory.isUntokenized('fieldname'))
+        factory.register('fieldname', TextField.TYPE_NOT_STORED)
+        self.assertFalse(factory.isUntokenized('fieldname'))

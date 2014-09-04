@@ -25,53 +25,71 @@
 
 from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType
 from org.apache.lucene.index import FieldInfo
+from itertools import chain
 
 IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
 KEY_PREFIX = "__key__."
 NUMERIC_PREFIX = "__numeric__."
+PHRASE_QUERY_POSSIBLE, IS_UNTOKENIZED, BUILD, STRINGFIELD, NUMERICFIELD, TEXTFIELD, TYPE = range(7)
 
 class FieldFactory(object):
     def __init__(self):
-        self._buildField = {
-                IDFIELD: (lambda fieldname, value: StringField(fieldname, value, Field.Store.YES)),
+        self._buildFields = {
+                IDFIELD: {
+                    TYPE: StringField.TYPE_STORED,
+                },
             }
-
-    def _oldBuild(self, fieldname, value):
-        if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
-            return createStringField(fieldname, value)
-        if fieldname.startswith(KEY_PREFIX):
-            return createNumericDocValuesField(fieldname, value)
-        if fieldname.startswith(NUMERIC_PREFIX):
-            return createNumericDocValuesField(fieldname, value)
-        return createTextField(fieldname, value)
+        self._prefixBuildFields = {
+                STRINGFIELD: {
+                    TYPE: StringField.TYPE_NOT_STORED,
+                },
+                NUMERICFIELD: {
+                    BUILD: lambda fieldname, value: NumericDocValuesField(fieldname, long(value)),
+                    TYPE: NumericDocValuesField.TYPE,
+                },
+                TEXTFIELD: {
+                    TYPE: TextField.TYPE_NOT_STORED,
+                },
+            }
+        for fieldDict in chain(self._buildFields.values(), self._prefixBuildFields.values()):
+            self._initializeFieldDict(fieldDict, build=fieldDict.get(BUILD))
 
     def createField(self, fieldname, value):
-        buildField = self._buildField.get(fieldname)
-        if buildField is not None:
-            return buildField(fieldname, value)
-        return self._oldBuild(fieldname, value)
+        return self._getBuildField(fieldname)[BUILD](fieldname, value)
 
     def createIdField(self, value):
         return self.createField(IDFIELD, value)
 
-    def register(self, fieldname, buildField):
-        self._buildField[fieldname] = buildField
+    def register(self, fieldname, fieldType, build=None):
+        fieldDict = {TYPE: fieldType}
+        self._initializeFieldDict(fieldDict, build=build)
+        self._buildFields[fieldname] = fieldDict
 
-DEFAULT_FACTORY = FieldFactory()
+    def phraseQueryPossible(self, fieldname):
+        return self._getBuildField(fieldname)[PHRASE_QUERY_POSSIBLE]
 
-def createStringField(fieldname, value):
-    return StringField(fieldname, value, Field.Store.NO)
+    def isUntokenized(self, fieldname):
+        return self._getBuildField(fieldname)[IS_UNTOKENIZED]
 
-def createNumericDocValuesField(fieldname, value):
-    return NumericDocValuesField(fieldname, long(value))
+    def _initializeFieldDict(self, fieldDict, build):
+        fieldDict[IS_UNTOKENIZED] = not fieldDict[TYPE].tokenized()
+        positionsStored = fieldDict[TYPE].indexOptions() in [FieldInfo.IndexOptions.DOCS_ONLY, FieldInfo.IndexOptions.DOCS_AND_FREQS]
+        fieldDict[PHRASE_QUERY_POSSIBLE] = not positionsStored
+        if build is None:
+            build = lambda fieldname, value: Field(fieldname, value, fieldDict[TYPE])
+        fieldDict[BUILD] = build
 
-def createTextField(fieldname, value):
-    return TextField(fieldname, value, Field.Store.NO)
-
-def createNoTermsFrequencyField(fieldname, value):
-    return Field(fieldname, value, NO_TERMS_FREQUENCY_FIELD)
+    def _getBuildField(self, fieldname):
+        buildField = self._buildFields.get(fieldname)
+        if buildField is not None:
+            return buildField
+        if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
+            return self._prefixBuildFields[STRINGFIELD]
+        if fieldname.startswith(KEY_PREFIX) or fieldname.startswith(NUMERIC_PREFIX):
+            return self._prefixBuildFields[NUMERICFIELD]
+        return self._prefixBuildFields[TEXTFIELD]
 
 def _createNoTermsFrequencyFieldType():
     f = FieldType()
@@ -81,5 +99,6 @@ def _createNoTermsFrequencyFieldType():
     f.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY)
     f.freeze()
     return f
-NO_TERMS_FREQUENCY_FIELD = _createNoTermsFrequencyFieldType()
+NO_TERMS_FREQUENCY_FIELDTYPE = _createNoTermsFrequencyFieldType()
 
+DEFAULT_FACTORY = FieldFactory()

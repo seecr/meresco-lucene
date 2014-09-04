@@ -31,14 +31,16 @@ from java.io import StringReader
 
 from cqlparser import CqlVisitor, UnsupportedCQL
 from re import compile
+from meresco.lucene.fieldfactory import DEFAULT_FACTORY
 
 
 class LuceneQueryComposer(object):
-    def __init__(self, unqualifiedTermFields, isUntokenizedMethod=None, analyzer=None):
+    def __init__(self, unqualifiedTermFields, isUntokenizedMethod=None, analyzer=None, fieldFactory=DEFAULT_FACTORY):
         self._additionalKwargs = dict(
                 unqualifiedTermFields=unqualifiedTermFields,
                 isUntokenized=(lambda name: False) if isUntokenizedMethod is None else isUntokenizedMethod,
                 analyzer=analyzer,
+                fieldFactory=fieldFactory,
             )
 
     def compose(self, ast):
@@ -49,11 +51,12 @@ class LuceneQueryComposer(object):
 
 
 class _Cql2LuceneQueryVisitor(CqlVisitor):
-    def __init__(self, unqualifiedTermFields, node, isUntokenized, analyzer):
+    def __init__(self, unqualifiedTermFields, node, isUntokenized, analyzer, fieldFactory):
         CqlVisitor.__init__(self, node)
         self._unqualifiedTermFields = unqualifiedTermFields
         self._isUntokenized = isUntokenized
         self._analyzer = analyzer
+        self._fieldFactory = fieldFactory
 
     def visitSCOPED_CLAUSE(self, node):
         clause = CqlVisitor.visitSCOPED_CLAUSE(self, node)

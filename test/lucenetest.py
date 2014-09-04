@@ -35,10 +35,10 @@ from weightless.core import consume, retval
 from meresco.lucene import Lucene, VM, DrilldownField
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
-from meresco.lucene.fieldfactory import DEFAULT_FACTORY, createNoTermsFrequencyField
+from meresco.lucene.fieldfactory import DEFAULT_FACTORY, NO_TERMS_FREQUENCY_FIELDTYPE, FieldFactory
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
-from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause, PhraseQuery
+from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
 from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import FacetField
@@ -479,17 +479,20 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(1, result.total)
 
     def testNoTermFrequency(self):
+        factory = FieldFactory()
+        factory.register("no.term.frequency", NO_TERMS_FREQUENCY_FIELDTYPE)
+        factory.register("no.term.frequency2", NO_TERMS_FREQUENCY_FIELDTYPE)
         doc = Document()
-        doc.add(createNoTermsFrequencyField("no.term.frequency", "aap noot noot noot vuur"))
+        doc.add(factory.createField("no.term.frequency", "aap noot noot noot vuur"))
         consume(self.lucene.addDocument("no.term.frequency", doc))
 
         doc = createDocument(fields=[('term.frequency', "aap noot noot noot vuur")])
         consume(self.lucene.addDocument("term.frequency", doc))
 
         doc = Document()
-        doc.add(createNoTermsFrequencyField("no.term.frequency2", "aap noot"))
-        doc.add(createNoTermsFrequencyField("no.term.frequency2", "noot noot"))
-        doc.add(createNoTermsFrequencyField("no.term.frequency2", "vuur"))
+        doc.add(factory.createField("no.term.frequency2", "aap noot"))
+        doc.add(factory.createField("no.term.frequency2", "noot noot"))
+        doc.add(factory.createField("no.term.frequency2", "vuur"))
         consume(self.lucene.addDocument("no.term.frequency2", doc))
 
         result1 = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("no.term.frequency", "aap"))))

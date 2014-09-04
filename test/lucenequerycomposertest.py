@@ -30,10 +30,12 @@ from unittest import TestCase
 from cqlparser import parseString as parseCql, UnsupportedCQL
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
+from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery
 from org.apache.lucene.index import Term
 
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
+from meresco.lucene.fieldfactory import FieldFactory
+from org.apache.lucene.document import StringField
 
 
 class LuceneQueryComposerTest(TestCase):
@@ -190,9 +192,11 @@ class LuceneQueryComposerTest(TestCase):
         self.assertEquals(repr(query), repr(result))
 
     def testMagicExact(self):
-        exactResult = self.composer.compose(parseCql('untokenized.animal exact "cats dogs"'))
-        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], isUntokenizedMethod=lambda name: name.startswith('untokenized.'))
-        self.assertConversion(exactResult, 'untokenized.animal = "cats dogs"')
+        exactResult = self.composer.compose(parseCql('animal exact "cats dogs"'))
+        fieldFactory = FieldFactory()
+        fieldFactory.register('animal', StringField.TYPE_NOT_STORED)
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], fieldFactory=fieldFactory)
+        self.assertConversion(exactResult, 'animal = "cats dogs"')
 
     def testMatchAllQuery(self):
         self.assertConversion(MatchAllDocsQuery(), '*')

@@ -27,6 +27,7 @@ from seecr.test import SeecrTestCase
 from meresco.lucene.fieldfactory import FieldFactory, NO_TERMS_FREQUENCY_FIELDTYPE
 from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.document import StringField, TextField
+from meresco.lucene.fieldfactory import DEFAULT_FACTORY
 
 
 class FieldFactoryTest(SeecrTestCase):
@@ -65,3 +66,12 @@ class FieldFactoryTest(SeecrTestCase):
         self.assertTrue(factory.isUntokenized('fieldname'))
         factory.register('fieldname', TextField.TYPE_NOT_STORED)
         self.assertFalse(factory.isUntokenized('fieldname'))
+
+    def testFreeze(self):
+        factory = FieldFactory()
+        factory.register('fieldname', StringField.TYPE_NOT_STORED)
+        factory.freeze()
+        self.assertRaises(ValueError, factory.register, 'fieldname2', StringField.TYPE_NOT_STORED)
+
+    def testDefaultFactoryFrozen(self):
+        self.assertRaises(ValueError, DEFAULT_FACTORY.register, 'fieldname2', StringField.TYPE_NOT_STORED)

@@ -67,6 +67,12 @@ class FieldFactory(object):
         self._initializeFieldDict(fieldDict, build=build)
         self._buildFields[fieldname] = fieldDict
 
+    def freeze(self):
+        def register(*args, **kwargs):
+            raise ValueError('This factory can not be changed.')
+        self.register = register
+        return self
+
     def phraseQueryPossible(self, fieldname):
         return self._getBuildField(fieldname)[PHRASE_QUERY_POSSIBLE]
 
@@ -101,4 +107,4 @@ def _createNoTermsFrequencyFieldType():
     return f
 NO_TERMS_FREQUENCY_FIELDTYPE = _createNoTermsFrequencyFieldType()
 
-DEFAULT_FACTORY = FieldFactory()
+DEFAULT_FACTORY = FieldFactory().freeze()

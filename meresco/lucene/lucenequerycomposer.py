@@ -35,10 +35,9 @@ from meresco.lucene.fieldfactory import DEFAULT_FACTORY
 
 
 class LuceneQueryComposer(object):
-    def __init__(self, unqualifiedTermFields, isUntokenizedMethod=None, analyzer=None, fieldFactory=DEFAULT_FACTORY):
+    def __init__(self, unqualifiedTermFields, analyzer=None, fieldFactory=DEFAULT_FACTORY):
         self._additionalKwargs = dict(
                 unqualifiedTermFields=unqualifiedTermFields,
-                isUntokenized=(lambda name: False) if isUntokenizedMethod is None else isUntokenizedMethod,
                 analyzer=analyzer,
                 fieldFactory=fieldFactory,
             )
@@ -51,10 +50,9 @@ class LuceneQueryComposer(object):
 
 
 class _Cql2LuceneQueryVisitor(CqlVisitor):
-    def __init__(self, unqualifiedTermFields, node, isUntokenized, analyzer, fieldFactory):
+    def __init__(self, unqualifiedTermFields, node, analyzer, fieldFactory):
         CqlVisitor.__init__(self, node)
         self._unqualifiedTermFields = unqualifiedTermFields
-        self._isUntokenized = isUntokenized
         self._analyzer = analyzer
         self._fieldFactory = fieldFactory
 
@@ -92,7 +90,7 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
             return query
         elif firstChild == 'INDEX':
             (left, (relation, boost), right) = results
-            if relation in ['==', 'exact'] or (relation == '=' and self._isUntokenized(left)):
+            if relation in ['==', 'exact'] or (relation == '=' and self._fieldFactory.isUntokenized(left)):
                 query = TermQuery(Term(left, right))
             elif relation == '=':
                 query = self._termOrPhraseQuery(left, right)

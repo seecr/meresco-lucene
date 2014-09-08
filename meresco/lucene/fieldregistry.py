@@ -31,7 +31,7 @@ SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
 KEY_PREFIX = "__key__."
 NUMERIC_PREFIX = "__numeric__."
-PHRASE_QUERY_POSSIBLE, IS_UNTOKENIZED, BUILD, STRINGFIELD, NUMERICFIELD, TEXTFIELD, TYPE = range(7)
+STRINGFIELD, NUMERICFIELD, TEXTFIELD = range(3)
 
 class FieldRegistry(object):
     def __init__(self):

@@ -39,6 +39,7 @@ from meresco.core.processtools import setSignalHandlers
 
 from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator, DrilldownField
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
+from meresco.lucene.fieldregistry import FieldRegistry
 
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 
@@ -52,8 +53,8 @@ myPath = abspath(dirname(__file__))
 dynamicPath = join(myPath, 'html', 'dynamic')
 staticPath = join(myPath, 'html', 'static')
 
-def uploadHelix(lucene, termNumerator, storageComponent, drilldownFields):
-    indexHelix = (Fields2LuceneDoc('record', drilldownFields=drilldownFields),
+def uploadHelix(lucene, termNumerator, storageComponent, drilldownFields, fieldRegistry):
+    indexHelix = (Fields2LuceneDoc('record', drilldownFields=drilldownFields, fieldRegistry=fieldRegistry),
         (termNumerator,),
         (lucene,)
     )
@@ -98,13 +99,14 @@ def uploadHelix(lucene, termNumerator, storageComponent, drilldownFields):
 def main(reactor, port, databasePath):
     drilldownFields = [DrilldownField('untokenized.field2'), DrilldownField('untokenized.fieldHier', hierarchical=True)]
 
-    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, commitCount=30, name='main', analyzer=MerescoDutchStemmingAnalyzer, drilldownFields=drilldownFields)
-    lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, commitTimeout=0.1, name='main2', drilldownFields=drilldownFields)
+    fieldRegistry = FieldRegistry()
+    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, fieldRegistry=fieldRegistry, commitCount=30, name='main', analyzer=MerescoDutchStemmingAnalyzer, drilldownFields=drilldownFields)
+    lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, fieldRegistry=fieldRegistry, commitTimeout=0.1, name='main2', drilldownFields=drilldownFields)
 
     termNumerator = TermNumerator(path=join(databasePath, 'termNumerator'))
 
     multiLuceneHelix = (MultiLucene(defaultCore='main'),
-            (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, name='empty-core', drilldownFields=drilldownFields),),
+            (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, fieldRegistry=fieldRegistry, name='empty-core', drilldownFields=drilldownFields),),
             (lucene,),
             (lucene2,),
         )
@@ -145,10 +147,10 @@ def main(reactor, port, databasePath):
                         )
                     ),
                     (PathFilter("/update_main", excluding=['/update_main2']),
-                        uploadHelix(lucene, termNumerator, storageComponent, drilldownFields),
+                        uploadHelix(lucene, termNumerator, storageComponent, drilldownFields, fieldRegistry=fieldRegistry),
                     ),
                     (PathFilter("/update_main2"),
-                        uploadHelix(lucene2, termNumerator, storageComponent, drilldownFields),
+                        uploadHelix(lucene2, termNumerator, storageComponent, drilldownFields, fieldRegistry=fieldRegistry),
                     ),
                     (PathFilter('/sru'),
                         (SruParser(defaultRecordSchema='record'),
@@ -156,9 +158,9 @@ def main(reactor, port, databasePath):
                                 (MultiCqlToLuceneQuery(
                                     defaultCore='main',
                                     coreToCqlLuceneQueries={
-                                        "main": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer),
-                                        "main2": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer),
-                                        "empty-core": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer),
+                                        "main": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=fieldRegistry),
+                                        "main2": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=fieldRegistry),
+                                        "empty-core": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=fieldRegistry),
                                     }),
                                     multiLuceneHelix,
                                 ),
@@ -183,9 +185,9 @@ def main(reactor, port, databasePath):
                             (MultiCqlToLuceneQuery(
                                     defaultCore='main',
                                     coreToCqlLuceneQueries={
-                                        "main": CqlToLuceneQuery([]),
-                                        "main2": CqlToLuceneQuery([]),
-                                        "empty-core": CqlToLuceneQuery([]),
+                                        "main": CqlToLuceneQuery([], fieldRegistry=fieldRegistry),
+                                        "main2": CqlToLuceneQuery([], fieldRegistry=fieldRegistry),
+                                        "empty-core": CqlToLuceneQuery([], fieldRegistry=fieldRegistry),
                                     }),
                                 multiLuceneHelix,
                             )

@@ -82,6 +82,7 @@ public class SuperIndexSearcher extends IndexSearcher {
         for (AtomicReaderContext ctx : this.bigSegments)
             ecs.submit(new SearchTask(ctx, weight, c.subCollector()), "Done");
         new SearchTask(this.smallSegments, weight, c.subCollector()).run();
+        System.currentTimeMillis();
         for (int i = 0; i < this.bigSegments.size(); i++) {
             ecs.take().get();
         }

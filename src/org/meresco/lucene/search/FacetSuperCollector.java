@@ -26,6 +26,8 @@
 package org.meresco.lucene.search;
 
 import java.io.IOException;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetsCollector;
@@ -37,19 +39,21 @@ import org.apache.lucene.facet.taxonomy.OrdinalsReader;
 import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.index.AtomicReaderContext;
 
 public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
-    final TaxonomyReader taxoReader;
-    final FacetsConfig facetConfig;
-    final OrdinalsReader ordinalsReader;
+    final TaxonomyReader       taxoReader;
+    final FacetsConfig         facetConfig;
+    final OrdinalsReader       ordinalsReader;
+    final BlockingDeque<int[]> valuesStack = new LinkedBlockingDeque<int[]>();
 
     public FacetSuperCollector(TaxonomyReader taxoReader, FacetsConfig facetConfig, OrdinalsReader ordinalsReader) {
         super();
         this.taxoReader = taxoReader;
         this.facetConfig = facetConfig;
         this.ordinalsReader = ordinalsReader;
+        for (int i = 0; i < 10; i++)
+            this.valuesStack.add(new int[taxoReader.getSize()]);
     }
 
     @Override
@@ -88,9 +92,11 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
         while (ord != TaxonomyReader.INVALID_ORDINAL) {
             int val = 0;
-            for (FacetSubCollector sub : super.subs) {
-                val += sub.values[ord];
-            }
+            for (int[] values: this.valuesStack)
+                val += values[ord];
+            //for (FacetSubCollector sub : super.subs) {
+            //    val += sub.values[ord];
+            //}
             if (val > 0) {
                 totValue += val;
                 childCount++;
@@ -116,9 +122,11 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
         if (dimConfig.multiValued) {
             if (dimConfig.requireDimCount) {
                 totValue = 0;
-                for (FacetSubCollector sub : super.subs) {
-                    totValue += sub.values[dimOrd];
-                }
+                for (int[] values: this.valuesStack)
+                    totValue += values[dimOrd];
+                //for (FacetSubCollector sub : super.subs) {
+                //    totValue += sub.values[dimOrd];
+                //}
             } else {
                 // Our sum'd value is not correct, in general:
                 totValue = -1;
@@ -148,19 +156,25 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
 
     @Override
     public void complete() throws IOException {
+        try {
+            this.values = this.parent.valuesStack.take();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         SubTaxonomyFacetCounts counts = new SubTaxonomyFacetCounts(this.parent.ordinalsReader, this.parent.taxoReader,
-                this.parent.facetConfig, this.delegate);
-        this.values = counts.getValues();
+                this.parent.facetConfig, this.delegate, this.values);
+        counts.getValues();
     }
 }
 
 class SubTaxonomyFacetCounts extends TaxonomyFacetCounts {
     public SubTaxonomyFacetCounts(OrdinalsReader ordinalsReader, TaxonomyReader taxoReader, FacetsConfig config,
-            FacetsCollector fc) throws IOException {
-        super(ordinalsReader, taxoReader, config, fc);
+            FacetsCollector fc, int[] values) throws IOException {
+        super(ordinalsReader, taxoReader, config, fc, values);
     }
 
-    public int[] getValues() {
+    public int[] getValues() throws IOException {
+        this.doCount();
         return this.values;
     }
 }

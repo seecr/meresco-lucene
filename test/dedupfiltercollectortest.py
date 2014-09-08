@@ -31,14 +31,14 @@ from seecr.test import SeecrTestCase, CallTrace
 from weightless.core import consume
 
 from meresco.lucene import Lucene
-from meresco.lucene.fieldfactory import IDFIELD
+from meresco.lucene.fieldregistry import IDFIELD, FieldRegistry
 
 
 class DeDupFilterCollectorTest(SeecrTestCase):
     def setUp(self):
         super(DeDupFilterCollectorTest, self).setUp()
         self._reactor = CallTrace('reactor')
-        self.lucene = Lucene(self.tempdir, commitCount=1, reactor=self._reactor)
+        self.lucene = Lucene(self.tempdir, commitCount=1, reactor=self._reactor, fieldRegistry=FieldRegistry())
 
     def tearDown(self):
         self.lucene.close()

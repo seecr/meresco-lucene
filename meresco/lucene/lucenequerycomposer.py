@@ -31,15 +31,14 @@ from java.io import StringReader
 
 from cqlparser import CqlVisitor, UnsupportedCQL
 from re import compile
-from meresco.lucene.fieldfactory import DEFAULT_FACTORY
 
 
 class LuceneQueryComposer(object):
-    def __init__(self, unqualifiedTermFields, analyzer=None, fieldFactory=DEFAULT_FACTORY):
+    def __init__(self, unqualifiedTermFields, fieldRegistry, analyzer=None):
         self._additionalKwargs = dict(
                 unqualifiedTermFields=unqualifiedTermFields,
                 analyzer=analyzer,
-                fieldFactory=fieldFactory,
+                fieldRegistry=fieldRegistry,
             )
 
     def compose(self, ast):
@@ -50,11 +49,11 @@ class LuceneQueryComposer(object):
 
 
 class _Cql2LuceneQueryVisitor(CqlVisitor):
-    def __init__(self, unqualifiedTermFields, node, analyzer, fieldFactory):
+    def __init__(self, unqualifiedTermFields, node, analyzer, fieldRegistry):
         CqlVisitor.__init__(self, node)
         self._unqualifiedTermFields = unqualifiedTermFields
         self._analyzer = analyzer
-        self._fieldFactory = fieldFactory
+        self._fieldRegistry = fieldRegistry
 
     def visitSCOPED_CLAUSE(self, node):
         clause = CqlVisitor.visitSCOPED_CLAUSE(self, node)
@@ -90,7 +89,7 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
             return query
         elif firstChild == 'INDEX':
             (left, (relation, boost), right) = results
-            if relation in ['==', 'exact'] or (relation == '=' and self._fieldFactory.isUntokenized(left)):
+            if relation in ['==', 'exact'] or (relation == '=' and self._fieldRegistry.isUntokenized(left)):
                 query = TermQuery(Term(left, right))
             elif relation == '=':
                 query = self._termOrPhraseQuery(left, right)

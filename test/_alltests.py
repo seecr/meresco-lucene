@@ -43,7 +43,7 @@ if version >= '2.7':
 from composedquerytest import ComposedQueryTest
 from cqltolucenequerytest import CqlToLuceneQueryTest
 from dedupfiltercollectortest import DeDupFilterCollectorTest
-from fieldfactorytest import FieldFactoryTest
+from fieldregistrytest import FieldRegistryTest
 from fields2lucenedoctest import Fields2LuceneDocTest
 from lrucachetest import LruCacheTest
 from lucenequerycomposertest import LuceneQueryComposerTest

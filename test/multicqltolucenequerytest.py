@@ -32,6 +32,7 @@ from meresco.core import Observable
 from weightless.core import be
 from seecr.utils.generatorutils import consume
 from meresco.lucene.composedquery import ComposedQuery
+from meresco.lucene.fieldregistry import FieldRegistry
 
 from org.apache.lucene.search import TermQuery
 from org.apache.lucene.index import Term
@@ -39,8 +40,8 @@ from org.apache.lucene.index import Term
 
 class MultiCqlToLuceneQueryTest(TestCase):
     def setUp(self):
-        coreAConverter = CqlToLuceneQuery([('fieldA', 1.0)])
-        coreBConverter = CqlToLuceneQuery([('fieldB', 1.0)])
+        coreAConverter = CqlToLuceneQuery([('fieldA', 1.0)], fieldRegistry=FieldRegistry())
+        coreBConverter = CqlToLuceneQuery([('fieldB', 1.0)], fieldRegistry=FieldRegistry())
         self.converter = MultiCqlToLuceneQuery(defaultCore='A', coreToCqlLuceneQueries=dict(A=coreAConverter, B=coreBConverter))
         self.observer = CallTrace('Query responder', methods={'executeQuery': executeQueryMock})
         self.dna = be((Observable(),

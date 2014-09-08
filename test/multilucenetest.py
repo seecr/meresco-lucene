@@ -33,7 +33,7 @@ from weightless.core import be, compose
 from meresco.core import Observable
 
 from meresco.lucene import Lucene, TermFrequencySimilarity
-from meresco.lucene.fieldfactory import KEY_PREFIX
+from meresco.lucene.fieldregistry import KEY_PREFIX, FieldRegistry
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.composedquery import ComposedQuery
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
@@ -47,9 +47,9 @@ from lucenetest import createDocument
 class MultiLuceneTest(SeecrTestCase):
     def setUp(self):
         SeecrTestCase.setUp(self)
-        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), commitCount=1)
-        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), commitCount=1)
-        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1, similarity=TermFrequencySimilarity())
+        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry())
+        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry())
+        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1, similarity=TermFrequencySimilarity(), fieldRegistry=FieldRegistry())
         self.dna = be((Observable(),
             (MultiLucene(defaultCore='coreA'),
                 (self.luceneA,),
@@ -636,4 +636,4 @@ class MultiLuceneTest(SeecrTestCase):
             ))
 
 def luceneQueryFromCql(cqlString):
-    return LuceneQueryComposer([]).compose(parseCql(cqlString))
+    return LuceneQueryComposer([], fieldRegistry=FieldRegistry()).compose(parseCql(cqlString))

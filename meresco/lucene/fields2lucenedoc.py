@@ -27,17 +27,17 @@ from meresco.core import Observable
 from org.apache.lucene.document import Document
 from org.apache.lucene.facet import FacetField
 
-from fieldfactory import DEFAULT_FACTORY, IDFIELD, KEY_PREFIX
+from fieldregistry import IDFIELD, KEY_PREFIX
 
 
 class Fields2LuceneDoc(Observable):
-    def __init__(self, transactionName, drilldownFields, identifierRewrite=None, rewriteFields=None, fieldFactory=DEFAULT_FACTORY):
+    def __init__(self, transactionName, drilldownFields, fieldRegistry, identifierRewrite=None, rewriteFields=None):
         Observable.__init__(self)
         self._transactionName = transactionName
         self._drilldownFieldnames = [df.name for df in drilldownFields]
         self._identifierRewrite = (lambda identifier: identifier) if identifierRewrite is None else identifierRewrite
         self._rewriteFields = (lambda fields: fields) if rewriteFields is None else rewriteFields
-        self._fieldFactory = fieldFactory
+        self._fieldRegistry = fieldRegistry
 
     def begin(self, name):
         if name != self._transactionName:
@@ -80,9 +80,9 @@ class Fields2LuceneDoc(Observable):
                 else:
                     if hasattr(value, 'extend'):
                         for v in ['/'.join(value[:i]) for i in xrange(1,len(value)+1)]:
-                            doc.add(self._fieldFactory.createField(field, v))
+                            doc.add(self._fieldRegistry.createField(field, v))
                     else:
-                        doc.add(self._fieldFactory.createField(field, value))
+                        doc.add(self._fieldRegistry.createField(field, value))
             if field in self._drilldownFieldnames:
                 for v in values:
                     if hasattr(v, 'extend'):

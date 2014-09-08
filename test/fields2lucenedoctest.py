@@ -28,7 +28,7 @@ from meresco.lucene import Fields2LuceneDoc, DrilldownField
 from meresco.core import Transaction
 from weightless.core import consume
 from org.apache.lucene.facet import FacetField
-
+from meresco.lucene.fieldregistry import FieldRegistry
 
 class Fields2LuceneDocTest(IntegrationTestCase):
     def testCreateDocument(self):
@@ -40,7 +40,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             '__key__.field5': ["12345"],
             '__numeric__.field6': ["12345"],
         }
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[])
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[], fieldRegistry=FieldRegistry())
         observer = CallTrace(returnValues={'numerateTerm': 1})
         fields2LuceneDoc.addObserver(observer)
         document = fields2LuceneDoc._createDocument(fields)
@@ -88,7 +88,9 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             'untokenized.field7': ['valuex'],
             'untokenized.field8': [['grandparent', 'parent', 'child'], ['parent2', 'child']]
         }
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[
+        fields2LuceneDoc = Fields2LuceneDoc('tsname',
+            fieldRegistry=FieldRegistry(),
+            drilldownFields=[
                 DrilldownField('untokenized.field4'),
                 DrilldownField('untokenized.field5'),
                 DrilldownField('untokenized.field6'),
@@ -118,7 +120,9 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         self.assertEquals(['grandparent', 'grandparent/parent', 'grandparent/parent/child', 'parent2', 'parent2/child'], [f.stringValue() for f in document.getFields('untokenized.field8')])
 
     def testAddFacetField(self):
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[
+        fields2LuceneDoc = Fields2LuceneDoc('tsname',
+            fieldRegistry=FieldRegistry(),
+            drilldownFields=[
                 DrilldownField('untokenized.field'),
             ])
         observer = CallTrace()
@@ -133,7 +137,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         self.assertEquals(1, len(facetsfields))
 
     def testAddDocument(self):
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[])
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry(), drilldownFields=[])
         observer = CallTrace()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
@@ -145,7 +149,10 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         self.assertEquals('identifier', observer.calledMethods[0].kwargs['identifier'])
 
     def testRewriteIdentifier(self):
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[], identifierRewrite=lambda identifier: "test:" + identifier)
+        fields2LuceneDoc = Fields2LuceneDoc('tsname',
+            fieldRegistry=FieldRegistry(),
+            drilldownFields=[],
+            identifierRewrite=lambda identifier: "test:" + identifier)
         observer = CallTrace()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
@@ -160,7 +167,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         def rewriteFields(fields):
             fields['keys'] = list(sorted(fields.keys()))
             return fields
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[], rewriteFields=rewriteFields)
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[], rewriteFields=rewriteFields, fieldRegistry=FieldRegistry())
         observer = CallTrace()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')

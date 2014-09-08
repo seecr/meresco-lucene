@@ -43,7 +43,7 @@ from os.path import basename
 from meresco.lucene.luceneresponse import LuceneResponse
 from meresco.lucene.index import Index
 from meresco.lucene.cache import LruCache
-from meresco.lucene.fieldfactory import DEFAULT_FACTORY, IDFIELD
+from meresco.lucene.fieldregistry import IDFIELD
 from meresco.lucene.hit import Hit
 from seecr.utils.generatorutils import generatorReturn
 
@@ -52,13 +52,13 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, name=None, drilldownFields=None, fieldFactory=DEFAULT_FACTORY, **kwargs):
+    def __init__(self, path, reactor, fieldRegistry, name=None, drilldownFields=None, **kwargs):
         self._facetsConfig = FacetsConfig()
         for field in drilldownFields or []:
             self._facetsConfig.setMultiValued(field.name, field.multiValued)
             self._facetsConfig.setHierarchical(field.name, field.hierarchical)
 
-        self._fieldFactory = fieldFactory
+        self._fieldRegistry = fieldRegistry
         numberOfProcessors = Runtime.getRuntime().availableProcessors()
         executor = Executors.newFixedThreadPool(numberOfProcessors);
         self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, executor=executor, **kwargs)
@@ -79,7 +79,7 @@ class Lucene(object):
         return self._index.commit()
 
     def addDocument(self, identifier, document):
-        document.add(self._fieldFactory.createIdField(identifier))
+        document.add(self._fieldRegistry.createIdField(identifier))
         self._index.addDocument(term=Term(IDFIELD, identifier), document=document)
         self._scoreCollectorCache.clear()  #WTF?! #TODO #FIXME
         return

@@ -25,7 +25,6 @@
 
 from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType
 from org.apache.lucene.index import FieldInfo
-from itertools import chain
 
 IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
@@ -34,60 +33,36 @@ KEY_PREFIX = "__key__."
 NUMERIC_PREFIX = "__numeric__."
 PHRASE_QUERY_POSSIBLE, IS_UNTOKENIZED, BUILD, STRINGFIELD, NUMERICFIELD, TEXTFIELD, TYPE = range(7)
 
-class FieldFactory(object):
+class FieldRegistry(object):
     def __init__(self):
         self._buildFields = {
-                IDFIELD: {
-                    TYPE: StringField.TYPE_STORED,
-                },
+                IDFIELD: FieldRegistry.FieldDefinition(type=StringField.TYPE_STORED),
             }
         self._prefixBuildFields = {
-                STRINGFIELD: {
-                    TYPE: StringField.TYPE_NOT_STORED,
-                },
-                NUMERICFIELD: {
-                    BUILD: lambda fieldname, value: NumericDocValuesField(fieldname, long(value)),
-                    TYPE: NumericDocValuesField.TYPE,
-                },
-                TEXTFIELD: {
-                    TYPE: TextField.TYPE_NOT_STORED,
-                },
+                STRINGFIELD: FieldRegistry.FieldDefinition(type=StringField.TYPE_NOT_STORED),
+                NUMERICFIELD: FieldRegistry.FieldDefinition(
+                    type=NumericDocValuesField.TYPE,
+                    create=lambda fieldname, value: NumericDocValuesField(fieldname, long(value)),
+                ),
+                TEXTFIELD: FieldRegistry.FieldDefinition(type=TextField.TYPE_NOT_STORED),
             }
-        for fieldDict in chain(self._buildFields.values(), self._prefixBuildFields.values()):
-            self._initializeFieldDict(fieldDict, build=fieldDict.get(BUILD))
 
     def createField(self, fieldname, value):
-        return self._getBuildField(fieldname)[BUILD](fieldname, value)
+        return self._getFieldDefinition(fieldname).create(fieldname, value)
 
     def createIdField(self, value):
         return self.createField(IDFIELD, value)
 
-    def register(self, fieldname, fieldType, build=None):
-        fieldDict = {TYPE: fieldType}
-        self._initializeFieldDict(fieldDict, build=build)
-        self._buildFields[fieldname] = fieldDict
-
-    def freeze(self):
-        def register(*args, **kwargs):
-            raise ValueError('This factory can not be changed.')
-        self.register = register
-        return self
+    def register(self, fieldname, fieldType, create=None):
+        self._buildFields[fieldname] = FieldRegistry.FieldDefinition(type=fieldType, create=create)
 
     def phraseQueryPossible(self, fieldname):
-        return self._getBuildField(fieldname)[PHRASE_QUERY_POSSIBLE]
+        return self._getFieldDefinition(fieldname).phraseQueryPossible
 
     def isUntokenized(self, fieldname):
-        return self._getBuildField(fieldname)[IS_UNTOKENIZED]
+        return self._getFieldDefinition(fieldname).isUntokenized
 
-    def _initializeFieldDict(self, fieldDict, build):
-        fieldDict[IS_UNTOKENIZED] = not fieldDict[TYPE].tokenized()
-        positionsStored = fieldDict[TYPE].indexOptions() in [FieldInfo.IndexOptions.DOCS_ONLY, FieldInfo.IndexOptions.DOCS_AND_FREQS]
-        fieldDict[PHRASE_QUERY_POSSIBLE] = not positionsStored
-        if build is None:
-            build = lambda fieldname, value: Field(fieldname, value, fieldDict[TYPE])
-        fieldDict[BUILD] = build
-
-    def _getBuildField(self, fieldname):
+    def _getFieldDefinition(self, fieldname):
         buildField = self._buildFields.get(fieldname)
         if buildField is not None:
             return buildField
@@ -96,6 +71,16 @@ class FieldFactory(object):
         if fieldname.startswith(KEY_PREFIX) or fieldname.startswith(NUMERIC_PREFIX):
             return self._prefixBuildFields[NUMERICFIELD]
         return self._prefixBuildFields[TEXTFIELD]
+
+    class FieldDefinition(object):
+        def __init__(self, type, create=None):
+            self.type = type
+            self.create = create
+            if self.create is None:
+                self.create = lambda fieldname, value: Field(fieldname, value, self.type)
+            positionsStored = self.type.indexOptions() in [FieldInfo.IndexOptions.DOCS_ONLY, FieldInfo.IndexOptions.DOCS_AND_FREQS]
+            self.phraseQueryPossible = not positionsStored
+            self.isUntokenized = not self.type.tokenized()
 
 def _createNoTermsFrequencyFieldType():
     f = FieldType()
@@ -107,4 +92,3 @@ def _createNoTermsFrequencyFieldType():
     return f
 NO_TERMS_FREQUENCY_FIELDTYPE = _createNoTermsFrequencyFieldType()
 
-DEFAULT_FACTORY = FieldFactory().freeze()

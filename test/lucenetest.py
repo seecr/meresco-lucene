@@ -35,7 +35,7 @@ from weightless.core import consume, retval
 from meresco.lucene import Lucene, VM, DrilldownField
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
-from meresco.lucene.fieldfactory import DEFAULT_FACTORY, NO_TERMS_FREQUENCY_FIELDTYPE, FieldFactory
+from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, FieldRegistry
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
@@ -64,7 +64,8 @@ class LuceneTest(SeecrTestCase):
                     DrilldownField('field3'),
                     DrilldownField('fieldHier', hierarchical=True),
                     DrilldownField('cat'),
-                ]
+                ],
+                fieldRegistry=FieldRegistry()
             )
 
     def tearDown(self):
@@ -113,7 +114,7 @@ class LuceneTest(SeecrTestCase):
 
     def testAddCommitAfterTimeout(self):
         self.lucene.close()
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3)
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3, fieldRegistry=FieldRegistry())
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
         self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
         self.assertEquals(42, self._reactor.calledMethods[0].kwargs['seconds'])
@@ -128,7 +129,7 @@ class LuceneTest(SeecrTestCase):
 
     def testAddAndCommitCount3(self):
         self.lucene.close()
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3)
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3, fieldRegistry=FieldRegistry())
         token = object()
         self._reactor.returnValues['addTimer'] = token
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
@@ -304,7 +305,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier='hendrik', document=createDocument([('title', 'Waar is Morée vandaag?')])))
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('title', 'moree'))))
         self.assertEquals(1, result.total)
-        query = LuceneQueryComposer(unqualifiedTermFields=[]).compose(parseCql("title=morée"))
+        query = LuceneQueryComposer(unqualifiedTermFields=[], fieldRegistry=FieldRegistry()).compose(parseCql("title=morée"))
         result = returnValueFromGenerator(self.lucene.executeQuery(query))
         self.assertEquals(1, result.total)
 
@@ -356,7 +357,7 @@ class LuceneTest(SeecrTestCase):
         luceneQuery = TermRangeQuery.newStringRange('field', 'mies', None, False, True) # >
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
         self.assertEquals(set(['id:noot', 'id:vis', 'id:vuur']), set(self.hitIds(response.hits)))
-        luceneQuery = LuceneQueryComposer([]).compose(parseCql('field >= mies'))
+        luceneQuery = LuceneQueryComposer([], fieldRegistry=FieldRegistry()).compose(parseCql('field >= mies'))
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
         self.assertEquals(set(['id:mies', 'id:noot', 'id:vis', 'id:vuur']), set(self.hitIds(response.hits)))
 
@@ -374,7 +375,7 @@ class LuceneTest(SeecrTestCase):
         query = BooleanQuery()
         [query.add(TermQuery(Term("field%s" % i, "value0")), BooleanClause.Occur.SHOULD) for i in range(100)]
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
-        self.assertTrue(response.queryTime > 20, response.queryTime)
+        self.assertTrue(response.queryTime > 12, response.queryTime)
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
         self.assertTrue(response.queryTime < 2, response.queryTime)
 
@@ -384,7 +385,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="identifier", document=document))
         with stdout_replaced():
             self.lucene.handleShutdown()
-        lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor)
+        lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor, fieldRegistry=FieldRegistry())
         response = returnValueFromGenerator(lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
         self.assertEquals(1, response.total)
 
@@ -441,7 +442,7 @@ class LuceneTest(SeecrTestCase):
 
     def testDutchStemming(self):
         self.lucene.close()
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor, analyzer=MerescoDutchStemmingAnalyzer)
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor, analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=FieldRegistry())
         doc = document(field0='katten en honden')
         consume(self.lucene.addDocument("urn:1", doc))
         self.lucene.commit()
@@ -479,7 +480,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(1, result.total)
 
     def testNoTermFrequency(self):
-        factory = FieldFactory()
+        factory = FieldRegistry()
         factory.register("no.term.frequency", NO_TERMS_FREQUENCY_FIELDTYPE)
         factory.register("no.term.frequency2", NO_TERMS_FREQUENCY_FIELDTYPE)
         doc = Document()
@@ -519,6 +520,8 @@ def facets(**fields):
 
 def document(**fields):
     return createDocument(fields.items())
+
+DEFAULT_FACTORY = FieldRegistry()
 
 def createDocument(fields, facets=None):
     document = Document()

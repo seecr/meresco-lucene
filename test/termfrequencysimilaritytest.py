@@ -25,6 +25,7 @@
 
 from seecr.test import SeecrTestCase, CallTrace
 from meresco.lucene import TermFrequencySimilarity, Lucene
+from meresco.lucene.fieldregistry import FieldRegistry
 from os.path import join
 from seecr.utils.generatorutils import returnValueFromGenerator
 from org.apache.lucene.document import Document, TextField, Field
@@ -39,7 +40,8 @@ class TermFrequencySimilarityTest(SeecrTestCase):
             join(self.tempdir, 'lucene'),
             commitCount=1,
             reactor=reactor,
-            similarity=TermFrequencySimilarity())
+            similarity=TermFrequencySimilarity(),
+            fieldRegistry=FieldRegistry())
         document = Document()
         document.add(TextField('field', 'x '*100, Field.Store.NO))
         returnValueFromGenerator(lucene.addDocument(identifier="identifier", document=document))

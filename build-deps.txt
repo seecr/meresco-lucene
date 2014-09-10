@@ -6,5 +6,6 @@ gcc
 #wheezy:g++
 #centos6:python-devel
 #wheezy:python-dev
-pylucene (>= 4.9.0-seecr~3)
+#wheezy:pylucene (>= 4.9.0-seecr~3)
+#centos6:pylucene (>= 4.9.0-1)
 pylucene (<< 4.10)

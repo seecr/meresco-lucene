@@ -24,23 +24,21 @@
 ## end license ##
 
 from meresco.lucene import createAnalyzer
-
-from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields, Term
-from org.apache.lucene.store import SimpleFSDirectory
-from org.apache.lucene.util import Version
-from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
-from org.apache.lucene.util import BytesRef, BytesRefIterator
-from org.apache.lucene.search.spell import DirectSpellChecker
-from org.apache.lucene.search.similarities import BM25Similarity
-from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
-from org.apache.lucene.facet.taxonomy.writercache import LruTaxonomyWriterCache
-from org.meresco.lucene.search import FacetSuperCollector
-from java.io import File, StringReader
-
+from indexandtaxonomy import IndexAndTaxonomy
 from os.path import join
 
-from indexandtaxonomy import IndexAndTaxonomy
+from java.io import File, StringReader
+from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
 from org.apache.lucene.facet.taxonomy import CachedOrdinalsReader, DocValuesOrdinalsReader
+from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
+from org.apache.lucene.facet.taxonomy.writercache import LruTaxonomyWriterCache
+from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields, Term, TieredMergePolicy
+from org.apache.lucene.search.similarities import BM25Similarity
+from org.apache.lucene.search.spell import DirectSpellChecker
+from org.apache.lucene.store import SimpleFSDirectory
+from org.apache.lucene.util import BytesRef, BytesRefIterator, Version
+from org.meresco.lucene.search import FacetSuperCollector
+
 
 class Index(object):
     def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, executor=None):
@@ -57,6 +55,10 @@ class Index(object):
         self._analyzer = createAnalyzer(analyzer=analyzer)
         conf = IndexWriterConfig(Version.LUCENE_4_9, self._analyzer)
         conf.setSimilarity(similarity)
+        mergePolicy = TieredMergePolicy()
+        mergePolicy.setMaxMergeAtOnce(2)
+        conf.setMergePolicy(mergePolicy)
+
         self._indexWriter = IndexWriter(indexDirectory, conf)
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
         self._taxoWriter.commit()

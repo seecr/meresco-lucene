@@ -38,17 +38,19 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
+    private final int ARRAY_POOL_SIZE = 5;
     final TaxonomyReader taxoReader;
     final FacetsConfig facetConfig;
     final OrdinalsReader ordinalsReader;
     final BlockingDeque<int[]> arrayPool = new LinkedBlockingDeque<int[]>();
+    private int[] mergeValues;
 
     public FacetSuperCollector(TaxonomyReader taxoReader, FacetsConfig facetConfig, OrdinalsReader ordinalsReader) {
         super();
         this.taxoReader = taxoReader;
         this.facetConfig = facetConfig;
         this.ordinalsReader = ordinalsReader;
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < ARRAY_POOL_SIZE; i++)
             this.arrayPool.add(new int[taxoReader.getSize()]);
     }
 
@@ -58,22 +60,20 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
     }
 
     public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
-        int[] values = mergePool();
-        return new TaxonomyFacetCounts(this.ordinalsReader, this.taxoReader, this.facetConfig, null, values)
-                .getTopChildren(topN, dim, path);
+        if (this.mergeValues == null) {
+            this.mergeValues = mergePool();
+        }
+        return new TaxonomyFacetCounts(this.ordinalsReader, this.taxoReader, this.facetConfig, null, this.mergeValues).getTopChildren(topN, dim, path);
     }
 
     private int[] mergePool() {
         // do this pairwise in threads? is it worth it?
-        long t0 = System.currentTimeMillis();
         int[] values = this.arrayPool.poll();
         while (this.arrayPool.peek() != null) {
             int[] values1 = this.arrayPool.poll();
             for (int i = 0; i < values.length; i++)
                 values[i] += values1[i];
         }
-        long t1 = System.currentTimeMillis();
-        System.out.println("merge took (ms): " + (t1-t0));
         return values;
     }
 }

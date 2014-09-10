@@ -37,9 +37,9 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
      * Called before collecting from each {@link AtomicReaderContext} in a
      * separate thread. The returned {@link SubCollector} need not be thread
      * safe as its scope is limited to one segment.
-     * 
+     *
      * The SubCollector is kept in a list and accessible by {@link #subs}.
-     * 
+     *
      * @param context
      *            next atomic reader context
      * @throws IOException
@@ -52,7 +52,7 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
 
     /**
      * Lower level factory method for SubCollectors.
-     * 
+     *
      * @param context
      *            is an AtomicReaderContext
      * @return SubCollector for this context

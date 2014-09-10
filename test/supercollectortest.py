@@ -29,7 +29,7 @@ from java.util.concurrent import Executors
 from lucenetest import document, createDocument
 from meresco.lucene.index import Index
 from org.apache.lucene.search import MatchAllDocsQuery, Sort, SortField
-from org.meresco.lucene.search import SuperCollector, SubCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, FacetSuperCollector, MultiSuperCollector, TopFieldSuperCollector
+from org.meresco.lucene.search import SuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, FacetSuperCollector, MultiSuperCollector, TopFieldSuperCollector
 from java.util import ArrayList
 from org.apache.lucene.facet import FacetsConfig
 
@@ -44,12 +44,6 @@ class SuperCollectorTest(SeecrTestCase):
         self.E.shutdown()
         super(SuperCollectorTest, self).tearDown()
 
-    def testCreate(self):
-        C = TotalHitCountSuperCollector()
-        self.assertTrue(isinstance(C, SuperCollector))
-        S = C.subCollector()
-        self.assertTrue(isinstance(S, SubCollector))
-
     def testSearch(self):
         C = TotalHitCountSuperCollector()
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
@@ -61,16 +55,6 @@ class SuperCollectorTest(SeecrTestCase):
         I = Index(path=self.tempdir, reactor=None, executor=self.E)
         I.search(Q, None, C)
         self.assertEquals(1, C.getTotalHits())
-
-    def testTopScoreDocSuperCollector(self):
-        C = TopScoreDocSuperCollector(10, True)
-        self.assertTrue(isinstance(C, SuperCollector))
-        S = C.subCollector()
-        self.assertTrue(isinstance(S, SubCollector))
-        self.assertFalse(S.acceptsDocsOutOfOrder())
-        C = TopScoreDocSuperCollector(10, False)
-        S = C.subCollector()
-        self.assertTrue(S.acceptsDocsOutOfOrder())
 
     def testSearchTopDocs(self):
         I = Index(path=self.tempdir, reactor=None, executor=self.E)

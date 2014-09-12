@@ -25,7 +25,7 @@
 
 from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause, MultiCollector, Collector, TotalHitCountCollector, TopScoreDocCollector, TopFieldCollector
 from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector, DeDupFilterCollector
-from org.meresco.lucene.search.join import ScoreSuperCollector
+from org.meresco.lucene.search.join import ScoreSuperCollector, ScoreCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
 from org.apache.lucene.queries import ChainedFilter
@@ -186,7 +186,7 @@ class Lucene(object):
         return self._scoreCollectorCache.get((keyName, query))
 
     def _scoreCollector(self, keyName, query):
-        scoreCollector = ScoreSuperCollector(keyName)
+        scoreCollector = ScoreSuperCollector(keyName) if self._multithreaded else ScoreCollector(keyName)
         self.search(query=query, collector=scoreCollector)
         return scoreCollector
 

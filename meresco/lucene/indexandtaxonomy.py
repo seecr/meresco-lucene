@@ -27,6 +27,7 @@ from org.apache.lucene.index import DirectoryReader
 from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyReader
 from org.meresco.lucene.search import SuperIndexSearcher
+from org.apache.lucene.search import IndexSearcher
 
 
 class IndexAndTaxonomy(object):
@@ -34,7 +35,8 @@ class IndexAndTaxonomy(object):
     def __init__(self, indexWriter=None, taxoWriter=None, similarity=None, executor=None):
         self._similarity = similarity
         self._executor = executor
-        self.searcher = SuperIndexSearcher(DirectoryReader.open(indexWriter, True), executor)
+        reader = DirectoryReader.open(indexWriter, True)
+        self.searcher = SuperIndexSearcher(reader, executor) if self._executor else IndexSearcher(reader)
         self.searcher.setSimilarity(self._similarity)
         self.taxoReader = DirectoryTaxonomyReader(taxoWriter)
         self._bm25Arguments = None
@@ -48,7 +50,7 @@ class IndexAndTaxonomy(object):
         if reader is None:
             return
         currentReader.close()
-        self.searcher = SuperIndexSearcher(reader, self._executor)
+        self.searcher = SuperIndexSearcher(reader, self._executor) if self._executor else IndexSearcher(reader)
         self._setSimilarityFor(self.searcher)
         taxoReader = DirectoryTaxonomyReader.openIfChanged(self.taxoReader)
         if taxoReader is None:

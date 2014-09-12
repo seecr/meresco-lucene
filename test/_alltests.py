@@ -49,8 +49,10 @@ from lucenequerycomposertest import LuceneQueryComposerTest
 from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
 from lucenetest import LuceneTest
+from lucenetest import LuceneSingleThreadedTest
 from multicqltolucenequerytest import MultiCqlToLuceneQueryTest
 from multilucenetest import MultiLuceneTest
+from multilucenetest import MultiLuceneSingleThreadedTest
 from termfrequencysimilaritytest import TermFrequencySimilarityTest
 from termnumeratortest import TermNumeratorTest
 from supercollectortest import SuperCollectorTest

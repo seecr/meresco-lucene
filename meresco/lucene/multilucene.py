@@ -40,7 +40,7 @@ from _lucene import millis
 
 
 class MultiLucene(Observable):
-    def __init__(self, defaultCore, multithreaded=False):
+    def __init__(self, defaultCore, multithreaded=True):
         Observable.__init__(self)
         self._defaultCore = defaultCore
         self._multithreaded = multithreaded

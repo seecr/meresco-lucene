@@ -28,13 +28,9 @@ from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollecto
 from org.meresco.lucene.search.join import ScoreSuperCollector, ScoreCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
-from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
-from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause
 from org.apache.lucene.search import SortField
-from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector
 from org.meresco.lucene.search import SuperCollector
-from org.meresco.lucene.search.join import ScoreSuperCollector
 
 from java.lang import Integer, Runtime
 from java.util.concurrent import Executors
@@ -56,7 +52,7 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, fieldRegistry, name=None, drilldownFields=None, multithreaded=False, **kwargs):
+    def __init__(self, path, reactor, fieldRegistry, name=None, drilldownFields=None, multithreaded=True, **kwargs):
         self._facetsConfig = FacetsConfig()
         for field in drilldownFields or []:
             self._facetsConfig.setMultiValued(field.name, field.multiValued)

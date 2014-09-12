@@ -23,8 +23,8 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause
-from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector
+from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause, MultiCollector, Collector, TotalHitCountCollector, TopScoreDocCollector, TopFieldCollector
+from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector, DeDupFilterCollector
 from org.meresco.lucene.search.join import ScoreSuperCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
@@ -51,15 +51,18 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, name=None, drilldownFields=None, **kwargs):
+    def __init__(self, path, reactor, name=None, drilldownFields=None, multithreaded=False, **kwargs):
         self._facetsConfig = FacetsConfig()
         for field in drilldownFields or []:
             self._facetsConfig.setMultiValued(field.name, field.multiValued)
             self._facetsConfig.setHierarchical(field.name, field.hierarchical)
+        self._multithreaded = multithreaded
 
-        numberOfProcessors = Runtime.getRuntime().availableProcessors()
-        executor = Executors.newFixedThreadPool(numberOfProcessors);
-        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, executor=executor, **kwargs)
+        executor = None
+        if self._multithreaded:
+            numberOfProcessors = Runtime.getRuntime().availableProcessors()
+            executor = Executors.newFixedThreadPool(numberOfProcessors);
+        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, executor=executor, multithreaded=multithreaded, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name
@@ -106,20 +109,22 @@ class Lucene(object):
         start = 0 if start is None else start
 
         collectors = []
-        resultsCollector = topCollector = _topCollector(start=start, stop=stop, sortKeys=sortKeys)
+        resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
         dedupCollector = None
         if dedupField:
-            resultsCollector = dedupCollector = DeDupFilterSuperCollector(dedupField, dedupSortField, topCollector)
+            constructor = DeDupFilterSuperCollector if self._multithreaded else DeDupFilterCollector
+            resultsCollector = dedupCollector = constructor(dedupField, dedupSortField, topCollector)
         collectors.append(resultsCollector)
 
         if facets:
             facetCollector = self._facetCollector()
             collectors.append(facetCollector)
 
-        multiSubCollectors = ArrayList().of_(SuperCollector)
-        for c in collectors:
-            multiSubCollectors.add(c)
-        collector = MultiSuperCollector(multiSubCollectors)
+        if self._multithreaded:
+            multiSubCollectors = ArrayList().of_(SuperCollector)
+            for c in collectors:
+                multiSubCollectors.add(c)
+        collector = MultiSuperCollector(multiSubCollectors) if self._multithreaded else MultiCollector.wrap(collectors)
 
         if filterCollector:
             filterCollector.setDelegate(collector)
@@ -220,6 +225,9 @@ class Lucene(object):
         return ChainedFilter(filters, [ChainedFilter.AND] * len(filters))
 
     def _facetResult(self, facetCollector, facets):
+        facetResult = facetCollector
+        if not self._multithreaded:
+            facetResult = self._index.facetResult(facetCollector)
         result = []
         for f in facets:
             sortBy = f.get('sortBy')
@@ -228,7 +236,7 @@ class Lucene(object):
             result.append(dict(
                     fieldname=f['fieldname'],
                     terms=_termsFromFacetResult(
-                            facetResult=facetCollector,
+                            facetResult=facetResult,
                             facet=f,
                             path=[]
                         )
@@ -247,6 +255,25 @@ class Lucene(object):
             inner.name = self.coreName
             inner.numDocs = self._index.numDocs
 
+
+    def _topCollector(self, start, stop, sortKeys):
+        if stop <= start:
+            return TotalHitCountSuperCollector() if self._multithreaded else TotalHitCountCollector()
+        fillFields = False
+        trackDocScores = True
+        trackMaxScore = False
+        docsScoredInOrder = True
+        if sortKeys:
+            sortFields = [
+                sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending'])
+                    for sortKey in sortKeys
+            ]
+            sort = Sort(sortFields)
+        else:
+            return TopScoreDocSuperCollector(stop, docsScoredInOrder) if self._multithreaded else TopScoreDocCollector.create(stop, docsScoredInOrder)
+        constructor = TopFieldSuperCollector if self._multithreaded else TopFieldCollector.create
+        return constructor(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)
+
 def defaults(parameter, default):
     return default if parameter is None else parameter
 
@@ -264,23 +291,6 @@ def _termsFromFacetResult(facetResult, facet, path):
             termDict['subterms'] = subterms
         terms.append(termDict)
     return terms
-
-def _topCollector(start, stop, sortKeys):
-    if stop <= start:
-        return TotalHitCountSuperCollector()
-    fillFields = False
-    trackDocScores = True
-    trackMaxScore = False
-    docsScoredInOrder = True
-    if sortKeys:
-        sortFields = [
-            sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending'])
-                for sortKey in sortKeys
-        ]
-        sort = Sort(sortFields)
-    else:
-        return TopScoreDocSuperCollector(stop, docsScoredInOrder)
-    return TopFieldSuperCollector(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)
 
 
 MAX_FACET_DEPTH = 10

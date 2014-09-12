@@ -65,6 +65,10 @@ public class DeDupFilterCollector extends Collector {
         this.sortByFieldName = sortByFieldName;
     }
 
+    public String getKeyName() {
+        return this.keyName;
+    }
+
     @Override
     public void setScorer(Scorer scorer) throws IOException {
         this.delegate.setScorer(scorer);
@@ -139,5 +143,18 @@ public class DeDupFilterCollector extends Collector {
             this.sortByValue = sortByValue;
             this.count = count;
         }
+
+        public int getDocId() {
+            return this.docId;
+        }
+
+        public int getCount() {
+            return this.count;
+        }
+
+        public long getSortByValue() {
+            return this.sortByValue;
+        }
+
     }
 }

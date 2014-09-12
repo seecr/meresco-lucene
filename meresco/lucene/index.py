@@ -29,12 +29,13 @@ from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields,
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
-from org.apache.lucene.facet import FacetsConfig
+from org.apache.lucene.facet import FacetsConfig, FacetsCollector, Facets
 from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
 from org.apache.lucene.facet.taxonomy.writercache import LruTaxonomyWriterCache
+from org.apache.lucene.facet.taxonomy import TaxonomyFacetCounts
 from org.meresco.lucene.search import FacetSuperCollector
 from java.io import File, StringReader
 
@@ -45,12 +46,13 @@ from meresco.lucene.utils import fieldType, LONGTYPE
 from org.apache.lucene.facet.taxonomy import CachedOrdinalsReader, DocValuesOrdinalsReader
 
 class Index(object):
-    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, executor=None, maxMergeDocs=500000):
+    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, executor=None, maxMergeDocs=500000, multithreaded=False):
         self._reactor = reactor
         self._maxCommitCount = commitCount or 1000
         self._commitCount = 0
         self._commitTimeout = commitTimeout or 1
         self._commitTimerToken = None
+        self._multithreaded = multithreaded
         similarity = similarity or BM25Similarity()
 
         self._checker = DirectSpellChecker()
@@ -155,7 +157,13 @@ class Index(object):
         return self._indexAndTaxonomy.searcher.doc(docId)
 
     def createFacetCollector(self):
+        if not self._multithreaded:
+            return FacetsCollector()
         return FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig, self._ordinalsReader)
+
+    def facetResult(self, facetCollector):
+        facetResult = TaxonomyFacetCounts(self._ordinalsReader, self._indexAndTaxonomy.taxoReader, self._facetsConfig, facetCollector)
+        return Facets.cast_(facetResult)
 
     def close(self):
         if self._commitTimerToken is not None:

@@ -45,13 +45,17 @@ from lucenetest import createDocument
 
 
 class MultiLuceneTest(SeecrTestCase):
+    def __init__(self, *args, **kwargs):
+        super(MultiLuceneTest, self).__init__(*args, **kwargs)
+        self._multithreaded = True
+
     def setUp(self):
         SeecrTestCase.setUp(self)
-        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry())
-        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry())
-        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1, similarity=TermFrequencySimilarity(), fieldRegistry=FieldRegistry())
+        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
+        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
+        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1, similarity=TermFrequencySimilarity(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
         self.dna = be((Observable(),
-            (MultiLucene(defaultCore='coreA'),
+            (MultiLucene(defaultCore='coreA', multithreaded=self._multithreaded),
                 (self.luceneA,),
                 (self.luceneB,),
                 (self.luceneC,),
@@ -634,6 +638,11 @@ class MultiLuceneTest(SeecrTestCase):
             identifier=identifier,
             document=createDocument([(KEY_PREFIX + keyField, keyValue) for (keyField, keyValue) in keys]+fields, facets=[('cat_'+field, value) for field, value in fields]),
             ))
+
+class MultiLuceneSingleThreadedTest(MultiLuceneTest):
+    def __init__(self, *args, **kwargs):
+        super(MultiLuceneSingleThreadedTest, self).__init__(*args, **kwargs)
+        self._multithreaded = False
 
 def luceneQueryFromCql(cqlString):
     return LuceneQueryComposer([], fieldRegistry=FieldRegistry()).compose(parseCql(cqlString))

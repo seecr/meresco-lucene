@@ -50,6 +50,10 @@ from seecr.utils.generatorutils import returnValueFromGenerator
 
 
 class LuceneTest(SeecrTestCase):
+    def __init__(self, *args):
+        super(LuceneTest, self).__init__(*args)
+        self._multithreaded = True
+
     def setUp(self):
         super(LuceneTest, self).setUp()
         self._javaObjects = self._getJavaObjects()
@@ -58,6 +62,7 @@ class LuceneTest(SeecrTestCase):
                 join(self.tempdir, 'lucene'),
                 commitCount=1,
                 reactor=self._reactor,
+                multithreaded=self._multithreaded,
                 drilldownFields=[
                     DrilldownField(name='field1'),
                     DrilldownField(name='field2'),
@@ -514,6 +519,10 @@ class LuceneTest(SeecrTestCase):
         bq.add(TermQuery(Term('no.term.frequency', 'noot')),BooleanClause.Occur.MUST)
         self.assertEquals(1, len(returnValueFromGenerator(self.lucene.executeQuery(bq)).hits))
 
+class LuceneSingleThreadedTest(LuceneTest):
+    def __init__(self, *args):
+        super(LuceneTest, self).__init__(*args)
+        self._multithreaded = True
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

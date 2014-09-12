@@ -93,9 +93,7 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         netDocIds = [c.keyForDocId(rawDocId).docId for rawDocId in rawDocIds]
         identifiers = set(self.lucene._index.getDocument(doc).get(IDFIELD) for doc in netDocIds)
         self.assertEquals(set(["urn:2", "urn:3", "urn:5"]), identifiers)
-        self.assertEquals(2, c.keyForDocId(netDocIds[0]).count)
-        self.assertEquals(1, c.keyForDocId(netDocIds[1]).count)
-        self.assertEquals(2, c.keyForDocId(netDocIds[2]).count)
+        self.assertEquals([1,2,2], list(sorted(c.keyForDocId(d).count for d in netDocIds)))
 
     def testSilentyYieldsWrongResultWhenFieldNameDoesNotMatch(self):
         self._addDocument("urn:1", 2)

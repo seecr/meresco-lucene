@@ -38,7 +38,7 @@ class DeDupFilterCollectorTest(SeecrTestCase):
     def setUp(self):
         super(DeDupFilterCollectorTest, self).setUp()
         self._reactor = CallTrace('reactor')
-        self.lucene = Lucene(self.tempdir, commitCount=1, reactor=self._reactor, fieldRegistry=FieldRegistry())
+        self.lucene = Lucene(self.tempdir, commitCount=1, reactor=self._reactor, fieldRegistry=FieldRegistry(), multithreaded=True)
 
     def tearDown(self):
         self.lucene.close()

@@ -31,7 +31,7 @@ from meresco.core import Observable
 from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause
-from org.meresco.lucene.search.join import CachingKeyCollector
+from org.meresco.lucene.search.join import CachingKeyCollector, ScoreCollector, AggregateScoreCollector
 from org.meresco.lucene.search.join import AggregateScoreSuperCollector, ScoreSuperCollector
 from org.meresco.lucene.queries import KeyBooleanFilter
 from java.util import ArrayList
@@ -40,9 +40,10 @@ from _lucene import millis
 
 
 class MultiLucene(Observable):
-    def __init__(self, defaultCore):
+    def __init__(self, defaultCore, multithreaded=False):
         Observable.__init__(self)
         self._defaultCore = defaultCore
+        self._multithreaded = multithreaded
 
     def executeQuery(self, core=None, **kwargs):
         coreName = self._defaultCore if core is None else core
@@ -125,13 +126,14 @@ class MultiLucene(Observable):
                         facets=query.facetsFor(otherCoreName)
                     )))
 
-        scoreCollectors = ArrayList().of_(ScoreSuperCollector)
+        scoreCollectors = ArrayList().of_(ScoreSuperCollector if self._multithreaded else ScoreCollector)
         for coreName in [resultCoreName] + otherCoreNames:
             rankQuery = query.rankQueryFor(coreName)
             if rankQuery:
                 scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName), query=rankQuery)
                 scoreCollectors.add(scoreCollector)
-        aggregateScoreCollector = AggregateScoreSuperCollector(resultCoreKey, scoreCollectors) if scoreCollectors.size() > 0 else None
+        constructor = AggregateScoreSuperCollector if self._multithreaded else AggregateScoreCollector
+        aggregateScoreCollector = constructor(resultCoreKey, scoreCollectors) if scoreCollectors.size() > 0 else None
 
         resultCoreQuery = query.queryFor(core=resultCoreName)
         if resultCoreQuery is None:

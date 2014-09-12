@@ -45,7 +45,7 @@ from org.meresco.lucene.search import FacetSuperCollector
 
 
 class Index(object):
-    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, executor=None, maxMergeDocs=500000, multithreaded=False):
+    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, executor=None, multithreaded=False):
         self._reactor = reactor
         self._maxCommitCount = commitCount or 1000
         self._commitCount = 0

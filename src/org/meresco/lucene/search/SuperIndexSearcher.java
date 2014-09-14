@@ -28,8 +28,6 @@ package org.meresco.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -47,10 +45,10 @@ public class SuperIndexSearcher extends IndexSearcher {
     private ExecutorService executor;
     private List<List<AtomicReaderContext>> grouped_leaves;
 
-    public SuperIndexSearcher(DirectoryReader reader, ExecutorService executor) {
+    public SuperIndexSearcher(DirectoryReader reader, ExecutorService executor, int tasks) {
         super(reader);
         this.executor = executor;
-        this.grouped_leaves = this.group_leaves(reader.leaves());
+        this.grouped_leaves = this.group_leaves(reader.leaves(), tasks);
         for (List<AtomicReaderContext> l : this.grouped_leaves) {
             int t = 0;
             for (AtomicReaderContext ctx : l)
@@ -58,36 +56,23 @@ public class SuperIndexSearcher extends IndexSearcher {
             System.out.print(" " + t + " ");
         }
         System.out.println();
-   }
+    }
 
-    protected List<List<AtomicReaderContext>> group_leaves(List<AtomicReaderContext> leaves) {
-        List<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>(super.leafContexts);
-        Collections.sort(contexts, new Comparator<AtomicReaderContext>() {
-            public int compare(AtomicReaderContext lhs, AtomicReaderContext rhs) {
-                return - Integer.compare(lhs.reader().maxDoc(), rhs.reader().maxDoc());
-            }
-        });
-        List<List<AtomicReaderContext>> slices = new ArrayList<List<AtomicReaderContext>>(15);
-        for (int i = 0; i < 15; i++)
+    protected List<List<AtomicReaderContext>> group_leaves(List<AtomicReaderContext> leaves, int tasks) {
+        List<List<AtomicReaderContext>> slices = new ArrayList<List<AtomicReaderContext>>(tasks);
+        for (int i = 0; i < tasks; i++)
             slices.add(new ArrayList<AtomicReaderContext>());
-        int avg_docs_per_slice = this.getTopReaderContext().reader().numDocs() / 15;
-        int biggest_segment_docs = contexts.get(0).reader().numDocs();
-        System.out.println(" biggest  segment: " + biggest_segment_docs);
-        long max_docs_per_slice = Math.max(avg_docs_per_slice, biggest_segment_docs);
-        System.out.println(" max doc per segment: " + max_docs_per_slice);
-        for (List<AtomicReaderContext> slice : slices) {
-            int docs_in_slice = 0;
-            while (docs_in_slice + contexts.get(0).reader().numDocs() <= max_docs_per_slice) {
-                AtomicReaderContext context = contexts.remove(0);
-                slice.add(context);
-                docs_in_slice += context.reader().numDocs();
-                if (contexts.isEmpty())
-                    return slices;
-            }
-        }
-        int n = 0;
-        for (AtomicReaderContext context : contexts) {
-            slices.get(n++ % 15).add(context);
+        int sizes[] = new int[tasks];
+        for (AtomicReaderContext context : leaves) {
+            int smallest = Integer.MAX_VALUE;
+            int smallest_i = 0;
+            for (int i = 0; i < sizes.length; i++)
+                if (sizes[i] < smallest) {
+                    smallest = sizes[i];
+                    smallest_i = i;
+                }
+            slices.get(smallest_i).add(context);
+            sizes[smallest_i] += context.reader().numDocs();
         }
         return slices;
     }

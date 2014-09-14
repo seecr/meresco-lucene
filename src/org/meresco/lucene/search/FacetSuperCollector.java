@@ -50,8 +50,6 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
         this.taxoReader = taxoReader;
         this.facetConfig = facetConfig;
         this.ordinalsReader = ordinalsReader;
-        for (int i = 0; i < ARRAY_POOL_SIZE; i++)
-            this.arrayPool.add(new int[taxoReader.getSize()]);
     }
 
     @Override
@@ -63,7 +61,8 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
         if (this.mergeValues == null) {
             this.mergeValues = mergePool();
         }
-        return new TaxonomyFacetCounts(this.ordinalsReader, this.taxoReader, this.facetConfig, null, this.mergeValues).getTopChildren(topN, dim, path);
+        return new TaxonomyFacetCounts(this.ordinalsReader, this.taxoReader, this.facetConfig, null, this.mergeValues)
+                .getTopChildren(topN, dim, path);
     }
 
     private int[] mergePool() {
@@ -86,15 +85,17 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
 
     @Override
     public void complete() throws IOException {
-        int[] values;
-        try {
-            values = this.parent.arrayPool.take();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        int[] values = new int[this.parent.taxoReader.getSize()];
         TaxonomyFacetCounts counts = new TaxonomyFacetCounts(this.parent.ordinalsReader, this.parent.taxoReader,
                 this.parent.facetConfig, this.delegate, values);
         counts.doCount();
+        // try to merge as much as we can
+        int[] values2 = this.parent.arrayPool.poll();
+        while (values2 != null) {
+            for (int i = 0; i < values.length; i++)
+                values[i] += values2[i];
+            values2 = this.parent.arrayPool.poll();
+        }
         this.parent.arrayPool.push(values);
     }
 }

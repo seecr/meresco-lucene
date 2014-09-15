@@ -58,8 +58,8 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
     public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
         if (this.mergeValues == null) {
-            mergePool(this.arrayPool, this.arrayPool.take());
-            this.mergeValues = this.arrayPool.take();
+            mergePool(this.arrayPool.poll());
+            this.mergeValues = this.arrayPool.poll();
         }
         return new TaxonomyFacetCounts(this.ordinalsReader, this.taxoReader, this.facetConfig, null, this.mergeValues)
                 .getTopChildren(topN, dim, path);

@@ -58,17 +58,20 @@ public class SuperIndexSearcher extends IndexSearcher {
         // System.out.println();
     }
 
-    protected List<List<AtomicReaderContext>> group_leaves(List<AtomicReaderContext> leaves, int tasks) {
+    private List<List<AtomicReaderContext>> group_leaves(List<AtomicReaderContext> leaves, int tasks) {
         List<List<AtomicReaderContext>> slices = new ArrayList<List<AtomicReaderContext>>(tasks);
         for (int i = 0; i < tasks; i++)
             slices.add(new ArrayList<AtomicReaderContext>());
         int sizes[] = new int[tasks];
+        int max_i = 0;
         for (AtomicReaderContext context : leaves) {
             int smallest_i = find_smallest_slice(sizes);
             slices.get(smallest_i).add(context);
             sizes[smallest_i] += context.reader().numDocs();
+            if (smallest_i > max_i)
+                max_i = smallest_i;
         }
-        return slices;
+        return slices.subList(0, max_i + 1);
     }
 
     private int find_smallest_slice(int[] sizes) {
@@ -86,9 +89,10 @@ public class SuperIndexSearcher extends IndexSearcher {
             ExecutionException {
         Weight weight = super.createNormalizedWeight(wrapFilter(q, f));
         ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(this.executor);
-        for (List<AtomicReaderContext> leaf_group : this.grouped_leaves)
+        for (List<AtomicReaderContext> leaf_group : this.grouped_leaves.subList(1, this.grouped_leaves.size()))
             ecs.submit(new SearchTask(leaf_group, weight, c.subCollector()), "Done");
-        for (int i = 0; i < this.grouped_leaves.size(); i++) {
+        new SearchTask(this.grouped_leaves.get(0), weight, c.subCollector()).run();
+        for (int i = 0; i < this.grouped_leaves.size() - 1; i++) {
             ecs.take().get();
         }
     }
@@ -97,10 +101,6 @@ public class SuperIndexSearcher extends IndexSearcher {
         private List<AtomicReaderContext> contexts;
         private Weight weight;
         private SubCollector subCollector;
-
-        public SearchTask(AtomicReaderContext context, Weight weight, SubCollector subCollector) {
-            this(Arrays.asList(context), weight, subCollector);
-        }
 
         public SearchTask(List<AtomicReaderContext> contexts, Weight weight, SubCollector subCollector) {
             this.contexts = contexts;

@@ -64,17 +64,22 @@ public class SuperIndexSearcher extends IndexSearcher {
             slices.add(new ArrayList<AtomicReaderContext>());
         int sizes[] = new int[tasks];
         for (AtomicReaderContext context : leaves) {
-            int smallest = Integer.MAX_VALUE;
-            int smallest_i = 0;
-            for (int i = 0; i < sizes.length; i++)
-                if (sizes[i] < smallest) {
-                    smallest = sizes[i];
-                    smallest_i = i;
-                }
+            int smallest_i = find_smallest_slice(sizes);
             slices.get(smallest_i).add(context);
             sizes[smallest_i] += context.reader().numDocs();
         }
         return slices;
+    }
+
+    private int find_smallest_slice(int[] sizes) {
+        int smallest = Integer.MAX_VALUE;
+        int smallest_i = 0;
+        for (int i = 0; i < sizes.length; i++)
+            if (sizes[i] < smallest) {
+                smallest = sizes[i];
+                smallest_i = i;
+            }
+        return smallest_i;
     }
 
     public void search(Query q, Filter f, SuperCollector<?> c) throws IOException, InterruptedException,

@@ -38,7 +38,6 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
-    private final int ARRAY_POOL_SIZE = 5;
     final TaxonomyReader taxoReader;
     final FacetsConfig facetConfig;
     final OrdinalsReader ordinalsReader;

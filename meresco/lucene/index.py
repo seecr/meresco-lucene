@@ -62,6 +62,7 @@ class Index(object):
         conf.setSimilarity(similarity)
         mergePolicy = TieredMergePolicy()
         mergePolicy.setMaxMergeAtOnce(2)
+        mergePolicy.setSegmentsPerTier(16.0)
         conf.setMergePolicy(mergePolicy)
 
         self._indexWriter = IndexWriter(indexDirectory, conf)

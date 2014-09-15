@@ -58,21 +58,21 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
     public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
         if (this.mergeValues == null) {
-            this.mergeValues = mergePool();
+            mergePool(this.arrayPool, this.arrayPool.take());
+            this.mergeValues = this.arrayPool.take();
         }
         return new TaxonomyFacetCounts(this.ordinalsReader, this.taxoReader, this.facetConfig, null, this.mergeValues)
                 .getTopChildren(topN, dim, path);
     }
 
-    private int[] mergePool() {
-        // do this pairwise in threads? is it worth it?
-        int[] values = this.arrayPool.poll();
-        while (this.arrayPool.peek() != null) {
-            int[] values1 = this.arrayPool.poll();
+    public void mergePool(int[] values) {
+        int[] values1 = this.arrayPool.poll();
+        while (values1 != null) {
             for (int i = 0; i < values.length; i++)
                 values[i] += values1[i];
+            values1 = this.arrayPool.poll();
         }
-        return values;
+        this.arrayPool.push(values);
     }
 }
 
@@ -88,13 +88,7 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
         TaxonomyFacetCounts counts = new TaxonomyFacetCounts(this.parent.ordinalsReader, this.parent.taxoReader,
                 this.parent.facetConfig, this.delegate, values);
         counts.doCount();
-        // try to merge as much as we can
-        int[] values2 = this.parent.arrayPool.poll();
-        while (values2 != null) {
-            for (int i = 0; i < values.length; i++)
-                values[i] += values2[i];
-            values2 = this.parent.arrayPool.poll();
-        }
-        this.parent.arrayPool.push(values);
+        this.parent.mergePool(values);
     }
+
 }

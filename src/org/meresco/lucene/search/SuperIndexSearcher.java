@@ -53,9 +53,9 @@ public class SuperIndexSearcher extends IndexSearcher {
             int t = 0;
             for (AtomicReaderContext ctx : l)
                 t += ctx.reader().numDocs();
-            System.out.print(" " + t + " ");
+            // System.out.print(" " + t + " ");
         }
-        System.out.println();
+        // System.out.println();
     }
 
     protected List<List<AtomicReaderContext>> group_leaves(List<AtomicReaderContext> leaves, int tasks) {

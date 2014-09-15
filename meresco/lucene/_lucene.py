@@ -32,8 +32,7 @@ from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search import SortField
 from org.meresco.lucene.search import SuperCollector
 
-from java.lang import Integer, Runtime
-from java.util.concurrent import Executors
+from java.lang import Integer
 from java.util import ArrayList
 
 from time import time
@@ -60,11 +59,7 @@ class Lucene(object):
         self._multithreaded = multithreaded
 
         self._fieldRegistry = fieldRegistry
-        executor = None
-        if self._multithreaded:
-            numberOfProcessors = Runtime.getRuntime().availableProcessors()
-            executor = Executors.newFixedThreadPool(numberOfProcessors);
-        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, executor=executor, multithreaded=multithreaded, **kwargs)
+        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, multithreaded=multithreaded, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name

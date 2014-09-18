@@ -33,7 +33,6 @@ from weightless.core import consume
 from meresco.lucene import Lucene
 from meresco.lucene.fieldregistry import IDFIELD, FieldRegistry
 
-
 class DeDupFilterCollectorTest(SeecrTestCase):
     def setUp(self):
         super(DeDupFilterCollectorTest, self).setUp()
@@ -118,4 +117,3 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         c = DeDupFilterSuperCollector("__isformatof__", "__sort__", tc)
         self.lucene.search(query=MatchAllDocsQuery(), collector=c)
         self.assertEquals(10, tc.topDocs(0).totalHits)
-

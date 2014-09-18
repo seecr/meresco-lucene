@@ -74,6 +74,10 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
         }
         this.arrayPool.push(values);
     }
+
+    public int[] getFirstArray() {
+        return (int[]) this.arrayPool.peek();
+    }
 }
 
 class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSuperCollector> {

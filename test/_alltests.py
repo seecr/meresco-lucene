@@ -57,6 +57,8 @@ from multilucenetest import MultiLuceneSingleThreadedTest
 from termfrequencysimilaritytest import TermFrequencySimilarityTest
 from termnumeratortest import TermNumeratorTest
 from supercollectortest import SuperCollectorTest
+from superindexsearchertest import SuperIndexSearcherTest
+from facetsupercollectortest import FacetSuperCollectorTest
 
 if __name__ == '__main__':
     unittest.main()

@@ -118,4 +118,16 @@ public class SuperIndexSearcher extends IndexSearcher {
             }
         }
     }
+
+    public SuperIndexSearcher(DirectoryReader reader) {
+        super(reader);
+    }
+
+    public int find_smallest_slice_test(int[] sizes) {
+        return find_smallest_slice(sizes);
+    }
+
+    public List<List<AtomicReaderContext>> group_leaves_test(List<AtomicReaderContext> leaves, int tasks) {
+        return group_leaves(leaves, tasks);
+    }
 }

@@ -66,11 +66,18 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
     }
 
     public void mergePool(int[] values) {
+        int count = 0;
         int[] values1 = this.arrayPool.poll();
         while (values1 != null) {
+            count++;
             for (int i = 0; i < values.length; i++)
                 values[i] += values1[i];
             values1 = this.arrayPool.poll();
+            if (count > 10000) {
+                System.out.println("More than 10000 tries in FacetSuperCollector.mergePool.");
+                System.out.flush();
+                throw new RuntimeException("More than 10000 tries in FacetSuperCollector.mergePool.");
+            }
         }
         this.arrayPool.push(values);
     }

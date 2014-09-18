@@ -140,11 +140,18 @@ class DeDupFilterSubCollector extends SubCollector {
 
             DeDupFilterSubCollector.Key key;
             DeDupFilterSubCollector.Key newKey;
+            int count = 0;
             while (true) {
+                count++;
                 key = newRef.get();
                 newKey = new DeDupFilterSubCollector.Key(key, absDoc, sortByValue);
                 if (newRef.compareAndSet(key, newKey)) {
                     break;
+                }
+                if (count > 10000) {
+                    System.out.println("More than 10000 tries in DeDupFilterSubCollector.collect.");
+                    System.out.flush();
+                    throw new RuntimeException("More than 10000 tries in DeDupFilterSubCollector.collect.");
                 }
             }
             if (newKey.count != 1) {

@@ -134,17 +134,7 @@ class Lucene(object):
         filter_ = self._filterFor(filterQueries, filter)
 
         if drilldownQueries:
-            dimQueries = {}
-            for field, path in drilldownQueries:
-                indexedField = self._facetsConfig.getDimConfig(field).indexFieldName;
-                if not field in dimQueries:
-                    dimQueries[field] = BooleanQuery(True)
-                dimQueries[field].add(TermQuery(DrillDownQuery.term(indexedField, field, path)), BooleanClause.Occur.MUST);
-
-            drilldownQuery = DrillDownQuery(self._facetsConfig, luceneQuery)
-            for dim, query in dimQueries.items():
-                drilldownQuery.add(dim, query)
-            luceneQuery = drilldownQuery
+            luceneQuery = self.createDrilldownQuery(luceneQuery, drilldownQueries)
         self._index.search(luceneQuery, filter_, collector)
 
         total, hits = self._topDocsResponse(topCollector, start=start, dedupCollector=dedupCollector if dedupField else None)
@@ -164,6 +154,19 @@ class Lucene(object):
 
         raise StopIteration(response)
         yield
+
+    def createDrilldownQuery(self, luceneQuery, drilldownQueries):
+        dimQueries = {}
+        for field, path in drilldownQueries:
+            indexedField = self._facetsConfig.getDimConfig(field).indexFieldName;
+            if not field in dimQueries:
+                dimQueries[field] = BooleanQuery(True)
+            dimQueries[field].add(TermQuery(DrillDownQuery.term(indexedField, field, path)), BooleanClause.Occur.MUST);
+
+        drilldownQuery = DrillDownQuery(self._facetsConfig, luceneQuery)
+        for dim, query in dimQueries.items():
+            drilldownQuery.add(dim, query)
+        return drilldownQuery
 
     def prefixSearch(self, fieldname, prefix, showCount=False, **kwargs):
         t0 = time()

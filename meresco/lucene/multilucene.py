@@ -30,7 +30,7 @@ from meresco.core import Observable
 
 from seecr.utils.generatorutils import generatorReturn
 
-from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause
+from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause, BooleanQuery
 from org.meresco.lucene.search.join import CachingKeyCollector, ScoreCollector, AggregateScoreCollector
 from org.meresco.lucene.search.join import AggregateScoreSuperCollector, ScoreSuperCollector
 from org.meresco.lucene.queries import KeyBooleanFilter
@@ -68,13 +68,22 @@ class MultiLucene(Observable):
         return booleanFilter
 
     def andQueries(self, coreQuerySpecs, filterKeyName, booleanFilter):
-        for coreName, keyName, queries in coreQuerySpecs:
-            for q in queries:
-                if not booleanFilter:
-                    booleanFilter = KeyBooleanFilter()
-                keyCollector = CachingKeyCollector.create(q, keyName)
-                self.do[coreName].search(query=q, collector=keyCollector)
-                booleanFilter.add(keyCollector.getFilter(filterKeyName), BooleanClause.Occur.MUST)
+        for coreName, keyName, queries, drilldownQueries in coreQuerySpecs:
+            if not queries:
+                continue
+            if len(queries) == 1:
+                luceneQuery = queries[0]
+            else:
+                luceneQuery = BooleanQuery()
+                for q in queries:
+                    luceneQuery.add(q, BooleanClause.Occur.MUST)
+            if drilldownQueries:
+                luceneQuery = self.call[coreName].createDrilldownQuery(luceneQuery, drilldownQueries)
+            if not booleanFilter:
+                booleanFilter = KeyBooleanFilter()
+            keyCollector = CachingKeyCollector.create(luceneQuery, keyName)
+            self.do[coreName].search(query=luceneQuery, collector=keyCollector)
+            booleanFilter.add(keyCollector.getFilter(filterKeyName), BooleanClause.Occur.MUST)
         return booleanFilter
 
     def executeComposedQuery(self, query):
@@ -88,6 +97,7 @@ class MultiLucene(Observable):
     def _multipleCoreQuery(self, query):
         t0 = time()
         resultCoreName = query.resultsFrom
+        drilldownQueries = query.drilldownQueries or []
         otherCoreNames = [coreName for coreName in query.cores if coreName != resultCoreName]
         coreBaseFilters = {}
 
@@ -103,7 +113,7 @@ class MultiLucene(Observable):
 
         coreQuerySpecs = []
         for otherCoreName in otherCoreNames:
-            coreQuerySpecs.append((otherCoreName, query.keyName(otherCoreName), query.queriesFor(otherCoreName)))
+            coreQuerySpecs.append((otherCoreName, query.keyName(otherCoreName), query.queriesFor(otherCoreName), []))
         resultCoreIntermediateFilter = self.andQueries(coreQuerySpecs, resultCoreKey, resultCoreBaseFilter)
 
         drilldownData = []
@@ -113,12 +123,12 @@ class MultiLucene(Observable):
         for otherCoreName in otherCoreNames:
             if query.facetsFor(otherCoreName):
                 otherCoreKey = query.keyName(otherCoreName)
-                otherCoreIntermediateFilter = self.andQueries([(otherCoreName, otherCoreKey, query.queriesFor(otherCoreName))], otherCoreKey, coreBaseFilters.get(otherCoreName))
+                otherCoreIntermediateFilter = self.andQueries([(otherCoreName, otherCoreKey, query.queriesFor(otherCoreName), [])], otherCoreKey, coreBaseFilters.get(otherCoreName))
 
-                coreQuerySpecs = [(resultCoreName, resultCoreKey, resultCoreQueries)]
+                coreQuerySpecs = [(resultCoreName, resultCoreKey, resultCoreQueries, drilldownQueries)]
                 for name in otherCoreNames:
                     if name != otherCoreName:
-                        coreQuerySpecs.append((name, query.keyName(name), query.queriesFor(name)))
+                        coreQuerySpecs.append((name, query.keyName(name), query.queriesFor(name), []))
                 otherCoreFinalFilter = self.andQueries(coreQuerySpecs, otherCoreKey, otherCoreIntermediateFilter)
                 drilldownData.extend((yield self.any[otherCoreName].facets(
                         filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),

@@ -173,6 +173,36 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
+    def testJoinFacetWithDrilldownQueryFilters(self):
+        q = ComposedQuery('coreA', query=luceneQueryFromCql('M=true'))
+        q.drilldownQueries = [('cat_Q', ['true'])]
+        q.addFacet('coreB', dict(fieldname='cat_O', maxTerms=10))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
+        self.assertEquals(2, result.total)
+        self.assertEquals([{
+                'terms': [
+                    {'count': 2, 'term': u'true'},
+                    {'count': 2, 'term': u'false'},
+                ],
+                'fieldname': u'cat_O'
+            }], result.drilldownData)
+
+    def testJoinFacetWithFilter(self):
+        q = ComposedQuery('coreA', query=luceneQueryFromCql('M=true'))
+        q.addFilterQuery('coreA', query=luceneQueryFromCql('Q=true'))
+        q.addFacet('coreB', dict(fieldname='cat_O', maxTerms=10))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
+        self.assertEquals(2, result.total)
+        self.assertEquals([{
+                'terms': [
+                    {'count': 2, 'term': u'true'},
+                    {'count': 2, 'term': u'false'},
+                ],
+                'fieldname': u'cat_O'
+            }], result.drilldownData)
+
     def testJoinFacetFromBPointOfView(self):
         q = ComposedQuery('coreB')
         q.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'))

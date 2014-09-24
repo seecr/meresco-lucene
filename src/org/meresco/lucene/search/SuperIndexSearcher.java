@@ -95,6 +95,7 @@ public class SuperIndexSearcher extends IndexSearcher {
         for (int i = 0; i < this.grouped_leaves.size() - 1; i++) {
             ecs.take().get();
         }
+        c.complete();
     }
 
     public class SearchTask implements Runnable {

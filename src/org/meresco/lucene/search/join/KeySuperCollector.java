@@ -47,6 +47,10 @@ public class KeySuperCollector extends SuperCollector<KeySubCollector> {
         return new KeySubCollector(this.keyName);
     }
 
+    @Override
+    public void complete() {
+    }
+
     public OpenBitSet getCollectedKeys() {
         if (keySet == null) {
             OpenBitSet keySet = super.subs.get(0).keySet;

@@ -37,6 +37,10 @@ public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSub
         return new TotalHitCountSubCollector();
     }
 
+    @Override
+    public void complete() {
+    }
+
     public int getTotalHits() {
         int n = 0;
         for (TotalHitCountSubCollector sub : super.subs) {

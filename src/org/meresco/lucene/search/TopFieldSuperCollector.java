@@ -52,4 +52,9 @@ public class TopFieldSuperCollector extends TopDocSuperCollector {
         return new TopDocSubCollector<TopFieldSuperCollector>(TopFieldCollector.create(this.sort,
                 this.numHits, /*fillFields*/ true, this.trackDocScores, this.trackMaxScore, this.docsScoredInOrder), this);
     }
+
+    @Override
+    public void complete() {
+    }
+
 }

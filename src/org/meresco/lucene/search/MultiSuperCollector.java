@@ -49,6 +49,13 @@ public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
         }
         return new MultiSubCollector(subCollectors);
     }
+
+    @Override
+    public void complete() {
+        for (SuperCollector<?> sc : collectors) {
+            sc.complete();
+        }
+    }
 }
 
 class MultiSubCollector extends SubCollector {

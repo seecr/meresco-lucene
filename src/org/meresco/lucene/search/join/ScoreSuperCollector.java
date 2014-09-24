@@ -26,6 +26,8 @@
 package org.meresco.lucene.search.join;
 
 import java.io.IOException;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -34,22 +36,14 @@ import org.apache.lucene.util.SmallFloat;
 import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
 
-public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
 
-    byte[] scores = new byte[0];
+public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     final String keyName;
+    final BlockingDeque<byte[]> arrayPool = new LinkedBlockingDeque<byte[]>();
+    private byte[] scores;
 
     public ScoreSuperCollector(String keyName) {
         this.keyName = keyName;
-    }
-
-    public synchronized void resize(int newSize) {
-        if (newSize < this.scores.length) {
-            return;
-        }
-        byte[] dest = new byte[(int) (newSize * 1.25)];
-        System.arraycopy(this.scores, 0, dest, 0, this.scores.length);
-        this.scores = dest;
     }
 
     public float score(int key) {
@@ -63,9 +57,38 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     protected ScoreSubCollector createSubCollector() throws IOException {
         return new ScoreSubCollector(this);
     }
+
+    @Override
+    public void complete() {
+        mergePool(this.arrayPool.poll());
+        this.scores = this.arrayPool.poll();
+    }
+
+    public void mergePool(byte[] scores) {
+        byte[] other = this.arrayPool.poll();
+        while (other != null) {
+            other = resize(other, scores.length);
+            scores = resize(scores, other.length);
+            for (int i = 0; i < scores.length; i++) {
+                scores[i] += other[i];
+            }
+            other = this.arrayPool.poll();
+        }
+        this.arrayPool.push(scores);
+    }
+
+    static byte[] resize(byte[] a, int newSize) {
+        if (newSize <= a.length) {
+            return a;
+        }
+        byte[] dest = new byte[newSize];
+        System.arraycopy(a, 0, dest, 0, a.length);
+        return dest;
+    }
 }
 
 class ScoreSubCollector extends SubCollector {
+    private byte[] scores = new byte[0];
     private Scorer scorer;
     private NumericDocValues keyValues;
     private final ScoreSuperCollector parent;
@@ -90,13 +113,14 @@ class ScoreSubCollector extends SubCollector {
         if (this.keyValues != null) {
             int value = (int) this.keyValues.get(doc);
             if (value > 0) {
-                if (value >= this.parent.scores.length) {
-                    this.parent.resize(value + 1);
+                if (value >= this.scores.length) {
+                    this.scores = ScoreSuperCollector.resize(this.scores, (int) ((value + 1) * 1.25));
                 }
-                this.parent.scores[value] = SmallFloat.floatToByte315(scorer.score());
+                this.scores[value] = SmallFloat.floatToByte315(scorer.score());
             }
         }
     }
+
 
     @Override
     public boolean acceptsDocsOutOfOrder() {
@@ -105,5 +129,6 @@ class ScoreSubCollector extends SubCollector {
 
     @Override
     public void complete() {
+        this.parent.mergePool(this.scores);
     }
 }

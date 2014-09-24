@@ -53,6 +53,12 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
     protected AggregateScoreSubCollector createSubCollector() throws IOException {
         return new AggregateScoreSubCollector(this.keyName, this.otherScoreCollectors, this.delegate.subCollector());
     }
+
+    @Override
+    public void complete() {
+        this.delegate.complete();
+    }
+
 }
 
 class AggregateScoreSubCollector extends SubCollector {

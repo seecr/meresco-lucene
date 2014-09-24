@@ -70,6 +70,10 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
         return new DeDupFilterSubCollector(this.keyName, this.sortByFieldName, delegateSubCollector, this.keys);
     }
 
+    @Override
+    public void complete() {
+    }
+
     public DeDupFilterSubCollector.Key keyForDocId(int docId) throws IOException {
         if (this.topLevelReaderContext == null)
             this.topLevelReaderContext = ReaderUtil.getTopLevelContext(super.subs.get(0).context);

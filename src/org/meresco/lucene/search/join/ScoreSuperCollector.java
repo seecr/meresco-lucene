@@ -43,13 +43,13 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
         this.keyName = keyName;
     }
 
-    public synchronized byte[] resize(byte[] src, int newSize) {
-        if (newSize < src.length) {
-            return src;
+    public synchronized void resize(int newSize) {
+        if (newSize < this.scores.length) {
+            return;
         }
         byte[] dest = new byte[(int) (newSize * 1.25)];
-        System.arraycopy(src, 0, dest, 0, src.length);
-        return dest;
+        System.arraycopy(this.scores, 0, dest, 0, this.scores.length);
+        this.scores = dest;
     }
 
     public float score(int key) {
@@ -91,7 +91,7 @@ class ScoreSubCollector extends SubCollector {
             int value = (int) this.keyValues.get(doc);
             if (value > 0) {
                 if (value >= this.parent.scores.length) {
-                    this.parent.scores = this.parent.resize(this.parent.scores, value + 1);
+                    this.parent.resize(value + 1);
                 }
                 this.parent.scores[value] = SmallFloat.floatToByte315(scorer.score());
             }

@@ -175,7 +175,7 @@ class MultiLuceneTest(SeecrTestCase):
 
     def testJoinFacetWithDrilldownQueryFilters(self):
         q = ComposedQuery('coreA', query=luceneQueryFromCql('M=true'))
-        q.drilldownQueries = [('cat_Q', ['true'])]
+        q.addDrilldownQuery('coreA', drilldownQuery=('cat_Q', ['true']))
         q.addFacet('coreB', dict(fieldname='cat_O', maxTerms=10))
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
@@ -187,6 +187,13 @@ class MultiLuceneTest(SeecrTestCase):
                 ],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
+
+    def testJoinDrilldownQueryFilters(self):
+        q = ComposedQuery('coreA', query=luceneQueryFromCql('M=true'))
+        q.addDrilldownQuery('coreB', drilldownQuery=('cat_O', ['true']))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
+        self.assertEquals(2, result.total)
 
     def testJoinFacetWithFilter(self):
         q = ComposedQuery('coreA', query=luceneQueryFromCql('M=true'))

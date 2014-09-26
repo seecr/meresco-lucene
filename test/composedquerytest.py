@@ -215,6 +215,15 @@ class ComposedQueryTest(SeecrTestCase):
         cq.convertWith(coreB=lambda q: "converted_" + q)
         self.assertEquals('converted_qB', cq.rankQueryFor('coreB'))
 
+    def testAddDrilldownQuery(self):
+        cq = ComposedQuery('coreA')
+        cq.addDrilldownQuery('coreB', ('field', ['value']))
+        self.assertValidateRaisesValueError(cq, "No match set for cores ('coreA', 'coreB')")
+        cq.addMatch(dict(core='coreA', uniqueKey='kA'), dict(core='coreB', key='kB'))
+        self.assertEquals([('field', ['value'])], cq.drilldownQueriesFor('coreB'))
+        cq.convertWith(coreB=lambda q: "converted_" + q)
+        self.assertEquals([('field', ['value'])], cq.drilldownQueriesFor('coreB'))
+
     def assertValidateRaisesValueError(self, composedQuery, message):
         try:
             composedQuery.validate()

@@ -380,9 +380,8 @@ class LuceneTest(SeecrTestCase):
         query = BooleanQuery()
         [query.add(TermQuery(Term("field%s" % i, "value0")), BooleanClause.Occur.SHOULD) for i in range(100)]
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
-        self.assertTrue(response.queryTime > 12, response.queryTime)
-        response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
-        self.assertTrue(response.queryTime < 2, response.queryTime)
+        responseWithCaching = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
+        self.assertTrue(responseWithCaching.queryTime < response.queryTime)
 
     def testHandleShutdown(self):
         document = Document()

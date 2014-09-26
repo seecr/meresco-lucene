@@ -32,6 +32,7 @@ class ComposedQuery(object):
         self._queries = {}
         self._filterQueries = defaultdict(list)
         self._facets = defaultdict(list)
+        self._drilldownQueries = defaultdict(list)
         self._rankQueries = {}
         self._matches = {}
         self._coreKeys = {}
@@ -58,6 +59,11 @@ class ComposedQuery(object):
     def addFacet(self, core, facet):
         self.cores.add(core)
         self._facets[core].append(facet)
+        return self
+
+    def addDrilldownQuery(self, core, drilldownQuery):
+        self.cores.add(core)
+        self._drilldownQueries[core].append(drilldownQuery)
         return self
 
     def setRankQuery(self, core, query):
@@ -102,6 +108,9 @@ class ComposedQuery(object):
     def facetsFor(self, core):
         return self._facets.get(core, [])
 
+    def drilldownQueriesFor(self, core):
+        return self._drilldownQueries.get(core, [])
+
     def rankQueryFor(self, core):
         return self._rankQueries.get(core)
 
@@ -142,7 +151,7 @@ class ComposedQuery(object):
         self._unites = [dict(d, query=convertQuery(d['core'], d['query'])) for d in self._unites]
 
     def otherKwargs(self):
-        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, drilldownQueries=self.drilldownQueries)
+        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField)
 
     def _prop(name, defaultValue=None):
         def fget(self):
@@ -156,7 +165,6 @@ class ComposedQuery(object):
     suggestionRequest = property(**_prop('suggestionRequest'))
     dedupField = property(**_prop('dedupField'))
     dedupSortField = property(**_prop('dedupSortField'))
-    drilldownQueries = property(**_prop('drilldownQueries'))
 
     def asDict(self):
         result = dict(vars(self))

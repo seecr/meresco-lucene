@@ -123,6 +123,7 @@ class LuceneTest(IntegrationTestCase):
             ], [hit.id for hit in response.hits])
         self.assertEquals([{
                 'fieldname': 'untokenized.field2',
+                'path': [],
                 'terms': [
                     {'count': 27, 'term': 'value3'},
                     {'count': 22, 'term': 'value0'},

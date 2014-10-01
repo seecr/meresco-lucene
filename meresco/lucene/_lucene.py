@@ -233,14 +233,15 @@ class Lucene(object):
             sortBy = f.get('sortBy')
             if not (sortBy is None or sortBy in self.SUPPORTED_SORTBY_VALUES):
                 raise ValueError('Value of "sortBy" should be in %s' % self.SUPPORTED_SORTBY_VALUES)
+            path = f.get('path', [])
             result.append(dict(
                     fieldname=f['fieldname'],
+                    path=path,
                     terms=_termsFromFacetResult(
                             facetResult=facetResult,
                             facet=f,
-                            path=[]
-                        )
-                ))
+                            path=path
+                        )))
         return result
 
     def _facetCollector(self):

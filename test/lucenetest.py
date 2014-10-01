@@ -226,6 +226,7 @@ class LuceneTest(SeecrTestCase):
 
         self.assertEquals([{
                 'fieldname': 'field2',
+                'path': [],
                 'terms': [
                     {'term': 'first item0', 'count': 1},
                     {'term': 'first item1', 'count': 1},
@@ -235,6 +236,7 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field3')]))
         self.assertEquals([{
                 'fieldname': 'field3',
+                'path': [],
                 'terms': [
                     {'term': 'second item', 'count': 2},
                     {'term': 'other value', 'count': 1},
@@ -249,7 +251,7 @@ class LuceneTest(SeecrTestCase):
 
     def testFacetsOnUnknownField(self):
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='fieldUnknonw')]))
-        self.assertEquals([{'terms': [], 'fieldname': 'fieldUnknonw'}], result.drilldownData)
+        self.assertEquals([{'terms': [], 'path': [], 'fieldname': 'fieldUnknonw'}], result.drilldownData)
 
     def testFacetsMaxTerms0(self):
         self.lucene._index._commitCount = 3
@@ -260,6 +262,7 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=0, fieldname='field3')]))
         self.assertEquals([{
                 'fieldname': 'field3',
+                'path': [],
                 'terms': [
                     {'term': 'second item', 'count': 2},
                     {'term': 'other value', 'count': 1},
@@ -269,9 +272,11 @@ class LuceneTest(SeecrTestCase):
     def testFacetsWithCategoryPathHierarchy(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('fieldHier', ['item0', 'item1'])])))
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('fieldHier', ['item0', 'item2'])])))
-        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='fieldHier')]))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('fieldHier', ['item3', 'item4'])])))
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, path=[], fieldname='fieldHier')]))
         self.assertEquals([{
                 'fieldname': 'fieldHier',
+                'path': [],
                 'terms': [
                     {
                         'term': 'item0',
@@ -280,7 +285,24 @@ class LuceneTest(SeecrTestCase):
                             {'term': 'item1', 'count': 1},
                             {'term': 'item2', 'count': 1},
                         ]
+                    },
+                    {
+                        'term': 'item3',
+                        'count': 1,
+                        'subterms': [
+                            {'term': 'item4', 'count': 1},
+                        ]
                     }
+                ],
+            }], result.drilldownData)
+
+        result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='fieldHier', path=['item0'])]))
+        self.assertEquals([{
+                'fieldname': 'fieldHier',
+                'path': ['item0'],
+                'terms': [
+                    {'term': 'item1', 'count': 1},
+                    {'term': 'item2', 'count': 1},
                 ],
             }], result.drilldownData)
 
@@ -303,6 +325,7 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         self.assertEquals([{
                 'terms': [{'count': 1, 'term': u'first/item0'}],
+                'path': [],
                 'fieldname': u'field2'
             }],result.drilldownData)
 

@@ -164,12 +164,14 @@ class MultiLuceneTest(SeecrTestCase):
                         {'count': 2, 'term': u'true'},
                         {'count': 2, 'term': u'false'},
                     ],
+                'path': [],
                 'fieldname': u'cat_N'
             }, {
                 'terms': [
                     {'count': 2, 'term': u'true'},
                     {'count': 2, 'term': u'false'},
                 ],
+                'path': [],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
@@ -185,6 +187,7 @@ class MultiLuceneTest(SeecrTestCase):
                     {'count': 2, 'term': u'true'},
                     {'count': 2, 'term': u'false'},
                 ],
+                'path': [],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
@@ -207,6 +210,7 @@ class MultiLuceneTest(SeecrTestCase):
                     {'count': 2, 'term': u'true'},
                     {'count': 2, 'term': u'false'},
                 ],
+                'path': [],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
@@ -254,6 +258,7 @@ class MultiLuceneTest(SeecrTestCase):
                     {'count': 4, 'term': u'true'},
                     {'count': 4, 'term': u'false'},
                 ],
+                'path': [],
                 'fieldname': u'cat_N'
             }], result.drilldownData)
 
@@ -272,12 +277,14 @@ class MultiLuceneTest(SeecrTestCase):
                 'terms': [
                     {'count': 4, 'term': u'true'},
                 ],
+                'path': [],
                 'fieldname': u'cat_N'
             }, {
                 'terms': [
                     {'count': 2, 'term': u'true'},
                     {'count': 2, 'term': u'false'},
                 ],
+                'path': [],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
@@ -353,21 +360,21 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals([{
                 'terms': [
                     {'count': 3, 'term': u'true'}
-                ], 'fieldname': u'cat_Q'
+                ], 'path': [], 'fieldname': u'cat_Q'
             }, {
                 'terms': [
                     {'count': 2, 'term': u'true'},
                     {'count': 1, 'term': u'false'}
-                ], 'fieldname': u'cat_U'
+                ], 'path': [], 'fieldname': u'cat_U'
             }, {
                 'terms': [
                     {'count': 2, 'term': u'true'}
-                ], 'fieldname': u'cat_N'
+                ], 'path': [], 'fieldname': u'cat_N'
             }, {
                 'terms': [
                     {'count': 1, 'term': u'true'},
                     {'count': 1, 'term': u'false'},
-                ], 'fieldname': u'cat_O'
+                ], 'path': [], 'fieldname': u'cat_O'
             }], resultOne.drilldownData)
 
         self.addDocument(self.luceneA, identifier='A-MQU',  keys=[('A', 8 )], fields=[('M', 'true' ), ('Q', 'false' ), ('U', 'true' ), ('S', '8')])
@@ -388,20 +395,20 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals([{
                 'terms': [
                     {'count': 2, 'term': u'true'}
-                ], 'fieldname': u'cat_Q'
+                ], 'path': [], 'fieldname': u'cat_Q'
             }, {
                 'terms': [
                     {'count': 1, 'term': u'false'},
                     {'count': 1, 'term': u'true'},
-                ], 'fieldname': u'cat_U'
+                ], 'path': [], 'fieldname': u'cat_U'
             }, {
                 'terms': [
                     {'count': 1, 'term': u'true'}
-                ], 'fieldname': u'cat_N'
+                ], 'path': [], 'fieldname': u'cat_N'
             }, {
                 'terms': [
                     {'count': 1, 'term': u'true'}
-                ], 'fieldname': u'cat_O'
+                ], 'path': [], 'fieldname': u'cat_O'
             }], resultAgain.drilldownData)
 
     def testUniteResultFromTwoIndexes_filterQueries(self):
@@ -431,23 +438,27 @@ class MultiLuceneTest(SeecrTestCase):
                 'terms': [
                     {'count': 3, 'term': u'true'},
                 ],
+                'path': [],
                 'fieldname': u'cat_Q'
             }, {
                 'terms': [
                     {'count': 2, 'term': u'true'},
                     {'count': 1, 'term': u'false'},
                 ],
+                'path': [],
                 'fieldname': u'cat_U'
             }, {
                 'terms': [
                     {'count': 2, 'term': u'true'},
                 ],
+                'path': [],
                 'fieldname': u'cat_N'
             }, {
                 'terms': [
                     {'count': 1, 'term': u'true'},
                     {'count': 1, 'term': u'false'},
                 ],
+                'path': [],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
@@ -498,11 +509,13 @@ class MultiLuceneTest(SeecrTestCase):
                'terms': [
                     {'count': 2, 'term': u'true'},
                 ],
+                'path': [],
                 'fieldname': u'cat_N'
             }, {
                 'terms': [
                     {'count': 2, 'term': u'true'},
                 ],
+                'path': [],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
@@ -618,9 +631,9 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(1, result.total)
         self.assertEquals(set(['A-M']), self.hitIds(result.hits))
         self.assertEquals([
-               {'terms': [{'count': 1, 'term': u'true'}], 'fieldname': u'cat_M'},
-               {'terms': [{'count': 1, 'term': u'true'}], 'fieldname': u'cat_N'},
-               {'terms': [{'count': 1, 'term': u'true'}], 'fieldname': u'cat_R'},
+               {'terms': [{'count': 1, 'term': u'true'}], 'path': [], 'fieldname': u'cat_M'},
+               {'terms': [{'count': 1, 'term': u'true'}], 'path': [], 'fieldname': u'cat_N'},
+               {'terms': [{'count': 1, 'term': u'true'}], 'path': [], 'fieldname': u'cat_R'},
             ], result.drilldownData)
 
     def testRankQuery(self):

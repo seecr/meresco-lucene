@@ -99,7 +99,7 @@ class MultiLuceneTest(SeecrTestCase):
         self.addDocument(self.luceneB, identifier='B',         keys=[('B', k10)], fields=[('N', 'false'), ('O', 'false'), ('P', 'false')])
         self.addDocument(self.luceneB, identifier='B-P>A-M',   keys=[('B', k5 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
         self.addDocument(self.luceneB, identifier='B-P>A-MU',  keys=[('B', k6 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  keys=[('B', k7 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  keys=[('B', k7 )], fields=[('N', 'false'), ('O', 'false' ), ('P', 'true' )])
         self.addDocument(self.luceneB, identifier='B-P>A-MQU', keys=[('B', k8 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
         self.addDocument(self.luceneB, identifier='B-P',       keys=[('B', k11)], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
 
@@ -168,8 +168,8 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_N'
             }, {
                 'terms': [
-                    {'count': 2, 'term': u'true'},
-                    {'count': 2, 'term': u'false'},
+                    {'count': 3, 'term': u'false'},
+                    {'count': 1, 'term': u'true'},
                 ],
                 'path': [],
                 'fieldname': u'cat_O'
@@ -184,8 +184,23 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals([{
                 'terms': [
-                    {'count': 2, 'term': u'true'},
-                    {'count': 2, 'term': u'false'},
+                    {'count': 3, 'term': u'false'},
+                    {'count': 1, 'term': u'true'},
+                ],
+                'path': [],
+                'fieldname': u'cat_O'
+            }], result.drilldownData)
+
+    def testJoinFacetWithJoinDrilldownQueryFilters(self):
+        q = ComposedQuery('coreA', query=luceneQueryFromCql('M=true'))
+        q.addDrilldownQuery('coreB', drilldownQuery=('cat_O', ['true']))
+        q.addFacet('coreB', dict(fieldname='cat_O', maxTerms=10))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(query=q))
+        self.assertEquals(2, result.total)
+        self.assertEquals([{
+                'terms': [
+                    {'count': 3, 'term': u'true'},
                 ],
                 'path': [],
                 'fieldname': u'cat_O'
@@ -207,8 +222,8 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals([{
                 'terms': [
-                    {'count': 2, 'term': u'true'},
-                    {'count': 2, 'term': u'false'},
+                    {'count': 3, 'term': u'false'},
+                    {'count': 1, 'term': u'true'},
                 ],
                 'path': [],
                 'fieldname': u'cat_O'

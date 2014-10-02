@@ -117,7 +117,7 @@ class MultiLucene(Observable):
         for otherCoreName in otherCoreNames:
             if query.facetsFor(otherCoreName):
                 otherCoreKey = query.keyName(otherCoreName)
-                otherCoreIntermediateFilter = self.andQueries([(otherCoreName, otherCoreKey, query.queryFor(otherCoreName), query.filterQueriesFor(otherCoreName), [])], otherCoreKey, coreBaseFilters.get(otherCoreName))
+                otherCoreIntermediateFilter = self.andQueries([(otherCoreName, otherCoreKey, query.queryFor(otherCoreName), query.filterQueriesFor(otherCoreName), query.drilldownQueriesFor(otherCoreName))], otherCoreKey, coreBaseFilters.get(otherCoreName))
 
                 coreQuerySpecs = [(resultCoreName, resultCoreKey, resultCoreQuery, query.filterQueriesFor(resultCoreName), query.drilldownQueriesFor(resultCoreName))]
                 for name in otherCoreNames:
@@ -125,7 +125,8 @@ class MultiLucene(Observable):
                         coreQuerySpecs.append((name, query.keyName(name), query.queryFor(name), query.filterQueriesFor(name), query.drilldownQueriesFor(name)))
                 otherCoreFinalFilter = self.andQueries(coreQuerySpecs, otherCoreKey, otherCoreIntermediateFilter)
                 drilldownData.extend((yield self.any[otherCoreName].facets(
-                        filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName), # drilldown queries in other core?
+                        filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),
+                        drilldownQueries=query.drilldownQueriesFor(otherCoreName),
                         filter=otherCoreFinalFilter,
                         facets=query.facetsFor(otherCoreName)
                     )))

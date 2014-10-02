@@ -92,10 +92,13 @@ class Lucene(object):
     def search(self, query=None, filter=None, collector=None):
         self._index.search(query, filter, collector)
 
-    def facets(self, facets, filterQueries, filter=None):
+    def facets(self, facets, filterQueries, drilldownQueries=None, filter=None):
         facetCollector = self._facetCollector() if facets else None
         filter_ = self._filterFor(filterQueries, filter=filter)
-        self._index.search(MatchAllDocsQuery(), filter_, facetCollector)
+        query = MatchAllDocsQuery()
+        if drilldownQueries:
+            query = self.createDrilldownQuery(query, drilldownQueries)
+        self._index.search(query, filter_, facetCollector)
         generatorReturn(self._facetResult(facetCollector, facets))
         yield
 

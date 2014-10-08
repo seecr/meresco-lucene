@@ -28,6 +28,7 @@ package org.meresco.lucene.search.join;
 import java.io.IOException;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.lang.Math;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -67,10 +68,11 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     public void mergePool(byte[] scores) {
         byte[] other = this.arrayPool.poll();
         while (other != null) {
-            other = resize(other, scores.length);
             scores = resize(scores, other.length);
-            for (int i = 0; i < scores.length; i++) {
-                scores[i] += other[i];
+            for (int i = 0; i < Math.min(scores.length, other.length); i++) {
+                if (scores[i] == 0) {
+                    scores[i] = other[i];
+                }
             }
             other = this.arrayPool.poll();
         }

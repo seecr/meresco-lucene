@@ -85,13 +85,15 @@ public class KeyFilter extends Filter {
     }
 
     @Override
-    public synchronized DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         AtomicReader reader = context.reader();
         Object coreKey = reader.getCoreCacheKey();
         DocIdSet docSet = this.docSetCache.get(coreKey);
         if (docSet == null) {
             docSet = this.createDocIdSet(reader);
-            this.docSetCache.put(coreKey, docSet);
+            synchronized (this) {
+                this.docSetCache.put(coreKey, docSet);
+            }
         }
         return docSet;
     }

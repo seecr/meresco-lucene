@@ -51,32 +51,6 @@ public class KeyFilter extends Filter {
         this.query = query;
     }
 
-    /**
-     * Intersect this filter with another c.q. perform a logical 'and'. This is
-     * much faster than using both filters in a BooleanFilter. Note that this
-     * changes the internal state until it is reset, which happens when it is
-     * (re-)pulled from the cache.
-     *
-     * @param f
-     *            The other KeyFilter that will be intersected. It is not
-     *            changed.
-     */
-    public void intersect(KeyFilter f) {
-        this.keySet.and(f.keySet);
-    }
-
-    /**
-     * Create a union of this filter and another. This performs an logical 'or'.
-     * Avoid BooleanFilter and use this method instead, as it is almost three
-     * times faster.
-     *
-     * @param f
-     *            The other KeyFilter that will be united. It is not changed.
-     */
-    public void unite(KeyFilter f) {
-        this.keySet.or(f.keySet);
-    }
-
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         AtomicReader reader = context.reader();

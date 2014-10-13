@@ -182,20 +182,3 @@ class MultiLucene(Observable):
     def coreInfo(self):
         yield self.all.coreInfo()
 
-
-class KeySetWrap(object):
-    def __init__(self):
-        self.keySet = None
-
-    def intersect(self, otherKeySet):
-        if self.keySet is None:
-            self.keySet = otherKeySet
-        else:
-            getattr(self.keySet, "and")(otherKeySet)
-
-    def union(self, otherKeySet):
-        if self.keySet is None:
-            self.keySet = otherKeySet
-        else:
-            getattr(self.keySet, "or")(otherKeySet)
-

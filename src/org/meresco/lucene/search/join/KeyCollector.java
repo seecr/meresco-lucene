@@ -31,12 +31,14 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.util.OpenBitSet;
 
 public class KeyCollector extends Collector {
     protected String keyName;
     private NumericDocValues keyValues;
     protected OpenBitSet currentKeySet = new OpenBitSet();
+    protected int biggestKeyFound = 0;
 
     public KeyCollector(String keyName) {
         this.keyName = keyName;
@@ -48,6 +50,9 @@ public class KeyCollector extends Collector {
             int value = (int)this.keyValues.get(docId);
             if (value > 0) {
                 this.currentKeySet.set(value);
+                if (value > this.biggestKeyFound) {
+                    this.biggestKeyFound = value;
+                }
             }
         }
     }
@@ -66,7 +71,7 @@ public class KeyCollector extends Collector {
     public void setScorer(Scorer scorer) throws IOException {
     }
 
-    public OpenBitSet getCollectedKeys() {
+    public DocIdSet getCollectedKeys() throws IOException {
         return this.currentKeySet;
     }
 }

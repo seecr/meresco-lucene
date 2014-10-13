@@ -31,12 +31,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.facet.taxonomy.LRUHashMap;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.OpenBitSet;
-import org.meresco.lucene.queries.KeyFilter;
+import org.apache.lucene.util.PForDeltaDocIdSet;
 
 
 /**
@@ -57,17 +58,18 @@ public class CachingKeyCollector extends KeyCollector {
      * that keys are quasi-randomly distributed, so all bitsets are of the same
      * size, and the whole cache may become large.
      */
-    private Map<Object, OpenBitSet> keySetCache = new WeakHashMap<Object, OpenBitSet>();
+    private Map<Object, DocIdSet> keySetCache = new WeakHashMap<Object, DocIdSet>();
 
     /**
      * Records which BitSets belong to the result of the most recent collect
      * cycle (The cache might contain more; for readers not yet GC'd.
      */
-    private List<OpenBitSet> seen = new ArrayList<OpenBitSet>();
+    private List<DocIdSet> seen = new ArrayList<DocIdSet>();
 
-    private OpenBitSet finalKeySet = null;
+    private FixedBitSet finalKeySet = null;
 
     public Query query;
+    private Object readerKey;
 
     CachingKeyCollector(Query query, String keyName) {
         super(keyName);
@@ -82,12 +84,12 @@ public class CachingKeyCollector extends KeyCollector {
      * results from different collectors to do cross-filtering.
      */
     @Override
-    public OpenBitSet getCollectedKeys() {
+    public DocIdSet getCollectedKeys() throws IOException {
         completePreviousReader();
         if (this.finalKeySet == null) {
-            this.finalKeySet = new OpenBitSet();
-            for (OpenBitSet b : this.seen)
-                this.finalKeySet.or(b);
+            this.finalKeySet = new FixedBitSet(this.biggestKeyFound);
+            for (DocIdSet b : this.seen)
+                this.finalKeySet.or(b.iterator());
         }
         this.seen.clear();
         return this.finalKeySet;
@@ -96,23 +98,22 @@ public class CachingKeyCollector extends KeyCollector {
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
         completePreviousReader();
-        Object readerKey = context.reader().getCombinedCoreAndDeletesKey();
-        OpenBitSet bitSet = this.keySetCache.get(readerKey);
+        Object currentReaderKey = context.reader().getCombinedCoreAndDeletesKey();
+        DocIdSet bitSet = this.keySetCache.get(currentReaderKey);
         if (bitSet != null) {
             this.seen.add(bitSet);
             throw new CollectionTerminatedException(); // already have this one
         }
         super.setNextReader(context);
+        this.readerKey = currentReaderKey;
         this.finalKeySet = null;
         this.currentKeySet = new OpenBitSet();
-        this.keySetCache.put(readerKey, this.currentKeySet);
-        this.seen.add(this.currentKeySet);
     }
 
     public void printKeySetCacheSize() {
         int size = 0;
-        for (OpenBitSet b : this.keySetCache.values()) {
-            long card = b.cardinality();
+        for (DocIdSet b : this.keySetCache.values()) {
+            long card = ((PForDeltaDocIdSet) b).cardinality();
             if (card == 0) {
                 System.out.println("    Bytes (no docs): " + b.ramBytesUsed());
             } else {
@@ -123,7 +124,13 @@ public class CachingKeyCollector extends KeyCollector {
         System.out.println("KeyCollector: query: " + this.query + ", cache: " + this.keySetCache.size() + " entries, " + (size / 1024 / 1024) + " MB");
     }
 
-    private void completePreviousReader() {
-        this.currentKeySet.trimTrailingZeros();
+    private void completePreviousReader() throws IOException {
+        if (this.readerKey != null) {
+            this.currentKeySet.trimTrailingZeros();
+            PForDeltaDocIdSet.Builder builder = new PForDeltaDocIdSet.Builder().add(this.currentKeySet.iterator());
+            this.keySetCache.put(readerKey, builder.build());
+            this.seen.add(this.currentKeySet);
+            this.readerKey = null;
+        }
     }
 }

@@ -42,11 +42,11 @@ import org.apache.lucene.search.Query;
 public class KeyFilter extends Filter {
     private String keyName;
     private Query query;
-    public OpenBitSet keySet;
+    public Bits keySet;
     private Map<Object, DocIdSet> docSetCache = new WeakHashMap<Object, DocIdSet>();
 
-    public KeyFilter(OpenBitSet keySet, String keyName, Query query) {
-        this.keySet = keySet;
+    public KeyFilter(DocIdSet keySet, String keyName, Query query) throws IOException {
+        this.keySet = keySet.bits();
         this.keyName = keyName;
         this.query = query;
     }

@@ -25,18 +25,19 @@
 
 package org.meresco.lucene.search.join;
 
+import java.io.IOException;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.search.DocIdSet;
 import org.meresco.lucene.queries.KeyFilter;
 
 public class KeyFilterCache {
 
-    private static WeakHashMap<OpenBitSet, LRUHashMap<String, KeyFilter>> cache = new WeakHashMap<OpenBitSet, LRUHashMap<String, KeyFilter>>();
+    private static WeakHashMap<DocIdSet, LRUHashMap<String, KeyFilter>> cache = new WeakHashMap<DocIdSet, LRUHashMap<String, KeyFilter>>();
 
-    public static KeyFilter create(CachingKeyCollector keyCollector, String keyName) {
-        OpenBitSet keySet = keyCollector.getCollectedKeys();
+    public static KeyFilter create(CachingKeyCollector keyCollector, String keyName) throws IOException {
+        DocIdSet keySet = keyCollector.getCollectedKeys();
         LRUHashMap<String, KeyFilter> keyFilterCache = KeyFilterCache.cache.get(keySet);
 
         if (keyFilterCache == null) {

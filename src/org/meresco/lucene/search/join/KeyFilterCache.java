@@ -35,7 +35,7 @@ public class KeyFilterCache {
 
     private static WeakHashMap<OpenBitSet, LRUHashMap<String, KeyFilter>> cache = new WeakHashMap<OpenBitSet, LRUHashMap<String, KeyFilter>>();
 
-    public static KeyFilter create(KeyCollector keyCollector, String keyName) {
+    public static KeyFilter create(CachingKeyCollector keyCollector, String keyName) {
         OpenBitSet keySet = keyCollector.getCollectedKeys();
         LRUHashMap<String, KeyFilter> keyFilterCache = KeyFilterCache.cache.get(keySet);
 
@@ -45,9 +45,18 @@ public class KeyFilterCache {
         }
         KeyFilter keyFilter = keyFilterCache.get(keyName);
         if (keyFilter == null) {
-            keyFilter = new KeyFilter(keySet, keyName);
+            keyFilter = new KeyFilter(keySet, keyName, keyCollector.query);
             keyFilterCache.put(keyName, keyFilter);
         }
         return keyFilter;
+    }
+
+     public static void printStats() {
+        System.out.println("KeyFilterCache. Entries: " + cache.size());
+        for (LRUHashMap<String, KeyFilter> filterCache : cache.values()) {
+            for (KeyFilter keyFilterCache : filterCache.values()) {
+                keyFilterCache.printDocSetCacheSize();
+            }
+        }
     }
 }

@@ -36,16 +36,19 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.search.Query;
 
 
 public class KeyFilter extends Filter {
     private String keyName;
+    private Query query;
     public OpenBitSet keySet;
     private Map<Object, DocIdSet> docSetCache = new WeakHashMap<Object, DocIdSet>();
 
-    public KeyFilter(OpenBitSet keySet, String keyName) {
+    public KeyFilter(OpenBitSet keySet, String keyName, Query query) {
         this.keySet = keySet;
         this.keyName = keyName;
+        this.query = query;
     }
 
     /**
@@ -102,4 +105,12 @@ public class KeyFilter extends Filter {
         docBitSet.trimTrailingZeros();
         return docBitSet;
     }
+
+    public void printDocSetCacheSize() {
+        int size = 0;
+        for (DocIdSet b : this.docSetCache.values())
+            size += b.ramBytesUsed();
+        System.out.println("Query: " + this.query + ", cache: " + this.docSetCache.size() + " entries, " + (size / 1024 / 1024) + " MB");
+    }
+
 }

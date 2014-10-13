@@ -67,7 +67,7 @@ public class CachingKeyCollector extends KeyCollector {
 
     private OpenBitSet finalKeySet = null;
 
-    private Query query;
+    public Query query;
 
     CachingKeyCollector(Query query, String keyName) {
         super(keyName);
@@ -113,7 +113,7 @@ public class CachingKeyCollector extends KeyCollector {
         int size = 0;
         for (OpenBitSet b : this.keySetCache.values())
             size += b.size();
-        System.out.print("cache: " + this.keySetCache.size() + " entries, " + (size / 8 / 1024 / 1024) + " MB");
+        System.out.println("query: " + this.query + ", cache: " + this.keySetCache.size() + " entries, " + (size / 8 / 1024 / 1024) + " MB");
     }
 
     private void completePreviousReader() {

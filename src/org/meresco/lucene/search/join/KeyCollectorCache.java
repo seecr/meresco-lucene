@@ -61,4 +61,13 @@ public class KeyCollectorCache {
         }
         return keyCollector;
     }
+
+    public static void printStats() {
+        System.out.println("KeyCollectorCache. Entries: " + queryCache.size());
+        for (LRUHashMap<String, CachingKeyCollector> collectorCache : queryCache.values()) {
+            for (CachingKeyCollector keyCollector : collectorCache.values()) {
+                keyCollector.printKeySetCacheSize();
+            }
+        }
+    }
 }

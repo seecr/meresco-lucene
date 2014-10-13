@@ -138,6 +138,9 @@ class MultiLucene(Observable):
         constructor = AggregateScoreSuperCollector if self._multithreaded else AggregateScoreCollector
         aggregateScoreCollector = constructor(resultCoreKey, scoreCollectors) if scoreCollectors.size() > 0 else None
 
+        KeyCollectorCache.printStats()
+        KeyFilterCache.printStats();
+
         result = yield self.any[resultCoreName].executeQuery(
                 luceneQuery=resultCoreQuery,
                 filter=resultCoreIntermediateFilter,

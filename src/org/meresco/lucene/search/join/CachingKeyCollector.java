@@ -112,7 +112,12 @@ public class CachingKeyCollector extends KeyCollector {
     public void printKeySetCacheSize() {
         int size = 0;
         for (OpenBitSet b : this.keySetCache.values()) {
-            System.out.println("    Bytes per doc: " + b.ramBytesUsed() / b.cardinality());
+            long card = b.cardinality();
+            if (card == 0) {
+                System.out.println("    Bytes (no docs): " + b.ramBytesUsed());
+            } else {
+                System.out.println("    Bytes per doc: " + b.ramBytesUsed() / card);
+            }
             size += b.ramBytesUsed();
         }
         System.out.println("KeyCollector: query: " + this.query + ", cache: " + this.keySetCache.size() + " entries, " + (size / 1024 / 1024) + " MB");

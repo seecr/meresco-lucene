@@ -112,8 +112,8 @@ public class CachingKeyCollector extends KeyCollector {
     public void printKeySetCacheSize() {
         int size = 0;
         for (OpenBitSet b : this.keySetCache.values())
-            size += b.size();
-        System.out.println("query: " + this.query + ", cache: " + this.keySetCache.size() + " entries, " + (size / 8 / 1024 / 1024) + " MB");
+            size += b.ramBytesUsed();
+        System.out.println("query: " + this.query + ", cache: " + this.keySetCache.size() + " entries, " + (size / 1024 / 1024) + " MB");
     }
 
     private void completePreviousReader() {

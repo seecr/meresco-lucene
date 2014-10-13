@@ -30,9 +30,8 @@ from meresco.core import Observable
 
 from seecr.utils.generatorutils import generatorReturn
 
-from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause, BooleanQuery
-from org.meresco.lucene.search.join import CachingKeyCollector, ScoreCollector, AggregateScoreCollector
-from org.meresco.lucene.search.join import AggregateScoreSuperCollector, ScoreSuperCollector
+from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause
+from org.meresco.lucene.search.join import CachingKeyCollector, ScoreCollector, AggregateScoreCollector, AggregateScoreSuperCollector, ScoreSuperCollector, KeyFilterCache
 from org.meresco.lucene.queries import KeyBooleanFilter
 from java.util import ArrayList
 
@@ -64,7 +63,7 @@ class MultiLucene(Observable):
         for keyCollector in collectors:
             if not booleanFilter:
                 booleanFilter = KeyBooleanFilter()
-            booleanFilter.add(keyCollector.getFilter(keyName), BooleanClause.Occur.SHOULD)
+            booleanFilter.add(KeyFilterCache.create(keyCollector, keyName), BooleanClause.Occur.SHOULD)
         return booleanFilter
 
     def andQueries(self, coreQuerySpecs, filterKeyName, booleanFilter):
@@ -77,7 +76,7 @@ class MultiLucene(Observable):
                 if not booleanFilter:
                     booleanFilter = KeyBooleanFilter()
                 keyCollector = self.collectKeys(q, coreName, keyName)
-                booleanFilter.add(keyCollector.getFilter(filterKeyName), BooleanClause.Occur.MUST)
+                booleanFilter.add(KeyFilterCache.create(keyCollector, filterKeyName), BooleanClause.Occur.MUST)
         return booleanFilter
 
     def executeComposedQuery(self, query):

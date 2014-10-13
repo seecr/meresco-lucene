@@ -102,29 +102,6 @@ public class CachingKeyCollector extends KeyCollector {
         return keySet;
     }
 
-    /**
-     * Create a Lucene Filter for filtering docs based on a key in this
-     * KeyCollector. It can be used for any index, as long as the keyName is
-     * correct.
-     *
-     * @param keyName
-     *            The name of the field containing the keys to match. This field
-     *            must refer to a NumericDocValues field containing integer
-     *            keys.
-     * @return A Lucene Filter object. It is cached by this KeyCollector and it
-     *         caches the docIds of the index is is applied to.
-     */
-    public KeyFilter getFilter(String keyName) {
-        CachingKeyCollector.putInCache(this);
-        KeyFilter filter = this.keyFilterCache.get(keyName);
-        if (filter == null) {
-            filter = new KeyFilter(this, keyName);
-            this.keyFilterCache.put(keyName, filter);
-        }
-        filter.reset();
-        return filter;
-    }
-
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
         updateCache();
@@ -159,13 +136,6 @@ public class CachingKeyCollector extends KeyCollector {
      * size, and the whole cache may become large.
      */
     private Map<Object, OpenBitSet> keySetCache = new WeakHashMap<Object, OpenBitSet>();
-
-    /**
-     * Caches Lucene Filters for for different keys. The filter can be used on
-     * any index as long as the keyName refers to te proper field containing the
-     * keys, so this cache may contain readers from different indexes.
-     */
-    private Map<String, KeyFilter> keyFilterCache = new LRUHashMap<String, KeyFilter>(5);
 
     /**
      * Records which BitSets belong to the result of the most recent collect

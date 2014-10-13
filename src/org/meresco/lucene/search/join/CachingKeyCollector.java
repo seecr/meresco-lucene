@@ -34,6 +34,7 @@ import java.util.WeakHashMap;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.OpenBitSet;
@@ -88,8 +89,12 @@ public class CachingKeyCollector extends KeyCollector {
         completePreviousReader();
         if (this.finalKeySet == null) {
             this.finalKeySet = new FixedBitSet(this.biggestKeyFound);
-            for (DocIdSet b : this.seen)
-                this.finalKeySet.or(b.iterator());
+            for (DocIdSet b : this.seen) {
+                DocIdSetIterator iterator = b.iterator();
+                if (iterator != null) {
+                    this.finalKeySet.or(iterator);
+                }
+            }
         }
         this.seen.clear();
         return this.finalKeySet;

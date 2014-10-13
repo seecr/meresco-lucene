@@ -71,7 +71,12 @@ public class KeyFilter extends Filter {
         if (keyValues != null) {
             for (int docId = 0; docId < reader.maxDoc(); docId++) {
                 int keyValue = (int) keyValues.get(docId);
-                if (keyValue > 0 && this.keySet.get(keyValue)) {
+                if (keyValue == 0) continue;
+                boolean exists = false;
+                try {
+                    exists = this.keySet.get(keyValue);
+                } catch (IndexOutOfBoundsException e) {}
+                if (exists) {
                     docBitSet.set(docId);
                 }
             }

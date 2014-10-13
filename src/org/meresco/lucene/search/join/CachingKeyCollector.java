@@ -63,18 +63,27 @@ public class CachingKeyCollector extends KeyCollector {
      */
     public static CachingKeyCollector create(Query query, String keyName) {
         LRUHashMap<String, CachingKeyCollector> collectorCache = CachingKeyCollector.queryCache.get(query);
-        if (collectorCache == null) {
-            collectorCache = new LRUHashMap<String, CachingKeyCollector>(5);
-            CachingKeyCollector.queryCache.put(query, collectorCache);
+        CachingKeyCollector keyCollector = null;
+        if (collectorCache != null) {
+            keyCollector = collectorCache.get(keyName);
         }
-
-        CachingKeyCollector keyCollector = collectorCache.get(keyName);
         if (keyCollector == null) {
-            keyCollector = new CachingKeyCollector(keyName);
-            collectorCache.put(keyName, keyCollector);
+            keyCollector = new CachingKeyCollector(query, keyName);
         }
         keyCollector.reset();
         return keyCollector;
+    }
+
+    private static void putInCache(CachingKeyCollector keyCollector) {
+        LRUHashMap<String, CachingKeyCollector> collectorCache = CachingKeyCollector.queryCache.get(keyCollector.query);
+        if (collectorCache == null) {
+            collectorCache = new LRUHashMap<String, CachingKeyCollector>(5);
+            CachingKeyCollector.queryCache.put(keyCollector.query, collectorCache);
+        }
+
+        if (!collectorCache.containsKey(keyCollector.keyName)) {
+            collectorCache.put(keyCollector.keyName, keyCollector);
+        }
     }
 
     /**
@@ -106,6 +115,7 @@ public class CachingKeyCollector extends KeyCollector {
      *         caches the docIds of the index is is applied to.
      */
     public KeyFilter getFilter(String keyName) {
+        CachingKeyCollector.putInCache(this);
         KeyFilter filter = this.keyFilterCache.get(keyName);
         if (filter == null) {
             filter = new KeyFilter(this, keyName);
@@ -140,7 +150,7 @@ public class CachingKeyCollector extends KeyCollector {
      * Caches KeyCollectors for (Query,keyName) pairs. KeyCollectors can become
      * large, tens of MB.
      */
-    private static LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>> queryCache = new LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>>(10);
+    private static LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>> queryCache = new LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>>(20);
 
     /**
      * Caches bitsets (containing keys) for specific readers within one index.
@@ -169,8 +179,11 @@ public class CachingKeyCollector extends KeyCollector {
      */
     private Object currentReaderKey = null;
 
-    private CachingKeyCollector(String keyName) {
+    private Query query;
+
+    private CachingKeyCollector(Query query, String keyName) {
         super(keyName);
+        this.query = query;
     }
 
     private void reset() {

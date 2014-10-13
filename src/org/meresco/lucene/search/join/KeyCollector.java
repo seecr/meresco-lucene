@@ -36,7 +36,7 @@ import org.apache.lucene.util.OpenBitSet;
 import org.meresco.lucene.queries.KeyFilter;
 
 public class KeyCollector extends Collector {
-    private String keyName;
+    protected String keyName;
     private NumericDocValues keyValues;
     protected OpenBitSet keySet = new OpenBitSet();
 

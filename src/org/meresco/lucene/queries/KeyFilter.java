@@ -36,26 +36,16 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
-import org.meresco.lucene.search.join.KeyCollector;
 
 
 public class KeyFilter extends Filter {
     private String keyName;
     public OpenBitSet keySet;
-    private KeyCollector keyCollector;
     private Map<Object, DocIdSet> docSetCache = new WeakHashMap<Object, DocIdSet>();
 
-    public KeyFilter(KeyCollector keyCollector, String keyName) {
-        this.keyCollector = keyCollector;
-        this.keyName = keyName;
-    }
-
-    public void reset() {
-        OpenBitSet keySet = this.keyCollector.getCollectedKeys();
-        if (keySet.equals(this.keySet))
-            return;
+    public KeyFilter(OpenBitSet keySet, String keyName) {
         this.keySet = keySet;
-        this.docSetCache.clear();
+        this.keyName = keyName;
     }
 
     /**

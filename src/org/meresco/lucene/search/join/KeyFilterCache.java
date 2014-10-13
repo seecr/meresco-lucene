@@ -25,44 +25,27 @@
 
 package org.meresco.lucene.search.join;
 
+import java.util.WeakHashMap;
+
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
+import org.apache.lucene.util.OpenBitSet;
 import org.meresco.lucene.queries.KeyFilter;
 
 public class KeyFilterCache {
 
-    static LRUHashMap<CacheKey, KeyFilter> keyFilterCache = new LRUHashMap<CacheKey, KeyFilter>(20);
+    private static WeakHashMap<OpenBitSet, LRUHashMap<String, KeyFilter>> cache = new WeakHashMap<OpenBitSet, LRUHashMap<String, KeyFilter>>();
 
     public static KeyFilter create(KeyCollector keyCollector, String keyName) {
-        KeyFilter keyFilter = KeyFilterCache.keyFilterCache.get(new CacheKey(keyCollector, keyName));
-        if (keyFilter == null) {
-            keyFilter = new KeyFilter(keyCollector, keyName);
+        OpenBitSet keySet = keyCollector.getCollectedKeys();
+        LRUHashMap<String, KeyFilter> keyFilterCache = KeyFilterCache.cache.get(keySet);
+        if (keyFilterCache == null) {
+            keyFilterCache = new LRUHashMap<String, KeyFilter>(5);
+            KeyFilterCache.cache.put(keySet, keyFilterCache);
         }
-        keyFilter.reset();
+        KeyFilter keyFilter = keyFilterCache.get(keyName);
+        if (keyFilter == null) {
+            keyFilter = new KeyFilter(keySet, keyName);
+        }
         return keyFilter;
     }
-}
-
-class CacheKey {
-    private KeyCollector keyCollector;
-    private String keyName;
-
-    public CacheKey(KeyCollector keyCollector, String keyName) {
-        this.keyCollector = keyCollector;
-        this.keyName = keyName;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        CacheKey other = (CacheKey) o;
-        return this.keyName.equals(other.keyName) && this.keyCollector.equals(other.keyCollector);
-    }
-
-    @Override
-    public int hashCode() {
-        return keyCollector.hashCode() * 31 + keyName.hashCode();
-    }
-
 }

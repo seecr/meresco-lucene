@@ -33,8 +33,6 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
 
-import org.meresco.lucene.queries.KeyFilter;
-
 public class KeyCollector extends Collector {
     protected String keyName;
     private NumericDocValues keyValues;
@@ -70,10 +68,5 @@ public class KeyCollector extends Collector {
 
     public OpenBitSet getCollectedKeys() {
         return this.keySet;
-    }
-
-    public KeyFilter getFilter() {
-        return new KeyFilter(this, this.keyName);
-
     }
 }

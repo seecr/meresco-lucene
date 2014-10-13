@@ -31,7 +31,7 @@ from meresco.core import Observable
 from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause
-from org.meresco.lucene.search.join import CachingKeyCollector, ScoreCollector, AggregateScoreCollector, AggregateScoreSuperCollector, ScoreSuperCollector, KeyFilterCache
+from org.meresco.lucene.search.join import KeyCollectorCache, ScoreCollector, AggregateScoreCollector, AggregateScoreSuperCollector, ScoreSuperCollector, KeyFilterCache
 from org.meresco.lucene.queries import KeyBooleanFilter
 from java.util import ArrayList
 
@@ -50,7 +50,7 @@ class MultiLucene(Observable):
         generatorReturn(response)
 
     def collectKeys(self, query, coreName, keyName):
-        keyCollector = CachingKeyCollector.create(query, keyName)
+        keyCollector = KeyCollectorCache.create(query, keyName)
         self.do[coreName].search(query=query, collector=keyCollector)
         return keyCollector
 

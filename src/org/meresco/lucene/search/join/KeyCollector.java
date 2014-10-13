@@ -36,7 +36,7 @@ import org.apache.lucene.util.OpenBitSet;
 public class KeyCollector extends Collector {
     protected String keyName;
     private NumericDocValues keyValues;
-    protected OpenBitSet keySet = new OpenBitSet();
+    protected OpenBitSet currentKeySet = new OpenBitSet();
 
     public KeyCollector(String keyName) {
         this.keyName = keyName;
@@ -47,7 +47,7 @@ public class KeyCollector extends Collector {
         if (this.keyValues != null) {
             int value = (int)this.keyValues.get(docId);
             if (value > 0) {
-                this.keySet.set(value);
+                this.currentKeySet.set(value);
             }
         }
     }
@@ -67,6 +67,6 @@ public class KeyCollector extends Collector {
     }
 
     public OpenBitSet getCollectedKeys() {
-        return this.keySet;
+        return this.currentKeySet;
     }
 }

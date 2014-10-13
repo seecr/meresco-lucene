@@ -38,6 +38,7 @@ public class KeyFilterCache {
     public static KeyFilter create(KeyCollector keyCollector, String keyName) {
         OpenBitSet keySet = keyCollector.getCollectedKeys();
         LRUHashMap<String, KeyFilter> keyFilterCache = KeyFilterCache.cache.get(keySet);
+
         if (keyFilterCache == null) {
             keyFilterCache = new LRUHashMap<String, KeyFilter>(5);
             KeyFilterCache.cache.put(keySet, keyFilterCache);
@@ -45,6 +46,7 @@ public class KeyFilterCache {
         KeyFilter keyFilter = keyFilterCache.get(keyName);
         if (keyFilter == null) {
             keyFilter = new KeyFilter(keySet, keyName);
+            keyFilterCache.put(keyName, keyFilter);
         }
         return keyFilter;
     }

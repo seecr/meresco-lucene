@@ -50,84 +50,6 @@ import org.meresco.lucene.queries.KeyFilter;
  * @author erik@seecr.nl
  * */
 public class CachingKeyCollector extends KeyCollector {
-    /**
-     * Create a collector that collects keys from a field. It caches the keys on
-     * segment level. The collector itself is also cached, as well as its
-     * Filters.
-     *
-     * @param query
-     *            The Query this collector will be used with.
-     * @param keyName
-     *            The name of the field that contains the keys. This field must
-     *            refer to a NumericDocValues field containing integer keys.
-     */
-    public static CachingKeyCollector create(Query query, String keyName) {
-        LRUHashMap<String, CachingKeyCollector> collectorCache = CachingKeyCollector.queryCache.get(query);
-        CachingKeyCollector keyCollector = null;
-        if (collectorCache != null) {
-            keyCollector = collectorCache.get(keyName);
-        }
-        if (keyCollector == null) {
-            keyCollector = new CachingKeyCollector(query, keyName);
-        }
-        keyCollector.reset();
-        return keyCollector;
-    }
-
-    private static void putInCache(CachingKeyCollector keyCollector) {
-        LRUHashMap<String, CachingKeyCollector> collectorCache = CachingKeyCollector.queryCache.get(keyCollector.query);
-        if (collectorCache == null) {
-            collectorCache = new LRUHashMap<String, CachingKeyCollector>(5);
-            CachingKeyCollector.queryCache.put(keyCollector.query, collectorCache);
-        }
-
-        if (!collectorCache.containsKey(keyCollector.keyName)) {
-            collectorCache.put(keyCollector.keyName, keyCollector);
-        }
-    }
-
-    /**
-     * Get a BitSet containing all the collected keys. This returns a new
-     * BitSet. Use {@link getFilter} with
-     * {@link org.apache.lucene.queries.BooleanFilter} or
-     * {@link org.apache.lucene.queries.ChainedFilter} for combining
-     * results from different collectors to do cross-filtering.
-     */
-    @Override
-    public OpenBitSet getCollectedKeys() {
-        updateCache();
-        OpenBitSet keySet = new OpenBitSet();
-        for (OpenBitSet b : this.seen)
-            keySet.or(b);
-        return keySet;
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-        updateCache();
-        Object readerKey = context.reader().getCombinedCoreAndDeletesKey();
-        OpenBitSet bitSet = this.keySetCache.get(readerKey);
-        if (bitSet != null) {
-            this.seen.add(bitSet);
-            throw new CollectionTerminatedException(); // already have this one
-        }
-        super.setNextReader(context);
-        this.currentReaderKey = readerKey;
-        this.keySet = new OpenBitSet();
-    }
-
-    public void printKeySetCacheSize() {
-        int size = 0;
-        for (OpenBitSet b : this.keySetCache.values())
-            size += b.size();
-        System.out.print("cache: " + this.keySetCache.size() + " entries, " + (size / 8 / 1024 / 1024) + " MB");
-    }
-
-    /**
-     * Caches KeyCollectors for (Query,keyName) pairs. KeyCollectors can become
-     * large, tens of MB.
-     */
-    private static LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>> queryCache = new LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>>(20);
 
     /**
      * Caches bitsets (containing keys) for specific readers within one index.
@@ -143,30 +65,58 @@ public class CachingKeyCollector extends KeyCollector {
      */
     private List<OpenBitSet> seen = new ArrayList<OpenBitSet>();
 
-    /**
-     * This indicates the reader for which collection is going on. At the end,
-     * this key is used to populate the cache.
-     */
-    private Object currentReaderKey = null;
+    private OpenBitSet finalKeySet = null;
 
     private Query query;
 
-    private CachingKeyCollector(Query query, String keyName) {
+    CachingKeyCollector(Query query, String keyName) {
         super(keyName);
         this.query = query;
     }
 
-    private void reset() {
-        this.currentReaderKey = null;
+        /**
+     * Get a BitSet containing all the collected keys. This returns a new
+     * BitSet. Use {@link getFilter} with
+     * {@link org.apache.lucene.queries.BooleanFilter} or
+     * {@link org.apache.lucene.queries.ChainedFilter} for combining
+     * results from different collectors to do cross-filtering.
+     */
+    @Override
+    public OpenBitSet getCollectedKeys() {
+        completePreviousReader();
+        if (this.finalKeySet == null) {
+            this.finalKeySet = new OpenBitSet();
+            for (OpenBitSet b : this.seen)
+                this.finalKeySet.or(b);
+        }
         this.seen.clear();
+        return this.finalKeySet;
     }
 
-    private void updateCache() {
-        if (this.currentReaderKey != null) {
-            this.keySet.trimTrailingZeros();
-            this.keySetCache.put(this.currentReaderKey, this.keySet);
-            this.seen.add(this.keySet);
-            this.currentReaderKey = null;
+    @Override
+    public void setNextReader(AtomicReaderContext context) throws IOException {
+        completePreviousReader();
+        Object readerKey = context.reader().getCombinedCoreAndDeletesKey();
+        OpenBitSet bitSet = this.keySetCache.get(readerKey);
+        if (bitSet != null) {
+            this.seen.add(bitSet);
+            throw new CollectionTerminatedException(); // already have this one
         }
+        super.setNextReader(context);
+        this.finalKeySet = null;
+        this.currentKeySet = new OpenBitSet();
+        this.keySetCache.put(readerKey, this.currentKeySet);
+        this.seen.add(this.currentKeySet);
+    }
+
+    public void printKeySetCacheSize() {
+        int size = 0;
+        for (OpenBitSet b : this.keySetCache.values())
+            size += b.size();
+        System.out.print("cache: " + this.keySetCache.size() + " entries, " + (size / 8 / 1024 / 1024) + " MB");
+    }
+
+    private void completePreviousReader() {
+        this.currentKeySet.trimTrailingZeros();
     }
 }

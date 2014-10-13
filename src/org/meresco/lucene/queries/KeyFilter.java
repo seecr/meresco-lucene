@@ -36,17 +36,17 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.OpenBitSet;
-import org.meresco.lucene.search.join.CachingKeyCollector;
+import org.meresco.lucene.search.join.KeyCollector;
 
 
 public class KeyFilter extends Filter {
     private String keyName;
     public OpenBitSet keySet;
-    private CachingKeyCollector keyCollector;
+    private KeyCollector keyCollector;
     private Map<Object, DocIdSet> docSetCache = new WeakHashMap<Object, DocIdSet>();
 
-    public KeyFilter(CachingKeyCollector cachingKeyCollector, String keyName) {
-        this.keyCollector = cachingKeyCollector;
+    public KeyFilter(KeyCollector keyCollector, String keyName) {
+        this.keyCollector = keyCollector;
         this.keyName = keyName;
     }
 

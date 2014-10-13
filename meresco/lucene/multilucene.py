@@ -76,8 +76,7 @@ class MultiLucene(Observable):
                     continue
                 if not booleanFilter:
                     booleanFilter = KeyBooleanFilter()
-                keyCollector = CachingKeyCollector.create(q, keyName)
-                self.do[coreName].search(query=q, collector=keyCollector)
+                keyCollector = self.collectKeys(q, coreName, keyName)
                 booleanFilter.add(keyCollector.getFilter(filterKeyName), BooleanClause.Occur.MUST)
         return booleanFilter
 

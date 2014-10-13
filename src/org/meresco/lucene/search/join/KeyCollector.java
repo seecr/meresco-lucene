@@ -2,8 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
- * Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+ * Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -33,6 +33,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
 
+import org.meresco.lucene.queries.KeyFilter;
 
 public class KeyCollector extends Collector {
     private String keyName;
@@ -69,5 +70,10 @@ public class KeyCollector extends Collector {
 
     public OpenBitSet getCollectedKeys() {
         return this.keySet;
+    }
+
+    public KeyFilter getFilter() {
+        return new KeyFilter(this, this.keyName);
+
     }
 }

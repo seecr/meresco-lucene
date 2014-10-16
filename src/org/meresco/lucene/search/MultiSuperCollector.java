@@ -51,7 +51,7 @@ public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
     }
 
     @Override
-    public void complete() {
+    public void complete() throws IOException {
         for (SuperCollector<?> sc : collectors) {
             sc.complete();
         }

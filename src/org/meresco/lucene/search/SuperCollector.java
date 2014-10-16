@@ -60,5 +60,5 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
      */
     abstract protected SubCollectorType createSubCollector() throws IOException;
 
-    abstract public void complete();
+    abstract public void complete() throws IOException;
 }

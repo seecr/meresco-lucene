@@ -62,7 +62,7 @@ public class KeyCollectorCache {
         }
         return keyCollector;
     }
-    
+
     public static CachingKeySuperCollector createSuper(Query query, String keyName) {
         LRUHashMap<String, CachingKeySuperCollector> collectorCache = KeyCollectorCache.querySuperCache.get(query);
         if (collectorCache == null) {
@@ -76,6 +76,11 @@ public class KeyCollectorCache {
             collectorCache.put(keyName, keyCollector);
         }
         return keyCollector;
+    }
+
+    public static void clear() {
+        KeyCollectorCache.queryCache.clear();
+        KeyCollectorCache.querySuperCache.clear();
     }
 
     public static void printStats() {

@@ -49,17 +49,15 @@ public class KeySuperCollector extends SuperCollector<KeySubCollector> {
     }
 
     @Override
-    public void complete() {
+    public void complete() throws IOException {
+        OpenBitSet currentKeySet = super.subs.get(0).currentKeySet;
+        for (int i = 1; i < super.subs.size(); i++) {
+            currentKeySet.or(super.subs.get(i).currentKeySet);
+        }
+        this.currentKeySet = currentKeySet;
     }
 
     public DocIdSet getCollectedKeys() throws IOException {
-        if (currentKeySet == null) {
-            OpenBitSet currentKeySet = super.subs.get(0).currentKeySet;
-            for (int i = 1; i < super.subs.size(); i++) {
-                currentKeySet.or(super.subs.get(i).currentKeySet);
-            }
-            this.currentKeySet = currentKeySet;
-        }
         return this.currentKeySet;
     }
 }

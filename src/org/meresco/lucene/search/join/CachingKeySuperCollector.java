@@ -58,7 +58,7 @@ public class CachingKeySuperCollector extends KeySuperCollector {
     }
 
     @Override
-    public DocIdSet getCollectedKeys() throws IOException {
+    public void complete() throws IOException {
         List<CachingKeySubCollector> subs = new ArrayList<CachingKeySubCollector>();
         int biggestKeyFound = 0;
         for (KeySubCollector sub : this.subs) {
@@ -67,6 +67,7 @@ public class CachingKeySuperCollector extends KeySuperCollector {
             if (s.biggestKeyFound > biggestKeyFound) {
                 biggestKeyFound = s.biggestKeyFound;
             }
+            keySetCache.putAll(s.keySetCache);
         }
 
         if (this.finalKeySet == null) {
@@ -83,6 +84,10 @@ public class CachingKeySuperCollector extends KeySuperCollector {
         for (CachingKeySubCollector sub : subs) {
            sub.seen.clear();
         }
+    }
+
+    @Override
+    public DocIdSet getCollectedKeys() throws IOException {
         return this.finalKeySet;
     }
 }
@@ -92,6 +97,7 @@ class CachingKeySubCollector extends KeySubCollector {
     private Object readerKey;
     private final CachingKeySuperCollector parent;
     protected List<DocIdSet> seen = new ArrayList<DocIdSet>();
+    protected Map<Object, DocIdSet> keySetCache = new WeakHashMap<Object, DocIdSet>();
 
     CachingKeySubCollector(CachingKeySuperCollector parent, String keyName) throws IOException {
         super(keyName);
@@ -118,9 +124,7 @@ class CachingKeySubCollector extends KeySubCollector {
             this.currentKeySet.trimTrailingZeros();
             PForDeltaDocIdSet.Builder builder = new PForDeltaDocIdSet.Builder().add(this.currentKeySet.iterator());
             PForDeltaDocIdSet keySet = builder.build();
-            synchronized(this) {
-                this.parent.keySetCache.put(readerKey, keySet);
-            }
+            this.keySetCache.put(readerKey, keySet);
             this.seen.add(this.currentKeySet);
             this.readerKey = null;
         }

@@ -38,7 +38,7 @@ public class KeyFilterCache {
     private static WeakHashMap<DocIdSet, LRUHashMap<String, KeyFilter>> cache = new WeakHashMap<DocIdSet, LRUHashMap<String, KeyFilter>>();
 
     public static KeyFilter create(CachingKeyCollector keyCollector, String keyName) throws IOException {
-    	return createFilter(keyCollector.getCollectedKeys(), keyCollector.query, keyName);
+        return createFilter(keyCollector.getCollectedKeys(), keyCollector.query, keyName);
     }
 
     public static KeyFilter create(CachingKeySuperCollector keyCollector, String keyName) throws IOException {
@@ -59,6 +59,10 @@ public class KeyFilterCache {
         }
         return keyFilter;
     }
+
+     public static void clear() {
+         KeyFilterCache.cache.clear();
+     }
 
     public static void printStats() {
         System.out.println("KeyFilterCache. Entries: " + cache.size());

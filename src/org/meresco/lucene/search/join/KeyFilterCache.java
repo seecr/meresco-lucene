@@ -30,6 +30,7 @@ import java.util.WeakHashMap;
 
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Query;
 import org.meresco.lucene.queries.KeyFilter;
 
 public class KeyFilterCache {
@@ -37,7 +38,14 @@ public class KeyFilterCache {
     private static WeakHashMap<DocIdSet, LRUHashMap<String, KeyFilter>> cache = new WeakHashMap<DocIdSet, LRUHashMap<String, KeyFilter>>();
 
     public static KeyFilter create(CachingKeyCollector keyCollector, String keyName) throws IOException {
-        DocIdSet keySet = keyCollector.getCollectedKeys();
+    	return createFilter(keyCollector.getCollectedKeys(), keyCollector.query, keyName);
+    }
+    
+    public static KeyFilter create(CachingKeySuperCollector keyCollector, String keyName) throws IOException {
+        return createFilter(keyCollector.getCollectedKeys(), keyCollector.query, keyName);
+    }
+    
+    private static KeyFilter createFilter(DocIdSet keySet, Query query, String keyName) throws IOException {
         LRUHashMap<String, KeyFilter> keyFilterCache = KeyFilterCache.cache.get(keySet);
 
         if (keyFilterCache == null) {
@@ -46,7 +54,7 @@ public class KeyFilterCache {
         }
         KeyFilter keyFilter = keyFilterCache.get(keyName);
         if (keyFilter == null) {
-            keyFilter = new KeyFilter(keySet, keyName, keyCollector.query);
+            keyFilter = new KeyFilter(keySet, keyName, query);
             keyFilterCache.put(keyName, keyFilter);
         }
         return keyFilter;

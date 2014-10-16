@@ -29,14 +29,15 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
 import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
 
 public class KeySuperCollector extends SuperCollector<KeySubCollector> {
-    private final String keyName;
-    public OpenBitSet keySet;
+    protected final String keyName;
+    private OpenBitSet currentKeySet;
 
     public KeySuperCollector(String keyName) {
         this.keyName = keyName;
@@ -51,22 +52,23 @@ public class KeySuperCollector extends SuperCollector<KeySubCollector> {
     public void complete() {
     }
 
-    public OpenBitSet getCollectedKeys() {
-        if (keySet == null) {
-            OpenBitSet keySet = super.subs.get(0).keySet;
+    public DocIdSet getCollectedKeys() throws IOException {
+        if (currentKeySet == null) {
+            OpenBitSet currentKeySet = super.subs.get(0).currentKeySet;
             for (int i = 1; i < super.subs.size(); i++) {
-                keySet.or(super.subs.get(i).keySet);
+                currentKeySet.or(super.subs.get(i).currentKeySet);
             }
-            this.keySet = keySet;
+            this.currentKeySet = currentKeySet;
         }
-        return this.keySet;
+        return this.currentKeySet;
     }
 }
 
 class KeySubCollector extends SubCollector {
     private NumericDocValues keyValues;
-    protected OpenBitSet keySet = new OpenBitSet();
-    private String keyName;
+    protected OpenBitSet currentKeySet = new OpenBitSet();
+    private final String keyName;
+    protected int biggestKeyFound = 0;
 
     public KeySubCollector(String keyName) throws IOException {
         super();
@@ -79,11 +81,14 @@ class KeySubCollector extends SubCollector {
     }
 
     @Override
-    public void collect(int doc) throws IOException {
-        if (this.keyValues != null) {
-            int value = (int) this.keyValues.get(doc);
+    public void collect(int docId) throws IOException {
+    	if (this.keyValues != null) {
+            int value = (int)this.keyValues.get(docId);
             if (value > 0) {
-                this.keySet.set(value);
+                this.currentKeySet.set(value);
+                if (value > this.biggestKeyFound) {
+                    this.biggestKeyFound = value;
+                }
             }
         }
     }

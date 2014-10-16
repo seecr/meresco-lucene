@@ -35,6 +35,7 @@ public class KeyCollectorCache {
      * large, tens of MB.
      */
     private static LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>> queryCache = new LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>>(20);
+    private static LRUHashMap<Query, LRUHashMap<String, CachingKeySuperCollector>> querySuperCache = new LRUHashMap<Query, LRUHashMap<String, CachingKeySuperCollector>>(20);
 
     /**
      * Create a collector that collects keys from a field. It caches the keys on
@@ -57,6 +58,21 @@ public class KeyCollectorCache {
         CachingKeyCollector keyCollector = collectorCache.get(keyName);
         if (keyCollector == null) {
             keyCollector = new CachingKeyCollector(query, keyName);
+            collectorCache.put(keyName, keyCollector);
+        }
+        return keyCollector;
+    }
+    
+    public static CachingKeySuperCollector createSuper(Query query, String keyName) {
+        LRUHashMap<String, CachingKeySuperCollector> collectorCache = KeyCollectorCache.querySuperCache.get(query);
+        if (collectorCache == null) {
+            collectorCache = new LRUHashMap<String, CachingKeySuperCollector>(5);
+            KeyCollectorCache.querySuperCache.put(query, collectorCache);
+        }
+
+        CachingKeySuperCollector keyCollector = collectorCache.get(keyName);
+        if (keyCollector == null) {
+            keyCollector = new CachingKeySuperCollector(query, keyName);
             collectorCache.put(keyName, keyCollector);
         }
         return keyCollector;

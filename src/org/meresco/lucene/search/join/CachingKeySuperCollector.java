@@ -61,7 +61,7 @@ public class CachingKeySuperCollector extends KeySuperCollector {
     public DocIdSet getCollectedKeys() throws IOException {
     	List<CachingKeySubCollector> subs = new ArrayList<CachingKeySubCollector>();
     	int biggestKeyFound = 0;
-    	for (KeySubCollector sub : subs) {
+    	for (KeySubCollector sub : this.subs) {
     		CachingKeySubCollector s = (CachingKeySubCollector) sub;
     		subs.add(s);
     		if (s.biggestKeyFound > biggestKeyFound) {

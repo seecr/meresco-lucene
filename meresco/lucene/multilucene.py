@@ -50,7 +50,10 @@ class MultiLucene(Observable):
         generatorReturn(response)
 
     def collectKeys(self, query, coreName, keyName):
-        keyCollector = KeyCollectorCache.create(query, keyName)
+        if self._multithreaded:
+            keyCollector = KeyCollectorCache.createSuper(query, keyName)
+        else:
+            keyCollector = KeyCollectorCache.create(query, keyName)
         self.do[coreName].search(query=query, collector=keyCollector)
         return keyCollector
 

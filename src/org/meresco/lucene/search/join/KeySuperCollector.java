@@ -82,7 +82,7 @@ class KeySubCollector extends SubCollector {
 
     @Override
     public void collect(int docId) throws IOException {
-    	if (this.keyValues != null) {
+        if (this.keyValues != null) {
             int value = (int)this.keyValues.get(docId);
             if (value > 0) {
                 this.currentKeySet.set(value);

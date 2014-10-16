@@ -59,15 +59,15 @@ public class CachingKeySuperCollector extends KeySuperCollector {
 
     @Override
     public DocIdSet getCollectedKeys() throws IOException {
-    	List<CachingKeySubCollector> subs = new ArrayList<CachingKeySubCollector>();
-    	int biggestKeyFound = 0;
-    	for (KeySubCollector sub : this.subs) {
-    		CachingKeySubCollector s = (CachingKeySubCollector) sub;
-    		subs.add(s);
-    		if (s.biggestKeyFound > biggestKeyFound) {
-    			biggestKeyFound = s.biggestKeyFound;
-    		}
-    	}
+        List<CachingKeySubCollector> subs = new ArrayList<CachingKeySubCollector>();
+        int biggestKeyFound = 0;
+        for (KeySubCollector sub : this.subs) {
+            CachingKeySubCollector s = (CachingKeySubCollector) sub;
+            subs.add(s);
+            if (s.biggestKeyFound > biggestKeyFound) {
+                biggestKeyFound = s.biggestKeyFound;
+            }
+        }
 
         if (this.finalKeySet == null) {
             this.finalKeySet = new FixedBitSet(biggestKeyFound);
@@ -94,7 +94,7 @@ class CachingKeySubCollector extends KeySubCollector {
     protected List<DocIdSet> seen = new ArrayList<DocIdSet>();
 
     CachingKeySubCollector(CachingKeySuperCollector parent, String keyName) throws IOException {
-    	super(keyName);
+        super(keyName);
         this.parent = parent;
     }
 

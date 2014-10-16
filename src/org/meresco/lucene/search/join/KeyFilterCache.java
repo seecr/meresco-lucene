@@ -40,11 +40,11 @@ public class KeyFilterCache {
     public static KeyFilter create(CachingKeyCollector keyCollector, String keyName) throws IOException {
     	return createFilter(keyCollector.getCollectedKeys(), keyCollector.query, keyName);
     }
-    
+
     public static KeyFilter create(CachingKeySuperCollector keyCollector, String keyName) throws IOException {
         return createFilter(keyCollector.getCollectedKeys(), keyCollector.query, keyName);
     }
-    
+
     private static KeyFilter createFilter(DocIdSet keySet, Query query, String keyName) throws IOException {
         LRUHashMap<String, KeyFilter> keyFilterCache = KeyFilterCache.cache.get(keySet);
 
@@ -60,7 +60,7 @@ public class KeyFilterCache {
         return keyFilter;
     }
 
-     public static void printStats() {
+    public static void printStats() {
         System.out.println("KeyFilterCache. Entries: " + cache.size());
         for (LRUHashMap<String, KeyFilter> filterCache : cache.values()) {
             for (KeyFilter keyFilterCache : filterCache.values()) {

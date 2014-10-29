@@ -703,14 +703,24 @@ class MultiLuceneTest(SeecrTestCase):
         q.setCoreQuery(core='coreA', query=luceneQueryFromCql('N=no_match'))
         q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'UNKOWN'), dict(core='coreB', key=KEY_PREFIX+'UNKOWN'))
-        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.luceneB.commit() # Force to write new segment; Old segment remains in seen list
         self.addDocument(self.luceneB, identifier='new', keys=[], fields=[('ignored', 'true')]) # Add new document to force recreating finalKeySet
         try:
             result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+            self.assertEquals(0, len(result.hits))
         finally:
             self.luceneB.delete(identifier='new')
 
+    def testKeyFilterIgnoresKeysOutOfBoundsOfKeySet(self):
+        self.addDocument(self.luceneB, identifier=str(100), keys=[('B', 100)], fields=[]) # Force key to be much more than bits in long[] in FixedBitSet, so it must be OutOfBounds
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        q.setCoreQuery(core='coreB', query=MatchAllDocsQuery())
+        q.addFacet(core='coreB', facet=dict(fieldname='cat_M', maxTerms=10))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(4, len(result.hits))
 
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(

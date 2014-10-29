@@ -698,6 +698,20 @@ class MultiLuceneTest(SeecrTestCase):
         finally:
             self.luceneC.delete(identifier='C-S>A-MQ')
 
+    def testNullIteratorOfPForDeltaIsIgnoredInFinalKeySet(self):
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=luceneQueryFromCql('N=no_match'))
+        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'UNKOWN'), dict(core='coreB', key=KEY_PREFIX+'UNKOWN'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.luceneB.commit() # Force to write new segment; Old segment remains in seen list
+        self.addDocument(self.luceneB, identifier='new', keys=[], fields=[('ignored', 'true')]) # Add new document to force recreating finalKeySet
+        try:
+            result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        finally:
+            self.luceneB.delete(identifier='new')
+
+
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(
             identifier=identifier,

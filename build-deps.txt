@@ -1,11 +1,11 @@
-jcc (>= 2.20)
-jcc (<< 2.21)
+jcc (>= 2.21)
+jcc (<< 2.22)
 python-setuptools
 gcc
 #centos6:gcc-c++
 #wheezy:g++
 #centos6:python-devel
 #wheezy:python-dev
-#wheezy:pylucene (>= 4.9.0-seecr~3)
-#centos6:pylucene (>= 4.9.0-1)
-pylucene (<< 4.10)
+#wheezy:pylucene (>= 4.10.1)
+#centos6:pylucene (>= 4.10.1)
+pylucene (<< 4.11)

@@ -58,7 +58,7 @@ class Index(object):
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
         self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
         self._analyzer = createAnalyzer(analyzer=analyzer)
-        conf = IndexWriterConfig(Version.LUCENE_4_9, self._analyzer)
+        conf = IndexWriterConfig(Version.LUCENE_4_10_0, self._analyzer)
         conf.setSimilarity(similarity)
         mergePolicy = TieredMergePolicy()
         mergePolicy.setMaxMergeAtOnce(2)

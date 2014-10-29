@@ -2,8 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
- * Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+ * Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -34,16 +34,11 @@ import org.apache.lucene.analysis.standard.ClassicTokenizer;
 import org.apache.lucene.util.Version;
 
 public class MerescoStandardAnalyzer extends Analyzer {
-    private Version matchVersion;
-
-    public MerescoStandardAnalyzer(Version matchVersion) {
-        this.matchVersion = matchVersion;
-    }
     public Analyzer.TokenStreamComponents createComponents(String fieldName, java.io.Reader reader) {
-        final ClassicTokenizer src = new ClassicTokenizer(this.matchVersion, reader);
+        final ClassicTokenizer src = new ClassicTokenizer(reader);
         TokenStream tok = new ClassicFilter(src);
         tok = new ASCIIFoldingFilter(tok);
-        tok = new LowerCaseFilter(this.matchVersion, tok);
+        tok = new LowerCaseFilter(tok);
         return new Analyzer.TokenStreamComponents(src, tok);
     }
 }

@@ -176,7 +176,7 @@ class MultiLucene(Observable):
         generatorReturn(result)
 
     def any_unknown(self, message, core=None, **kwargs):
-        if message in ['prefixSearch', 'fieldnames']:
+        if message in ['prefixSearch', 'fieldnames', 'drilldownFieldnames']:
             core = self._defaultCore if core is None else core
             result = yield self.any[core].unknown(message=message, **kwargs)
             raise StopIteration(result)

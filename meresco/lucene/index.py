@@ -28,19 +28,18 @@ from indexandtaxonomy import IndexAndTaxonomy
 from os.path import join
 
 from java.io import File, StringReader
-from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields, Term
-from org.apache.lucene.store import SimpleFSDirectory
-from org.apache.lucene.util import Version
-from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
-from org.apache.lucene.facet import FacetsCollector, Facets
-from org.apache.lucene.util import BytesRef, BytesRefIterator
-from org.apache.lucene.search.spell import DirectSpellChecker
-from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
-from org.apache.lucene.facet.taxonomy import CachedOrdinalsReader, DocValuesOrdinalsReader
+from org.apache.lucene.facet import FacetsCollector, Facets
+from org.apache.lucene.facet.taxonomy import CachedOrdinalsReader, DocValuesOrdinalsReader, TaxonomyFacetCounts, TaxonomyReader
+from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
 from org.apache.lucene.facet.taxonomy.writercache import LruTaxonomyWriterCache
+from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields, Term
 from org.apache.lucene.index import TieredMergePolicy
-from org.apache.lucene.facet.taxonomy import TaxonomyFacetCounts
+from org.apache.lucene.search.similarities import BM25Similarity
+from org.apache.lucene.search.spell import DirectSpellChecker
+from org.apache.lucene.store import SimpleFSDirectory
+from org.apache.lucene.util import BytesRef, BytesRefIterator
+from org.apache.lucene.util import Version
 from org.meresco.lucene.search import FacetSuperCollector
 
 
@@ -127,6 +126,20 @@ class Index(object):
         while iterator.hasNext():
             fieldnames.append(iterator.next())
         return fieldnames
+
+    def drilldownFieldnames(self, path=None, limit=50):
+        taxoReader = self._indexAndTaxonomy.taxoReader
+        parentOrdinal = TaxonomyReader.ROOT_ORDINAL if path is None else taxoReader.getOrdinal(path[0], path[1:])
+        childrenIter = taxoReader.getChildren(parentOrdinal)
+        names = []
+        while True:
+            ordinal = childrenIter.next()
+            if ordinal == TaxonomyReader.INVALID_ORDINAL:
+                break
+            names.append(taxoReader.getPath(ordinal).components[-1])
+            if len(names) >= limit:
+                break
+        return names
 
     def numDocs(self):
         return self._indexAndTaxonomy.searcher.getIndexReader().numDocs()

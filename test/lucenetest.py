@@ -397,6 +397,16 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(set([IDFIELD, 'field0', 'field1']), set(response.hits))
         self.assertEquals(3, response.total)
 
+    def testDrilldownFieldnames(self):
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=createDocument([('field0', 'value0')], facets=[("cat", "cat-A"), ("cat", "cat-B")])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value0')], facets=[("cat", "cat-A"), ("cat2", "cat-B")])))
+        returnValueFromGenerator(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value0')], facets=[("cat2", "cat-A"), ("cat3", "cat-B")])))
+        response = returnValueFromGenerator(self.lucene.drilldownFieldnames())
+        self.assertEquals(set(['cat', 'cat2', 'cat3']), set(response.hits))
+        self.assertEquals(3, response.total)
+        response = returnValueFromGenerator(self.lucene.drilldownFieldnames(['cat']))
+        self.assertEquals(set(['cat-A', 'cat-B']), set(response.hits))
+
     def testFilterCaching(self):
         for i in range(10):
             returnValueFromGenerator(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([('field%s' % i, 'value0')])))

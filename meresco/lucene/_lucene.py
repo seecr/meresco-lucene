@@ -185,6 +185,12 @@ class Lucene(object):
         raise StopIteration(response)
         yield
 
+    def drilldownFieldnames(self, *args, **kwargs):
+        drilldownFieldnames = self._index.drilldownFieldnames(*args, **kwargs)
+        response = LuceneResponse(total=len(drilldownFieldnames), hits=drilldownFieldnames)
+        raise StopIteration(response)
+        yield
+
     def scoreCollector(self, keyName, query):
         return self._scoreCollectorCache.get((keyName, query))
 

@@ -23,14 +23,16 @@
 #
 ## end license ##
 
+from lxml.etree import HTML
+
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import getRequest
 
 from meresco.lucene.synchronousremote import SynchronousRemote
 from cqlparser import parseString as parseCql
 
-class LuceneRemoteServiceTest(IntegrationTestCase):
 
+class LuceneRemoteServiceTest(IntegrationTestCase):
     def testRemoteService(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
         response = remote.executeQuery(parseCql('*'))
@@ -57,6 +59,18 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         header, body = getRequest(port=self.httpPort, path='/remote/info', parse=False)
         headerLines = header.split('\r\n')
         self.assertTrue('Location: /remote/info/index' in headerLines, header)
+
+    def testRemoteInfoCore(self):
+        header, body = getRequest(port=self.httpPort, path='/remote/info/core', arguments=dict(name='main'), parse=False)
+        bodyLxml = HTML(body)
+        lists = bodyLxml.xpath('//ul')
+        fieldList = lists[0]
+        fields = fieldList.xpath('li/a/text()')
+        self.assertEquals(14, len(fields))
+
+        drilldownFieldList = lists[1]
+        drilldownFields = drilldownFieldList.xpath('li/a/text()')
+        self.assertEquals(['untokenized.field2', 'untokenized.fieldHier'], drilldownFields)
 
     def testRemoteInfoField(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__id__', name='main'), parse=False)

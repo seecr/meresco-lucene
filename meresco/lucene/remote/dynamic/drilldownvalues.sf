@@ -25,16 +25,27 @@
 
 import page
 
+
 def main(arguments, **kwargs):
     yield page.header(arguments=arguments, **kwargs)
     name = arguments['name'][0]
-    fieldname = arguments['fieldname'][0]
+    path = arguments['path']
     limit = int(arguments.get('limit', ['50'])[0])
-    prefix = arguments.get('prefix', [''])[0]
-    yield """<h2>Contents field: <em>'%s'</em> for index <em>'<a href="core?name=%s">%s</a>'</em></h2>""" % (escapeHtml(fieldname), escapeHtml(name), escapeHtml(name))
-    response = yield observable.any.prefixSearch(prefix=prefix, core=name, fieldname=fieldname, limit=limit, showCount=True)
-    yield '<pre>'
-    yield '\n'.join("%s: %s" % (str(term).replace('\n','\\n'), count) for (term, count) in response.hits)
-    yield '</pre>'
-    yield page.footer(arguments=arguments, **kwargs)
 
+    coreInfo = [info for info in allCoreInfo() if info.name == name][0]
+    yield """<h2>Drilldown values: <em>'%s'</em> for index <em>'<a href="core?name=%s">%s</a>'</em></h2>""" % (' / '.join([
+            '<a href="drilldownvalues?%s">%s</a>' % (
+                    escapeHtml(urlencode(dict(name=name, path=path[:path.index(value)+1]))),
+                    escapeHtml(value),
+                )
+            for value in path[:-1]] + [path[-1]]
+        ), escapeHtml(name), escapeHtml(name))
+    yield '<ul>'
+    for value in (yield observable.any.drilldownFieldnames(core=name, path=path, limit=limit)).hits:
+        yield '<li><a href="drilldownvalues?%s">%s</a></li>\n' % (
+                escapeHtml(urlencode(dict(name=name, path=path + [value]))),
+                escapeHtml(value),
+            )
+    yield '</ul>'
+
+    yield page.footer(arguments=arguments, **kwargs)

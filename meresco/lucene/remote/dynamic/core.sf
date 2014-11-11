@@ -34,13 +34,23 @@ def main(arguments, **kwargs):
     yield '<dt>Name</dt><dd>%s</dd>\n' % name
     yield '<dt>Number of documents</dt><dd>%s</dd>\n' % page.formatInt(coreInfo.numDocs())
     yield '</dl>\n'
-    yield '''<p><a href="query?%s">Query</a></p>\n''' % escapeHtml(urlencode(dict(name=name))) 
+    yield '''<p><a href="query?%s">Query</a></p>\n''' % escapeHtml(urlencode(dict(name=name)))
     yield '<dl>\n'
     yield '<dt>Fields</dt><dd>'
     yield '<ul>'
     for field in (yield observable.any.fieldnames(core=name)).hits:
         yield '<li><a href="field?%s">%s</a></li>\n' % (
                 escapeHtml(urlencode(dict(name=name, fieldname=field))),
+                escapeHtml(field),
+            )
+    yield '</ul>'
+    yield '</dd>'
+
+    yield '<dt>Drilldown fields</dt><dd>'
+    yield '<ul>'
+    for field in (yield observable.any.drilldownFieldnames(core=name)).hits:
+        yield '<li><a href="drilldownvalues?%s">%s</a></li>\n' % (
+                escapeHtml(urlencode(dict(name=name, path=[field]))),
                 escapeHtml(field),
             )
     yield '</ul>'

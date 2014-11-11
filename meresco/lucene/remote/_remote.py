@@ -66,7 +66,7 @@ class LuceneRemote(Observable):
         if not header.startswith('HTTP/1.0 200'):
             raise IOError("Expected status '200' from LuceneRemoteService, but got: " + response)
 
-    _ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames', 'executeComposedQuery']
+    _ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames', 'drilldownFieldnames', 'executeComposedQuery']
 
 
 

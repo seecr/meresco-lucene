@@ -134,6 +134,9 @@ class ComposedQuery(object):
     def isSingleCoreQuery(self):
         return self.numberOfUsedCores == 1
 
+    def coresInMatches(self):
+        return set(c for matchKey in self._matches.keys() for c in matchKey)
+
     def validate(self):
         for core in self.cores:
             if core == self.resultsFrom:

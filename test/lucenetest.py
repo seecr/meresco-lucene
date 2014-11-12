@@ -493,7 +493,7 @@ class LuceneTest(SeecrTestCase):
     def testDrilldownQuery(self):
         doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-A")])
         consume(self.lucene.addDocument("urn:1", doc))
-        doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-B")])
+        doc = createDocument(fields=[("field0", 'v2')], facets=[("cat", "cat-B")])
         consume(self.lucene.addDocument("urn:2", doc))
 
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery()))
@@ -501,6 +501,9 @@ class LuceneTest(SeecrTestCase):
 
         result = returnValueFromGenerator(self.lucene.executeQuery(MatchAllDocsQuery(), drilldownQueries=[("cat", ["cat-A"])]))
         self.assertEquals(1, result.total)
+
+        result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("field0", "v2")), drilldownQueries=[("cat", ["cat-A"])]))
+        self.assertEquals(0, result.total)
 
     def testMultipleDrilldownQueryOnSameField(self):
         doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-A"), ("cat", "cat-B")])

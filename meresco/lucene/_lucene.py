@@ -159,17 +159,14 @@ class Lucene(object):
         yield
 
     def createDrilldownQuery(self, luceneQuery, drilldownQueries):
-        dimQueries = {}
+        q = BooleanQuery(True)
+        if luceneQuery:
+            q.add(luceneQuery, BooleanClause.Occur.MUST)
         for field, path in drilldownQueries:
             indexedField = self._facetsConfig.getDimConfig(field).indexFieldName;
-            if not field in dimQueries:
-                dimQueries[field] = BooleanQuery(True)
-            dimQueries[field].add(TermQuery(DrillDownQuery.term(indexedField, field, path)), BooleanClause.Occur.MUST);
-
-        drilldownQuery = DrillDownQuery(self._facetsConfig, luceneQuery)
-        for dim, query in dimQueries.items():
-            drilldownQuery.add(dim, query)
-        return drilldownQuery
+            term = DrillDownQuery.term(indexedField, field, path)
+            q.add(TermQuery(term), BooleanClause.Occur.MUST);
+        return q
 
     def prefixSearch(self, fieldname, prefix, showCount=False, **kwargs):
         t0 = time()

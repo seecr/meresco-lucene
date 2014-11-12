@@ -37,8 +37,8 @@ class LuceneQueryComposer(object):
     def __init__(self, unqualifiedTermFields, fieldRegistry, analyzer=None):
         self._additionalKwargs = dict(
                 unqualifiedTermFields=unqualifiedTermFields,
-                analyzer=analyzer,
                 fieldRegistry=fieldRegistry,
+                analyzer=analyzer
             )
 
     def compose(self, ast):
@@ -90,7 +90,7 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         elif firstChild == 'INDEX':
             (left, (relation, boost), right) = results
             if relation in ['==', 'exact'] or (relation == '=' and self._fieldRegistry.isUntokenized(left)):
-                query = TermQuery(Term(left, right))
+                query = TermQuery(self._createTerm(left, right))
             elif relation == '=':
                 query = self._termOrPhraseQuery(left, right)
             elif relation in ['<','<=','>=','>']:
@@ -118,11 +118,11 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         listOfTermStrings = self._analyzeToken(termString)
         if len(listOfTermStrings) == 1:
             if prefixRegexp.match(termString):
-                return PrefixQuery(Term(index, listOfTermStrings[0]))
-            return TermQuery(Term(index, listOfTermStrings[0]))
+                return PrefixQuery(self._createTerm(index, listOfTermStrings[0]))
+            return TermQuery(self._createTerm(index, listOfTermStrings[0]))
         result = PhraseQuery()
         for term in listOfTermStrings:
-            result.add(Term(index, term))
+            result.add(self._createTerm(index, term))
         return result
 
     def _termRangeQuery(self, index, relation, termString):
@@ -148,6 +148,11 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         finally:
             ts.close()
         return result
+
+    def _createTerm(self, field, value):
+        if self._fieldRegistry.isDrilldownField(field):
+            return self._fieldRegistry.makeDrilldownTerm(field, value)
+        return Term(field, value)
 
 
 prefixRegexp = compile(r'^([\w-]{2,})\*$') # pr*, prefix* ....

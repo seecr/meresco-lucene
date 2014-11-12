@@ -25,6 +25,10 @@
 
 from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType
 from org.apache.lucene.index import FieldInfo
+from org.apache.lucene.facet import FacetsConfig, DrillDownQuery
+
+from drilldownfield import DrilldownField
+
 
 IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
@@ -34,18 +38,23 @@ NUMERIC_PREFIX = "__numeric__."
 STRINGFIELD, NUMERICFIELD, TEXTFIELD = range(3)
 
 class FieldRegistry(object):
-    def __init__(self):
-        self._buildFields = {
-                IDFIELD: FieldRegistry.FieldDefinition(type=StringField.TYPE_STORED),
-            }
-        self._prefixBuildFields = {
-                STRINGFIELD: FieldRegistry.FieldDefinition(type=StringField.TYPE_NOT_STORED),
-                NUMERICFIELD: FieldRegistry.FieldDefinition(
-                    type=NumericDocValuesField.TYPE,
-                    create=lambda fieldname, value: NumericDocValuesField(fieldname, long(value)),
-                ),
-                TEXTFIELD: FieldRegistry.FieldDefinition(type=TextField.TYPE_NOT_STORED),
-            }
+    def __init__(self, drilldownFields=None):
+        self._fieldDefinitions = {
+            IDFIELD: FieldRegistry.FieldDefinition(type=StringField.TYPE_STORED),
+        }
+        self._fieldDefinitionsByType = {
+            STRINGFIELD: FieldRegistry.FieldDefinition(type=StringField.TYPE_NOT_STORED),
+            NUMERICFIELD: FieldRegistry.FieldDefinition(
+                type=NumericDocValuesField.TYPE,
+                create=lambda fieldname, value: NumericDocValuesField(fieldname, long(value)),
+            ),
+            TEXTFIELD: FieldRegistry.FieldDefinition(type=TextField.TYPE_NOT_STORED),
+        }
+        self.drilldownFields = []
+        self._drilldownFieldNames = set()
+        self.facetsConfig = FacetsConfig()
+        for field in (drilldownFields or []):
+            self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued)
 
     def createField(self, fieldname, value):
         return self._getFieldDefinition(fieldname).create(fieldname, value)
@@ -54,7 +63,7 @@ class FieldRegistry(object):
         return self.createField(IDFIELD, value)
 
     def register(self, fieldname, fieldType, create=None):
-        self._buildFields[fieldname] = FieldRegistry.FieldDefinition(type=fieldType, create=create)
+        self._fieldDefinitions[fieldname] = FieldRegistry.FieldDefinition(type=fieldType, create=create)
 
     def phraseQueryPossible(self, fieldname):
         return self._getFieldDefinition(fieldname).phraseQueryPossible
@@ -62,15 +71,28 @@ class FieldRegistry(object):
     def isUntokenized(self, fieldname):
         return self._getFieldDefinition(fieldname).isUntokenized
 
+    def registerDrilldownField(self, fieldname, hierarchical=False, multiValued=True):
+        self.drilldownFields.append(DrilldownField(fieldname, hierarchical=hierarchical, multiValued=multiValued))
+        self._drilldownFieldNames.add(fieldname)
+        self.facetsConfig.setMultiValued(fieldname, multiValued)
+        self.facetsConfig.setHierarchical(fieldname, hierarchical)
+
+    def isDrilldownField(self, fieldname):
+        return fieldname in self._drilldownFieldNames
+
+    def makeDrilldownTerm(self, fieldname, path):
+        indexFieldName = self.facetsConfig.getDimConfig(fieldname).indexFieldName;
+        return DrillDownQuery.term(indexFieldName, fieldname, path)
+
     def _getFieldDefinition(self, fieldname):
-        buildField = self._buildFields.get(fieldname)
-        if buildField is not None:
-            return buildField
+        fieldDefinition = self._fieldDefinitions.get(fieldname)
+        if fieldDefinition is not None:
+            return fieldDefinition
         if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
-            return self._prefixBuildFields[STRINGFIELD]
+            return self._fieldDefinitionsByType[STRINGFIELD]
         if fieldname.startswith(KEY_PREFIX) or fieldname.startswith(NUMERIC_PREFIX):
-            return self._prefixBuildFields[NUMERICFIELD]
-        return self._prefixBuildFields[TEXTFIELD]
+            return self._fieldDefinitionsByType[NUMERICFIELD]
+        return self._fieldDefinitionsByType[TEXTFIELD]
 
     class FieldDefinition(object):
         def __init__(self, type, create=None):
@@ -82,6 +104,7 @@ class FieldRegistry(object):
             self.phraseQueryPossible = not positionsStored
             self.isUntokenized = not self.type.tokenized()
 
+
 def _createNoTermsFrequencyFieldType():
     f = FieldType()
     f.setIndexed(True)
@@ -90,5 +113,6 @@ def _createNoTermsFrequencyFieldType():
     f.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY)
     f.freeze()
     return f
+
 NO_TERMS_FREQUENCY_FIELDTYPE = _createNoTermsFrequencyFieldType()
 

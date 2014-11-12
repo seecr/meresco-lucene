@@ -54,7 +54,7 @@ dynamicPath = join(myPath, 'html', 'dynamic')
 staticPath = join(myPath, 'html', 'static')
 
 def uploadHelix(lucene, termNumerator, storageComponent, drilldownFields, fieldRegistry):
-    indexHelix = (Fields2LuceneDoc('record', drilldownFields=drilldownFields, fieldRegistry=fieldRegistry),
+    indexHelix = (Fields2LuceneDoc('record', fieldRegistry=fieldRegistry),
         (termNumerator,),
         (lucene,)
     )
@@ -99,14 +99,14 @@ def uploadHelix(lucene, termNumerator, storageComponent, drilldownFields, fieldR
 def main(reactor, port, databasePath):
     drilldownFields = [DrilldownField('untokenized.field2'), DrilldownField('untokenized.fieldHier', hierarchical=True)]
 
-    fieldRegistry = FieldRegistry()
-    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, fieldRegistry=fieldRegistry, commitCount=30, name='main', analyzer=MerescoDutchStemmingAnalyzer, drilldownFields=drilldownFields)
-    lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, fieldRegistry=fieldRegistry, commitTimeout=0.1, name='main2', drilldownFields=drilldownFields)
+    fieldRegistry = FieldRegistry(drilldownFields)
+    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, fieldRegistry=fieldRegistry, commitCount=30, name='main', analyzer=MerescoDutchStemmingAnalyzer)
+    lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, fieldRegistry=fieldRegistry, commitTimeout=0.1, name='main2')
 
     termNumerator = TermNumerator(path=join(databasePath, 'termNumerator'))
 
     multiLuceneHelix = (MultiLucene(defaultCore='main'),
-            (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, fieldRegistry=fieldRegistry, name='empty-core', drilldownFields=drilldownFields),),
+            (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, fieldRegistry=fieldRegistry, name='empty-core'),),
             (lucene,),
             (lucene2,),
         )

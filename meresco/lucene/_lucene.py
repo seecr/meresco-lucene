@@ -27,7 +27,6 @@ from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery
 from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector, DeDupFilterCollector
 from org.meresco.lucene.search.join import ScoreSuperCollector, ScoreCollector
 from org.apache.lucene.index import Term
-from org.apache.lucene.facet import DrillDownQuery, FacetsConfig
 from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search import SortField
 from org.meresco.lucene.search import SuperCollector
@@ -51,27 +50,22 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, fieldRegistry, name=None, drilldownFields=None, multithreaded=True, **kwargs):
-        self._facetsConfig = FacetsConfig()
-        for field in drilldownFields or []:
-            self._facetsConfig.setMultiValued(field.name, field.multiValued)
-            self._facetsConfig.setHierarchical(field.name, field.hierarchical)
-        self._multithreaded = multithreaded
-
+    def __init__(self, path, reactor, fieldRegistry, name=None, multithreaded=True, **kwargs):
         self._fieldRegistry = fieldRegistry
-        self._index = Index(path, reactor=reactor, facetsConfig=self._facetsConfig, multithreaded=multithreaded, **kwargs)
+        self._multithreaded = multithreaded
+        self._index = Index(path, reactor=reactor, facetsConfig=fieldRegistry.facetsConfig, multithreaded=multithreaded, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name
         self.coreName = name or basename(path)
         self._filterCache = LruCache(
-                keyEqualsFunction=lambda q1, q2: q1.equals(q2),
-                createFunction=lambda q: CachingWrapperFilter(QueryWrapperFilter(q))
-            )
+            keyEqualsFunction=lambda q1, q2: q1.equals(q2),
+            createFunction=lambda q: CachingWrapperFilter(QueryWrapperFilter(q))
+        )
         self._scoreCollectorCache = LruCache(
-                keyEqualsFunction=lambda (k, q), (k2, q2): k == k2 and q.equals(q2),
-                createFunction=lambda args: self._scoreCollector(*args)
-            )
+            keyEqualsFunction=lambda (k, q), (k2, q2): k == k2 and q.equals(q2),
+            createFunction=lambda args: self._scoreCollector(*args)
+        )
 
     def commit(self):
         return self._index.commit()
@@ -163,9 +157,7 @@ class Lucene(object):
         if luceneQuery:
             q.add(luceneQuery, BooleanClause.Occur.MUST)
         for field, path in drilldownQueries:
-            indexedField = self._facetsConfig.getDimConfig(field).indexFieldName;
-            term = DrillDownQuery.term(indexedField, field, path)
-            q.add(TermQuery(term), BooleanClause.Occur.MUST);
+            q.add(TermQuery(self._fieldRegistry.makeDrilldownTerm(field, path)), BooleanClause.Occur.MUST);
         return q
 
     def prefixSearch(self, fieldname, prefix, showCount=False, **kwargs):

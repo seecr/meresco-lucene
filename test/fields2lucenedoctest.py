@@ -40,7 +40,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             '__key__.field5': ["12345"],
             '__numeric__.field6': ["12345"],
         }
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[], fieldRegistry=FieldRegistry())
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry())
         observer = CallTrace(returnValues={'numerateTerm': 1})
         fields2LuceneDoc.addObserver(observer)
         document = fields2LuceneDoc._createDocument(fields)
@@ -89,13 +89,13 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             'untokenized.field8': [['grandparent', 'parent', 'child'], ['parent2', 'child']]
         }
         fields2LuceneDoc = Fields2LuceneDoc('tsname',
-            fieldRegistry=FieldRegistry(),
-            drilldownFields=[
+            fieldRegistry=FieldRegistry(drilldownFields=[
                 DrilldownField('untokenized.field4'),
                 DrilldownField('untokenized.field5'),
                 DrilldownField('untokenized.field6'),
                 DrilldownField('untokenized.field8', hierarchical=True),
             ])
+        )
         observer = CallTrace()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
@@ -121,10 +121,10 @@ class Fields2LuceneDocTest(IntegrationTestCase):
 
     def testAddFacetField(self):
         fields2LuceneDoc = Fields2LuceneDoc('tsname',
-            fieldRegistry=FieldRegistry(),
-            drilldownFields=[
+            fieldRegistry=FieldRegistry(drilldownFields=[
                 DrilldownField('untokenized.field'),
             ])
+        )
         observer = CallTrace()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
@@ -137,7 +137,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         self.assertEquals(1, len(facetsfields))
 
     def testAddDocument(self):
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry(), drilldownFields=[])
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry())
         observer = CallTrace()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
@@ -151,7 +151,6 @@ class Fields2LuceneDocTest(IntegrationTestCase):
     def testRewriteIdentifier(self):
         fields2LuceneDoc = Fields2LuceneDoc('tsname',
             fieldRegistry=FieldRegistry(),
-            drilldownFields=[],
             identifierRewrite=lambda identifier: "test:" + identifier)
         observer = CallTrace()
         fields2LuceneDoc.addObserver(observer)
@@ -167,7 +166,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         def rewriteFields(fields):
             fields['keys'] = list(sorted(fields.keys()))
             return fields
-        fields2LuceneDoc = Fields2LuceneDoc('tsname', drilldownFields=[], rewriteFields=rewriteFields, fieldRegistry=FieldRegistry())
+        fields2LuceneDoc = Fields2LuceneDoc('tsname', rewriteFields=rewriteFields, fieldRegistry=FieldRegistry())
         observer = CallTrace()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
@@ -179,9 +178,3 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         doc = observer.calledMethods[0].kwargs['document']
         self.assertEquals(set(['field1', 'field2', 'keys']), set([f.name() for f in doc.getFields()]))
         self.assertEquals(['field1', 'field2'], [f.stringValue() for f in doc.getFields('keys')])
-
-# TODO
-#
-# - copy isSingleValuedField from meresco.solr
-# - add more prefixes for special fields
-# - add more tests for transaction like stuff

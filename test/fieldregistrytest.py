@@ -27,10 +27,10 @@ from seecr.test import SeecrTestCase
 from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE
 from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.document import StringField, TextField
+from meresco.lucene import DrilldownField
 
 
 class FieldRegistryTest(SeecrTestCase):
-
     def testDefault(self):
         registry = FieldRegistry()
         field = registry.createField('__id__', 'id:1')
@@ -65,4 +65,14 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(registry.isUntokenized('fieldname'))
         registry.register('fieldname', TextField.TYPE_NOT_STORED)
         self.assertFalse(registry.isUntokenized('fieldname'))
+
+    def testDrilldownFields(self):
+        drilldownFields = [DrilldownField(name='aap'), DrilldownField(name='noot', hierarchical=True)]
+        registry = FieldRegistry(drilldownFields=drilldownFields)
+        self.assertEquals(drilldownFields, registry.drilldownFields)
+        self.assertTrue(registry.isDrilldownField('aap'))
+        self.assertTrue(registry.isDrilldownField('noot'))
+
+
+
 

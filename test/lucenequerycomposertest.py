@@ -36,6 +36,8 @@ from org.apache.lucene.index import Term
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 from meresco.lucene.fieldregistry import FieldRegistry
 from org.apache.lucene.document import StringField
+from meresco.lucene import DrilldownField
+from org.apache.lucene.facet import DrillDownQuery
 
 
 class LuceneQueryComposerTest(TestCase):
@@ -207,6 +209,12 @@ class LuceneQueryComposerTest(TestCase):
         self.assertConversion(TermRangeQuery.newStringRange('field', 'value', None, True, False), 'field >= value')
         self.assertConversion(TermRangeQuery.newStringRange('field', None, 'value', False, False), 'field < value')
         self.assertConversion(TermRangeQuery.newStringRange('field', None, 'value', False, True), 'field <= value')
+
+    def testDrilldownFieldQuery(self):
+        fieldRegistry = FieldRegistry([DrilldownField('field')])
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], fieldRegistry=fieldRegistry)
+        self.assertConversion(TermQuery(DrillDownQuery.term("$facets", "field", "value")), "field = value")
+
 
     def assertConversion(self, expected, input):
         result = self.composer.compose(parseCql(input))

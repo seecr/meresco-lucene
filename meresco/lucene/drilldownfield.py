@@ -28,3 +28,9 @@ class DrilldownField(object):
         self.name = name
         self.hierarchical = hierarchical
         self.multiValued = multiValued
+
+    def __eq__(self, o):
+        return o.__class__ is self.__class__ and \
+            o.name == self.name and \
+            o.hierarchical == self.hierarchical and \
+            o.multiValued == self.multiValued

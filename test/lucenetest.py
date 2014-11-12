@@ -59,19 +59,20 @@ class LuceneTest(SeecrTestCase):
         self._javaObjects = self._getJavaObjects()
         self._reactor = CallTrace('reactor')
         self.lucene = Lucene(
-                join(self.tempdir, 'lucene'),
-                commitCount=1,
-                reactor=self._reactor,
-                multithreaded=self._multithreaded,
+            join(self.tempdir, 'lucene'),
+            commitCount=1,
+            reactor=self._reactor,
+            multithreaded=self._multithreaded,
+            fieldRegistry=FieldRegistry(
                 drilldownFields=[
                     DrilldownField(name='field1'),
                     DrilldownField(name='field2'),
                     DrilldownField('field3'),
                     DrilldownField('fieldHier', hierarchical=True),
                     DrilldownField('cat'),
-                ],
-                fieldRegistry=FieldRegistry()
+                ]
             )
+        )
 
     def tearDown(self):
         try:
@@ -557,7 +558,7 @@ class LuceneTest(SeecrTestCase):
 class LuceneSingleThreadedTest(LuceneTest):
     def __init__(self, *args):
         super(LuceneTest, self).__init__(*args)
-        self._multithreaded = True
+        self._multithreaded = False
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

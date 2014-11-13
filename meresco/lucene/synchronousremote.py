@@ -43,6 +43,9 @@ class SynchronousRemote(object):
     def fieldnames(self, **kwargs):
         return returnValueFromGenerator(self._observable.any.unknown(message='fieldnames', **kwargs))
 
+    def drilldownFieldnames(self, **kwargs):
+        return returnValueFromGenerator(self._observable.any.unknown(message='drilldownFieldnames', **kwargs))
+
     def executeQuery(self, *args, **kwargs):
         if len(args) == 1:
             kwargs['cqlAbstractSyntaxTree'] = args[0]

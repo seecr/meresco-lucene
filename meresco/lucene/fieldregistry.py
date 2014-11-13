@@ -27,8 +27,6 @@ from org.apache.lucene.document import TextField, StringField, NumericDocValuesF
 from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.facet import FacetsConfig, DrillDownQuery
 
-from drilldownfield import DrilldownField
-
 
 IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
@@ -42,6 +40,7 @@ class FieldRegistry(object):
             IDFIELD: _FieldDefinition(type=StringField.TYPE_STORED),
         }
         self._drilldownFieldNames = set()
+        self._hierarchicalDrilldownFieldNames = set()
         self.facetsConfig = FacetsConfig()
         for field in (drilldownFields or []):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued)
@@ -63,11 +62,16 @@ class FieldRegistry(object):
 
     def registerDrilldownField(self, fieldname, hierarchical=False, multiValued=True):
         self._drilldownFieldNames.add(fieldname)
+        if hierarchical:
+            self._hierarchicalDrilldownFieldNames.add(fieldname)
         self.facetsConfig.setMultiValued(fieldname, multiValued)
         self.facetsConfig.setHierarchical(fieldname, hierarchical)
 
     def isDrilldownField(self, fieldname):
         return fieldname in self._drilldownFieldNames
+
+    def isHierarchicalDrilldown(self, fieldname):
+        return fieldname in self._hierarchicalDrilldownFieldNames
 
     def makeDrilldownTerm(self, fieldname, path):
         indexFieldName = self.facetsConfig.getDimConfig(fieldname).indexFieldName;

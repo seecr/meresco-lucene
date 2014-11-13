@@ -74,6 +74,9 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(registry.isDrilldownField('noot'))
         self.assertTrue(registry.isDrilldownField('mies'))
         self.assertFalse(registry.isDrilldownField('vuur'))
+        self.assertFalse(registry.isHierarchicalDrilldown('aap'))
+        self.assertTrue(registry.isHierarchicalDrilldown('noot'))
+
         facetsConfig = registry.facetsConfig
         dimConfigs = facetsConfig.getDimConfigs()
         self.assertEquals(set(['aap', 'noot', 'mies']), set(dimConfigs.keySet()))

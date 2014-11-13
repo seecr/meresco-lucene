@@ -105,4 +105,4 @@ class LuceneRemoteService(Observable):
     def _allCoreInfo(self):
         return list(compose(self.all.coreInfo()))
 
-_ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames', 'executeComposedQuery']
+_ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames', 'drilldownFieldnames', 'executeComposedQuery']

@@ -51,7 +51,7 @@ import org.apache.lucene.util.PForDeltaDocIdSet;
  *
  * @author erik@seecr.nl
  * */
-public class CachingKeyCollector extends KeyCollector {
+public class CachingKeyCollector extends KeyCollector implements HasKeySetCache {
 
     /**
      * Caches bitsets (containing keys) for specific readers within one index.
@@ -77,7 +77,7 @@ public class CachingKeyCollector extends KeyCollector {
         this.query = query;
     }
 
-        /**
+    /**
      * Get a BitSet containing all the collected keys. This returns a new
      * BitSet. Use {@link getFilter} with
      * {@link org.apache.lucene.queries.BooleanFilter} or

@@ -26,11 +26,6 @@
 
 set -o errexit
 
-if ! javac -version 2>&1 | grep 1.7 > /dev/null; then
-    echo "javac should be java 7"
-    exit 1
-fi
-
 mydir=$(cd $(dirname $0); pwd)
 buildDir=$mydir/build
 libDir=$1
@@ -43,8 +38,10 @@ mkdir $buildDir
 rm -rf $libDir
 mkdir -p $libDir
 
+javac=/usr/lib/jvm/java-1.7.0-openjdk.x86_64/bin/javac
 luceneJarDir=/usr/lib64/python2.6/site-packages/lucene
 if [ -f /etc/debian_version ]; then
+    javac=/usr/lib/jvm/java-7-openjdk-amd64/bin/javac
     luceneJarDir=/usr/lib/python2.7/dist-packages/lucene
 fi
 
@@ -52,7 +49,7 @@ LUCENEVERSION=4.10.1
 
 classpath=${luceneJarDir}/lucene-core-$LUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$LUCENEVERSION.jar:${luceneJarDir}/lucene-facet-$LUCENEVERSION.jar:${luceneJarDir}/lucene-queries-$LUCENEVERSION.jar
 
-javac -cp ${classpath} -d ${buildDir} `find org -name "*.java"`
+${javac} -cp ${classpath} -d ${buildDir} `find org -name "*.java"`
 (cd $buildDir; jar -c org > $buildDir/meresco-lucene.jar)
 
 python -m jcc.__main__ \

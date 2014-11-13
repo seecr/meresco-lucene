@@ -28,14 +28,13 @@ package org.meresco.lucene.search.join;
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
 import org.apache.lucene.search.Query;
 
-public class KeyCollectorCache {
 
+public class KeyCollectorCache {
     /**
      * Caches KeyCollectors for (Query,keyName) pairs. KeyCollectors can become
      * large, tens of MB.
      */
-    private static LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>> queryCache = new LRUHashMap<Query, LRUHashMap<String, CachingKeyCollector>>(20);
-    private static LRUHashMap<Query, LRUHashMap<String, CachingKeySuperCollector>> querySuperCache = new LRUHashMap<Query, LRUHashMap<String, CachingKeySuperCollector>>(20);
+    private static LRUHashMap<Query, LRUHashMap<String, HasKeySetCache>> queryCache = new LRUHashMap<Query, LRUHashMap<String, HasKeySetCache>>(20);
 
     /**
      * Create a collector that collects keys from a field. It caches the keys on
@@ -48,31 +47,21 @@ public class KeyCollectorCache {
      *            The name of the field that contains the keys. This field must
      *            refer to a NumericDocValues field containing integer keys.
      */
-    public static CachingKeyCollector create(Query query, String keyName) {
-        LRUHashMap<String, CachingKeyCollector> collectorCache = KeyCollectorCache.queryCache.get(query);
+    public static HasKeySetCache create(Query query, String keyName, boolean multithreaded) {
+        LRUHashMap<String, HasKeySetCache> collectorCache = KeyCollectorCache.queryCache.get(query);
         if (collectorCache == null) {
-            collectorCache = new LRUHashMap<String, CachingKeyCollector>(5);
+            collectorCache = new LRUHashMap<String, HasKeySetCache>(5);
             KeyCollectorCache.queryCache.put(query, collectorCache);
         }
 
-        CachingKeyCollector keyCollector = collectorCache.get(keyName);
+        HasKeySetCache keyCollector = collectorCache.get(keyName);
         if (keyCollector == null) {
-            keyCollector = new CachingKeyCollector(query, keyName);
-            collectorCache.put(keyName, keyCollector);
-        }
-        return keyCollector;
-    }
-
-    public static CachingKeySuperCollector createSuper(Query query, String keyName) {
-        LRUHashMap<String, CachingKeySuperCollector> collectorCache = KeyCollectorCache.querySuperCache.get(query);
-        if (collectorCache == null) {
-            collectorCache = new LRUHashMap<String, CachingKeySuperCollector>(5);
-            KeyCollectorCache.querySuperCache.put(query, collectorCache);
-        }
-
-        CachingKeySuperCollector keyCollector = collectorCache.get(keyName);
-        if (keyCollector == null) {
-            keyCollector = new CachingKeySuperCollector(query, keyName);
+        	if (multithreaded) {
+        		keyCollector = new CachingKeySuperCollector(query, keyName);
+        	}
+        	else {
+        		keyCollector = new CachingKeyCollector(query, keyName);
+        	}
             collectorCache.put(keyName, keyCollector);
         }
         return keyCollector;
@@ -80,13 +69,12 @@ public class KeyCollectorCache {
 
     public static void clear() {
         KeyCollectorCache.queryCache.clear();
-        KeyCollectorCache.querySuperCache.clear();
     }
 
     public static void printStats() {
         System.out.println("KeyCollectorCache. Entries: " + queryCache.size());
-        for (LRUHashMap<String, CachingKeyCollector> collectorCache : queryCache.values()) {
-            for (CachingKeyCollector keyCollector : collectorCache.values()) {
+        for (LRUHashMap<String, HasKeySetCache> collectorCache : queryCache.values()) {
+            for (HasKeySetCache keyCollector : collectorCache.values()) {
                 keyCollector.printKeySetCacheSize();
             }
         }

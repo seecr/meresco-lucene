@@ -57,7 +57,7 @@ public class KeySuperCollector extends SuperCollector<KeySubCollector> {
         this.currentKeySet = currentKeySet;
     }
 
-    public DocIdSet getCollectedKeys() throws IOException {
+    public DocIdSet getCollectedKeys() {
         return this.currentKeySet;
     }
 }

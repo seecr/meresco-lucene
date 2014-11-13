@@ -69,10 +69,15 @@ class FieldRegistryTest(SeecrTestCase):
     def testDrilldownFields(self):
         drilldownFields = [DrilldownField(name='aap'), DrilldownField(name='noot', hierarchical=True)]
         registry = FieldRegistry(drilldownFields=drilldownFields)
-        self.assertEquals(drilldownFields, registry.drilldownFields)
+        registry.registerDrilldownField(fieldname='mies', multiValued=False)
         self.assertTrue(registry.isDrilldownField('aap'))
         self.assertTrue(registry.isDrilldownField('noot'))
-
-
-
-
+        self.assertTrue(registry.isDrilldownField('mies'))
+        self.assertFalse(registry.isDrilldownField('vuur'))
+        facetsConfig = registry.facetsConfig
+        dimConfigs = facetsConfig.getDimConfigs()
+        self.assertEquals(set(['aap', 'noot', 'mies']), set(dimConfigs.keySet()))
+        self.assertFalse(dimConfigs.get('aap').hierarchical)
+        self.assertTrue(dimConfigs.get('noot').hierarchical)
+        self.assertTrue(dimConfigs.get('noot').multiValued)
+        self.assertFalse(dimConfigs.get('mies').multiValued)

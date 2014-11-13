@@ -151,7 +151,7 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
 
     def _createTerm(self, field, value):
         if self._fieldRegistry.isDrilldownField(field):
-            return self._fieldRegistry.makeDrilldownTerm(field, value)
+            return self._fieldRegistry.makeDrilldownTerm(field, value.split('>'))
         return Term(field, value)
 
 

@@ -107,8 +107,11 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         consume(fields2LuceneDoc.commit('unused'))
 
         document = observer.calledMethods[0].kwargs['document']
-        facetsfields = [FacetField.cast_(f) for f in document.getFields() if FacetField.instance_(f)]
-        self.assertEquals(6, len(facetsfields))
+        searchFields = [f for f in document.getFields() if not FacetField.instance_(f)]
+        self.assertEquals(['field1', 'sorted.field3', 'untokenized.field7'], [f.name() for f in searchFields])
+
+        facetsFields = [FacetField.cast_(f) for f in document.getFields() if FacetField.instance_(f)]
+        self.assertEquals(6, len(facetsFields))
         self.assertEquals([
                 ('untokenized.field8', ['grandparent', 'parent', 'child']),
                 ('untokenized.field8', ['parent2', 'child']),
@@ -116,8 +119,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                 ('untokenized.field4', ['value4']),
                 ('untokenized.field5', ['value5']),
                 ('untokenized.field5', ['value6']),
-            ], [(f.dim, list(f.path)) for f in facetsfields])
-        self.assertEquals(['grandparent', 'grandparent/parent', 'grandparent/parent/child', 'parent2', 'parent2/child'], [f.stringValue() for f in document.getFields('untokenized.field8')])
+            ], [(f.dim, list(f.path)) for f in facetsFields])  # Note: a FacetField doesn't have a name
 
     def testAddFacetField(self):
         fields2LuceneDoc = Fields2LuceneDoc('tsname',
@@ -133,8 +135,8 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc.addFacetField('untokenized.field', 'untokenized value')
         consume(fields2LuceneDoc.commit('unused'))
         document = observer.calledMethods[0].kwargs['document']
-        facetsfields = [FacetField.cast_(f) for f in document.getFields() if FacetField.instance_(f)]
-        self.assertEquals(1, len(facetsfields))
+        facetsFields = [FacetField.cast_(f) for f in document.getFields() if FacetField.instance_(f)]
+        self.assertEquals(1, len(facetsFields))
 
     def testAddDocument(self):
         fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry())

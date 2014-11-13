@@ -156,7 +156,7 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(set([('parent0', 50), ('parent1', 50)]), set([(t['term'], t['count']) for t in drilldown['terms']]))
 
     def testFieldHierarchicalSearch(self):
-        response = self.doSruQuery('untokenized.fieldHier exact "parent0/child1/grandchild2"', facet='untokenized.fieldHier', drilldownFormat='json')
+        response = self.doSruQuery('untokenized.fieldHier exact "parent0>child1>grandchild2"', facet='untokenized.fieldHier', drilldownFormat='json')
         self.assertEquals('3', xpathFirst(response, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))
 
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru', drilldownFormat='xml'):

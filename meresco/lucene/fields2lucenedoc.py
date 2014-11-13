@@ -70,24 +70,19 @@ class Fields2LuceneDoc(Observable):
     def _createDocument(self, fields, facet_fields=None):
         facet_fields = facet_fields or {}
         doc = Document()
-        for field, values in fields.items():
-            for value in values:
-                if field.startswith(KEY_PREFIX):
-                    value = self.call.numerateTerm(value)
-                if field == IDFIELD:
-                    raise ValueError("Field '%s' is protected and created by Lucene(..)")
-                else:
-                    if hasattr(value, 'extend'):
-                        for v in ['/'.join(value[:i]) for i in xrange(1,len(value)+1)]:
-                            doc.add(self._fieldRegistry.createField(field, v))
-                    else:
-                        doc.add(self._fieldRegistry.createField(field, value))
-        for field, values in fields.items() + facet_fields.items():
+        for field, values in (fields.items() + facet_fields.items()):
             if self._fieldRegistry.isDrilldownField(field):
-                for v in values:
-                    if hasattr(v, 'extend'):
-                        path = [str(category) for category in v]
+                for value in values:
+                    if hasattr(value, 'extend'):
+                        path = [str(category) for category in value]
                     else:
-                        path = [str(v)]
+                        path = [str(value)]
                     doc.add(FacetField(field, path))
+            else:
+                for value in values:
+                    if field == IDFIELD:
+                        raise ValueError("Field '%s' is protected and created by Meresco Lucene" % IDFIELD)
+                    if field.startswith(KEY_PREFIX):
+                        value = self.call.numerateTerm(value)
+                    doc.add(self._fieldRegistry.createField(field, value))
         return doc

@@ -69,7 +69,7 @@ public class CachingKeyCollector extends KeyCollector implements HasKeySetCache 
 
     private FixedBitSet finalKeySet = null;
 
-    public Query query;
+    private Query query;
     private Object readerKey;
 
     public CachingKeyCollector(Query query, String keyName) {
@@ -77,6 +77,10 @@ public class CachingKeyCollector extends KeyCollector implements HasKeySetCache 
         this.query = query;
     }
 
+    public Query getQuery() {
+    	return this.query;
+    }
+    
     /**
      * Get a BitSet containing all the collected keys. This returns a new
      * BitSet. Use {@link getFilter} with

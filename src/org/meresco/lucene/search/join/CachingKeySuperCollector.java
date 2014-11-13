@@ -42,7 +42,7 @@ import org.apache.lucene.util.PForDeltaDocIdSet;
 
 
 public class CachingKeySuperCollector extends KeySuperCollector implements HasKeySetCache {
-    protected final Query query;
+    private final Query query;
     Map<Object, DocIdSet> keySetCache = new WeakHashMap<Object, DocIdSet>();
     FixedBitSet finalKeySet = null;
 
@@ -85,6 +85,10 @@ public class CachingKeySuperCollector extends KeySuperCollector implements HasKe
         }
     }
 
+    public Query getQuery() {
+    	return this.query;
+    }
+    
     @Override
     public DocIdSet getCollectedKeys() {
         return this.finalKeySet;

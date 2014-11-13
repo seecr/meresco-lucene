@@ -30,31 +30,22 @@ import java.util.WeakHashMap;
 
 import org.apache.lucene.facet.taxonomy.LRUHashMap;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Query;
 import org.meresco.lucene.queries.KeyFilter;
 
-public class KeyFilterCache {
 
+public class KeyFilterCache {
     private static WeakHashMap<DocIdSet, LRUHashMap<String, KeyFilter>> cache = new WeakHashMap<DocIdSet, LRUHashMap<String, KeyFilter>>();
 
-    public static KeyFilter create(CachingKeyCollector keyCollector, String keyName) throws IOException {
-        return createFilter(keyCollector.getCollectedKeys(), keyCollector.query, keyName);
-    }
-
-    public static KeyFilter create(CachingKeySuperCollector keyCollector, String keyName) throws IOException {
-        return createFilter(keyCollector.getCollectedKeys(), keyCollector.query, keyName);
-    }
-
-    private static KeyFilter createFilter(DocIdSet keySet, Query query, String keyName) throws IOException {
-        LRUHashMap<String, KeyFilter> keyFilterCache = KeyFilterCache.cache.get(keySet);
-
+    public static KeyFilter create(HasKeySetCache keyCollector, String keyName) throws IOException {
+    	DocIdSet docIdSet = keyCollector.getCollectedKeys();
+        LRUHashMap<String, KeyFilter> keyFilterCache = KeyFilterCache.cache.get(docIdSet);
         if (keyFilterCache == null) {
             keyFilterCache = new LRUHashMap<String, KeyFilter>(5);
-            KeyFilterCache.cache.put(keySet, keyFilterCache);
+            KeyFilterCache.cache.put(docIdSet, keyFilterCache);
         }
         KeyFilter keyFilter = keyFilterCache.get(keyName);
         if (keyFilter == null) {
-            keyFilter = new KeyFilter(keySet, keyName, query);
+            keyFilter = new KeyFilter(keyCollector.getCollectedKeys(), keyName, keyCollector.getQuery());
             keyFilterCache.put(keyName, keyFilter);
         }
         return keyFilter;

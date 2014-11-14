@@ -52,7 +52,6 @@ import org.apache.lucene.util.PForDeltaDocIdSet;
  * @author erik@seecr.nl
  * */
 public class CachingKeyCollector extends KeyCollector implements HasKeySetCache {
-
     /**
      * Caches bitsets (containing keys) for specific readers within one index.
      * Entries disappear when readers are closed and garbage collected. Note
@@ -71,6 +70,7 @@ public class CachingKeyCollector extends KeyCollector implements HasKeySetCache 
 
     private Query query;
     private Object readerKey;
+    private Object cacheKey = new Object();
 
     public CachingKeyCollector(Query query, String keyName) {
         super(keyName);
@@ -115,6 +115,7 @@ public class CachingKeyCollector extends KeyCollector implements HasKeySetCache 
         }
         super.setNextReader(context);
         this.readerKey = currentReaderKey;
+        this.cacheKey = new Object();
         this.finalKeySet = null;
         this.currentKeySet = new OpenBitSet();
     }
@@ -122,12 +123,6 @@ public class CachingKeyCollector extends KeyCollector implements HasKeySetCache 
     public void printKeySetCacheSize() {
         int size = 0;
         for (DocIdSet b : this.keySetCache.values()) {
-//            long card = ((PForDeltaDocIdSet) b).cardinality();
-//            if (card == 0) {
-//                System.out.println("    Bytes (no docs): " + b.ramBytesUsed());
-//            } else {
-//                System.out.println("    Bytes per doc: " + b.ramBytesUsed() / card);
-//            }
             size += b.ramBytesUsed();
         }
         System.out.println("KeyCollector: query: " + this.query + ", cache: " + this.keySetCache.size() + " entries, " + (size / 1024 / 1024) + " MB");
@@ -142,4 +137,14 @@ public class CachingKeyCollector extends KeyCollector implements HasKeySetCache 
             this.readerKey = null;
         }
     }
+
+	@Override
+	public Object getCacheKey() {
+		return this.cacheKey;
+	}
+
+	@Override
+	public void cleanupPreviousCollect() {
+		this.seen.clear();
+	}
 }

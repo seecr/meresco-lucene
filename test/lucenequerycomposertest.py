@@ -34,7 +34,7 @@ from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, Pre
 from org.apache.lucene.index import Term
 
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
-from meresco.lucene.fieldregistry import FieldRegistry
+from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE
 from org.apache.lucene.document import StringField
 from meresco.lucene import DrilldownField
 from org.apache.lucene.facet import DrillDownQuery
@@ -215,6 +215,13 @@ class LuceneQueryComposerTest(TestCase):
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], fieldRegistry=fieldRegistry)
         self.assertConversion(TermQuery(DrillDownQuery.term("$facets", "field", "value")), "field = value")
 
+    def testExcludeUnqualifiedFieldForWhichNoPhraseQueryIsPossibleInCaseOfPhraseQuery(self):
+        fieldRegistry = FieldRegistry()
+        fieldRegistry.register('noTermFreqField', NO_TERMS_FREQUENCY_FIELDTYPE)
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0), ('noTermFreqField', 2.0)], fieldRegistry=fieldRegistry)
+        expected = PhraseQuery()
+        expected.add(Term("unqualified", "phrase query"))
+        self.assertConversion(expected, '"phrase query"')
 
     def assertConversion(self, expected, input):
         result = self.composer.compose(parseCql(input))

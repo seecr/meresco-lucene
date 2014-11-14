@@ -76,15 +76,18 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
             (unqualifiedRhs,) = results
             if unqualifiedRhs == '*':
                 return MatchAllDocsQuery()
-            if len(self._unqualifiedTermFields) == 1:
-                fieldname, boost = self._unqualifiedTermFields[0]
-                query = self._termOrPhraseQuery(fieldname, unqualifiedRhs)
-                query.setBoost(boost)
+            subQueries = []
+            for fieldname, boost in self._unqualifiedTermFields:
+                subQuery = self._termOrPhraseQuery(fieldname, unqualifiedRhs)
+                if isinstance(subQuery, PhraseQuery) and not self._fieldRegistry.phraseQueryPossible(fieldname):
+                    continue
+                subQuery.setBoost(boost)
+                subQueries.append(subQuery)
+            if len(subQueries) == 1:
+                query = subQueries[0]
             else:
                 query = BooleanQuery()
-                for fieldname, boost in self._unqualifiedTermFields:
-                    subQuery = self._termOrPhraseQuery(fieldname, unqualifiedRhs)
-                    subQuery.setBoost(boost)
+                for subQuery in subQueries:
                     query.add(subQuery, BooleanClause.Occur.SHOULD)
             return query
         elif firstChild == 'INDEX':

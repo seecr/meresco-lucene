@@ -64,6 +64,7 @@ public class KeyCollectorCache {
         	}
             collectorCache.put(keyName, keyCollector);
         }
+        keyCollector.cleanupPreviousCollect();
         return keyCollector;
     }
 
@@ -71,6 +72,10 @@ public class KeyCollectorCache {
         KeyCollectorCache.queryCache.clear();
     }
 
+	public static int size() {
+		return KeyCollectorCache.queryCache.size();
+	}
+    
     public static void printStats() {
         System.out.println("KeyCollectorCache. Entries: " + queryCache.size());
         for (LRUHashMap<String, HasKeySetCache> collectorCache : queryCache.values()) {

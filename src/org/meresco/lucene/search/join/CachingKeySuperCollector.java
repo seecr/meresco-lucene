@@ -42,10 +42,11 @@ import org.apache.lucene.util.PForDeltaDocIdSet;
 
 
 public class CachingKeySuperCollector extends KeySuperCollector implements HasKeySetCache {
-    private final Query query;
     Map<Object, DocIdSet> keySetCache = new WeakHashMap<Object, DocIdSet>();
-    FixedBitSet finalKeySet = null;
-
+    private FixedBitSet finalKeySet = null;
+    private Object cacheKey = new Object();
+    private final Query query;
+    
     public CachingKeySuperCollector(Query query, String keyName) {
         super(keyName);
         this.query = query;
@@ -101,6 +102,21 @@ public class CachingKeySuperCollector extends KeySuperCollector implements HasKe
         }
         System.out.println("KeyCollector: query: " + this.query + ", cache: " + this.keySetCache.size() + " entries, " + (size / 1024 / 1024) + " MB");
     }
+
+	@Override
+	public Object getCacheKey() {
+		return this.cacheKey;
+	}
+	
+	void reset() {
+		this.cacheKey = new Object();
+		this.finalKeySet = null;
+	}
+
+	@Override
+	public void cleanupPreviousCollect() {
+		// Nothing to do
+	}
 }
 
 
@@ -126,7 +142,7 @@ class CachingKeySubCollector extends KeySubCollector {
         }
         super.setNextReader(context);
         this.readerKey = currentReaderKey;
-        this.parent.finalKeySet = null;
+        this.parent.reset();
         this.currentKeySet = new OpenBitSet();
     }
 

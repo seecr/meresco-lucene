@@ -34,33 +34,38 @@ import org.meresco.lucene.queries.KeyFilter;
 
 
 public class KeyFilterCache {
-    private static WeakHashMap<DocIdSet, LRUHashMap<String, KeyFilter>> cache = new WeakHashMap<DocIdSet, LRUHashMap<String, KeyFilter>>();
+	private static WeakHashMap<Object, LRUHashMap<String, KeyFilter>> cache = new WeakHashMap<Object, LRUHashMap<String, KeyFilter>>();
 
-    public static KeyFilter create(HasKeySetCache keyCollector, String keyName) throws IOException {
-    	DocIdSet docIdSet = keyCollector.getCollectedKeys();
-        LRUHashMap<String, KeyFilter> keyFilterCache = KeyFilterCache.cache.get(docIdSet);
-        if (keyFilterCache == null) {
-            keyFilterCache = new LRUHashMap<String, KeyFilter>(5);
-            KeyFilterCache.cache.put(docIdSet, keyFilterCache);
-        }
-        KeyFilter keyFilter = keyFilterCache.get(keyName);
-        if (keyFilter == null) {
-            keyFilter = new KeyFilter(keyCollector.getCollectedKeys(), keyName, keyCollector.getQuery());
-            keyFilterCache.put(keyName, keyFilter);
-        }
-        return keyFilter;
-    }
+	public static KeyFilter create(HasKeySetCache keyCollector, String keyName)
+			throws IOException {
+		Object cacheKey = keyCollector.getCacheKey();
+		LRUHashMap<String, KeyFilter> keyFilterCache = KeyFilterCache.cache.get(cacheKey);
+		if (keyFilterCache == null) {
+			keyFilterCache = new LRUHashMap<String, KeyFilter>(5);
+			KeyFilterCache.cache.put(cacheKey, keyFilterCache);
+		}
+		KeyFilter keyFilter = keyFilterCache.get(keyName);
+		if (keyFilter == null) {
+			keyFilter = new KeyFilter(keyCollector.getCollectedKeys(), keyName, keyCollector.getQuery());
+			keyFilterCache.put(keyName, keyFilter);
+		}
+		return keyFilter;
+	}
 
-     public static void clear() {
-         KeyFilterCache.cache.clear();
-     }
+	public static void clear() {
+		KeyFilterCache.cache.clear();
+	}
+	
+	public static int size() {
+		return cache.size();
+	}
 
-    public static void printStats() {
-        System.out.println("KeyFilterCache. Entries: " + cache.size());
-        for (LRUHashMap<String, KeyFilter> filterCache : cache.values()) {
-            for (KeyFilter keyFilterCache : filterCache.values()) {
-                keyFilterCache.printDocSetCacheSize();
-            }
-        }
-    }
+	public static void printStats() {
+		System.out.println("KeyFilterCache. Entries: " + size());
+		for (LRUHashMap<String, KeyFilter> filterCache : cache.values()) {
+			for (KeyFilter keyFilterCache : filterCache.values()) {
+				keyFilterCache.printDocSetCacheSize();
+			}
+		}
+	}
 }

@@ -32,13 +32,17 @@ from org.apache.lucene.search import MatchAllDocsQuery
 from weightless.core import be, compose
 from meresco.core import Observable
 
+from java.lang import System
+
 from meresco.lucene import Lucene, TermFrequencySimilarity
 from meresco.lucene.fieldregistry import KEY_PREFIX, FieldRegistry
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.composedquery import ComposedQuery
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
+from org.meresco.lucene.search.join import KeyFilterCache, KeyCollectorCache
 
 from seecr.test import SeecrTestCase, CallTrace
+from seecr.test.utils import sleepWheel
 from seecr.utils.generatorutils import returnValueFromGenerator, consume
 
 from lucenetest import createDocument
@@ -51,6 +55,8 @@ class MultiLuceneTest(SeecrTestCase):
 
     def setUp(self):
         SeecrTestCase.setUp(self)
+        KeyCollectorCache.clear()
+        KeyFilterCache.clear()
         self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
         self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
         self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1, similarity=TermFrequencySimilarity(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
@@ -143,6 +149,19 @@ class MultiLuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(4, result.total)
         self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
+
+    def testMultipleJoinQueriesKeepsCachesWithinMaxSize(self):
+        for i in xrange(25):
+            self.addDocument(self.luceneB, identifier=str(i), keys=[('X', i)], fields=[('Y', str(i))])
+        for i in xrange(25):
+            q = ComposedQuery('coreA', query=MatchAllDocsQuery())
+            q.setCoreQuery(core='coreB', query=luceneQueryFromCql('Y=%s' % i))
+            q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'X'))
+            ignoredResult = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        System.gc()
+        sleepWheel(0.5)
+        self.assertTrue(0 < KeyFilterCache.size() <= 20, KeyFilterCache.size())
+        self.assertTrue(0 < KeyCollectorCache.size() <= 20, KeyCollectorCache.size())
 
     def testJoinQueryWithFilters(self):
         q = ComposedQuery('coreA')
@@ -577,7 +596,7 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
-        self.assertTrue(result.queryTime < 5)
+        self.assertTrue(result.queryTime < 5, result.queryTime)
         self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 80 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ']), self.hitIds(result.hits))
@@ -593,7 +612,7 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
-        self.assertTrue(result.queryTime < 5)
+        self.assertTrue(result.queryTime < 5, result.queryTime)
         self.addDocument(self.luceneB, identifier='B-N>A-MU', keys=[('B', 60 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
@@ -728,10 +747,12 @@ class MultiLuceneTest(SeecrTestCase):
             document=createDocument([(KEY_PREFIX + keyField, keyValue) for (keyField, keyValue) in keys]+fields, facets=[('cat_'+field, value) for field, value in fields]),
             ))
 
+
 class MultiLuceneSingleThreadedTest(MultiLuceneTest):
     def __init__(self, *args, **kwargs):
         super(MultiLuceneSingleThreadedTest, self).__init__(*args, **kwargs)
         self._multithreaded = False
+
 
 def luceneQueryFromCql(cqlString):
     return LuceneQueryComposer([], fieldRegistry=FieldRegistry()).compose(parseCql(cqlString))

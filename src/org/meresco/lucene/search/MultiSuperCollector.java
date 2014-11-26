@@ -40,6 +40,10 @@ public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
         this.collectors = collectors.toArray(new SuperCollector[0]);
     }
 
+    public MultiSuperCollector(SuperCollector<?>... c) {
+        this.collectors = c;
+    }
+
     @Override
     protected MultiSubCollector createSubCollector() throws IOException {
         SubCollector[] subCollectors = new SubCollector[this.collectors.length];

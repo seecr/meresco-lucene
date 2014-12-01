@@ -26,7 +26,7 @@
 from seecr.test import SeecrTestCase
 from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE
 from org.apache.lucene.index import FieldInfo
-from org.apache.lucene.document import StringField, TextField, Document
+from org.apache.lucene.document import StringField, TextField
 from meresco.lucene import DrilldownField
 
 
@@ -42,9 +42,10 @@ class FieldRegistryTest(SeecrTestCase):
     def testSpecificField(self):
         registry = FieldRegistry()
         field = registry.createField('fieldname', 'value')
-        self.assertTrue(field.fieldType().tokenized())
-        registry.register('fieldname', StringField.TYPE_NOT_STORED, create=lambda fieldname, value: 'NEW FIELD')
-        self.assertEquals('NEW FIELD', registry.createField('fieldname', 'value'))
+        self.assertFalse(field.fieldType().stored())
+        registry.register('fieldname', StringField.TYPE_STORED)
+        field = registry.createField('fieldname', 'value')
+        self.assertTrue(field.fieldType().stored())
 
     def testNoTermsFreqField(self):
         registry = FieldRegistry()
@@ -95,12 +96,3 @@ class FieldRegistryTest(SeecrTestCase):
         newField2 = registry.createField('fieldname', 'newvalue', mayReUse=False)
         self.assertEquals("newvalue", newField2.stringValue())
         self.assertNotEqual(newField, newField2)
-
-
-    def testDocumentWithReusedFields(self):
-        doc = Document()
-        registry=FieldRegistry()
-        doc.add(registry.createField('name', 'name'))
-        doc.add(registry.createField('title', 'one'))
-        doc.add(registry.createField('title', 'two'))
-        self.assertEquals([], [f.stringValue() for f in doc.getFields()])

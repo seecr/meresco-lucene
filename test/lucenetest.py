@@ -87,7 +87,12 @@ class LuceneTest(SeecrTestCase):
 
     def _getJavaObjects(self):
         refs = VM._dumpRefs(classes=True)
-        return set([(c, refs[c]) for c in refs.keys() if c != 'class java.lang.Class'])
+        return set(
+                [(c, refs[c])
+                for c in refs.keys()
+                if c != 'class java.lang.Class' and \
+                    c != 'class org.apache.lucene.document.Field' # Fields are kept in FieldRegistry for reusing
+            ])
 
     def hitIds(self, hits):
         return [hit.id for hit in hits]

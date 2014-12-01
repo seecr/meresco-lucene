@@ -37,7 +37,7 @@ NUMERIC_PREFIX = "__numeric__."
 class FieldRegistry(object):
     def __init__(self, drilldownFields=None):
         self._fieldDefinitions = {
-            IDFIELD: _FieldDefinition(type=StringField.TYPE_STORED),
+            IDFIELD: _FieldDefinition.define(type=StringField.TYPE_STORED, name=IDFIELD),
         }
         self._drilldownFieldNames = set()
         self._hierarchicalDrilldownFieldNames = set()
@@ -45,14 +45,14 @@ class FieldRegistry(object):
         for field in (drilldownFields or []):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued)
 
-    def createField(self, fieldname, value):
-        return self._getFieldDefinition(fieldname).create(fieldname, value)
+    def createField(self, fieldname, value, mayReUse=False):
+        return self._getFieldDefinition(fieldname).createField(value, mayReUse=mayReUse)
 
     def createIdField(self, value):
         return self.createField(IDFIELD, value)
 
-    def register(self, fieldname, fieldType, create=None):
-        self._fieldDefinitions[fieldname] = _FieldDefinition(type=fieldType, create=create)
+    def register(self, fieldname, fieldType):
+        self._fieldDefinitions[fieldname] = _FieldDefinition.define(type=fieldType, name=fieldname)
 
     def phraseQueryPossible(self, fieldname):
         return self._getFieldDefinition(fieldname).phraseQueryPossible
@@ -81,29 +81,51 @@ class FieldRegistry(object):
         fieldDefinition = self._fieldDefinitions.get(fieldname)
         if fieldDefinition is not None:
             return fieldDefinition
+        fieldDefinitionCreator = TEXTFIELD
         if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
-            return STRINGFIELD
+            fieldDefinitionCreator = STRINGFIELD
         if fieldname.startswith(KEY_PREFIX) or fieldname.startswith(NUMERIC_PREFIX):
-            return NUMERICFIELD
-        return TEXTFIELD
-
+            fieldDefinitionCreator = NUMERICFIELD
+        fieldDefinition = fieldDefinitionCreator(name=fieldname)
+        self._fieldDefinitions[fieldname] = fieldDefinition
+        return fieldDefinition
 
 class _FieldDefinition(object):
-    def __init__(self, type, create=None):
+    def __init__(self, type, field, update, create):
         self.type = type
-        self.create = create
-        if self.create is None:
-            self.create = lambda fieldname, value: Field(fieldname, value, self.type)
         positionsStored = self.type.indexOptions() in [FieldInfo.IndexOptions.DOCS_ONLY, FieldInfo.IndexOptions.DOCS_AND_FREQS]
         self.phraseQueryPossible = not positionsStored
         self.isUntokenized = not self.type.tokenized()
+        self._field = field
+        self._update = update
+        self._create = create
 
-STRINGFIELD = _FieldDefinition(type=StringField.TYPE_NOT_STORED)
-NUMERICFIELD = _FieldDefinition(
+    def createField(self, value, mayReUse):
+        if mayReUse:
+            self._update(self._field, value)
+        else:
+            self._field = self._create(value)
+        return self._field
+
+    @classmethod
+    def define(cls, type, name):
+        create = lambda value: Field(name, value, type)
+        return cls(
+            type=type,
+            field=create(""),
+            create=create,
+            update=lambda field, value: field.setStringValue(value)
+        )
+
+
+STRINGFIELD = lambda name: _FieldDefinition.define(type=StringField.TYPE_NOT_STORED, name=name)
+NUMERICFIELD = lambda name: _FieldDefinition(
     type=NumericDocValuesField.TYPE,
-    create=lambda fieldname, value: NumericDocValuesField(fieldname, long(value))
+    field=NumericDocValuesField(name, long(0)),
+    create=lambda value: NumericDocValuesField(name, long(value)),
+    update=lambda field, value: field.setLongValue(long(value)),
 )
-TEXTFIELD = _FieldDefinition(type=TextField.TYPE_NOT_STORED)
+TEXTFIELD = lambda name: _FieldDefinition.define(type=TextField.TYPE_NOT_STORED, name=name)
 
 
 def _createNoTermsFrequencyFieldType():

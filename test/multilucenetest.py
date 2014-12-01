@@ -39,7 +39,6 @@ from meresco.lucene.fieldregistry import KEY_PREFIX, FieldRegistry
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.composedquery import ComposedQuery
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
-from org.meresco.lucene.search.join import KeyCollectorCache
 
 from seecr.test import SeecrTestCase, CallTrace
 from seecr.test.utils import sleepWheel
@@ -55,7 +54,6 @@ class MultiLuceneTest(SeecrTestCase):
 
     def setUp(self):
         SeecrTestCase.setUp(self)
-        KeyCollectorCache.clear()
         self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
         self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
         self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1, similarity=TermFrequencySimilarity(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
@@ -157,9 +155,6 @@ class MultiLuceneTest(SeecrTestCase):
             q.setCoreQuery(core='coreB', query=luceneQueryFromCql('Y=%s' % i))
             q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'X'))
             ignoredResult = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
-        System.gc()
-        sleepWheel(0.5)
-        self.assertTrue(0 < KeyCollectorCache.size() <= 20, KeyCollectorCache.size())
 
     def testJoinQueryWithFilters(self):
         q = ComposedQuery('coreA')

@@ -1,7 +1,34 @@
-package org.meresco.lucene.queries;
+package org.meresco.lucene.search.join;
+
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import org.apache.lucene.index.AtomicReaderContext;
 
 
-public class SegmentFieldKey {
+public class KeyValuesCache {
+	private static Map<SegmentFieldKey, int[]> cache = Collections
+			.synchronizedMap(new WeakHashMap<SegmentFieldKey, int[]>());
+
+	public static int[] get(AtomicReaderContext context, String keyName) {
+		int[] keyValues = cache.get(new SegmentFieldKey(
+				context.reader().getCoreCacheKey(), keyName));
+		if (keyValues == null) {
+			keyValues = new int[context.reader().maxDoc()];
+			KeyValuesCache.put(context, keyName, keyValues);
+		}
+		return keyValues;
+	}
+
+	public static void put(AtomicReaderContext context, String keyName,
+			int[] keyValuesArray) {
+		cache.put(new SegmentFieldKey(context.reader().getCoreCacheKey(), keyName), keyValuesArray);
+	}
+}
+
+
+class SegmentFieldKey {
 	private Object segmentKey;
 	private String keyName;
 	

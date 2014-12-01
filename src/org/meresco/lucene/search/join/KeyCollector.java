@@ -29,14 +29,16 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
+import org.meresco.lucene.search.SubCollector;
 
-public class KeyCollector extends Collector {
+
+public class KeyCollector extends SubCollector {
     protected String keyName;
     private NumericDocValues keyValues;
+    private int[] keyValuesArray;
     protected OpenBitSet currentKeySet = new OpenBitSet();
     protected int biggestKeyFound = 0;
 
@@ -47,7 +49,10 @@ public class KeyCollector extends Collector {
     @Override
     public void collect(int docId) throws IOException {
         if (this.keyValues != null) {
-            int value = (int)this.keyValues.get(docId);
+        	int value = this.keyValuesArray[docId];
+        	if (value == 0) {
+        		value = this.keyValuesArray[docId] = (int) this.keyValues.get(docId);
+        	}
             if (value > 0) {
                 this.currentKeySet.set(value);
                 if (value > this.biggestKeyFound) {
@@ -60,6 +65,7 @@ public class KeyCollector extends Collector {
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
         this.keyValues = context.reader().getNumericDocValues(this.keyName);
+		keyValuesArray = KeyValuesCache.get(context, keyName);
     }
 
     @Override
@@ -74,4 +80,8 @@ public class KeyCollector extends Collector {
     public DocIdSet getCollectedKeys() throws IOException {
         return this.currentKeySet;
     }
+
+	@Override
+	public void complete() throws IOException {
+	}
 }

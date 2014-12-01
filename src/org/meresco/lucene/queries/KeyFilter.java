@@ -26,9 +26,6 @@
 package org.meresco.lucene.queries;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.WeakHashMap;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -36,13 +33,12 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
+import org.meresco.lucene.search.join.KeyValuesCache;
 
 
 public class KeyFilter extends Filter {
 	private String keyName;
 	public Bits keySet;
-	private static Map<SegmentFieldKey, int[]> keyValuesCache = Collections
-			.synchronizedMap(new WeakHashMap<SegmentFieldKey, int[]>());
 
 	public KeyFilter(DocIdSet keySet, String keyName) throws IOException {
 		this.keySet = keySet.bits();
@@ -58,17 +54,11 @@ public class KeyFilter extends Filter {
 				return new DocIdSetIterator() {
 					private NumericDocValues keyValues = context.reader()
 							.getNumericDocValues(keyName);
-					private int[] keyValuesArray = keyValuesCache.get(new SegmentFieldKey(context.reader().getCoreCacheKey(), keyName));
+					private int[] keyValuesArray = KeyValuesCache.get(context, keyName);
 					private int maxDoc = context.reader().maxDoc();
 					int docId = keyValues == null ? DocIdSetIterator.NO_MORE_DOCS
 							: 0;
 
-					{
-						if (keyValuesArray == null) {
-							keyValuesArray = new int[maxDoc];
-							keyValuesCache.put(new SegmentFieldKey(context.reader().getCoreCacheKey(), keyName), keyValuesArray);
-						}
-					}
 					
 					@Override
 					public int docID() {

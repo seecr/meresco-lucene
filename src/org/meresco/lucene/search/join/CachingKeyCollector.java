@@ -51,7 +51,7 @@ import org.apache.lucene.util.PForDeltaDocIdSet;
  *
  * @author erik@seecr.nl
  * */
-public class CachingKeyCollector extends KeyCollector implements HasKeySetCache {
+public class CachingKeyCollector extends KeyCollector {
     /**
      * Caches bitsets (containing keys) for specific readers within one index.
      * Entries disappear when readers are closed and garbage collected. Note
@@ -138,12 +138,10 @@ public class CachingKeyCollector extends KeyCollector implements HasKeySetCache 
         }
     }
 
-	@Override
 	public Object getCacheKey() {
 		return this.cacheKey;
 	}
 
-	@Override
 	public void cleanupPreviousCollect() {
 		this.seen.clear();
 	}

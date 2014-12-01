@@ -27,15 +27,11 @@ package org.meresco.lucene.search.join;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
-import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
 
-public class KeySuperCollector extends SuperCollector<KeySubCollector> {
+public class KeySuperCollector extends SuperCollector<KeyCollector> {
     protected final String keyName;
     private OpenBitSet currentKeySet;
 
@@ -44,8 +40,8 @@ public class KeySuperCollector extends SuperCollector<KeySubCollector> {
     }
 
     @Override
-    protected KeySubCollector createSubCollector() throws IOException {
-        return new KeySubCollector(this.keyName);
+    protected KeyCollector createSubCollector() throws IOException {
+        return new KeyCollector(this.keyName);
     }
 
     @Override
@@ -59,48 +55,5 @@ public class KeySuperCollector extends SuperCollector<KeySubCollector> {
 
     public DocIdSet getCollectedKeys() {
         return this.currentKeySet;
-    }
-}
-
-class KeySubCollector extends SubCollector {
-    private NumericDocValues keyValues;
-    protected OpenBitSet currentKeySet = new OpenBitSet();
-    private final String keyName;
-    protected int biggestKeyFound = 0;
-
-    public KeySubCollector(String keyName) throws IOException {
-        super();
-        this.keyName = keyName;
-    }
-
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-        return true;
-    }
-
-    @Override
-    public void collect(int docId) throws IOException {
-        if (this.keyValues != null) {
-            int value = (int)this.keyValues.get(docId);
-            if (value > 0) {
-                this.currentKeySet.set(value);
-                if (value > this.biggestKeyFound) {
-                    this.biggestKeyFound = value;
-                }
-            }
-        }
-    }
-
-    @Override
-    public void setScorer(Scorer s) throws IOException {
-    }
-
-    @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.keyValues = context.reader().getNumericDocValues(keyName);
-    }
-
-    @Override
-    public void complete() throws IOException {
     }
 }

@@ -46,7 +46,7 @@ public class KeyFilterCache {
 		}
 		KeyFilter keyFilter = keyFilterCache.get(keyName);
 		if (keyFilter == null) {
-			keyFilter = new KeyFilter(keyCollector.getCollectedKeys(), keyName, keyCollector.getQuery());
+			keyFilter = new KeyFilter(keyCollector.getCollectedKeys(), keyName);
 			keyFilterCache.put(keyName, keyFilter);
 		}
 		return keyFilter;
@@ -62,10 +62,5 @@ public class KeyFilterCache {
 
 	public static void printStats() {
 		System.out.println("KeyFilterCache. Entries: " + size());
-		for (LRUHashMap<String, KeyFilter> filterCache : cache.values()) {
-			for (KeyFilter keyFilterCache : filterCache.values()) {
-				keyFilterCache.printDocSetCacheSize();
-			}
-		}
 	}
 }

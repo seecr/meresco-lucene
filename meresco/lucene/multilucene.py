@@ -30,9 +30,10 @@ from meresco.core import Observable
 
 from seecr.utils.generatorutils import generatorReturn
 
-from org.apache.lucene.search import MatchAllDocsQuery, BooleanClause
-from org.meresco.lucene.search.join import KeyCollectorCache, ScoreCollector, AggregateScoreCollector, AggregateScoreSuperCollector, ScoreSuperCollector, KeyFilterCache
-from org.meresco.lucene.queries import KeyBooleanFilter
+from org.apache.lucene.search import MatchAllDocsQuery
+from org.apache.lucene.queries import ChainedFilter
+from org.meresco.lucene.search.join import KeyCollectorCache, ScoreCollector, AggregateScoreCollector, AggregateScoreSuperCollector, ScoreSuperCollector
+from org.meresco.lucene.queries import KeyFilter
 from java.util import ArrayList
 
 from _lucene import millis
@@ -59,25 +60,25 @@ class MultiLucene(Observable):
             yield self.collectKeys(d['query'], d['core'], query.keyName(d['core']))
 
     def orCollectors(self, collectors, keyName):
-        booleanFilter = None
-        for keyCollector in collectors:
-            if not booleanFilter:
-                booleanFilter = KeyBooleanFilter()
-            booleanFilter.add(KeyFilterCache.create(keyCollector, keyName), BooleanClause.Occur.SHOULD)
-        return booleanFilter
+        return ChainedFilter([
+                KeyFilter(collector.getCollectedKeys(), keyName)
+                for collector in collectors
+            ], [ChainedFilter.OR] * len(collectors))
 
-    def andQueries(self, coreQuerySpecs, filterKeyName, booleanFilter):
+    def andQueries(self, coreQuerySpecs, filterKeyName, filter):
+        filters = []
+        if filter:
+            filters.append(filter)
         for coreName, keyName, luceneQuery, filterQueries, drilldownQueries in coreQuerySpecs:
             if drilldownQueries:
                 luceneQuery = self.call[coreName].createDrilldownQuery(luceneQuery, drilldownQueries)
             for q in [luceneQuery] + filterQueries:
                 if not q:
                     continue
-                if not booleanFilter:
-                    booleanFilter = KeyBooleanFilter()
                 keyCollector = self.collectKeys(q, coreName, keyName)
-                booleanFilter.add(KeyFilterCache.create(keyCollector, filterKeyName), BooleanClause.Occur.MUST)
-        return booleanFilter
+                collectedKeys = keyCollector.getCollectedKeys()
+                filters.append(KeyFilter(collectedKeys, filterKeyName))
+        return ChainedFilter(filters, [ChainedFilter.AND] * len(filters)) if filters else None
 
     def executeComposedQuery(self, query):
         query.validate()
@@ -115,7 +116,10 @@ class MultiLucene(Observable):
         for otherCoreName in otherCoreNames:
             if query.facetsFor(otherCoreName):
                 otherCoreKey = query.keyName(otherCoreName)
-                otherCoreIntermediateFilter = self.andQueries([(otherCoreName, otherCoreKey, query.queryFor(otherCoreName), query.filterQueriesFor(otherCoreName), query.drilldownQueriesFor(otherCoreName))], otherCoreKey, coreBaseFilters.get(otherCoreName))
+                otherCoreIntermediateFilter = self.andQueries(
+                    [(otherCoreName, otherCoreKey, query.queryFor(otherCoreName), query.filterQueriesFor(otherCoreName), query.drilldownQueriesFor(otherCoreName))],
+                    otherCoreKey,
+                    coreBaseFilters.get(otherCoreName))
 
                 coreQuerySpecs = [(resultCoreName, resultCoreKey, resultCoreQuery, query.filterQueriesFor(resultCoreName), query.drilldownQueriesFor(resultCoreName))]
                 for name in otherCoreNames:
@@ -137,9 +141,6 @@ class MultiLucene(Observable):
                 scoreCollectors.add(scoreCollector)
         constructor = AggregateScoreSuperCollector if self._multithreaded else AggregateScoreCollector
         aggregateScoreCollector = constructor(resultCoreKey, scoreCollectors) if scoreCollectors.size() > 0 else None
-
-        # KeyCollectorCache.printStats()
-        # KeyFilterCache.printStats();
 
         result = yield self.any[resultCoreName].executeQuery(
                 luceneQuery=resultCoreQuery,

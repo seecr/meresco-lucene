@@ -26,70 +26,86 @@
 package org.meresco.lucene.queries;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.search.Query;
 
 
 public class KeyFilter extends Filter {
-    private String keyName;
-    private Query query;
-    public Bits keySet;
-    private Map<Object, DocIdSet> docSetCache = new WeakHashMap<Object, DocIdSet>();
+	private String keyName;
+	public Bits keySet;
+	private static Map<SegmentFieldKey, int[]> keyValuesCache = Collections
+			.synchronizedMap(new WeakHashMap<SegmentFieldKey, int[]>());
 
-    public KeyFilter(DocIdSet keySet, String keyName, Query query) throws IOException {
-        this.keySet = keySet.bits();
-        this.keyName = keyName;
-        this.query = query;
-    }
+	public KeyFilter(DocIdSet keySet, String keyName) throws IOException {
+		this.keySet = keySet.bits();
+		this.keyName = keyName;
+	}
 
-    @Override
-    public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-        AtomicReader reader = context.reader();
-        Object coreKey = reader.getCoreCacheKey();
-        DocIdSet docSet = this.docSetCache.get(coreKey);
-        if (docSet == null) {
-            docSet = this.createDocIdSet(reader);
-            synchronized (this) {
-                this.docSetCache.put(coreKey, docSet);
-            }
-        }
-        return docSet;
-    }
+	@Override
+	public DocIdSet getDocIdSet(final AtomicReaderContext context,
+			Bits acceptDocs) throws IOException {
+		return new DocIdSet() {
+			@Override
+			public DocIdSetIterator iterator() throws IOException {
+				return new DocIdSetIterator() {
+					private NumericDocValues keyValues = context.reader()
+							.getNumericDocValues(keyName);
+					private int[] keyValuesArray = keyValuesCache.get(new SegmentFieldKey(context.reader().getCoreCacheKey(), keyName));
+					private int maxDoc = context.reader().maxDoc();
+					int docId = keyValues == null ? DocIdSetIterator.NO_MORE_DOCS
+							: 0;
 
-    private DocIdSet createDocIdSet(AtomicReader reader) throws IOException {
-        NumericDocValues keyValues = reader.getNumericDocValues(this.keyName);
-        OpenBitSet docBitSet = new OpenBitSet();
-        if (keyValues != null) {
-            for (int docId = 0; docId < reader.maxDoc(); docId++) {
-                int keyValue = (int) keyValues.get(docId);
-                if (keyValue == 0) continue;
-                boolean exists = false;
-                try {
-                    exists = this.keySet.get(keyValue);
-                } catch (IndexOutOfBoundsException e) {}
-                if (exists) {
-                    docBitSet.set(docId);
-                }
-            }
-        }
-        docBitSet.trimTrailingZeros();
-        return docBitSet;
-    }
+					{
+						if (keyValuesArray == null) {
+							keyValuesArray = new int[maxDoc];
+							keyValuesCache.put(new SegmentFieldKey(context.reader().getCoreCacheKey(), keyName), keyValuesArray);
+						}
+					}
+					
+					@Override
+					public int docID() {
+						throw new UnsupportedOperationException();
+					}
 
-    public void printDocSetCacheSize() {
-        int size = 0;
-        for (DocIdSet b : this.docSetCache.values())
-            size += b.ramBytesUsed();
-        System.out.println("Query: " + this.query + ", cache: " + this.docSetCache.size() + " entries, " + (size / 1024 / 1024) + " MB");
-    }
+					@Override
+					public int nextDoc() throws IOException {
+						try {
+							while (this.docId < this.maxDoc) {
+								int key = this.keyValuesArray[this.docId];
+								if (key == 0) {
+									key = this.keyValuesArray[this.docId] = (int) keyValues.get(this.docId);
+								}
+								if (keySet.get(key)) {
+									return this.docId++;
+								}
+								docId++;
+							}
+						} catch (IndexOutOfBoundsException e) {
+						}
+						this.docId = DocIdSetIterator.NO_MORE_DOCS;
+						return this.docId;
+					}
 
+					@Override
+					public int advance(int target) throws IOException {
+						this.docId = target;
+						return nextDoc();
+					}
+
+					@Override
+					public long cost() {
+						throw new UnsupportedOperationException();
+					}
+				};
+			}
+		};
+	}
 }

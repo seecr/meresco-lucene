@@ -3,5 +3,5 @@ deps.d
 build
 *.class
 *.pyc
-src/.classpath
-src/.project
+.classpath
+.project

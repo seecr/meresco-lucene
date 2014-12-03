@@ -71,7 +71,7 @@ class MultiLucene(Observable):
 
     def andQueries(self, coreQuerySpecs, filterKeyName, filter):
         filters = []
-        if filter:
+        if filter is not None:
             filters.append(filter)
         for coreName, keyName, luceneQuery, filterQueries, drilldownQueries in coreQuerySpecs:
             if drilldownQueries:

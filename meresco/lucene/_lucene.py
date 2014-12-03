@@ -287,7 +287,7 @@ def defaults(parameter, default):
 
 def chainFilters(filters, logic):
     if len(filters) == 1:
-        return filters[0]
+        return ChainedFilter(filters)
     elif len(filters) > 1:
         # EG: bug? in PyLucene 4.9? The wrong ctor is called if second arg is not a list.
         return ChainedFilter(filters, [logic] * len(filters))

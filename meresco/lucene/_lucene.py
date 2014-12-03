@@ -222,10 +222,7 @@ class Lucene(object):
         filters = [self._filterCache.get(f) for f in filterQueries]
         if filter is not None:
             filters.append(filter)
-        # EG: bug? in PyLucene 4.9? The wrong ctor is called if second arg is not a list.
-        if len(filters) == 1:
-            return filters[0]
-        return ChainedFilter(filters, [ChainedFilter.AND] * len(filters))
+        return chainFilters(filters, ChainedFilter.AND)
 
     def _facetResult(self, facetCollector, facets):
         facetResult = facetCollector
@@ -287,6 +284,14 @@ class Lucene(object):
 
 def defaults(parameter, default):
     return default if parameter is None else parameter
+
+def chainFilters(filters, logic):
+    if len(filters) == 1:
+        return filters[0]
+    elif len(filters) > 1:
+        # EG: bug? in PyLucene 4.9? The wrong ctor is called if second arg is not a list.
+        return ChainedFilter(filters, [logic] * len(filters))
+    return None
 
 millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 millisecs
 

@@ -36,7 +36,7 @@ from org.meresco.lucene.search.join import KeySuperCollector, ScoreCollector, Ag
 from org.meresco.lucene.queries import KeyFilter
 from java.util import ArrayList
 
-from _lucene import millis
+from _lucene import millis, chainFilters
 
 
 class MultiLucene(Observable):
@@ -66,10 +66,8 @@ class MultiLucene(Observable):
             yield self.collectKeys(d['query'], d['core'], query.keyName(d['core']), filterQueries=query.filterQueriesFor(d['core']))
 
     def orCollectors(self, collectors, keyName):
-        return ChainedFilter([
-                KeyFilter(collector.getCollectedKeys(), keyName)
-                for collector in collectors
-            ], [ChainedFilter.OR] * len(collectors))
+        filters = [KeyFilter(collector.getCollectedKeys(), keyName) for collector in collectors]
+        return chainFilters(filters, ChainedFilter.OR)
 
     def andQueries(self, coreQuerySpecs, filterKeyName, filter):
         filters = []
@@ -87,7 +85,7 @@ class MultiLucene(Observable):
                     keyCollector = self.collectKeys(q, coreName, keyName)
                     collectedKeys = keyCollector.getCollectedKeys()
                     filters.append(KeyFilter(collectedKeys, filterKeyName))
-        return ChainedFilter(filters, [ChainedFilter.AND] * len(filters)) if filters else None
+        return chainFilters(filters, ChainedFilter.AND)
 
     def executeComposedQuery(self, query):
         query.validate()
@@ -113,7 +111,6 @@ class MultiLucene(Observable):
         if resultCoreDrilldownQueries:
             resultCoreQuery = self.call[resultCoreName].createDrilldownQuery(resultCoreQuery, resultCoreDrilldownQueries)
 
-
         resultCoreBaseFilter = None
         if query.unites:
             unitesFilterQueries = resultCoreFilterQueries + [d['query'] for d in query.unites if d['core'] == resultCoreName]
@@ -138,7 +135,6 @@ class MultiLucene(Observable):
                     [(otherCoreName, otherCoreKey, query.queryFor(otherCoreName), query.filterQueriesFor(otherCoreName), query.drilldownQueriesFor(otherCoreName))],
                     otherCoreKey,
                     coreBaseFilters.get(otherCoreName))
-
                 coreQuerySpecs = [(resultCoreName, resultCoreKey, resultCoreQuery, resultCoreFilterQueries, None)]
                 for name in otherCoreNames:
                     if name != otherCoreName:

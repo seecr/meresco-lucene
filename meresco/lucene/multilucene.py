@@ -50,17 +50,20 @@ class MultiLucene(Observable):
         response = yield self.any[coreName].executeQuery(**kwargs)
         generatorReturn(response)
 
-    def collectKeys(self, query, coreName, keyName):
+    def collectKeys(self, query, coreName, keyName, filterQueries=None):
         if self._multithreaded:
             keyCollector = KeySuperCollector(keyName)
         else:
             keyCollector = KeyCollector(keyName)
-        self.do[coreName].search(query=query, collector=keyCollector)
+        self.do[coreName].search(query=query, filterQueries=filterQueries, collector=keyCollector)
         return keyCollector
 
-    def collectUniteKeyCollectors(self, query):
+    def collectUniteKeyCollectors(self, resultCoreKeyCollector, query):
         for d in query.unites:
-            yield self.collectKeys(d['query'], d['core'], query.keyName(d['core']))
+            if d['core'] == query.resultsFrom:
+                yield resultCoreKeyCollector
+                continue
+            yield self.collectKeys(d['query'], d['core'], query.keyName(d['core']), filterQueries=query.filterQueriesFor(d['core']))
 
     def orCollectors(self, collectors, keyName):
         return ChainedFilter([
@@ -75,12 +78,15 @@ class MultiLucene(Observable):
         for coreName, keyName, luceneQuery, filterQueries, drilldownQueries in coreQuerySpecs:
             if drilldownQueries:
                 luceneQuery = self.call[coreName].createDrilldownQuery(luceneQuery, drilldownQueries)
-            for q in [luceneQuery] + filterQueries:
-                if not q:
-                    continue
-                keyCollector = self.collectKeys(q, coreName, keyName)
+            if luceneQuery:
+                keyCollector = self.collectKeys(luceneQuery, coreName, keyName, filterQueries=filterQueries)
                 collectedKeys = keyCollector.getCollectedKeys()
                 filters.append(KeyFilter(collectedKeys, filterKeyName))
+            else:
+                for q in filterQueries:
+                    keyCollector = self.collectKeys(q, coreName, keyName)
+                    collectedKeys = keyCollector.getCollectedKeys()
+                    filters.append(KeyFilter(collectedKeys, filterKeyName))
         return ChainedFilter(filters, [ChainedFilter.AND] * len(filters)) if filters else None
 
     def executeComposedQuery(self, query):
@@ -98,10 +104,22 @@ class MultiLucene(Observable):
         coreBaseFilters = {}
 
         resultCoreKey = query.keyName(resultCoreName)
+        resultCoreQuery = query.queryFor(resultCoreName)
+        if resultCoreQuery is None:
+            resultCoreQuery = MatchAllDocsQuery()
+        resultCoreFilterQueries = query.filterQueriesFor(resultCoreName)
+
+        resultCoreDrilldownQueries = query.drilldownQueriesFor(resultCoreName)
+        if resultCoreDrilldownQueries:
+            resultCoreQuery = self.call[resultCoreName].createDrilldownQuery(resultCoreQuery, resultCoreDrilldownQueries)
+
 
         resultCoreBaseFilter = None
         if query.unites:
-            unitesKeyCollectors = list(self.collectUniteKeyCollectors(query))
+            unitesFilterQueries = resultCoreFilterQueries + [d['query'] for d in query.unites if d['core'] == resultCoreName]
+            resultCoreKeyCollector = self.collectKeys(resultCoreQuery, resultCoreName, resultCoreKey, filterQueries=unitesFilterQueries)
+
+            unitesKeyCollectors = list(self.collectUniteKeyCollectors(resultCoreKeyCollector, query))
             resultCoreBaseFilter = self.orCollectors(unitesKeyCollectors, resultCoreKey)
 
             uniteOtherCore = [d['core'] for d in query.unites if d['core'] != resultCoreName][0]
@@ -113,9 +131,6 @@ class MultiLucene(Observable):
         resultCoreIntermediateFilter = self.andQueries(coreQuerySpecs, resultCoreKey, resultCoreBaseFilter)
 
         drilldownData = []
-        resultCoreQuery = query.queryFor(resultCoreName)
-        if resultCoreQuery is None:
-            resultCoreQuery = MatchAllDocsQuery()
         for otherCoreName in otherCoreNames:
             if query.facetsFor(otherCoreName):
                 otherCoreKey = query.keyName(otherCoreName)
@@ -124,7 +139,7 @@ class MultiLucene(Observable):
                     otherCoreKey,
                     coreBaseFilters.get(otherCoreName))
 
-                coreQuerySpecs = [(resultCoreName, resultCoreKey, resultCoreQuery, query.filterQueriesFor(resultCoreName), query.drilldownQueriesFor(resultCoreName))]
+                coreQuerySpecs = [(resultCoreName, resultCoreKey, resultCoreQuery, resultCoreFilterQueries, None)]
                 for name in otherCoreNames:
                     if name != otherCoreName:
                         coreQuerySpecs.append((name, query.keyName(name), query.queryFor(name), query.filterQueriesFor(name), query.drilldownQueriesFor(name)))
@@ -149,8 +164,7 @@ class MultiLucene(Observable):
                 luceneQuery=resultCoreQuery,
                 filter=resultCoreIntermediateFilter,
                 facets=query.facetsFor(resultCoreName),
-                filterQueries=query.filterQueriesFor(resultCoreName),
-                drilldownQueries=query.drilldownQueriesFor(resultCoreName),
+                filterQueries=resultCoreFilterQueries,
                 scoreCollector=aggregateScoreCollector,
                 **query.otherKwargs()
             )

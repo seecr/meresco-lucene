@@ -83,8 +83,11 @@ class Lucene(object):
         return
         yield
 
-    def search(self, query=None, filter=None, collector=None):
-        self._index.search(query, filter, collector)
+    def search(self, query=None, filterQueries=None, collector=None):
+        filter_ = None
+        if filterQueries:
+            filter_ = self._filterFor(filterQueries)
+        self._index.search(query, filter_, collector)
 
     def facets(self, facets, filterQueries, drilldownQueries=None, filter=None):
         facetCollector = self._facetCollector() if facets else None
@@ -220,6 +223,8 @@ class Lucene(object):
         if filter is not None:
             filters.append(filter)
         # EG: bug? in PyLucene 4.9? The wrong ctor is called if second arg is not a list.
+        if len(filters) == 1:
+            return filters[0]
         return ChainedFilter(filters, [ChainedFilter.AND] * len(filters))
 
     def _facetResult(self, facetCollector, facets):

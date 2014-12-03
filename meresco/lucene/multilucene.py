@@ -32,7 +32,7 @@ from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery
 from org.apache.lucene.queries import ChainedFilter
-from org.meresco.lucene.search.join import KeySuperCollector, ScoreCollector, AggregateScoreCollector, AggregateScoreSuperCollector, ScoreSuperCollector
+from org.meresco.lucene.search.join import KeySuperCollector, ScoreCollector, AggregateScoreCollector, AggregateScoreSuperCollector, ScoreSuperCollector, KeyCollector
 from org.meresco.lucene.queries import KeyFilter
 from java.util import ArrayList
 
@@ -51,7 +51,10 @@ class MultiLucene(Observable):
         generatorReturn(response)
 
     def collectKeys(self, query, coreName, keyName):
-        keyCollector = KeySuperCollector(keyName)
+        if self._multithreaded:
+            keyCollector = KeySuperCollector(keyName)
+        else:
+            keyCollector = KeyCollector(keyName)
         self.do[coreName].search(query=query, collector=keyCollector)
         return keyCollector
 

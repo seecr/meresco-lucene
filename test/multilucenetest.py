@@ -32,7 +32,6 @@ from org.apache.lucene.search import MatchAllDocsQuery
 from weightless.core import be, compose
 from meresco.core import Observable
 
-from java.lang import System
 
 from meresco.lucene import Lucene, TermFrequencySimilarity
 from meresco.lucene.fieldregistry import KEY_PREFIX, FieldRegistry
@@ -41,7 +40,6 @@ from meresco.lucene.composedquery import ComposedQuery
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from seecr.test import SeecrTestCase, CallTrace
-from seecr.test.utils import sleepWheel
 from seecr.utils.generatorutils import returnValueFromGenerator, consume
 
 from lucenetest import createDocument

@@ -33,6 +33,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Scorer;
 import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
+import org.apache.lucene.search.Weight;
 
 public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreSubCollector> {
 
@@ -101,11 +102,19 @@ class AggregateScoreSubCollector extends SubCollector {
         this.delegate.complete();
     }
 
+    private static Weight weightFromScorer(Scorer scorer) {
+        try {
+            return scorer.getWeight();
+        } catch (UnsupportedOperationException e) {
+            return null;
+        }
+    }
+
     private class AggregateSuperScorer extends Scorer {
         private final Scorer scorer;
 
         private AggregateSuperScorer(Scorer scorer) {
-            super(scorer.getWeight());
+            super(weightFromScorer(scorer));
             this.scorer = scorer;
         }
 

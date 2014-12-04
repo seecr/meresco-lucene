@@ -27,7 +27,7 @@ from os.path import join
 
 from cqlparser import parseString as parseCql
 
-from org.apache.lucene.search import MatchAllDocsQuery
+from org.apache.lucene.search import MatchAllDocsQuery, BooleanQuery, BooleanClause
 
 from weightless.core import be, compose
 from meresco.core import Observable
@@ -731,6 +731,19 @@ class MultiLuceneTest(SeecrTestCase):
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(4, len(result.hits))
+
+    def testCollectScoresWithNoResultAndBooleanQueryDoesntFailOnFakeScorerInAggregateScoreCollector(self):
+        q = BooleanQuery()
+        q.add(luceneQueryFromCql('M=true'), BooleanClause.Occur.SHOULD)
+        q.add(luceneQueryFromCql('M=true'), BooleanClause.Occur.SHOULD)
+        q = ComposedQuery('coreA', query=q)
+        q.start = 0
+        q.stop = 0
+        q.setRankQuery(core='coreC', query=luceneQueryFromCql('S=true'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(4, result.total)
+        self.assertEquals([], result.hits)
 
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(

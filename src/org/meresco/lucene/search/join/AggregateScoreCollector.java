@@ -72,12 +72,19 @@ public class AggregateScoreCollector extends Collector {
         this.delegate.setScorer(new AggregateScoreCollector.AggregateScorer(scorer));
     }
 
+    private static Weight weightFromScorer(Scorer scorer) {
+        try {
+            return scorer.getWeight();
+        } catch (UnsupportedOperationException e) {
+            return null;
+        }
+    }
 
     class AggregateScorer extends Scorer {
         Scorer scorer;
 
         AggregateScorer(Scorer scorer) {
-            super(scorer.getWeight());
+            super(weightFromScorer(scorer));
             this.scorer = scorer;
         }
 

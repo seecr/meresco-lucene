@@ -44,12 +44,7 @@ from org.meresco.lucene.search import FacetSuperCollector
 
 
 class Index(object):
-    def __init__(self, path, reactor, commitTimeout=None, commitCount=None, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, multithreaded=False):
-        self._reactor = reactor
-        self._maxCommitCount = commitCount or 100000
-        self._commitCount = 0
-        self._commitTimeout = commitTimeout or 10
-        self._commitTimerToken = None
+    def __init__(self, path, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, multithreaded=False):
         self._multithreaded = multithreaded
         similarity = similarity or BM25Similarity()
 
@@ -78,11 +73,9 @@ class Index(object):
     def addDocument(self, term, document):
         document = self._facetsConfig.build(self._taxoWriter, document)
         self._indexWriter.updateDocument(term, document)
-        self.commit()
 
     def deleteDocument(self, term):
         self._indexWriter.deleteDocuments(term)
-        self.commit()
 
     def search(self, query, filter, collector):
         self._indexAndTaxonomy.searcher.search(query, filter, collector)
@@ -145,20 +138,6 @@ class Index(object):
         return self._indexAndTaxonomy.searcher.getIndexReader().numDocs()
 
     def commit(self):
-        self._commitCount += 1
-        if self._commitTimerToken is None:
-            self._commitTimerToken = self._reactor.addTimer(
-                    seconds=self._commitTimeout,
-                    callback=lambda: self._realCommit(removeTimer=False)
-                )
-        if self._commitCount >= self._maxCommitCount:
-            self._realCommit()
-            self._commitCount = 0
-
-    def _realCommit(self, removeTimer=True):
-        self._commitTimerToken, token = None, self._commitTimerToken
-        if removeTimer:
-            self._reactor.removeTimer(token=token)
         self._taxoWriter.commit()
         self._indexWriter.commit()
         self._indexAndTaxonomy.reopen()
@@ -176,8 +155,6 @@ class Index(object):
         return Facets.cast_(facetResult)
 
     def close(self):
-        if self._commitTimerToken is not None:
-            self._reactor.removeTimer(self._commitTimerToken)
         self._indexAndTaxonomy.close()
         self._taxoWriter.close()
         self._indexWriter.close()

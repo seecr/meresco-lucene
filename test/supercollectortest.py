@@ -37,23 +37,23 @@ class SuperCollectorTest(SeecrTestCase):
 
     def testSearch(self):
         C = TotalHitCountSuperCollector()
-        I = Index(path=self.tempdir, reactor=None, multithreaded=True)
+        I = Index(path=self.tempdir, multithreaded=True)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
         self.assertEquals(0, C.getTotalHits())
         I._indexWriter.addDocument(document(name="one", price="2"))
         I.close()
-        I = Index(path=self.tempdir, reactor=None, multithreaded=True)
+        I = Index(path=self.tempdir, multithreaded=True)
         I.search(Q, None, C)
         self.assertEquals(1, C.getTotalHits())
 
     def testSearchTopDocs(self):
-        I = Index(path=self.tempdir, reactor=None, multithreaded=True)
+        I = Index(path=self.tempdir, multithreaded=True)
         I._indexWriter.addDocument(document(name="one", price="aap noot mies"))
         I._indexWriter.addDocument(document(name="two", price="aap vuur boom"))
         I._indexWriter.addDocument(document(name="three", price="noot boom mies"))
         I.close()
-        I = Index(path=self.tempdir, reactor=None, multithreaded=True)
+        I = Index(path=self.tempdir, multithreaded=True)
         C = TopScoreDocSuperCollector(2, True)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
@@ -63,12 +63,12 @@ class SuperCollectorTest(SeecrTestCase):
         self.assertEquals(2, len(td.scoreDocs))
 
     def testSearchTopDocsWithStart(self):
-        I = Index(path=self.tempdir, reactor=None, multithreaded=True)
+        I = Index(path=self.tempdir, multithreaded=True)
         I._indexWriter.addDocument(document(name="one", price="aap noot mies"))
         I._indexWriter.addDocument(document(name="two", price="aap vuur boom"))
         I._indexWriter.addDocument(document(name="three", price="noot boom mies"))
         I.close()
-        I = Index(path=self.tempdir, reactor=None, multithreaded=True)
+        I = Index(path=self.tempdir, multithreaded=True)
         C = TopScoreDocSuperCollector(2, True)
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
@@ -79,13 +79,13 @@ class SuperCollectorTest(SeecrTestCase):
         self.assertEquals([1], [sd.score for sd in td.scoreDocs])
 
     def testFacetSuperCollector(self):
-        I = Index(path=self.tempdir, reactor=None, facetsConfig=FacetsConfig(), multithreaded=True)
+        I = Index(path=self.tempdir, facetsConfig=FacetsConfig(), multithreaded=True)
         for i in xrange(10000):
             document1 = createDocument(fields=[("field1", str(i)), ("field2", str(i)*1000)], facets=[("facet1", "value%s" % (i % 100))])
             document1 = I._facetsConfig.build(I._taxoWriter, document1)
             I._indexWriter.addDocument(document1)
         I.close()
-        I = Index(path=self.tempdir, reactor=None, facetsConfig=FacetsConfig(), multithreaded=True)
+        I = Index(path=self.tempdir, facetsConfig=FacetsConfig(), multithreaded=True)
 
         C = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, I._ordinalsReader)
         Q = MatchAllDocsQuery()
@@ -105,14 +105,14 @@ class SuperCollectorTest(SeecrTestCase):
             ], [(l.label, l.value.intValue()) for l in tc.labelValues])
 
     def testFacetAndTopsMultiCollector(self):
-        I = Index(path=self.tempdir, commitCount=1, reactor=CallTrace(), facetsConfig=FacetsConfig(), multithreaded=True)
+        I = Index(path=self.tempdir, facetsConfig=FacetsConfig(), multithreaded=True)
         for i in xrange(99):
             document1 = createDocument(fields=[("field1", str(i)), ("field2", str(i)*1000)], facets=[("facet1", "value%s" % (i % 10))])
             document1 = I._facetsConfig.build(I._taxoWriter, document1)
             I._indexWriter.addDocument(document1)
             I.commit()
         I.close()
-        I = Index(path=self.tempdir, reactor=None, facetsConfig=FacetsConfig(), multithreaded=True)
+        I = Index(path=self.tempdir, facetsConfig=FacetsConfig(), multithreaded=True)
 
         f = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, I._ordinalsReader)
         t = TopScoreDocSuperCollector(10, True)
@@ -141,7 +141,7 @@ class SuperCollectorTest(SeecrTestCase):
             ], [(l.label, l.value.intValue()) for l in tc.labelValues])
 
     def testSearchTopField(self):
-        I = Index(path=self.tempdir, commitCount=1, reactor=CallTrace(), multithreaded=True)
+        I = Index(path=self.tempdir, multithreaded=True)
         I._indexWriter.addDocument(document(__id__='1', name="one", price="aap noot mies"))
         I.commit()
         I._indexWriter.addDocument(document(__id__='2', name="two", price="aap vuur boom"))
@@ -149,7 +149,7 @@ class SuperCollectorTest(SeecrTestCase):
         I._indexWriter.addDocument(document(__id__='3', name="three", price="noot boom mies"))
         I.commit()
         I.close()
-        I = Index(path=self.tempdir, reactor=None, multithreaded=True)
+        I = Index(path=self.tempdir, multithreaded=True)
         sort = Sort(SortField("name", SortField.Type.STRING, True))
         C = TopFieldSuperCollector(sort, 2, True, False, True)
         Q = MatchAllDocsQuery()

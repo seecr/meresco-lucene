@@ -50,10 +50,16 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, fieldRegistry, name=None, multithreaded=True, **kwargs):
+    def __init__(self, path, reactor, fieldRegistry, commitTimeout=None, commitCount=None, name=None, multithreaded=True, **kwargs):
+        self._reactor = reactor
+        self._maxCommitCount = commitCount or 100000
+        self._commitCount = 0
+        self._commitTimeout = commitTimeout or 10
+        self._commitTimerToken = None
+
         self._fieldRegistry = fieldRegistry
         self._multithreaded = multithreaded
-        self._index = Index(path, reactor=reactor, facetsConfig=fieldRegistry.facetsConfig, multithreaded=multithreaded, **kwargs)
+        self._index = Index(path, facetsConfig=fieldRegistry.facetsConfig, multithreaded=multithreaded, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name
@@ -67,21 +73,36 @@ class Lucene(object):
             createFunction=lambda args: self._scoreCollector(*args)
         )
 
-    def commit(self):
-        return self._index.commit()
-
     def addDocument(self, identifier, document):
         document.add(self._fieldRegistry.createIdField(identifier))
         self._index.addDocument(term=Term(IDFIELD, identifier), document=document)
-        self._scoreCollectorCache.clear()  #WTF?! #TODO #FIXME
+        self.commit()
         return
         yield
 
     def delete(self, identifier):
         self._index.deleteDocument(Term(IDFIELD, identifier))
-        self._scoreCollectorCache.clear()
+        self.commit()
         return
         yield
+
+    def commit(self):
+        self._commitCount += 1
+        if self._commitTimerToken is None:
+            self._commitTimerToken = self._reactor.addTimer(
+                    seconds=self._commitTimeout,
+                    callback=lambda: self._realCommit(removeTimer=False)
+                )
+        if self._commitCount >= self._maxCommitCount:
+            self._realCommit()
+            self._commitCount = 0
+
+    def _realCommit(self, removeTimer=True):
+        self._commitTimerToken, token = None, self._commitTimerToken
+        if removeTimer:
+            self._reactor.removeTimer(token=token)
+        self._index.commit()
+        self._scoreCollectorCache.clear()
 
     def search(self, query=None, filterQueries=None, collector=None):
         filter_ = None
@@ -192,6 +213,8 @@ class Lucene(object):
         return scoreCollector
 
     def close(self):
+        if self._commitTimerToken is not None:
+            self._reactor.removeTimer(self._commitTimerToken)
         self._index.close()
 
     def handleShutdown(self):

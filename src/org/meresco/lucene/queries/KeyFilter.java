@@ -28,7 +28,6 @@ package org.meresco.lucene.queries;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -52,14 +51,11 @@ public class KeyFilter extends Filter {
 			@Override
 			public DocIdSetIterator iterator() throws IOException {
 				return new DocIdSetIterator() {
-					private NumericDocValues keyValues = context.reader()
-							.getNumericDocValues(keyName);
 					private int[] keyValuesArray = KeyValuesCache.get(context, keyName);
 					private int maxDoc = context.reader().maxDoc();
-					int docId = keyValues == null ? DocIdSetIterator.NO_MORE_DOCS
+					int docId = keyValuesArray == null ? DocIdSetIterator.NO_MORE_DOCS
 							: 0;
 
-					
 					@Override
 					public int docID() {
 						throw new UnsupportedOperationException();
@@ -70,9 +66,6 @@ public class KeyFilter extends Filter {
 						try {
 							while (this.docId < this.maxDoc) {
 								int key = this.keyValuesArray[this.docId];
-								if (key == 0) {
-									key = this.keyValuesArray[this.docId] = (int) keyValues.get(this.docId);
-								}
 								if (keySet.get(key)) {
 									return this.docId++;
 								}

@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.meresco.lucene.search.SubCollector;
@@ -65,7 +64,6 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
 class AggregateScoreSubCollector extends SubCollector {
 
     private final SubCollector delegate;
-    private NumericDocValues keyValues;
     private final ScoreSuperCollector[] otherScoreCollectors;
     private String keyName;
     private int[] keyValuesArray;
@@ -85,7 +83,6 @@ class AggregateScoreSubCollector extends SubCollector {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.keyValues = context.reader().getNumericDocValues(keyName);
         this.keyValuesArray = KeyValuesCache.get(context, keyName);
         this.delegate.setNextReader(context);
     }
@@ -125,9 +122,6 @@ class AggregateScoreSubCollector extends SubCollector {
             float score = this.scorer.score();
             int docId = this.docID();
             int key = keyValuesArray[docId];
-            if (key == 0) {
-                key = keyValuesArray[docId] = (int) keyValues.get(docId);
-            }
             for (ScoreSuperCollector sc : otherScoreCollectors) {
                 float otherScore = sc.score(key);
                 score *= (float) (1 + otherScore);

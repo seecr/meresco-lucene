@@ -31,9 +31,9 @@ import java.util.List;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
-import org.apache.lucene.search.Weight;
 
 public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreSubCollector> {
 
@@ -68,8 +68,10 @@ class AggregateScoreSubCollector extends SubCollector {
     private NumericDocValues keyValues;
     private final ScoreSuperCollector[] otherScoreCollectors;
     private String keyName;
+    private int[] keyValuesArray;
 
-    public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate) throws IOException {
+    public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate)
+            throws IOException {
         super();
         this.keyName = keyName;
         this.delegate = delegate;
@@ -84,6 +86,7 @@ class AggregateScoreSubCollector extends SubCollector {
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
         this.keyValues = context.reader().getNumericDocValues(keyName);
+        this.keyValuesArray = KeyValuesCache.get(context, keyName);
         this.delegate.setNextReader(context);
     }
 
@@ -120,7 +123,11 @@ class AggregateScoreSubCollector extends SubCollector {
 
         public float score() throws IOException {
             float score = this.scorer.score();
-            int key = (int) keyValues.get(docID());
+            int docId = this.docID();
+            int key = keyValuesArray[docId];
+            if (key == 0) {
+                key = keyValuesArray[docId] = (int) keyValues.get(docId);
+            }
             for (ScoreSuperCollector sc : otherScoreCollectors) {
                 float otherScore = sc.score(key);
                 score *= (float) (1 + otherScore);

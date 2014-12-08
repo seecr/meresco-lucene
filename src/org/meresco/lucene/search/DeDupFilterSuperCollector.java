@@ -41,11 +41,11 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
 
     private final String keyName;
     private final String sortByFieldName;
-    private final SuperCollector<SubCollector> delegate;
+    private final SuperCollector<?> delegate;
     ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>> keys = new ConcurrentHashMap<Long, AtomicReference<DeDupFilterSubCollector.Key>>();
     private IndexReaderContext topLevelReaderContext = null;
 
-    public DeDupFilterSuperCollector(String keyName, String sortByFieldName, SuperCollector<SubCollector> delegate) {
+    public DeDupFilterSuperCollector(String keyName, String sortByFieldName, SuperCollector<?> delegate) {
         super();
         this.keyName = keyName;
         this.sortByFieldName = sortByFieldName;

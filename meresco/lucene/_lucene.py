@@ -121,7 +121,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-            filterQueries=None, suggestionRequest=None, filterCollector=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, **kwargs):
+            filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -143,10 +143,6 @@ class Lucene(object):
             for c in collectors:
                 multiSubCollectors.add(c)
         collector = MultiSuperCollector(multiSubCollectors) if self._multithreaded else MultiCollector.wrap(collectors)
-
-        if filterCollector:
-            filterCollector.setDelegate(collector)
-            collector = filterCollector
 
         if scoreCollector:
             scoreCollector.setDelegate(collector)

@@ -117,14 +117,14 @@ class MultiLucene(Observable):
         for core, q in query.unites:
             collectedKeys = self.call[core].collectKeys(q, query.keyName(core))
             if keys is None:
-                keys = collectedKeys
+                keys = collectedKeys.clone()
             else:
                 keys.union(collectedKeys)
         for core, qs in query.filterQueries:
             for q in qs:
                 collectedKeys = self.call[core].collectKeys(q, query.keyName(core))
                 if keys is None:
-                    keys = collectedKeys
+                    keys = collectedKeys.clone()
                 else:
                     keys.intersect(collectedKeys)
         return keys

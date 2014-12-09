@@ -734,6 +734,23 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEquals(4, result.total)
         self.assertEquals([], result.hits)
 
+    def testCachingKeyCollectorsIntersectsWithACopyOfTheKeys(self):
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        q.setCoreQuery(core='coreB', query=luceneQueryFromCql("O=true"))
+        q.addFilterQuery(core='coreB', query=luceneQueryFromCql("N=true"))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(2, len(result.hits))
+
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        q.setCoreQuery(core='coreB', query=MatchAllDocsQuery())
+        q.addFilterQuery(core='coreB', query=luceneQueryFromCql("N=true"))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(4, len(result.hits))
+
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(
             identifier=identifier,

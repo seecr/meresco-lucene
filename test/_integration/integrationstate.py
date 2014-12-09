@@ -60,7 +60,7 @@ class IntegrationState(SeecrIntegrationState):
         start = time()
         print "Creating database in", self.integrationTempdir
         try:
-            self._runExecutable(join(self.testdataDir, 'upload.py'), processName='IntegrationUpload', cwd=self.testdataDir, port=self.httpPort, redirect=False)
+            self._runExecutable(join(self.testdataDir, 'upload.py'), processName='IntegrationUpload', cwd=self.testdataDir, port=self.httpPort, redirect=False, timeoutInSeconds=20)
             sleepWheel(5)
             print "Finished creating database in %s seconds" % (time() - start)
         except Exception:

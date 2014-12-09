@@ -25,7 +25,7 @@
 
 from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause, MultiCollector, TotalHitCountCollector, TopScoreDocCollector, TopFieldCollector
 from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector, DeDupFilterCollector
-from org.meresco.lucene.search.join import ScoreSuperCollector, ScoreCollector
+from org.meresco.lucene.search.join import ScoreSuperCollector, ScoreCollector, KeySuperCollector, KeyCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search import SortField
@@ -72,6 +72,10 @@ class Lucene(object):
             keyEqualsFunction=lambda (k, q), (k2, q2): k == k2 and q.equals(q2),
             createFunction=lambda args: self._scoreCollector(*args)
         )
+        self._collectedKeysCache = LruCache(
+            keyEqualsFunction=lambda (f, k), (f1, k1): k == k1 and f.equals(f1),
+            createFunction=lambda (filter, keyName): self._collectKeys(filter=filter, keyName=keyName, query=None)
+        )
 
     def addDocument(self, identifier, document):
         document.add(self._fieldRegistry.createIdField(identifier))
@@ -103,6 +107,7 @@ class Lucene(object):
             self._reactor.removeTimer(token=token)
         self._index.commit()
         self._scoreCollectorCache.clear()
+        self._collectedKeysCache.clear()
 
     def search(self, query=None, filterQuery=None, collector=None):
         filter_ = None
@@ -209,6 +214,18 @@ class Lucene(object):
         scoreCollector = ScoreSuperCollector(keyName) if self._multithreaded else ScoreCollector(keyName)
         self.search(query=query, collector=scoreCollector)
         return scoreCollector
+
+    def collectKeys(self, filter, keyName, query=None, cacheCollectedKeys=True):
+        assert not (query is not None and cacheCollectedKeys), "Caching of collecting keys with queries is not allowed"
+        if cacheCollectedKeys:
+            return self._collectedKeysCache.get((filter, keyName))
+        else:
+            return self._collectKeys(filter, keyName, query=query)
+
+    def _collectKeys(self, filter, keyName, query):
+        keyCollector = KeySuperCollector(keyName) if self._multithreaded else KeyCollector(keyName)
+        self.search(query=query or MatchAllDocsQuery(), filterQuery=filter, collector=keyCollector)
+        return keyCollector.getCollectedKeys()
 
     def close(self):
         if self._commitTimerToken is not None:

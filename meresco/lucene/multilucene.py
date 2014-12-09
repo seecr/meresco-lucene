@@ -89,7 +89,7 @@ class MultiLucene(Observable):
 
         resultCoreQuery = self._luceneQueryForCore(resultCoreName, query)
         aggregateScoreCollector = self._createAggregateScoreCollector(query, resultCoreKey)
-        keyCollector = self._createKeyCollector(resultCoreKey)
+        keyCollector = KeySuperCollector(resultCoreKey) if self._multithreaded else KeyCollector(resultCoreKey)
         result = yield self.any[resultCoreName].executeQuery(
                 luceneQuery=resultCoreQuery or MatchAllDocsQuery(),
                 filter=summaryFilter,
@@ -112,22 +112,17 @@ class MultiLucene(Observable):
         result.queryTime = millis(time() - t0)
         generatorReturn(result)
 
-    def _collectKeys(self, filter, coreName, keyName, query=MatchAllDocsQuery()):
-        keyCollector = self._createKeyCollector(keyName)
-        self.do[coreName].search(query=query, filterQuery=filter, collector=keyCollector)
-        return keyCollector.getCollectedKeys()
-
     def _uniteFilter(self, query):
         keys = None
         for core, q in query.unites:
-            collectedKeys = self._collectKeys(q, core, query.keyName(core))
+            collectedKeys = self.call[core].collectKeys(q, query.keyName(core))
             if keys is None:
                 keys = collectedKeys
             else:
                 keys.union(collectedKeys)
         for core, qs in query.filterQueries:
             for q in qs:
-                collectedKeys = self._collectKeys(q, core, query.keyName(core))
+                collectedKeys = self.call[core].collectKeys(q, query.keyName(core))
                 if keys is None:
                     keys = collectedKeys
                 else:
@@ -137,7 +132,7 @@ class MultiLucene(Observable):
     def _coreQueries(self, coreName, query, keys):
         luceneQuery = self._luceneQueryForCore(coreName, query)
         if luceneQuery:
-            collectedKeys = self._collectKeys(filter=None, coreName=coreName, keyName=query.keyName(coreName), query=luceneQuery)
+            collectedKeys = self.call[coreName].collectKeys(filter=None, keyName=query.keyName(coreName), query=luceneQuery, cacheCollectedKeys=False)
             if keys:
                 keys.intersect(collectedKeys)
             else:
@@ -150,9 +145,6 @@ class MultiLucene(Observable):
         if ddQueries:
             luceneQuery = self.call[coreName].createDrilldownQuery(luceneQuery, ddQueries)
         return luceneQuery
-
-    def _createKeyCollector(self, keyName):
-        return KeySuperCollector(keyName) if self._multithreaded else KeyCollector(keyName)
 
     def _createAggregateScoreCollector(self, query, keyName):
         scoreCollectors = ArrayList().of_(ScoreSuperCollector if self._multithreaded else ScoreCollector)

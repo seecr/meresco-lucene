@@ -137,13 +137,13 @@ class Lucene(object):
         if facets:
             facetCollector = self._facetCollector()
             collectors.append(facetCollector)
+        if keyCollector:
+            collectors.append(keyCollector)
 
         if self._multithreaded:
             multiSubCollectors = ArrayList().of_(SuperCollector)
             for c in collectors:
                 multiSubCollectors.add(c)
-        if keyCollector:
-            multiSubCollectors.add(keyCollector)
         collector = MultiSuperCollector(multiSubCollectors) if self._multithreaded else MultiCollector.wrap(collectors)
 
         if scoreCollector:

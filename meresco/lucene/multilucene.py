@@ -85,7 +85,7 @@ class MultiLucene(Observable):
 
         summaryFilter = None
         if finalKeys is not None:
-            summaryFilter = KeyFilter(finalKeys, query.keyName(query.resultsFrom))
+            summaryFilter = KeyFilter(finalKeys, resultCoreKey)
 
         resultCoreQuery = self._luceneQueryForCore(resultCoreName, query)
         aggregateScoreCollector = self._createAggregateScoreCollector(query, resultCoreKey)

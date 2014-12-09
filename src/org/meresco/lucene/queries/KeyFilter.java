@@ -31,6 +31,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.BitsFilteredDocIdSet;
 import org.apache.lucene.util.Bits;
 import org.meresco.lucene.search.join.KeyValuesCache;
 
@@ -47,7 +48,7 @@ public class KeyFilter extends Filter {
 	@Override
 	public DocIdSet getDocIdSet(final AtomicReaderContext context,
 			Bits acceptDocs) throws IOException {
-		return new DocIdSet() {
+		return BitsFilteredDocIdSet.wrap(new DocIdSet() {
 			@Override
 			public DocIdSetIterator iterator() throws IOException {
 				return new DocIdSetIterator() {
@@ -89,6 +90,6 @@ public class KeyFilter extends Filter {
 					}
 				};
 			}
-		};
+		}, acceptDocs);
 	}
 }

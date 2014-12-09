@@ -30,7 +30,7 @@ from meresco.core import Observable
 
 from seecr.utils.generatorutils import generatorReturn
 
-from org.apache.lucene.search import MatchAllDocsQuery
+from org.apache.lucene.search import MatchAllDocsQuery, QueryWrapperFilter
 from org.apache.lucene.queries import ChainedFilter
 from org.meresco.lucene.search.join import KeySuperCollector, ScoreCollector, AggregateScoreCollector, AggregateScoreSuperCollector, ScoreSuperCollector, KeyCollector
 from org.meresco.lucene.queries import KeyFilter
@@ -50,13 +50,16 @@ class MultiLucene(Observable):
         response = yield self.any[coreName].executeQuery(**kwargs)
         generatorReturn(response)
 
-    def collectKeys(self, query, coreName, keyName, filterQueries=None):
+    def _createKeyCollector(self, keyName):
         if self._multithreaded:
-            keyCollector = KeySuperCollector(keyName)
+            return KeySuperCollector(keyName)
         else:
-            keyCollector = KeyCollector(keyName)
-        self.do[coreName].search(query=query, filterQueries=filterQueries, collector=keyCollector)
-        return keyCollector
+            return KeyCollector(keyName)
+
+    def collectKeys(self, filter, coreName, keyName, query=MatchAllDocsQuery()):
+        keyCollector = self._createKeyCollector(keyName)
+        self.do[coreName].search(query=query, filterQuery=filter, collector=keyCollector)
+        return keyCollector.getCollectedKeys()
 
     def collectUniteKeyCollectors(self, resultCoreKeyCollector, query):
         for d in query.unites:
@@ -95,7 +98,87 @@ class MultiLucene(Observable):
         response = yield self._multipleCoreQuery(query)
         generatorReturn(response)
 
+    def _uniteFilter(self, query):
+        keys = None
+        for core, q in query.unites:
+            collectedKeys = self.collectKeys(q, core, query.keyName(core))
+            if keys is None:
+                keys = collectedKeys
+            else:
+                keys.union(collectedKeys)
+        for core, qs in query.filterQueries:
+            for q in qs:
+                collectedKeys = self.collectKeys(q, core, query.keyName(core))
+                if keys is None:
+                    keys = collectedKeys
+                else:
+                    keys.intersect(collectedKeys)
+        return keys
+
+    def _coreQueries(self, coreName, query, keys):
+        q = query.queryFor(coreName)
+        drilldownQueries = query.drilldownQueriesFor(coreName)
+        if q or drilldownQueries:
+            luceneQuery = self.call[coreName].createDrilldownQuery(luceneQuery=q, drilldownQueries=drilldownQueries)
+            collectedKeys = self.collectKeys(filter=None, coreName=coreName, keyName=query.keyName(coreName), query=luceneQuery)
+            if keys:
+                keys.intersect(collectedKeys)
+            else:
+                keys = collectedKeys
+        return keys
+
     def _multipleCoreQuery(self, query):
+        t0 = time()
+        resultCoreName = query.resultsFrom
+        otherCoreNames = [coreName for coreName in query.cores if coreName != resultCoreName]
+
+        finalKeys = self._uniteFilter(query)
+        for otherCoreName in otherCoreNames:
+            finalKeys = self._coreQueries(otherCoreName, query, finalKeys)
+
+        summaryFilter = None
+        if finalKeys is not None:
+            summaryFilter = KeyFilter(finalKeys, query.keyName(query.resultsFrom))
+
+        scoreCollectors = ArrayList().of_(ScoreSuperCollector if self._multithreaded else ScoreCollector)
+        for coreName in [resultCoreName] + otherCoreNames:
+            rankQuery = query.rankQueryFor(coreName)
+            if rankQuery:
+                scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName), query=rankQuery)
+                scoreCollectors.add(scoreCollector)
+        constructor = AggregateScoreSuperCollector if self._multithreaded else AggregateScoreCollector
+        aggregateScoreCollector = constructor(query.keyName(resultCoreName), scoreCollectors) if scoreCollectors.size() > 0 else None
+
+        resultCoreQuery = query.queryFor(resultCoreName) or MatchAllDocsQuery()
+        resultCoreDrilldownQueries = query.drilldownQueriesFor(resultCoreName)
+        if resultCoreDrilldownQueries:
+            resultCoreQuery = self.call[resultCoreName].createDrilldownQuery(resultCoreQuery, resultCoreDrilldownQueries)
+
+        keyCollector = self._createKeyCollector(query.keyName(resultCoreName))
+        result = yield self.any[resultCoreName].executeQuery(
+                luceneQuery=resultCoreQuery,
+                filter=summaryFilter,
+                facets=query.facetsFor(resultCoreName),
+                scoreCollector=aggregateScoreCollector,
+                keyCollector=keyCollector,
+                **query.otherKwargs()
+            )
+
+        for otherCoreName in otherCoreNames:
+            if query.facetsFor(otherCoreName):
+                keyFilter = KeyFilter(keyCollector.getCollectedKeys(), query.keyName(otherCoreName))
+                result.drilldownData.extend((yield self.any[otherCoreName].facets(
+                    facets=query.facetsFor(otherCoreName),
+                    filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),
+                    drilldownQueries=query.drilldownQueriesFor(otherCoreName),
+                    filter=keyFilter
+                )))
+
+        result.queryTime = millis(time() - t0)
+        generatorReturn(result)
+
+
+    def _multipleCoreQueryOld(self, query):
         t0 = time()
         resultCoreName = query.resultsFrom
         otherCoreNames = [coreName for coreName in query.cores if coreName != resultCoreName]
@@ -168,7 +251,6 @@ class MultiLucene(Observable):
         result.drilldownData.extend(drilldownData)
         result.queryTime = millis(time() - t0)
         generatorReturn(result)
-
 
     def _sinqleQuery(self, query):
         t0 = time()

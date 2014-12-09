@@ -53,7 +53,7 @@ public class KeySuperCollector extends SuperCollector<KeyCollector> {
         this.currentKeySet = currentKeySet;
     }
 
-    public DocIdSet getCollectedKeys() {
+    public OpenBitSet getCollectedKeys() {
         return this.currentKeySet;
     }
 }

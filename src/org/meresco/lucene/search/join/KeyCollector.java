@@ -71,7 +71,7 @@ public class KeyCollector extends SubCollector {
     public void setScorer(Scorer scorer) throws IOException {
     }
 
-    public DocIdSet getCollectedKeys() throws IOException {
+    public OpenBitSet getCollectedKeys() throws IOException {
         return this.currentKeySet;
     }
 

@@ -104,10 +104,10 @@ class Lucene(object):
         self._index.commit()
         self._scoreCollectorCache.clear()
 
-    def search(self, query=None, filterQueries=None, collector=None):
+    def search(self, query=None, filterQuery=None, collector=None):
         filter_ = None
-        if filterQueries:
-            filter_ = self._filterFor(filterQueries)
+        if filterQuery:
+            filter_ = QueryWrapperFilter(filterQuery)
         self._index.search(query, filter_, collector)
 
     def facets(self, facets, filterQueries, drilldownQueries=None, filter=None):
@@ -121,7 +121,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-            filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, **kwargs):
+            filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, keyCollector=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -142,6 +142,8 @@ class Lucene(object):
             multiSubCollectors = ArrayList().of_(SuperCollector)
             for c in collectors:
                 multiSubCollectors.add(c)
+        if keyCollector:
+            multiSubCollectors.add(keyCollector)
         collector = MultiSuperCollector(multiSubCollectors) if self._multithreaded else MultiCollector.wrap(collectors)
 
         if scoreCollector:

@@ -125,7 +125,11 @@ class ComposedQuery(object):
 
     @property
     def unites(self):
-        return self._unites
+        return [(u['core'], u['query']) for u in self._unites]
+
+    @property
+    def filterQueries(self):
+        return self._filterQueries.items()
 
     @property
     def numberOfUsedCores(self):

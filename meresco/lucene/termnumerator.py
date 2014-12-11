@@ -23,7 +23,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.store import SimpleFSDirectory
+from org.apache.lucene.store import MMapDirectory
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter, DirectoryTaxonomyReader
 from org.apache.lucene.facet.taxonomy import FacetLabel
 from org.apache.lucene.index import IndexWriterConfig
@@ -36,7 +36,7 @@ class TermNumerator(Observable):
 
     def __init__(self, path, lruTaxonomyWriterCacheSize=100):
         Observable.__init__(self)
-        self._taxoDirectory = SimpleFSDirectory(File(path))
+        self._taxoDirectory = MMapDirectory(File(path))
         self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
 
     def numerateTerm(self, term):

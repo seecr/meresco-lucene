@@ -37,7 +37,7 @@ from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields,
 from org.apache.lucene.index import TieredMergePolicy
 from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.search.spell import DirectSpellChecker
-from org.apache.lucene.store import SimpleFSDirectory
+from org.apache.lucene.store import MMapDirectory
 from org.apache.lucene.util import BytesRef, BytesRefIterator
 from org.apache.lucene.util import Version
 from org.meresco.lucene.search import FacetSuperCollector
@@ -50,8 +50,8 @@ class Index(object):
         similarity = similarity or BM25Similarity()
 
         self._checker = DirectSpellChecker()
-        indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
-        taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
+        indexDirectory = MMapDirectory(File(join(path, 'index')))
+        taxoDirectory = MMapDirectory(File(join(path, 'taxo')))
         self._analyzer = createAnalyzer(analyzer=analyzer)
         conf = IndexWriterConfig(Version.LUCENE_4_10_0, self._analyzer)
         conf.setSimilarity(similarity)

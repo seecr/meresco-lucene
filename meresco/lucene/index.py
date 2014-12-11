@@ -51,7 +51,9 @@ class Index(object):
 
         self._checker = DirectSpellChecker()
         indexDirectory = MMapDirectory(File(join(path, 'index')))
+        indexDirectory.setUseUnmap(False)
         taxoDirectory = MMapDirectory(File(join(path, 'taxo')))
+        taxoDirectory.setUseUnmap(False)
         self._analyzer = createAnalyzer(analyzer=analyzer)
         conf = IndexWriterConfig(Version.LUCENE_4_10_0, self._analyzer)
         conf.setSimilarity(similarity)

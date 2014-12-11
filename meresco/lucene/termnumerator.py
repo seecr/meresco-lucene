@@ -36,8 +36,9 @@ class TermNumerator(Observable):
 
     def __init__(self, path, lruTaxonomyWriterCacheSize=100):
         Observable.__init__(self)
-        self._taxoDirectory = MMapDirectory(File(path))
-        self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
+        taxoDirectory = MMapDirectory(File(path))
+        taxoDirectory.setUseUnmap(False)
+        self._taxoWriter = DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
 
     def numerateTerm(self, term):
         if not term:

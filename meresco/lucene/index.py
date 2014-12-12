@@ -44,13 +44,14 @@ from org.meresco.lucene.search import FacetSuperCollector
 
 
 class Index(object):
-    def __init__(self, path, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, multithreaded=False):
+    def __init__(self, path, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, multithreaded=False, readonly=False):
+        self._readonly = readonly
         self._multithreaded = multithreaded
         similarity = similarity or BM25Similarity()
 
         self._checker = DirectSpellChecker()
         indexDirectory = SimpleFSDirectory(File(join(path, 'index')))
-        self._taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
+        taxoDirectory = SimpleFSDirectory(File(join(path, 'taxo')))
         self._analyzer = createAnalyzer(analyzer=analyzer)
         conf = IndexWriterConfig(Version.LUCENE_4_10_0, self._analyzer)
         conf.setSimilarity(similarity)
@@ -59,11 +60,13 @@ class Index(object):
         mergePolicy.setSegmentsPerTier(16.0)
         conf.setMergePolicy(mergePolicy)
 
-        self._indexWriter = IndexWriter(indexDirectory, conf)
-        self._taxoWriter = DirectoryTaxonomyWriter(self._taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
-        self._taxoWriter.commit()
+        if not self._readonly:
+            self._indexWriter = IndexWriter(indexDirectory, conf)
+            self._indexWriter.commit()
+            self._taxoWriter = DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
+            self._taxoWriter.commit()
 
-        self._indexAndTaxonomy = IndexAndTaxonomy(self._indexWriter, self._taxoWriter, similarity, self._multithreaded)
+        self._indexAndTaxonomy = IndexAndTaxonomy(indexDirectory, taxoDirectory, similarity, self._multithreaded)
         self.similarityWrapper = self._indexAndTaxonomy.similarityWrapper
 
         self._facetsConfig = facetsConfig
@@ -138,8 +141,9 @@ class Index(object):
         return self._indexAndTaxonomy.searcher.getIndexReader().numDocs()
 
     def commit(self):
-        self._taxoWriter.commit()
-        self._indexWriter.commit()
+        if not self._readonly:
+            self._taxoWriter.commit()
+            self._indexWriter.commit()
         self._indexAndTaxonomy.reopen()
 
     def getDocument(self, docId):
@@ -156,8 +160,9 @@ class Index(object):
 
     def close(self):
         self._indexAndTaxonomy.close()
-        self._taxoWriter.close()
-        self._indexWriter.close()
+        if not self._readonly:
+            self._taxoWriter.close()
+            self._indexWriter.close()
 
     def _analyzeToken(self, token):
         result = []

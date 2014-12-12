@@ -34,15 +34,15 @@ from java.util.concurrent import Executors
 
 class IndexAndTaxonomy(object):
 
-    def __init__(self, indexWriter=None, taxoWriter=None, similarity=None, multithreaded=None):
+    def __init__(self, indexDirectory=None, taxoDirectory=None, similarity=None, multithreaded=None):
         self._similarity = similarity
         self._multithreaded = multithreaded
-        reader = DirectoryReader.open(indexWriter, True)
+        reader = DirectoryReader.open(indexDirectory)
         self._numberOfProcessors = Runtime.getRuntime().availableProcessors()
         self._executor = Executors.newFixedThreadPool(self._numberOfProcessors);
         self.searcher = SuperIndexSearcher(reader, self._executor, self._numberOfProcessors) if self._multithreaded else IndexSearcher(reader)
         self.searcher.setSimilarity(self._similarity)
-        self.taxoReader = DirectoryTaxonomyReader(taxoWriter)
+        self.taxoReader = DirectoryTaxonomyReader(taxoDirectory)
         self._bm25Arguments = None
         self.similarityWrapper = SimilarityWrapper()
         self.similarityWrapper.get = lambda: self.searcher.getSimilarity().toString()

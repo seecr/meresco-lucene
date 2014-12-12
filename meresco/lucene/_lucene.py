@@ -50,16 +50,16 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, fieldRegistry, commitTimeout=None, commitCount=None, name=None, multithreaded=True, **kwargs):
+    def __init__(self, path, reactor, fieldRegistry, commitTimeout=None, commitCount=None, name=None, multithreaded=True, readonly=False, **kwargs):
         self._reactor = reactor
         self._maxCommitCount = commitCount or 100000
         self._commitCount = 0
         self._commitTimeout = commitTimeout or 10
         self._commitTimerToken = None
-
+        self._readonly = readonly
         self._fieldRegistry = fieldRegistry
         self._multithreaded = multithreaded
-        self._index = Index(path, facetsConfig=fieldRegistry.facetsConfig, multithreaded=multithreaded, **kwargs)
+        self._index = Index(path, facetsConfig=fieldRegistry.facetsConfig, multithreaded=multithreaded, readonly=readonly, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name
@@ -76,6 +76,8 @@ class Lucene(object):
             keyEqualsFunction=lambda (f, k), (f1, k1): k == k1 and f.equals(f1),
             createFunction=lambda (filter, keyName): self._collectKeys(filter=filter, keyName=keyName, query=None)
         )
+        if self._readonly:
+            self._startCommitTimer()
 
     def addDocument(self, identifier, document):
         document.add(self._fieldRegistry.createIdField(identifier))
@@ -90,13 +92,16 @@ class Lucene(object):
         return
         yield
 
+    def _startCommitTimer(self):
+        self._commitTimerToken = self._reactor.addTimer(
+                seconds=self._commitTimeout,
+                callback=lambda: self._realCommit(removeTimer=False)
+            )
+
     def commit(self):
         self._commitCount += 1
         if self._commitTimerToken is None:
-            self._commitTimerToken = self._reactor.addTimer(
-                    seconds=self._commitTimeout,
-                    callback=lambda: self._realCommit(removeTimer=False)
-                )
+            self._startCommitTimer()
         if self._commitCount >= self._maxCommitCount:
             self._realCommit()
             self._commitCount = 0
@@ -108,6 +113,9 @@ class Lucene(object):
         self._index.commit()
         self._scoreCollectorCache.clear()
         self._collectedKeysCache.clear()
+        if self._readonly:
+            self._startCommitTimer()
+
 
     def search(self, query=None, filterQuery=None, collector=None):
         filter_ = None

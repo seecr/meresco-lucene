@@ -116,7 +116,6 @@ class Lucene(object):
         if self._readonly:
             self._startCommitTimer()
 
-
     def search(self, query=None, filterQuery=None, collector=None):
         filter_ = None
         if filterQuery:

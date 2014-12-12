@@ -74,31 +74,12 @@ class LuceneTest(SeecrTestCase):
                 ]
             )
         )
-        self.readOnlyLucene = Lucene(
-            join(self.tempdir, 'lucene'),
-            commitTimeout=1,
-            reactor=self._reactor,
-            multithreaded=self._multithreaded,
-            readonly=True,
-            fieldRegistry=FieldRegistry(
-                drilldownFields=[
-                    DrilldownField(name='field1'),
-                    DrilldownField(name='field2'),
-                    DrilldownField('field3'),
-                    DrilldownField('fieldHier', hierarchical=True),
-                    DrilldownField('cat'),
-                ]
-            )
-        )
-
 
     def tearDown(self):
         try:
             self._reactor.calledMethods.reset() # don't keep any references.
             self.lucene.close()
             self.lucene = None
-            self.readOnlyLucene.close()
-            self.readOnlyLucene = None
             gc.collect()
             diff = self._getJavaObjects() - self._javaObjects
             self.assertEquals(0, len(diff), diff)
@@ -135,18 +116,28 @@ class LuceneTest(SeecrTestCase):
         self.assertTrue(result.queryTime > 0.0001, result.asJson())
 
     def testAdd1DocumentWithReadonlyLucene(self):
+        readOnlyLucene = Lucene(
+            join(self.tempdir, 'lucene'),
+            commitTimeout=1,
+            reactor=self._reactor,
+            multithreaded=self._multithreaded,
+            readonly=True,
+            fieldRegistry=FieldRegistry()
+        )
+        self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
+        timer = self._reactor.calledMethods[0]
         document = Document()
         document.add(TextField('title', 'The title', Field.Store.NO))
         returnValueFromGenerator(self.lucene.addDocument(identifier="identifier", document=document))
-        sleep(2.5)
-        result = returnValueFromGenerator(self.readOnlyLucene.executeQuery(MatchAllDocsQuery()))
+        result = returnValueFromGenerator(readOnlyLucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(0, result.total)
+        timer.kwargs['callback']()
+        result = returnValueFromGenerator(readOnlyLucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(1, result.total)
-        self.assertEquals(['identifier'], self.hitIds(result.hits))
-        result = returnValueFromGenerator(self.readOnlyLucene.executeQuery(TermQuery(Term("title", 'title'))))
-        self.assertEquals(1, result.total)
-        result = returnValueFromGenerator(self.readOnlyLucene.executeQuery(TermQuery(Term("title", 'the'))))
-        self.assertEquals(1, result.total)
-        self.assertTrue(result.queryTime > 0.0001, result.asJson())
+
+        readOnlyLucene.close()
+        readOnlyLucene = None
+
 
     def testAddAndDeleteDocument(self):
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))

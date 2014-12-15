@@ -52,9 +52,9 @@ class MultiLuceneTest(SeecrTestCase):
 
     def setUp(self):
         SeecrTestCase.setUp(self)
-        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
-        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), commitCount=1, fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
-        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), commitCount=1, similarity=TermFrequencySimilarity(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
+        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
+        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
+        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), similarity=TermFrequencySimilarity(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
         self.dna = be((Observable(),
             (MultiLucene(defaultCore='coreA', multithreaded=self._multithreaded),
                 (self.luceneA,),
@@ -107,6 +107,13 @@ class MultiLuceneTest(SeecrTestCase):
         self.addDocument(self.luceneC, identifier='C-R', keys=[('C', k5)], fields=[('R', 'true')])
         self.addDocument(self.luceneC, identifier='C-S', keys=[('C', k8)], fields=[('S', 'true')])
         self.addDocument(self.luceneC, identifier='C-S2', keys=[('C', k7)], fields=[('S', 'false')])
+
+        self.luceneA._realCommit()
+        self.luceneB._realCommit()
+        self.luceneC._realCommit()
+        self.luceneA._maxCommitCount = 1
+        self.luceneB._maxCommitCount = 1
+        self.luceneC._maxCommitCount = 1
 
     def tearDown(self):
         self.luceneA.close()

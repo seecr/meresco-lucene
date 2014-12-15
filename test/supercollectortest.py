@@ -80,7 +80,7 @@ class SuperCollectorTest(SeecrTestCase):
 
     def testFacetSuperCollector(self):
         I = Index(path=self.tempdir, facetsConfig=FacetsConfig(), multithreaded=True)
-        for i in xrange(10000):
+        for i in xrange(1000):
             document1 = createDocument(fields=[("field1", str(i)), ("field2", str(i)*1000)], facets=[("facet1", "value%s" % (i % 100))])
             document1 = I._facetsConfig.build(I._taxoWriter, document1)
             I._indexWriter.addDocument(document1)
@@ -92,16 +92,16 @@ class SuperCollectorTest(SeecrTestCase):
         I.search(Q, None, C)
         tc = C.getTopChildren(10, "facet1", [])
         self.assertEquals([
-                ('value90', 100),
-                ('value91', 100),
-                ('value92', 100),
-                ('value93', 100),
-                ('value94', 100),
-                ('value95', 100),
-                ('value96', 100),
-                ('value97', 100),
-                ('value98', 100),
-                ('value99', 100)
+                ('value90', 10),
+                ('value91', 10),
+                ('value92', 10),
+                ('value93', 10),
+                ('value94', 10),
+                ('value95', 10),
+                ('value96', 10),
+                ('value97', 10),
+                ('value98', 10),
+                ('value99', 10)
             ], [(l.label, l.value.intValue()) for l in tc.labelValues])
 
     def testFacetAndTopsMultiCollector(self):
@@ -110,7 +110,7 @@ class SuperCollectorTest(SeecrTestCase):
             document1 = createDocument(fields=[("field1", str(i)), ("field2", str(i)*1000)], facets=[("facet1", "value%s" % (i % 10))])
             document1 = I._facetsConfig.build(I._taxoWriter, document1)
             I._indexWriter.addDocument(document1)
-            I.commit()
+        I.commit()
         I.close()
         I = Index(path=self.tempdir, facetsConfig=FacetsConfig(), multithreaded=True)
 

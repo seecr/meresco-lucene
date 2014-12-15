@@ -50,7 +50,7 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, fieldRegistry, commitTimeout=None, commitCount=None, name=None, multithreaded=True, readonly=False, **kwargs):
+    def __init__(self, path, reactor, fieldRegistry, commitTimeout=None, commitCount=None, name=None, multithreaded=True, readonly=False, verbose=True, **kwargs):
         self._reactor = reactor
         self._maxCommitCount = commitCount or 100000
         self._commitCount = 0
@@ -78,6 +78,9 @@ class Lucene(object):
         )
         if self._readonly:
             self._startCommitTimer()
+        self.log = lambda v: None
+        if verbose:
+            self.log = self._log
 
     def addDocument(self, identifier, document):
         document.add(self._fieldRegistry.createIdField(identifier))
@@ -107,6 +110,7 @@ class Lucene(object):
             self._commitCount = 0
 
     def _realCommit(self, removeTimer=True):
+        t0 = time()
         self._commitTimerToken, token = None, self._commitTimerToken
         if removeTimer:
             self._reactor.removeTimer(token=token)
@@ -115,6 +119,7 @@ class Lucene(object):
         self._collectedKeysCache.clear()
         if self._readonly:
             self._startCommitTimer()
+        self.log("Lucene {0}: commit took: {1:.2f} seconds".format(self.coreName, time() - t0))
 
     def search(self, query=None, filterQuery=None, collector=None):
         filter_ = None
@@ -326,6 +331,10 @@ class Lucene(object):
         result = SortField(fieldname, SortField.Type.STRING, sortDescending)
         result.setMissingValue(SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST)
         return result
+
+    def _log(self, value):
+        print value
+        from sys import stdout; stdout.flush()
 
 def defaults(parameter, default):
     return default if parameter is None else parameter

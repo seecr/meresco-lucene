@@ -41,7 +41,8 @@ class TermFrequencySimilarityTest(SeecrTestCase):
             commitCount=1,
             reactor=reactor,
             similarity=TermFrequencySimilarity(),
-            fieldRegistry=FieldRegistry())
+            fieldRegistry=FieldRegistry(),
+            verbose=False)
         document = Document()
         document.add(TextField('field', 'x '*100, Field.Store.NO))
         returnValueFromGenerator(lucene.addDocument(identifier="identifier", document=document))

@@ -52,9 +52,9 @@ class MultiLuceneTest(SeecrTestCase):
 
     def setUp(self):
         SeecrTestCase.setUp(self)
-        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
-        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
-        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), similarity=TermFrequencySimilarity(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded)
+        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded, verbose=False)
+        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded, verbose=False)
+        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), similarity=TermFrequencySimilarity(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded, verbose=False)
         self.dna = be((Observable(),
             (MultiLucene(defaultCore='coreA', multithreaded=self._multithreaded),
                 (self.luceneA,),

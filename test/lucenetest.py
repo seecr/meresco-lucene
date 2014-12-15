@@ -47,7 +47,6 @@ from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 from seecr.test import SeecrTestCase, CallTrace
 from seecr.test.io import stdout_replaced
 from seecr.utils.generatorutils import returnValueFromGenerator
-from time import sleep
 
 
 class LuceneTest(SeecrTestCase):
@@ -72,7 +71,8 @@ class LuceneTest(SeecrTestCase):
                     DrilldownField('fieldHier', hierarchical=True),
                     DrilldownField('cat'),
                 ]
-            )
+            ),
+            verbose=False
         )
 
     def tearDown(self):
@@ -123,7 +123,8 @@ class LuceneTest(SeecrTestCase):
             reactor=self._reactor,
             multithreaded=self._multithreaded,
             readonly=True,
-            fieldRegistry=FieldRegistry()
+            fieldRegistry=FieldRegistry(),
+            verbose=False
         )
         self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
         timer = self._reactor.calledMethods[0]
@@ -151,7 +152,7 @@ class LuceneTest(SeecrTestCase):
 
     def testAddCommitAfterTimeout(self):
         self.lucene.close()
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3, fieldRegistry=FieldRegistry())
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3, fieldRegistry=FieldRegistry(), verbose=False)
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
         self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
         self.assertEquals(42, self._reactor.calledMethods[0].kwargs['seconds'])
@@ -166,7 +167,7 @@ class LuceneTest(SeecrTestCase):
 
     def testAddAndCommitCount3(self):
         self.lucene.close()
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3, fieldRegistry=FieldRegistry())
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3, fieldRegistry=FieldRegistry(), verbose=False)
         token = object()
         self._reactor.returnValues['addTimer'] = token
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
@@ -454,7 +455,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="identifier", document=document))
         with stdout_replaced():
             self.lucene.handleShutdown()
-        lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor, fieldRegistry=FieldRegistry())
+        lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor, fieldRegistry=FieldRegistry(), verbose=False)
         response = returnValueFromGenerator(lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
         self.assertEquals(1, response.total)
 
@@ -511,7 +512,7 @@ class LuceneTest(SeecrTestCase):
 
     def testDutchStemming(self):
         self.lucene.close()
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor, analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=FieldRegistry())
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor, analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=FieldRegistry(), verbose=False)
         doc = document(field0='katten en honden')
         consume(self.lucene.addDocument("urn:1", doc))
         self.lucene.commit()

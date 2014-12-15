@@ -35,7 +35,7 @@ from java.util.concurrent import Executors
 class IndexAndTaxonomy(object):
 
     def __init__(self, indexDirectory=None, taxoDirectory=None, similarity=None, multithreaded=None):
-        self._similarity = similarity
+        self._defaultSimilarity = self._similarity = similarity
         self._multithreaded = multithreaded
         reader = DirectoryReader.open(indexDirectory)
         self._numberOfProcessors = Runtime.getRuntime().availableProcessors()
@@ -55,25 +55,20 @@ class IndexAndTaxonomy(object):
             return
         currentReader.close()
         self.searcher = SuperIndexSearcher(reader, self._executor, self._numberOfProcessors) if self._multithreaded else IndexSearcher(reader)
-        self._setSimilarityFor(self.searcher)
+        self.searcher.setSimilarity(self._similarity)
         taxoReader = DirectoryTaxonomyReader.openIfChanged(self.taxoReader)
         if taxoReader is None:
             return
         self.taxoReader.close()
         self.taxoReader = taxoReader
 
-    def _setSimilarityFor(self, searcher):
-        similarity = self._similarity
-        if self._bm25Arguments:
-            similarity = BM25Similarity(*self._bm25Arguments)
-        self.searcher.setSimilarity(similarity)
-
     def _setBM25Similarity(self, k1=None, b=None):
+        # This method must be thread-safe
         if k1 is None or b is None:
-            self._bm25Arguments = None
+            self._similarity = self._defaultSimilarity
         else:
-            self._bm25Arguments = (k1, b)
-        self._setSimilarityFor(self.searcher)
+            self._similarity = BM25Similarity(*self._bm25Arguments)
+        self.searcher.setSimilarity(self._similarity)
 
     def close(self):
         self.taxoReader.close()

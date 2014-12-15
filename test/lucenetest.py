@@ -91,8 +91,9 @@ class LuceneTest(SeecrTestCase):
         return set(
                 [(c, refs[c])
                 for c in refs.keys()
-                if c != 'class java.lang.Class' and \
-                    c != 'class org.apache.lucene.document.Field' # Fields are kept in FieldRegistry for reusing
+                if c != 'class java.lang.Class' and
+                    c != 'class org.apache.lucene.document.Field' and # Fields are kept in FieldRegistry for reusing
+                    c != 'class org.apache.lucene.facet.FacetsConfig'
             ])
 
     def hitIds(self, hits):

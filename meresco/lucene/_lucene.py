@@ -52,7 +52,7 @@ class Lucene(object):
 
     def __init__(self, path, reactor, settings, name=None, **kwargs):
         self._reactor = reactor
-        self._settings = settings
+        self.settings = settings
         self._multithreaded = settings.multithreaded
         self._fieldRegistry = settings.fieldRegistry
         self._commitCount = 0
@@ -93,7 +93,7 @@ class Lucene(object):
 
     def _startCommitTimer(self):
         self._commitTimerToken = self._reactor.addTimer(
-                seconds=self._settings.commitTimeout,
+                seconds=self.settings.commitTimeout,
                 callback=lambda: self._realCommit(removeTimer=False)
             )
 
@@ -101,7 +101,7 @@ class Lucene(object):
         self._commitCount += 1
         if self._commitTimerToken is None:
             self._startCommitTimer()
-        if self._commitCount >= self._settings.commitCount:
+        if self._commitCount >= self.settings.commitCount:
             self._realCommit()
             self._commitCount = 0
 
@@ -113,7 +113,7 @@ class Lucene(object):
         self._index.commit()
         self._scoreCollectorCache.clear()
         self._collectedKeysCache.clear()
-        if self._settings.readonly:
+        if self.settings.readonly:
             self._startCommitTimer()
         self.log("Lucene {0}: commit took: {1:.2f} seconds".format(self.coreName, time() - t0))
 

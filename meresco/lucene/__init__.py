@@ -60,7 +60,7 @@ from fieldregistry import SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX, NUMERIC
 from _version import version
 from luceneresponse import LuceneResponse
 from _analyzer import createAnalyzer
-from _lucene import Lucene
+from _lucene import Lucene, LuceneSettings
 from fields2lucenedoc import Fields2LuceneDoc
 from cqltolucenequery import CqlToLuceneQuery
 from multilucene import MultiLucene

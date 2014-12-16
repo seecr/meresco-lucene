@@ -32,7 +32,7 @@ from cqlparser import parseString as parseCql
 
 from weightless.core import consume, retval
 
-from meresco.lucene import Lucene, VM, DrilldownField
+from meresco.lucene import Lucene, VM, DrilldownField, LuceneSettings
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
 from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, FieldRegistry
@@ -58,12 +58,7 @@ class LuceneTest(SeecrTestCase):
         super(LuceneTest, self).setUp()
         self._javaObjects = self._getJavaObjects()
         self._reactor = CallTrace('reactor')
-        self.lucene = Lucene(
-            join(self.tempdir, 'lucene'),
-            commitCount=1,
-            reactor=self._reactor,
-            multithreaded=self._multithreaded,
-            fieldRegistry=FieldRegistry(
+        self._defaultSettings = LuceneSettings(commitCount=1, commitTimeout=1, multithreaded=self._multithreaded, verbose=False, fieldRegistry=FieldRegistry(
                 drilldownFields=[
                     DrilldownField(name='field1'),
                     DrilldownField(name='field2'),
@@ -71,8 +66,11 @@ class LuceneTest(SeecrTestCase):
                     DrilldownField('fieldHier', hierarchical=True),
                     DrilldownField('cat'),
                 ]
-            ),
-            verbose=False
+            ))
+        self.lucene = Lucene(
+            join(self.tempdir, 'lucene'),
+            reactor=self._reactor,
+            settings=self._defaultSettings,
         )
 
     def tearDown(self):
@@ -117,14 +115,11 @@ class LuceneTest(SeecrTestCase):
         self.assertTrue(result.queryTime > 0.0001, result.asJson())
 
     def testAdd1DocumentWithReadonlyLucene(self):
+        settings = LuceneSettings(commitTimeout=1, multithreaded=self._multithreaded, verbose=False, readonly=True)
         readOnlyLucene = Lucene(
             join(self.tempdir, 'lucene'),
-            commitTimeout=1,
             reactor=self._reactor,
-            multithreaded=self._multithreaded,
-            readonly=True,
-            fieldRegistry=FieldRegistry(),
-            verbose=False
+            settings=settings,
         )
         self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
         timer = self._reactor.calledMethods[0]
@@ -152,7 +147,9 @@ class LuceneTest(SeecrTestCase):
 
     def testAddCommitAfterTimeout(self):
         self.lucene.close()
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3, fieldRegistry=FieldRegistry(), verbose=False)
+        self._defaultSettings.commitTimeout = 42
+        self._defaultSettings.commitCount = 3
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, settings=self._defaultSettings)
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
         self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
         self.assertEquals(42, self._reactor.calledMethods[0].kwargs['seconds'])
@@ -167,7 +164,9 @@ class LuceneTest(SeecrTestCase):
 
     def testAddAndCommitCount3(self):
         self.lucene.close()
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, commitTimeout=42, commitCount=3, fieldRegistry=FieldRegistry(), verbose=False)
+        self._defaultSettings.commitTimeout = 42
+        self._defaultSettings.commitCount = 3
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, settings=self._defaultSettings)
         token = object()
         self._reactor.returnValues['addTimer'] = token
         returnValueFromGenerator(self.lucene.addDocument(identifier="id:0", document=Document()))
@@ -455,7 +454,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier="identifier", document=document))
         with stdout_replaced():
             self.lucene.handleShutdown()
-        lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor, fieldRegistry=FieldRegistry(), verbose=False)
+        lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, settings=self._defaultSettings)
         response = returnValueFromGenerator(lucene.executeQuery(luceneQuery=MatchAllDocsQuery()))
         self.assertEquals(1, response.total)
 
@@ -512,7 +511,8 @@ class LuceneTest(SeecrTestCase):
 
     def testDutchStemming(self):
         self.lucene.close()
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), commitCount=1, reactor=self._reactor, analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=FieldRegistry(), verbose=False)
+        settings = LuceneSettings(commitCount=1, analyzer=MerescoDutchStemmingAnalyzer(), verbose=False)
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, settings=settings)
         doc = document(field0='katten en honden')
         consume(self.lucene.addDocument("urn:1", doc))
         self.lucene.commit()

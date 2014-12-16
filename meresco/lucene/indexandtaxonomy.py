@@ -28,19 +28,17 @@ from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyReader
 from org.meresco.lucene.search import SuperIndexSearcher
 from org.apache.lucene.search import IndexSearcher
-from java.lang import Runtime
 from java.util.concurrent import Executors
 
 
 class IndexAndTaxonomy(object):
 
-    def __init__(self, indexDirectory=None, taxoDirectory=None, similarity=None, multithreaded=None):
-        self._defaultSimilarity = self._similarity = similarity
-        self._multithreaded = multithreaded
+    def __init__(self, settings, indexDirectory=None, taxoDirectory=None):
+        self._settings = settings
+        self._similarity = settings.similarity
         reader = DirectoryReader.open(indexDirectory)
-        self._numberOfProcessors = Runtime.getRuntime().availableProcessors()
-        self._executor = Executors.newFixedThreadPool(self._numberOfProcessors);
-        self.searcher = SuperIndexSearcher(reader, self._executor, self._numberOfProcessors) if self._multithreaded else IndexSearcher(reader)
+        self._executor = Executors.newFixedThreadPool(settings.numberOfConcurrentTasks);
+        self.searcher = SuperIndexSearcher(reader, self._executor, settings.numberOfConcurrentTasks) if settings.multithreaded else IndexSearcher(reader)
         self.searcher.setSimilarity(self._similarity)
         self.taxoReader = DirectoryTaxonomyReader(taxoDirectory)
         self._bm25Arguments = None
@@ -54,7 +52,10 @@ class IndexAndTaxonomy(object):
         if reader is None:
             return
         currentReader.close()
-        self.searcher = SuperIndexSearcher(reader, self._executor, self._numberOfProcessors) if self._multithreaded else IndexSearcher(reader)
+        if self._settings.multithreaded:
+            self.searcher = SuperIndexSearcher(reader, self._executor, self._settings.numberOfConcurrentTasks)
+        else:
+            self.searcher = IndexSearcher(reader)
         self.searcher.setSimilarity(self._similarity)
         taxoReader = DirectoryTaxonomyReader.openIfChanged(self.taxoReader)
         if taxoReader is None:
@@ -65,7 +66,7 @@ class IndexAndTaxonomy(object):
     def _setBM25Similarity(self, k1=None, b=None):
         # This method must be thread-safe
         if k1 is None or b is None:
-            self._similarity = self._defaultSimilarity
+            self._similarity = self._settings.similarity
         else:
             self._similarity = BM25Similarity(*self._bm25Arguments)
         self.searcher.setSimilarity(self._similarity)

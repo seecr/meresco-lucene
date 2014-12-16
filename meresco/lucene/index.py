@@ -23,7 +23,6 @@
 #
 ## end license ##
 
-from meresco.lucene import createAnalyzer
 from indexandtaxonomy import IndexAndTaxonomy
 from os.path import join
 
@@ -35,7 +34,6 @@ from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
 from org.apache.lucene.facet.taxonomy.writercache import LruTaxonomyWriterCache
 from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields, Term
 from org.apache.lucene.index import TieredMergePolicy
-from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.store import MMapDirectory
 from org.apache.lucene.util import BytesRef, BytesRefIterator
@@ -44,34 +42,31 @@ from org.meresco.lucene.search import FacetSuperCollector
 
 
 class Index(object):
-    def __init__(self, path, lruTaxonomyWriterCacheSize=4000, analyzer=None, similarity=None, facetsConfig=None, drilldownFields=None, multithreaded=False, readonly=False):
-        self._readonly = readonly
-        self._multithreaded = multithreaded
-        similarity = similarity or BM25Similarity()
-
+    def __init__(self, path, settings):
+        self._settings = settings
+        self._multithreaded = settings.multithreaded
         self._checker = DirectSpellChecker()
         indexDirectory = MMapDirectory(File(join(path, 'index')))
         indexDirectory.setUseUnmap(False)
         taxoDirectory = MMapDirectory(File(join(path, 'taxo')))
         taxoDirectory.setUseUnmap(False)
-        self._analyzer = createAnalyzer(analyzer=analyzer)
-        conf = IndexWriterConfig(Version.LUCENE_4_10_0, self._analyzer)
-        conf.setSimilarity(similarity)
+        conf = IndexWriterConfig(Version.LUCENE_4_10_0, settings.analyzer)
+        conf.setSimilarity(settings.similarity)
         mergePolicy = TieredMergePolicy()
-        mergePolicy.setMaxMergeAtOnce(2)
-        mergePolicy.setSegmentsPerTier(16.0)
+        mergePolicy.setMaxMergeAtOnce(settings.maxMergeAtOnce)
+        mergePolicy.setSegmentsPerTier(settings.segmentsPerTier)
         conf.setMergePolicy(mergePolicy)
 
-        if not self._readonly:
+        if not settings.readonly:
             self._indexWriter = IndexWriter(indexDirectory, conf)
             self._indexWriter.commit()
-            self._taxoWriter = DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(lruTaxonomyWriterCacheSize))
+            self._taxoWriter = DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, LruTaxonomyWriterCache(settings.lruTaxonomyWriterCacheSize))
             self._taxoWriter.commit()
 
-        self._indexAndTaxonomy = IndexAndTaxonomy(indexDirectory, taxoDirectory, similarity, self._multithreaded)
+        self._indexAndTaxonomy = IndexAndTaxonomy(settings, indexDirectory, taxoDirectory)
         self.similarityWrapper = self._indexAndTaxonomy.similarityWrapper
 
-        self._facetsConfig = facetsConfig
+        self._facetsConfig = settings.fieldRegistry.facetsConfig
 
         self._ordinalsReader = CachedOrdinalsReader(DocValuesOrdinalsReader())
 
@@ -143,7 +138,7 @@ class Index(object):
         return self._indexAndTaxonomy.searcher.getIndexReader().numDocs()
 
     def commit(self):
-        if not self._readonly:
+        if not self._settings.readonly:
             self._taxoWriter.commit()
             self._indexWriter.commit()
         self._indexAndTaxonomy.reopen()
@@ -162,14 +157,14 @@ class Index(object):
 
     def close(self):
         self._indexAndTaxonomy.close()
-        if not self._readonly:
+        if not self._settings.readonly:
             self._taxoWriter.close()
             self._indexWriter.close()
 
     def _analyzeToken(self, token):
         result = []
         reader = StringReader(unicode(token))
-        stda = self._analyzer
+        stda = self._settings.analyzer
         ts = stda.tokenStream("dummy field name", reader)
         termAtt = ts.addAttribute(CharTermAttribute.class_)
         offsetAtt = ts.addAttribute(OffsetAttribute.class_)

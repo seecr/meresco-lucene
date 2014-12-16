@@ -33,7 +33,7 @@ from weightless.core import be, compose
 from meresco.core import Observable
 
 
-from meresco.lucene import Lucene, TermFrequencySimilarity
+from meresco.lucene import Lucene, TermFrequencySimilarity, LuceneSettings
 from meresco.lucene.fieldregistry import KEY_PREFIX, FieldRegistry
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.composedquery import ComposedQuery
@@ -52,9 +52,12 @@ class MultiLuceneTest(SeecrTestCase):
 
     def setUp(self):
         SeecrTestCase.setUp(self)
-        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded, verbose=False)
-        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded, verbose=False)
-        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), similarity=TermFrequencySimilarity(), fieldRegistry=FieldRegistry(), multithreaded=self._multithreaded, verbose=False)
+        settings = LuceneSettings(multithreaded=self._multithreaded, verbose=False)
+        settingsLuceneC = LuceneSettings(multithreaded=self._multithreaded, verbose=False, similarity=TermFrequencySimilarity())
+
+        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), settings=settings)
+        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), settings=settings)
+        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), settings=settingsLuceneC)
         self.dna = be((Observable(),
             (MultiLucene(defaultCore='coreA', multithreaded=self._multithreaded),
                 (self.luceneA,),
@@ -111,9 +114,8 @@ class MultiLuceneTest(SeecrTestCase):
         self.luceneA._realCommit()
         self.luceneB._realCommit()
         self.luceneC._realCommit()
-        self.luceneA._maxCommitCount = 1
-        self.luceneB._maxCommitCount = 1
-        self.luceneC._maxCommitCount = 1
+        settings.commitCount = 1
+        settingsLuceneC.commitCount = 1
 
     def tearDown(self):
         self.luceneA.close()

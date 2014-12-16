@@ -41,25 +41,54 @@ from os.path import basename
 from meresco.lucene.luceneresponse import LuceneResponse
 from meresco.lucene.index import Index
 from meresco.lucene.cache import LruCache
-from meresco.lucene.fieldregistry import IDFIELD
+from meresco.lucene.fieldregistry import IDFIELD, FieldRegistry
 from meresco.lucene.hit import Hit
 from seecr.utils.generatorutils import generatorReturn
+from org.meresco.lucene.analysis import MerescoStandardAnalyzer
+from org.apache.lucene.search.similarities import BM25Similarity
+
+
+class LuceneSettings(object):
+    def __init__(self,
+                commitTimeout=10,
+                commitCount=100000,
+                multithreaded=True,
+                readonly=False,
+                lruTaxonomyWriterCacheSize=4000,
+                analyzer=MerescoStandardAnalyzer(),
+                similarity=BM25Similarity(),
+                fieldRegistry=FieldRegistry(),
+                maxMergeAtOnce=2,
+                segmentsPerTier=16.0,
+                numberOfConcurrentTasks=6,
+                verbose=True,
+            ):
+        self.commitTimeout = commitTimeout
+        self.commitCount = commitCount
+        self.multithreaded = multithreaded
+        self.readonly = readonly
+        self.lruTaxonomyWriterCacheSize = lruTaxonomyWriterCacheSize
+        self.analyzer = analyzer
+        self.similarity = similarity
+        self.fieldRegistry = fieldRegistry
+        self.maxMergeAtOnce = maxMergeAtOnce
+        self.segmentsPerTier = segmentsPerTier
+        self.numberOfConcurrentTasks = numberOfConcurrentTasks
+        self.verbose = verbose
 
 
 class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
 
-    def __init__(self, path, reactor, fieldRegistry, commitTimeout=None, commitCount=None, name=None, multithreaded=True, readonly=False, verbose=True, **kwargs):
+    def __init__(self, path, reactor, settings, name=None, **kwargs):
         self._reactor = reactor
-        self._maxCommitCount = commitCount or 100000
+        self._settings = settings
+        self._multithreaded = settings.multithreaded
+        self._fieldRegistry = settings.fieldRegistry
         self._commitCount = 0
-        self._commitTimeout = commitTimeout or 10
         self._commitTimerToken = None
-        self._readonly = readonly
-        self._fieldRegistry = fieldRegistry
-        self._multithreaded = multithreaded
-        self._index = Index(path, facetsConfig=fieldRegistry.facetsConfig, multithreaded=multithreaded, readonly=readonly, **kwargs)
+        self._index = Index(path, settings=settings, **kwargs)
         self.similarityWrapper = self._index.similarityWrapper
         if name is not None:
             self.observable_name = lambda: name
@@ -76,11 +105,9 @@ class Lucene(object):
             keyEqualsFunction=lambda (f, k), (f1, k1): k == k1 and f.equals(f1),
             createFunction=lambda (filter, keyName): self._collectKeys(filter=filter, keyName=keyName, query=None)
         )
-        if self._readonly:
+        if settings.readonly:
             self._startCommitTimer()
-        self.log = lambda v: None
-        if verbose:
-            self.log = self._log
+        self.log = self._log if settings.verbose else lambda v: None
 
     def addDocument(self, identifier, document):
         document.add(self._fieldRegistry.createIdField(identifier))
@@ -97,7 +124,7 @@ class Lucene(object):
 
     def _startCommitTimer(self):
         self._commitTimerToken = self._reactor.addTimer(
-                seconds=self._commitTimeout,
+                seconds=self._settings.commitTimeout,
                 callback=lambda: self._realCommit(removeTimer=False)
             )
 
@@ -105,7 +132,7 @@ class Lucene(object):
         self._commitCount += 1
         if self._commitTimerToken is None:
             self._startCommitTimer()
-        if self._commitCount >= self._maxCommitCount:
+        if self._commitCount >= self._settings.commitCount:
             self._realCommit()
             self._commitCount = 0
 
@@ -117,7 +144,7 @@ class Lucene(object):
         self._index.commit()
         self._scoreCollectorCache.clear()
         self._collectedKeysCache.clear()
-        if self._readonly:
+        if self._settings.readonly:
             self._startCommitTimer()
         self.log("Lucene {0}: commit took: {1:.2f} seconds".format(self.coreName, time() - t0))
 

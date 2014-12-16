@@ -30,14 +30,15 @@ from org.meresco.lucene.search import DeDupFilterSuperCollector, TopScoreDocSupe
 from seecr.test import SeecrTestCase, CallTrace
 from weightless.core import consume
 
-from meresco.lucene import Lucene
-from meresco.lucene.fieldregistry import IDFIELD, FieldRegistry
+from meresco.lucene import Lucene, LuceneSettings
+from meresco.lucene.fieldregistry import IDFIELD
 
 class DeDupFilterCollectorTest(SeecrTestCase):
     def setUp(self):
         super(DeDupFilterCollectorTest, self).setUp()
         self._reactor = CallTrace('reactor')
-        self.lucene = Lucene(self.tempdir, commitCount=1, reactor=self._reactor, fieldRegistry=FieldRegistry(), multithreaded=True, verbose=False)
+        settings = LuceneSettings(commitCount=1, verbose=False)
+        self.lucene = Lucene(self.tempdir, reactor=self._reactor, settings=settings)
 
     def tearDown(self):
         self.lucene.close()

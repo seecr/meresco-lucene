@@ -37,7 +37,7 @@ from meresco.components.autocomplete import Autocomplete
 from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
-from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator, DrilldownField
+from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator, DrilldownField, LuceneSettings
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 from meresco.lucene.fieldregistry import FieldRegistry
 
@@ -100,13 +100,13 @@ def main(reactor, port, databasePath):
     drilldownFields = [DrilldownField('untokenized.field2'), DrilldownField('untokenized.fieldHier', hierarchical=True)]
 
     fieldRegistry = FieldRegistry(drilldownFields)
-    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, fieldRegistry=fieldRegistry, commitCount=30, commitTimeout=1, name='main', analyzer=MerescoDutchStemmingAnalyzer)
-    lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, fieldRegistry=fieldRegistry, commitTimeout=0.1, name='main2')
+    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, name='main', settings=LuceneSettings(fieldRegistry=fieldRegistry, commitCount=30, commitTimeout=1, analyzer=MerescoDutchStemmingAnalyzer()))
+    lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, name='main2', settings=LuceneSettings(fieldRegistry=fieldRegistry, commitTimeout=0.1))
 
     termNumerator = TermNumerator(path=join(databasePath, 'termNumerator'))
 
     multiLuceneHelix = (MultiLucene(defaultCore='main'),
-            (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, fieldRegistry=fieldRegistry, name='empty-core', commitTimeout=1),),
+            (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, name='empty-core', settings=LuceneSettings(fieldRegistry=fieldRegistry, commitTimeout=1)),),
             (lucene,),
             (lucene2,),
         )

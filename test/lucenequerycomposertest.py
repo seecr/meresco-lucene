@@ -61,7 +61,7 @@ class LuceneQueryComposerTest(TestCase):
         self.assertConversion(query,'"cats dogs"')
 
     def testPhraseOutputDutchStemming(self):
-        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=FieldRegistry())
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], analyzer=MerescoDutchStemmingAnalyzer(), fieldRegistry=FieldRegistry())
         query = PhraseQuery()
         query.add(Term("unqualified", "kat"))
         query.add(Term("unqualified", "hond"))

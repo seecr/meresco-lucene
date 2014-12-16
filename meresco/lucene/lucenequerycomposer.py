@@ -23,7 +23,6 @@
 #
 ## end license ##
 
-from meresco.lucene import createAnalyzer
 from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery
 from org.apache.lucene.index import Term
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
@@ -31,10 +30,11 @@ from java.io import StringReader
 
 from cqlparser import CqlVisitor, UnsupportedCQL
 from re import compile
+from org.meresco.lucene.analysis import MerescoStandardAnalyzer
 
 
 class LuceneQueryComposer(object):
-    def __init__(self, unqualifiedTermFields, fieldRegistry, analyzer=None):
+    def __init__(self, unqualifiedTermFields, fieldRegistry, analyzer=MerescoStandardAnalyzer()):
         self._additionalKwargs = dict(
                 unqualifiedTermFields=unqualifiedTermFields,
                 fieldRegistry=fieldRegistry,
@@ -140,8 +140,7 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
     def _analyzeToken(self, token):
         result = []
         reader = StringReader(unicode(token))
-        stda = createAnalyzer(self._analyzer)
-        ts = stda.tokenStream("dummy field name", reader)
+        ts = self._analyzer.tokenStream("dummy field name", reader)
         termAtt = ts.addAttribute(CharTermAttribute.class_)
         try:
             ts.reset()

@@ -158,9 +158,9 @@ def main(reactor, port, databasePath):
                                 (MultiCqlToLuceneQuery(
                                     defaultCore='main',
                                     coreToCqlLuceneQueries={
-                                        "main": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=fieldRegistry),
-                                        "main2": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=fieldRegistry),
-                                        "empty-core": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer, fieldRegistry=fieldRegistry),
+                                        "main": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer(), fieldRegistry=fieldRegistry),
+                                        "main2": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer(), fieldRegistry=fieldRegistry),
+                                        "empty-core": CqlToLuceneQuery([], analyzer=MerescoDutchStemmingAnalyzer(), fieldRegistry=fieldRegistry),
                                     }),
                                     multiLuceneHelix,
                                 ),

@@ -29,10 +29,10 @@ from org.apache.lucene.store import SimpleFSDirectory
 from java.io import File
 from org.apache.lucene.index import IndexWriterConfig, IndexWriter, DirectoryReader, AtomicReaderContext
 from org.apache.lucene.util import Version
-from meresco.lucene import createAnalyzer
 from org.meresco.lucene.search import SuperIndexSearcher
 from org.meresco.lucene.test import DummyIndexReader
 from java.util import ArrayList
+from org.meresco.lucene.analysis import MerescoStandardAnalyzer
 
 class SuperIndexSearcherTest(SeecrTestCase):
 
@@ -40,7 +40,7 @@ class SuperIndexSearcherTest(SeecrTestCase):
         super(SuperIndexSearcherTest, self).setUp()
         self.executor = Executors.newFixedThreadPool(5)
         indexDirectory = SimpleFSDirectory(File(self.tempdir))
-        conf = IndexWriterConfig(Version.LUCENE_4_10_0, createAnalyzer())
+        conf = IndexWriterConfig(Version.LUCENE_4_10_0, MerescoStandardAnalyzer())
         self.writer = IndexWriter(indexDirectory, conf)
         self.reader = DirectoryReader.open(self.writer, True)
         self.sis = SuperIndexSearcher(self.reader)

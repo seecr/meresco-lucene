@@ -35,7 +35,7 @@ class TermFrequencySimilarityTest(SeecrTestCase):
 
     def testScore(self):
         reactor = CallTrace('reactor')
-        settings = LuceneSettings(commitCount=1, similarity=TermFrequencySimilarity())
+        settings = LuceneSettings(commitCount=1, similarity=TermFrequencySimilarity(), verbose=False)
         lucene = Lucene(join(self.tempdir, 'lucene'), reactor=reactor, settings=settings)
         document = Document()
         document.add(TextField('field', 'x '*100, Field.Store.NO))

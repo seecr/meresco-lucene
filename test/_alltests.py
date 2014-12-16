@@ -59,6 +59,7 @@ from termnumeratortest import TermNumeratorTest
 from supercollectortest import SuperCollectorTest
 from superindexsearchertest import SuperIndexSearcherTest
 from facetsupercollectortest import FacetSuperCollectorTest
+from lucenesettingstest import LuceneSettingsTest
 
 if __name__ == '__main__':
     unittest.main()

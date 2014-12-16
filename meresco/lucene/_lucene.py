@@ -41,40 +41,9 @@ from os.path import basename
 from meresco.lucene.luceneresponse import LuceneResponse
 from meresco.lucene.index import Index
 from meresco.lucene.cache import LruCache
-from meresco.lucene.fieldregistry import IDFIELD, FieldRegistry
+from meresco.lucene.fieldregistry import IDFIELD
 from meresco.lucene.hit import Hit
 from seecr.utils.generatorutils import generatorReturn
-from org.meresco.lucene.analysis import MerescoStandardAnalyzer
-from org.apache.lucene.search.similarities import BM25Similarity
-
-
-class LuceneSettings(object):
-    def __init__(self,
-                commitTimeout=10,
-                commitCount=100000,
-                multithreaded=True,
-                readonly=False,
-                lruTaxonomyWriterCacheSize=4000,
-                analyzer=MerescoStandardAnalyzer(),
-                similarity=BM25Similarity(),
-                fieldRegistry=FieldRegistry(),
-                maxMergeAtOnce=2,
-                segmentsPerTier=16.0,
-                numberOfConcurrentTasks=6,
-                verbose=True,
-            ):
-        self.commitTimeout = commitTimeout
-        self.commitCount = commitCount
-        self.multithreaded = multithreaded
-        self.readonly = readonly
-        self.lruTaxonomyWriterCacheSize = lruTaxonomyWriterCacheSize
-        self.analyzer = analyzer
-        self.similarity = similarity
-        self.fieldRegistry = fieldRegistry
-        self.maxMergeAtOnce = maxMergeAtOnce
-        self.segmentsPerTier = segmentsPerTier
-        self.numberOfConcurrentTasks = numberOfConcurrentTasks
-        self.verbose = verbose
 
 
 class Lucene(object):

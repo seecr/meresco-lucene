@@ -27,17 +27,17 @@ from unittest import TestCase
 from seecr.test import CallTrace
 from cqlparser import parseString
 from meresco.lucene.cqltolucenequery import CqlToLuceneQuery
-from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.core import Observable
 from weightless.core import be, compose
 
 from org.apache.lucene.search import TermQuery
 from org.apache.lucene.index import Term
+from meresco.lucene import LuceneSettings
 
 
 class CqlToLuceneQueryTest(TestCase):
     def setUp(self):
-        self.convertor = CqlToLuceneQuery([('field', 1.0)], fieldRegistry=FieldRegistry())
+        self.convertor = CqlToLuceneQuery([('field', 1.0)], luceneSettings=LuceneSettings())
         self.observer = CallTrace('Query responder', methods={'executeQuery': executeQueryMock})
         self.dna = be((Observable(),
             (self.convertor,

@@ -365,7 +365,7 @@ class LuceneTest(SeecrTestCase):
         returnValueFromGenerator(self.lucene.addDocument(identifier='hendrik', document=createDocument([('title', 'Waar is Morée vandaag?')])))
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term('title', 'moree'))))
         self.assertEquals(1, result.total)
-        query = LuceneQueryComposer(unqualifiedTermFields=[], fieldRegistry=FieldRegistry()).compose(parseCql("title=morée"))
+        query = LuceneQueryComposer(unqualifiedTermFields=[], luceneSettings=LuceneSettings()).compose(parseCql("title=morée"))
         result = returnValueFromGenerator(self.lucene.executeQuery(query))
         self.assertEquals(1, result.total)
 
@@ -417,7 +417,7 @@ class LuceneTest(SeecrTestCase):
         luceneQuery = TermRangeQuery.newStringRange('field', 'mies', None, False, True) # >
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
         self.assertEquals(set(['id:noot', 'id:vis', 'id:vuur']), set(self.hitIds(response.hits)))
-        luceneQuery = LuceneQueryComposer([], fieldRegistry=FieldRegistry()).compose(parseCql('field >= mies'))
+        luceneQuery = LuceneQueryComposer([], luceneSettings=LuceneSettings()).compose(parseCql('field >= mies'))
         response = returnValueFromGenerator(self.lucene.executeQuery(luceneQuery=luceneQuery))
         self.assertEquals(set(['id:mies', 'id:noot', 'id:vis', 'id:vuur']), set(self.hitIds(response.hits)))
 

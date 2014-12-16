@@ -30,15 +30,14 @@ from java.io import StringReader
 
 from cqlparser import CqlVisitor, UnsupportedCQL
 from re import compile
-from org.meresco.lucene.analysis import MerescoStandardAnalyzer
 
 
 class LuceneQueryComposer(object):
-    def __init__(self, unqualifiedTermFields, fieldRegistry, analyzer=MerescoStandardAnalyzer()):
+    def __init__(self, unqualifiedTermFields, luceneSettings):
         self._additionalKwargs = dict(
                 unqualifiedTermFields=unqualifiedTermFields,
-                fieldRegistry=fieldRegistry,
-                analyzer=analyzer
+                analyzer=luceneSettings.analyzer,
+                fieldRegistry=luceneSettings.fieldRegistry,
             )
 
     def compose(self, ast):

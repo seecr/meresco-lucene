@@ -36,14 +36,14 @@ from org.apache.lucene.index import Term
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE
 from org.apache.lucene.document import StringField
-from meresco.lucene import DrilldownField
+from meresco.lucene import DrilldownField, LuceneSettings
 from org.apache.lucene.facet import DrillDownQuery
 
 
 class LuceneQueryComposerTest(TestCase):
     def setUp(self):
         super(LuceneQueryComposerTest, self).setUp()
-        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], fieldRegistry=FieldRegistry())
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings())
 
     def testOneTermOutput(self):
         self.assertConversion(TermQuery(Term("unqualified", "cat")), "cat")
@@ -61,7 +61,7 @@ class LuceneQueryComposerTest(TestCase):
         self.assertConversion(query,'"cats dogs"')
 
     def testPhraseOutputDutchStemming(self):
-        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], analyzer=MerescoDutchStemmingAnalyzer(), fieldRegistry=FieldRegistry())
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer()))
         query = PhraseQuery()
         query.add(Term("unqualified", "kat"))
         query.add(Term("unqualified", "hond"))
@@ -146,7 +146,7 @@ class LuceneQueryComposerTest(TestCase):
         self.assertConversion(query, "title =/boost=2.0 cats")
 
     def testUnqualifiedTermFields(self):
-        composer = LuceneQueryComposer(unqualifiedTermFields=[("field0", 0.2), ("field1", 2.0)], fieldRegistry=FieldRegistry())
+        composer = LuceneQueryComposer(unqualifiedTermFields=[("field0", 0.2), ("field1", 2.0)], luceneSettings=LuceneSettings())
         ast = parseCql("value")
         result = composer.compose(ast)
         query = BooleanQuery()
@@ -179,7 +179,7 @@ class LuceneQueryComposerTest(TestCase):
         query = TermQuery(Term('field', 'prefix'))
         self.assertConversion(query, 'field=prefix**')
 
-        result = LuceneQueryComposer(unqualifiedTermFields=[("field0", 0.2), ("field1", 2.0)], fieldRegistry=FieldRegistry()).compose(parseCql("prefix*"))
+        result = LuceneQueryComposer(unqualifiedTermFields=[("field0", 0.2), ("field1", 2.0)], luceneSettings=LuceneSettings()).compose(parseCql("prefix*"))
 
         query = BooleanQuery()
         left = PrefixQuery(Term("field0", "prefix"))
@@ -197,7 +197,7 @@ class LuceneQueryComposerTest(TestCase):
         exactResult = self.composer.compose(parseCql('animal exact "cats dogs"'))
         fieldRegistry = FieldRegistry()
         fieldRegistry.register('animal', StringField.TYPE_NOT_STORED)
-        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], fieldRegistry=fieldRegistry)
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(fieldRegistry=fieldRegistry))
         self.assertConversion(exactResult, 'animal = "cats dogs"')
 
     def testMatchAllQuery(self):
@@ -212,13 +212,13 @@ class LuceneQueryComposerTest(TestCase):
 
     def testDrilldownFieldQuery(self):
         fieldRegistry = FieldRegistry([DrilldownField('field')])
-        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], fieldRegistry=fieldRegistry)
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(fieldRegistry=fieldRegistry))
         self.assertConversion(TermQuery(DrillDownQuery.term("$facets", "field", "value")), "field = value")
 
     def testExcludeUnqualifiedFieldForWhichNoPhraseQueryIsPossibleInCaseOfPhraseQuery(self):
         fieldRegistry = FieldRegistry()
         fieldRegistry.register('noTermFreqField', NO_TERMS_FREQUENCY_FIELDTYPE)
-        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0), ('noTermFreqField', 2.0)], fieldRegistry=fieldRegistry)
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0), ('noTermFreqField', 2.0)], luceneSettings=LuceneSettings(fieldRegistry=fieldRegistry))
         expected = PhraseQuery()
         expected.add(Term("unqualified", "phrase query"))
         self.assertConversion(expected, '"phrase query"')
@@ -232,7 +232,7 @@ class LuceneQueryComposerTest(TestCase):
     def testUnsupportedCQL(self):
         for relation in ['<>']:
             try:
-                LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], fieldRegistry=FieldRegistry()).compose(parseCql('index %(relation)s term' % locals()))
+                LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings()).compose(parseCql('index %(relation)s term' % locals()))
                 self.fail()
             except UnsupportedCQL:
                 pass

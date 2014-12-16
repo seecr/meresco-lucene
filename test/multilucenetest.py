@@ -774,4 +774,4 @@ class MultiLuceneSingleThreadedTest(MultiLuceneTest):
 
 
 def luceneQueryFromCql(cqlString):
-    return LuceneQueryComposer([], fieldRegistry=FieldRegistry()).compose(parseCql(cqlString))
+    return LuceneQueryComposer([], luceneSettings=LuceneSettings()).compose(parseCql(cqlString))

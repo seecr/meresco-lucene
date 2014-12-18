@@ -29,6 +29,7 @@ from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyReader
 from org.meresco.lucene.search import SuperIndexSearcher
 from org.apache.lucene.search import IndexSearcher
 from java.util.concurrent import Executors
+from time import time
 
 
 class IndexAndTaxonomy(object):
@@ -36,44 +37,61 @@ class IndexAndTaxonomy(object):
     def __init__(self, settings, indexDirectory=None, taxoDirectory=None):
         self._settings = settings
         self._similarity = settings.similarity
-        reader = DirectoryReader.open(indexDirectory)
-        self._executor = Executors.newFixedThreadPool(settings.numberOfConcurrentTasks);
-        self.searcher = SuperIndexSearcher(reader, self._executor, settings.numberOfConcurrentTasks) if settings.multithreaded else IndexSearcher(reader)
-        self.searcher.setSimilarity(self._similarity)
+        self._numberOfConcurrentTasks = settings.numberOfConcurrentTasks
+        self._reader = DirectoryReader.open(indexDirectory)
         self.taxoReader = DirectoryTaxonomyReader(taxoDirectory)
-        self._bm25Arguments = None
-        self.similarityWrapper = SimilarityWrapper()
-        self.similarityWrapper.get = lambda: self.searcher.getSimilarity().toString()
-        self.similarityWrapper.set = self._setBM25Similarity
+        self._readerSettingsWrapper = ReaderSettingsWrapper()
+        self._readerSettingsWrapper.get = lambda: {"similarity": self.searcher.getSimilarity().toString(), "numberOfConcurrentTasks": self._numberOfConcurrentTasks}
+        self._readerSettingsWrapper.set = self._setReadSettings
+        self._searcher = None
+        self._executor = None
+        self._reopenSearcher = True
 
     def reopen(self):
-        currentReader = self.searcher.getIndexReader()
-        reader = DirectoryReader.openIfChanged(currentReader)
+        reader = DirectoryReader.openIfChanged(self._reader)
         if reader is None:
             return
-        currentReader.close()
-        if self._settings.multithreaded:
-            self.searcher = SuperIndexSearcher(reader, self._executor, self._settings.numberOfConcurrentTasks)
-        else:
-            self.searcher = IndexSearcher(reader)
-        self.searcher.setSimilarity(self._similarity)
+        self._reader.close()
+        self._reader = reader
+        self._reopenSearcher = True
         taxoReader = DirectoryTaxonomyReader.openIfChanged(self.taxoReader)
         if taxoReader is None:
             return
         self.taxoReader.close()
         self.taxoReader = taxoReader
 
-    def _setBM25Similarity(self, k1=None, b=None):
+    @property
+    def searcher(self):
+        if not self._reopenSearcher:
+            return self._searcher
+
+        if self._settings.multithreaded:
+            if self._executor:
+                self._executor.shutdown();
+            self._executor = Executors.newFixedThreadPool(self._numberOfConcurrentTasks);
+            self._searcher = SuperIndexSearcher(self._reader, self._executor, self._numberOfConcurrentTasks)
+        else:
+            self._searcher = IndexSearcher(self._reader)
+        self._searcher.setSimilarity(self._similarity)
+        self._reopenSearcher = False
+        return self._searcher
+
+    def _setReadSettings(self, similarity=None, numberOfConcurrentTasks=None):
         # This method must be thread-safe
-        if k1 is None or b is None:
+        if similarity is None:
             self._similarity = self._settings.similarity
         else:
-            self._similarity = BM25Similarity(*self._bm25Arguments)
-        self.searcher.setSimilarity(self._similarity)
+            self._similarity = BM25Similarity(similarity["k1"], similarity["b"])
+
+        if numberOfConcurrentTasks is None:
+            self._numberOfConcurrentTasks = self._settings.numberOfConcurrentTasks
+        else:
+            self._numberOfConcurrentTasks = numberOfConcurrentTasks
+        self._reopenSearcher = True
 
     def close(self):
         self.taxoReader.close()
-        self.searcher.getIndexReader().close()
+        self._reader.close()
 
-class SimilarityWrapper(object):
+class ReaderSettingsWrapper(object):
     pass

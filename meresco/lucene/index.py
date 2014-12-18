@@ -64,7 +64,7 @@ class Index(object):
             self._taxoWriter.commit()
 
         self._indexAndTaxonomy = IndexAndTaxonomy(settings, indexDirectory, taxoDirectory)
-        self.similarityWrapper = self._indexAndTaxonomy.similarityWrapper
+        self._readerSettingsWrapper = self._indexAndTaxonomy._readerSettingsWrapper
 
         self._facetsConfig = settings.fieldRegistry.facetsConfig
 

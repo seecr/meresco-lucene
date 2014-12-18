@@ -587,6 +587,18 @@ class LuceneTest(SeecrTestCase):
         bq.add(TermQuery(Term('no.term.frequency', 'noot')),BooleanClause.Occur.MUST)
         self.assertEquals(1, len(returnValueFromGenerator(self.lucene.executeQuery(bq)).hits))
 
+    def testUpdateReaderSettings(self):
+        settings = self.lucene.readerSettingsWrapper.get()
+        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)'}, settings)
+
+        self.lucene.readerSettingsWrapper.set(similarity=dict(k1=1.0, b=2.0), numberOfConcurrentTasks=10)
+        settings = self.lucene.readerSettingsWrapper.get()
+        self.assertEquals({'numberOfConcurrentTasks': 10, 'similarity': u'BM25(k1=1.0,b=2.0)'}, settings)
+
+        self.lucene.readerSettingsWrapper.set()
+        settings = self.lucene.readerSettingsWrapper.get()
+        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)'}, settings)
+
 class LuceneSingleThreadedTest(LuceneTest):
     def __init__(self, *args):
         super(LuceneTest, self).__init__(*args)

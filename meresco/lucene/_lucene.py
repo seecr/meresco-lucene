@@ -58,7 +58,7 @@ class Lucene(object):
         self._commitCount = 0
         self._commitTimerToken = None
         self._index = Index(path, settings=settings, **kwargs)
-        self.similarityWrapper = self._index.similarityWrapper
+        self.readerSettingsWrapper = self._index._readerSettingsWrapper
         if name is not None:
             self.observable_name = lambda: name
         self.coreName = name or basename(path)

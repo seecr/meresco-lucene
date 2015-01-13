@@ -6,5 +6,5 @@ gcc
 #wheezy:g++
 #centos6:python-devel
 #wheezy:python-dev
-meresco-pylucene (>= 4.10.1)
-meresco-pylucene (<< 4.11)
+python-meresco-pylucene (>= 4.10.1)
+python-meresco-pylucene (<< 4.11)

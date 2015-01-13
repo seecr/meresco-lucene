@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -42,17 +43,8 @@ if not isfile(sofile) or stat(sofile).st_mtime < lastMtime:                     
 sysPath.insert(0, libDir)                                                        #DO_NOT_DISTRIBUTE
 
 
-from os import getenv
-from warnings import warn
-maxheap = getenv('PYLUCENE_MAXHEAP')
-if not maxheap:
-    maxheap = '4g'
-    warn("Using '4g' as maxheap for lucene.initVM(). To override use PYLUCENE_MAXHEAP environment variable.")
-from lucene import initVM, getVMEnv
-try:
-    VM = initVM(maxheap=maxheap)#, vmargs='-agentlib:hprof=heap=sites')
-except ValueError:
-    VM = getVMEnv()
+from meresco.pylucene import getJVM
+VM = getJVM()
 from meresco_lucene import initVM
 VMM = initVM()
 

@@ -26,7 +26,7 @@
 from os.path import dirname, abspath, join, realpath
 from sys import stdout
 
-from seecr.html import DynamicHtml
+from meresco.html import DynamicHtml
 
 from meresco.components.http import StringServer, ObservableHttpServer, BasicHttpHandler, ApacheLogger, PathFilter, PathRename, FileServer
 from meresco.components.http.utils import ContentTypePlainText

@@ -29,7 +29,7 @@ from meresco.components.http.utils import Ok, CRLF, ContentTypeHeader, ContentTy
 from meresco.components.http import PathFilter, PathRename, FileServer, StringServer
 from cqlparser import parseString, cql2string
 from weightless.core import be, compose
-from seecr.html import DynamicHtml
+from meresco.html import DynamicHtml
 from traceback import format_exc
 from simplejson import dumps
 from _conversion import jsonLoadMessage

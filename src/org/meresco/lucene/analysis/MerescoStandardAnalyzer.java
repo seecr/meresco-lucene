@@ -76,7 +76,7 @@ public class MerescoStandardAnalyzer extends Analyzer {
         return tok;
     }
 
-    private List<String> readTokenStream(TokenStream tok) throws IOException {
+    public static List<String> readTokenStream(TokenStream tok) throws IOException {
         List<String> terms = new ArrayList<String>();
         CharTermAttribute termAtt = tok.addAttribute(CharTermAttribute.class);
         try {

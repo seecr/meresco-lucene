@@ -38,7 +38,7 @@ from meresco.lucene.hit import Hit
 from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, FieldRegistry
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
-from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause
+from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause, PhraseQuery
 from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import FacetField
@@ -522,6 +522,28 @@ class LuceneTest(SeecrTestCase):
 
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("field0", 'kat'))))
         self.assertEquals(1, result.total)
+
+        q = self.createPhraseQuery("field0", "katten", "en", "honden")
+        result = returnValueFromGenerator(self.lucene.executeQuery(q))
+        self.assertEquals(1, result.total)
+
+        q = self.createPhraseQuery("field0", "kat", "en", "honden")
+        result = returnValueFromGenerator(self.lucene.executeQuery(q))
+        self.assertEquals(1, result.total)
+
+        q = self.createPhraseQuery("field0", "katten", "en", "hond")
+        result = returnValueFromGenerator(self.lucene.executeQuery(q))
+        self.assertEquals(1, result.total)
+
+        q = self.createPhraseQuery("field0", "kat", "en", "hond")
+        result = returnValueFromGenerator(self.lucene.executeQuery(q))
+        self.assertEquals(1, result.total)
+
+    def createPhraseQuery(self, field, *args):
+        q = PhraseQuery()
+        for term in args:
+            q.add(Term(field, term))
+        return q
 
     def testDrilldownQuery(self):
         doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-A")])

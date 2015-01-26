@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -30,6 +31,7 @@ from java.io import StringReader
 
 from cqlparser import CqlVisitor, UnsupportedCQL
 from re import compile
+from org.meresco.lucene.analysis import MerescoStandardAnalyzer
 
 
 class LuceneQueryComposer(object):
@@ -121,8 +123,7 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         if len(terms) > 1:
             query = PhraseQuery()
             for term in terms:
-                for token in self._post_analyzeToken(term):
-                    query.add(self._createTerm(index, token))
+                query.add(self._createTerm(index, term))
             return query
         elif prefixRegexp.match(termString):
             return PrefixQuery(self._createTerm(index, terms[0]))
@@ -145,10 +146,14 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         return TermRangeQuery.newStringRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
 
     def _pre_analyzeToken(self, token):
-        return list(self._analyzer.pre_analyse(token))
+        if isinstance(self._analyzer, MerescoStandardAnalyzer):
+            return list(self._analyzer.pre_analyse(token))
+        return list(MerescoStandardAnalyzer.readTokenStream(self._analyzer.tokenStream("dummy field name", StringReader(token))))
 
     def _post_analyzeToken(self, token):
-        return list(self._analyzer.post_analyse(token))
+        if isinstance(self._analyzer, MerescoStandardAnalyzer):
+            return list(self._analyzer.post_analyse(token))
+        return [token]
 
     def _createTerm(self, field, value):
         if self._fieldRegistry.isDrilldownField(field):

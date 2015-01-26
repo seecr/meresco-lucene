@@ -38,6 +38,7 @@ from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELD
 from org.apache.lucene.document import StringField
 from meresco.lucene import DrilldownField, LuceneSettings
 from org.apache.lucene.facet import DrillDownQuery
+from org.apache.lucene.analysis.core import WhitespaceAnalyzer
 
 
 class LuceneQueryComposerTest(TestCase):
@@ -59,6 +60,14 @@ class LuceneQueryComposerTest(TestCase):
         query.add(Term("unqualified", "cats"))
         query.add(Term("unqualified", "dogs"))
         self.assertConversion(query,'"cats dogs"')
+
+    def testWhitespaceAnalyzer(self):
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=WhitespaceAnalyzer()))
+        query = PhraseQuery()
+        query.add(Term("unqualified", "kat"))
+        query.add(Term("unqualified", "hond"))
+        self.assertConversion(query, '"kat hond"')
+
 
     def testPhraseOutputDutchStemming(self):
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer()))
@@ -108,6 +117,16 @@ class LuceneQueryComposerTest(TestCase):
         self.assertConversion(TermQuery(Term('title', 'moree')), 'title=Moree')
         self.assertConversion(TermQuery(Term('title', 'moree')), 'title=Morée')
         self.assertConversion(TermQuery(Term('title', 'moree')), 'title=Morèe')
+
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer()))
+        query = PhraseQuery()
+        query.add(Term("title", "waar"))
+        query.add(Term("title", "war"))
+        query.add(Term("title", "is"))
+        query.add(Term("title", "moree"))
+        query.add(Term("title", "vandaag"))
+        query.add(Term("title", "vandag"))
+        self.assertConversion(query, 'title="Waar is Morée vandaag"')
 
     def testDiacriticsShouldBeNormalizedNFC(self):
         pq = PhraseQuery()

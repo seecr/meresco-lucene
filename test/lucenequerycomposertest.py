@@ -63,9 +63,27 @@ class LuceneQueryComposerTest(TestCase):
     def testPhraseOutputDutchStemming(self):
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer()))
         query = PhraseQuery()
+        query.add(Term("unqualified", "katten"))
         query.add(Term("unqualified", "kat"))
+        query.add(Term("unqualified", "honden"))
         query.add(Term("unqualified", "hond"))
-        self.assertConversion(query, '"katten honden"')
+        query.add(Term("unqualified", "honden")) # repeat immediatly after first occurence
+        query.add(Term("unqualified", "hond"))
+        query.add(Term("unqualified", "katten"))  # repeat later, with word in between
+        query.add(Term("unqualified", "kat"))
+        query.add(Term("unqualified", "kat@hond.org"))  # keyword
+        query.add(Term("unqualified", "xyz"))           # not stemmable
+        query.add(Term("unqualified", "xyz"))           # repeat to keep TF right
+        self.assertConversion(query, '"katten honden honden katten kat@hond.org xyz xyz"')
+
+    def testWhatHappensWithEnglishWordsWithDutchStemming(self):
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer()))
+        query = BooleanQuery()
+        query.add(TermQuery(Term("unqualified", "kate")), BooleanClause.Occur.SHOULD)
+        query.add(TermQuery(Term("unqualified", "kat")), BooleanClause.Occur.SHOULD)
+        self.assertConversion(query, 'kate')
+        query = TermQuery(Term("unqualified", "kat"))
+        self.assertConversion(query, 'kat')
 
     def testPhraseQueryIsStandardAnalyzed(self):
         expected = PhraseQuery()

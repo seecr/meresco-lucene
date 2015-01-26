@@ -518,7 +518,7 @@ class LuceneTest(SeecrTestCase):
         self.lucene.commit()
 
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("field0", 'katten'))))
-        self.assertEquals(0, result.total)
+        self.assertEquals(1, result.total)
 
         result = returnValueFromGenerator(self.lucene.executeQuery(TermQuery(Term("field0", 'kat'))))
         self.assertEquals(1, result.total)

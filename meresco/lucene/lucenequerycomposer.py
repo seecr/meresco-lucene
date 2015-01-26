@@ -117,15 +117,23 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         return relation, boost
 
     def _termOrPhraseQuery(self, index, termString):
-        listOfTermStrings = self._analyzeToken(termString)
-        if len(listOfTermStrings) == 1:
-            if prefixRegexp.match(termString):
-                return PrefixQuery(self._createTerm(index, listOfTermStrings[0]))
-            return TermQuery(self._createTerm(index, listOfTermStrings[0]))
-        result = PhraseQuery()
-        for term in listOfTermStrings:
-            result.add(self._createTerm(index, term))
-        return result
+        terms = self._pre_analyzeToken(termString)
+        if len(terms) > 1:
+            query = PhraseQuery()
+            for term in terms:
+                for token in self._post_analyzeToken(term):
+                    query.add(self._createTerm(index, token))
+            return query
+        elif prefixRegexp.match(termString):
+            return PrefixQuery(self._createTerm(index, terms[0]))
+        else:
+            terms = self._post_analyzeToken(terms[0])
+            if len(terms) == 1:
+                return TermQuery(self._createTerm(index, terms[0]))
+            query = BooleanQuery()
+            for term in terms:
+                query.add(TermQuery(self._createTerm(index, term)), BooleanClause.Occur.SHOULD)
+            return query
 
     def _termRangeQuery(self, index, relation, termString):
         field = index
@@ -136,19 +144,11 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         includeLower, includeUpper = relation == '>=', relation == '<='
         return TermRangeQuery.newStringRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
 
-    def _analyzeToken(self, token):
-        result = []
-        reader = StringReader(unicode(token))
-        ts = self._analyzer.tokenStream("dummy field name", reader)
-        termAtt = ts.addAttribute(CharTermAttribute.class_)
-        try:
-            ts.reset()
-            while ts.incrementToken():
-                result.append(termAtt.toString())
-            ts.end()
-        finally:
-            ts.close()
-        return result
+    def _pre_analyzeToken(self, token):
+        return list(self._analyzer.pre_analyse(token))
+
+    def _post_analyzeToken(self, token):
+        return list(self._analyzer.post_analyse(token))
 
     def _createTerm(self, field, value):
         if self._fieldRegistry.isDrilldownField(field):

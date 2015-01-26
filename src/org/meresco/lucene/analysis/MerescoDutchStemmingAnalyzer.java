@@ -2,8 +2,9 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -25,26 +26,19 @@
 
 package org.meresco.lucene.analysis;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
+import org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilter;
+import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
-import org.apache.lucene.analysis.standard.ClassicFilter;
-import org.apache.lucene.analysis.standard.ClassicTokenizer;
-import org.apache.lucene.util.Version;
 import org.tartarus.snowball.ext.DutchStemmer;
 
 
-public class MerescoDutchStemmingAnalyzer extends Analyzer {
-    public Analyzer.TokenStreamComponents createComponents(String fieldName, java.io.Reader reader) {
-        final ClassicTokenizer src = new ClassicTokenizer(reader);
-        TokenStream tok = new ClassicFilter(src);
-        tok = new ASCIIFoldingFilter(tok);
-        tok = new LowerCaseFilter(tok);
-
-        tok = new SnowballFilter(tok, new DutchStemmer());
-
-        return new Analyzer.TokenStreamComponents(src, tok);
+public class MerescoDutchStemmingAnalyzer extends MerescoStandardAnalyzer {
+    @Override
+    public TokenStream post_analyzer(TokenStream tok) {
+        tok = new KeywordRepeatFilter(tok); // repeat every word as term and as keyword
+        tok = new SnowballFilter(tok, new DutchStemmer()); // ignores keywords
+        tok = new RemoveDuplicatesTokenFilter(tok); // remove unchanges tokens
+        return tok;
     }
 }

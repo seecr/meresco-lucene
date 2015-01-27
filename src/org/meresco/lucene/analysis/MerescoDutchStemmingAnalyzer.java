@@ -38,7 +38,7 @@ public class MerescoDutchStemmingAnalyzer extends MerescoStandardAnalyzer {
     public TokenStream post_analyzer(TokenStream tok) {
         tok = new KeywordRepeatFilter(tok); // repeat every word as term and as keyword
         tok = new SnowballFilter(tok, new DutchStemmer()); // ignores keywords
-        tok = new RemoveDuplicatesTokenFilter(tok); // remove unchanges tokens
+        tok = new RemoveDuplicatesTokenFilter(tok); // removes one if keyword and term are still the same
         return tok;
     }
 }

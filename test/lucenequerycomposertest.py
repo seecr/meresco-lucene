@@ -69,21 +69,12 @@ class LuceneQueryComposerTest(TestCase):
         self.assertConversion(query, '"kat hond"')
 
 
-    def testPhraseOutputDutchStemming(self):
+    def testPhraseOutputDoesNoDutchStemming(self):
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer()))
         query = PhraseQuery()
         query.add(Term("unqualified", "katten"))
-        query.add(Term("unqualified", "kat"))
         query.add(Term("unqualified", "honden"))
-        query.add(Term("unqualified", "hond"))
-        query.add(Term("unqualified", "honden")) # repeat immediatly after first occurence
-        query.add(Term("unqualified", "hond"))
-        query.add(Term("unqualified", "katten"))  # repeat later, with word in between
-        query.add(Term("unqualified", "kat"))
-        query.add(Term("unqualified", "kat@hond.org"))  # keyword
-        query.add(Term("unqualified", "xyz"))           # not stemmable
-        query.add(Term("unqualified", "xyz"))           # repeat to keep TF right
-        self.assertConversion(query, '"katten honden honden katten kat@hond.org xyz xyz"')
+        self.assertConversion(query, '"katten honden"')
 
     def testWhatHappensWithEnglishWordsWithDutchStemming(self):
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer()))
@@ -121,11 +112,9 @@ class LuceneQueryComposerTest(TestCase):
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer()))
         query = PhraseQuery()
         query.add(Term("title", "waar"))
-        query.add(Term("title", "war"))
         query.add(Term("title", "is"))
         query.add(Term("title", "moree"))
         query.add(Term("title", "vandaag"))
-        query.add(Term("title", "vandag"))
         self.assertConversion(query, 'title="Waar is Morée vandaag"')
 
     def testDiacriticsShouldBeNormalizedNFC(self):

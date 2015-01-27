@@ -120,20 +120,21 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
 
     def _termOrPhraseQuery(self, index, termString):
         terms = self._pre_analyzeToken(termString)
-        if len(terms) > 1:
+        if len(terms) == 1:
+            if prefixRegexp.match(termString):
+                return PrefixQuery(self._createTerm(index, terms[0]))
+            else:
+                terms = self._post_analyzeToken(terms[0])
+                if len(terms) == 1:
+                    return TermQuery(self._createTerm(index, terms[0]))
+                query = BooleanQuery()
+                for term in terms:
+                    query.add(TermQuery(self._createTerm(index, term)), BooleanClause.Occur.SHOULD)
+                return query
+        else:
             query = PhraseQuery()
             for term in terms:
                 query.add(self._createTerm(index, term))
-            return query
-        elif prefixRegexp.match(termString):
-            return PrefixQuery(self._createTerm(index, terms[0]))
-        else:
-            terms = self._post_analyzeToken(terms[0])
-            if len(terms) == 1:
-                return TermQuery(self._createTerm(index, terms[0]))
-            query = BooleanQuery()
-            for term in terms:
-                query.add(TermQuery(self._createTerm(index, term)), BooleanClause.Occur.SHOULD)
             return query
 
     def _termRangeQuery(self, index, relation, termString):

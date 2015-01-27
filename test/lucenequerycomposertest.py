@@ -98,6 +98,10 @@ class LuceneQueryComposerTest(TestCase):
         expected.add(Term('unqualified', 'noot'))
         self.assertConversion(expected, 'aap:noot')
 
+    def testCreatesEmptyPhraseQueryIfNoValidCharsFound(self):
+        expected = PhraseQuery()
+        self.assertConversion(expected, ':')
+
     def testStandardAnalyserWithoutStopWords(self):
         expected = PhraseQuery()
         for term in ["no", "is", "the", "only", "option"]:

@@ -210,6 +210,7 @@ class Lucene(object):
         yield
 
     def drilldownFieldnames(self, *args, **kwargs):
+        kwargs.pop('core', None)
         drilldownFieldnames = self._index.drilldownFieldnames(*args, **kwargs)
         response = LuceneResponse(total=len(drilldownFieldnames), hits=drilldownFieldnames)
         raise StopIteration(response)

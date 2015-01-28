@@ -62,6 +62,7 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
 
     def testRemoteInfoCore(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/core', arguments=dict(name='main'), parse=False)
+        self.assertFalse('Traceback' in body, body)  # only tested for MultiLucene situation for now!
         bodyLxml = HTML(body)
         lists = bodyLxml.xpath('//ul')
         fieldList = lists[0]
@@ -74,8 +75,15 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
 
     def testRemoteInfoField(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__id__', name='main'), parse=False)
+        self.assertFalse('Traceback' in body, body)
         self.assertEquals(50, body.count(': 1'), body)
 
     def testRemoteInfoFieldWithPrefix(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='field2', name='main', prefix='value8'), parse=False)
         self.assertTrue("<pre>value8: 10</pre>" in body, body)
+
+    def testRemoteInfoDrilldownValues(self):
+        header, body = getRequest(port=self.httpPort, path='/remote/info/drilldownvalues', arguments=dict(path='untokenized.field2', name='main'), parse=False)
+        self.assertFalse('Traceback' in body, body)
+        bodyLxml = HTML(body)
+        self.assertEquals(set(['value1', 'value0', 'value9', 'value8', 'value7', 'value6', 'value5', 'value4', 'value3', 'othervalue2', 'value2']), set(bodyLxml.xpath('//ul/li/a/text()')))

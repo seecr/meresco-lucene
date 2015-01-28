@@ -156,9 +156,11 @@ class MultiLucene(Observable):
         constructor = AggregateScoreSuperCollector if self._multithreaded else AggregateScoreCollector
         return constructor(keyName, scoreCollectors) if scoreCollectors.size() > 0 else None
 
-    def any_unknown(self, message, core=None, **kwargs):
+    def any_unknown(self, message, **kwargs):
         if message in ['prefixSearch', 'fieldnames', 'drilldownFieldnames']:
-            core = self._defaultCore if core is None else core
+            core = kwargs.get('core')
+            if core is None:
+                core = self._defaultCore
             result = yield self.any[core].unknown(message=message, **kwargs)
             raise StopIteration(result)
         raise DeclineMessage()

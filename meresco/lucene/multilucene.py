@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -104,7 +105,7 @@ class MultiLucene(Observable):
                 keyFilter = KeyFilter(keyCollector.getCollectedKeys(), query.keyName(otherCoreName))
                 result.drilldownData.extend((yield self.any[otherCoreName].facets(
                     facets=query.facetsFor(otherCoreName),
-                    filterQueries=query.queriesFor(otherCoreName) + query.uniteQueriesFor(otherCoreName),
+                    filterQueries=query.queriesFor(otherCoreName) + query.coreFacetQueriesFor(otherCoreName),
                     drilldownQueries=query.drilldownQueriesFor(otherCoreName),
                     filter=keyFilter
                 )))

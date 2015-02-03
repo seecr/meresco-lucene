@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -33,6 +34,7 @@ class ComposedQuery(object):
         self._filterQueries = defaultdict(list)
         self._facets = defaultdict(list)
         self._drilldownQueries = defaultdict(list)
+        self._coreFacetQueries = defaultdict(list)
         self._rankQueries = {}
         self._matches = {}
         self._coreKeys = {}
@@ -64,6 +66,11 @@ class ComposedQuery(object):
     def addDrilldownQuery(self, core, drilldownQuery):
         self.cores.add(core)
         self._drilldownQueries[core].append(drilldownQuery)
+        return self
+
+    def addCoreFacetQuery(self, core, query):
+        self.cores.add(core)
+        self._coreFacetQueries[core].append(query)
         return self
 
     def setRankQuery(self, core, query):
@@ -110,6 +117,9 @@ class ComposedQuery(object):
 
     def drilldownQueriesFor(self, core):
         return self._drilldownQueries.get(core, [])
+
+    def coreFacetQueriesFor(self, core):
+        return self._coreFacetQueries.get(core, [])
 
     def rankQueryFor(self, core):
         return self._rankQueries.get(core)

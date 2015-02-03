@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -34,7 +35,7 @@ from meresco.core import Observable
 
 
 from meresco.lucene import Lucene, TermFrequencySimilarity, LuceneSettings
-from meresco.lucene.fieldregistry import KEY_PREFIX, FieldRegistry
+from meresco.lucene.fieldregistry import KEY_PREFIX
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.composedquery import ComposedQuery
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
@@ -389,6 +390,7 @@ class MultiLuceneTest(SeecrTestCase):
             ])
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
+        q.addCoreFacetQuery(core='coreB', query=luceneQueryFromCql('N=true'))
         resultOne = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(3, resultOne.total)
         self.assertEquals([{
@@ -455,8 +457,10 @@ class MultiLuceneTest(SeecrTestCase):
             ])
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
+        q.addCoreFacetQuery(core='coreB', query=luceneQueryFromCql('N=true'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(3, result.total)
+        self.assertEquals(['A-QU', 'A-MQ', 'A-MQU'], [h.id for h in result.hits])
         self.assertEquals([{
                 'terms': [
                     {'count': 3, 'term': u'true'},
@@ -526,6 +530,33 @@ class MultiLuceneTest(SeecrTestCase):
             ])
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
+        result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(2, result.total)
+        self.assertEquals([{
+               'terms': [
+                    {'count': 2, 'term': u'true'},
+                    {'count': 1, 'term': 'false'}
+                ],
+                'path': [],
+                'fieldname': u'cat_N'
+            }, {
+                'terms': [
+                    {'count': 3, 'term': u'true'},
+                ],
+                'path': [],
+                'fieldname': u'cat_O'
+            }], result.drilldownData)
+
+    def testUniteAndFacetsWithForeignQueryWithSpecialFacetsQuery(self):
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=None)
+        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('O=true'), facets=[
+                dict(fieldname='cat_N', maxTerms=10),
+                dict(fieldname='cat_O', maxTerms=10),
+            ])
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
+        q.addCoreFacetQuery(core='coreB', query=luceneQueryFromCql('N=true'))
         result = returnValueFromGenerator(self.dna.any.executeComposedQuery(q))
         self.assertEquals(2, result.total)
         self.assertEquals([{

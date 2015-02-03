@@ -34,7 +34,7 @@ class ComposedQuery(object):
         self._filterQueries = defaultdict(list)
         self._facets = defaultdict(list)
         self._drilldownQueries = defaultdict(list)
-        self._coreFacetQueries = defaultdict(list)
+        self._otherCoreFacetFilters = defaultdict(list)
         self._rankQueries = {}
         self._matches = {}
         self._coreKeys = {}
@@ -68,9 +68,9 @@ class ComposedQuery(object):
         self._drilldownQueries[core].append(drilldownQuery)
         return self
 
-    def addCoreFacetQuery(self, core, query):
+    def addOtherCoreFacetFilter(self, core, query):
         self.cores.add(core)
-        self._coreFacetQueries[core].append(query)
+        self._otherCoreFacetFilters[core].append(query)
         return self
 
     def setRankQuery(self, core, query):
@@ -118,8 +118,8 @@ class ComposedQuery(object):
     def drilldownQueriesFor(self, core):
         return self._drilldownQueries.get(core, [])
 
-    def coreFacetQueriesFor(self, core):
-        return self._coreFacetQueries.get(core, [])
+    def otherCoreFacetFiltersFor(self, core):
+        return self._otherCoreFacetFilters.get(core, [])
 
     def rankQueryFor(self, core):
         return self._rankQueries.get(core)
@@ -166,6 +166,7 @@ class ComposedQuery(object):
         self._filterQueries = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._filterQueries.items())
         self._rankQueries = dict((core, convertQuery(core, v)) for core, v in self._rankQueries.items())
         self._unites = [dict(d, query=convertQuery(d['core'], d['query'])) for d in self._unites]
+        self._otherCoreFacetFilters = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._otherCoreFacetFilters.items())
 
     def otherKwargs(self):
         return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField)

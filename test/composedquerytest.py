@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -223,6 +224,15 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals([('field', ['value'])], cq.drilldownQueriesFor('coreB'))
         cq.convertWith(coreB=lambda q: "converted_" + q)
         self.assertEquals([('field', ['value'])], cq.drilldownQueriesFor('coreB'))
+
+    def testAddOtherCoreFacetFilter(self):
+        cq = ComposedQuery('coreA')
+        cq.addOtherCoreFacetFilter('coreB', 'field=value')
+        self.assertValidateRaisesValueError(cq, "No match set for cores ('coreA', 'coreB')")
+        cq.addMatch(dict(core='coreA', uniqueKey='kA'), dict(core='coreB', key='kB'))
+        self.assertEquals(['field=value'], cq.otherCoreFacetFiltersFor('coreB'))
+        cq.convertWith(coreB=lambda q: "converted_" + q)
+        self.assertEquals(['converted_field=value'], cq.otherCoreFacetFiltersFor('coreB'))
 
     def assertValidateRaisesValueError(self, composedQuery, message):
         try:

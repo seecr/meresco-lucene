@@ -105,7 +105,7 @@ class MultiLucene(Observable):
                 keyFilter = KeyFilter(keyCollector.getCollectedKeys(), query.keyName(otherCoreName))
                 result.drilldownData.extend((yield self.any[otherCoreName].facets(
                     facets=query.facetsFor(otherCoreName),
-                    filterQueries=query.queriesFor(otherCoreName) + query.coreFacetQueriesFor(otherCoreName),
+                    filterQueries=query.queriesFor(otherCoreName) + query.otherCoreFacetFiltersFor(otherCoreName),
                     drilldownQueries=query.drilldownQueriesFor(otherCoreName),
                     filter=keyFilter
                 )))

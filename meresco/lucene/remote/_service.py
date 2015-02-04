@@ -2,8 +2,8 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -23,18 +23,22 @@
 #
 ## end license ##
 
+from os.path import join, dirname, abspath
+from traceback import format_exc, print_exc
+from simplejson import dumps
+
+from weightless.core import be, compose
+
 from meresco.lucene import version
 from meresco.core import Observable
 from meresco.components.http.utils import Ok, CRLF, ContentTypeHeader, ContentTypePlainText, serverErrorPlainText
 from meresco.components.http import PathFilter, PathRename, FileServer, StringServer
 from cqlparser import parseString, cql2string
-from weightless.core import be, compose
 from meresco.html import DynamicHtml
-from traceback import format_exc
-from simplejson import dumps
+
 from _conversion import jsonLoadMessage
 
-from os.path import join, dirname, abspath
+
 myPath = dirname(abspath(__file__))
 usrSharePath = '/usr/share/meresco-lucene'
 usrSharePath = join(dirname(dirname(dirname(myPath))), 'usr-share')  #DO_NOT_DISTRIBUTE
@@ -93,6 +97,7 @@ class LuceneRemoteService(Observable):
                 raise ValueError('Expected %s' % (' or '.join('"%s"' % m for m in _ALLOWED_METHODS)))
             response = yield self.any.unknown(message=message, **kwargs)
         except Exception, e:
+            print_exc()
             x = format_exc() # returns 'None' if e is a Java Error
             yield serverErrorPlainText
             yield x if x and x.strip() != 'None' else repr(e)

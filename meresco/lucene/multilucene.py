@@ -56,6 +56,7 @@ class MultiLucene(Observable):
             response = yield self._sinqleQuery(query)
             generatorReturn(response)
         response = yield self._multipleCoreQuery(query)
+        response.info = query.infoDict()
         generatorReturn(response)
 
     def _sinqleQuery(self, query):

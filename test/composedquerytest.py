@@ -234,6 +234,43 @@ class ComposedQueryTest(SeecrTestCase):
         cq.convertWith(coreB=lambda q: "converted_" + q)
         self.assertEquals(['converted_field=value'], cq.otherCoreFacetFiltersFor('coreB'))
 
+    def testRepr(self):
+        class AQuery(object):
+            def __repr__(self):
+                return 'NOT USED'
+            def __str__(self):
+                return 'AQuery'
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery(core='coreA', query='Q0')
+        cq.addFilterQuery(core='coreA', query='Q1')
+        cq.addFilterQuery(core='coreA', query='Q2')
+        cq.addFacet(core='coreA', facet='F0')
+        cq.addFacet(core='coreA', facet='F1')
+        cq.setCoreQuery(core='coreB', query='Q3')
+        cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
+        cq.addUnite(dict(core='coreA', query=AQuery()), dict(core='coreB', query='anotherQuery'))
+        cq.start = 0
+        cq.sortKeys = [dict(sortBy='field', sortDescending=True)]
+
+        self.assertEquals({
+            'type': 'ComposedQuery',
+            'query': {
+                "coreKeys": {"coreA": "keyA", "coreB": "keyB"},
+                "cores": ["coreB", "coreA"],
+                "drilldownQueries": {},
+                "facets": {"coreA": ["F0", "F1"]},
+                "filterQueries": {"coreA": ["Q1", "Q2"]},
+                "matches": {"coreA->coreB": [{"core": "coreA", "uniqueKey": "keyA"}, {"core": "coreB", "key": "keyB"}]},
+                "otherCoreFacetFilters": {},
+                "queries": {"coreA": "Q0", "coreB": "Q3"},
+                "rankQueries": {},
+                "resultsFrom": "coreA",
+                "sortKeys": [{"sortBy": "field", "sortDescending": True}],
+                "start": 0,
+                "unites": [{"core": "coreA", "query": "AQuery"}, {"core": "coreB", "query": "anotherQuery"}]
+            }
+        }, cq.infoDict())
+
     def assertValidateRaisesValueError(self, composedQuery, message):
         try:
             composedQuery.validate()

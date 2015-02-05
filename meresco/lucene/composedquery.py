@@ -25,7 +25,7 @@
 ## end license ##
 
 from collections import defaultdict
-
+from .utils import simplifiedDict
 
 class ComposedQuery(object):
     def __init__(self, resultsFromCore, query=None):
@@ -210,5 +210,10 @@ class ComposedQuery(object):
     def __repr__(self):
         return "%s%s" % (self.__class__.__name__, self.asDict())
 
+    def infoDict(self):
+        return {
+            'type': self.__class__.__name__,
+            'query':simplifiedDict(dict((k.replace('_',''),v) for k,v in self.asDict().items()))
+        }
 
 del ComposedQuery._prop

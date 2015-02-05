@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -44,7 +45,7 @@ from meresco.lucene.cache import LruCache
 from meresco.lucene.fieldregistry import IDFIELD
 from meresco.lucene.hit import Hit
 from seecr.utils.generatorutils import generatorReturn
-
+from .utils import simplifiedDict
 
 class Lucene(object):
     COUNT = 'count'
@@ -183,7 +184,21 @@ class Lucene(object):
             response.suggestions = self._index.suggest(**suggestionRequest)
 
         response.queryTime = millis(time() - t0)
-
+        response.info = {
+            'type': 'Query',
+            'query': simplifiedDict(dict(
+                    luceneQuery=luceneQuery,
+                    start=start,
+                    stop=stop,
+                    sortKeys=sortKeys,
+                    facets=facets,
+                    filterQueries=filterQueries,
+                    suggestionRequest=suggestionRequest,
+                    dedupField=dedupField,
+                    dedupSortField=dedupSortField,
+                    drilldownQueries=drilldownQueries,
+                ))
+            }
         raise StopIteration(response)
         yield
 

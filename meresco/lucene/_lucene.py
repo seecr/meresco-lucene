@@ -262,7 +262,6 @@ class Lucene(object):
         self.close()
 
     def _topDocsResponse(self, collector, start, dedupCollector=None):
-        # TODO: Probably use FieldCache iso document.get()
         hits = []
         dedupCollectorFieldName = dedupCollector.getKeyName() if dedupCollector else None
         if hasattr(collector, "topDocs"):
@@ -271,7 +270,12 @@ class Lucene(object):
                     keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc)
                     newDocId = keyForDocId.getDocId() if keyForDocId else scoreDoc.doc
                     hit = Hit(self._index.getDocument(newDocId).get(IDFIELD))
-                    hit.duplicateCount = {dedupCollectorFieldName: keyForDocId.getCount() if keyForDocId else 0}
+                    hit.duplicates = {dedupCollectorFieldName: [hit.id]}
+                    hit.duplicateCount = {dedupCollectorFieldName: 1}
+                    if keyForDocId:
+                        duplicateDocIds = [self._index.getDocument(d).get(IDFIELD) for d in keyForDocId.getDuplicates()]
+                        hit.duplicates = {dedupCollectorFieldName: duplicateDocIds}
+                        hit.duplicateCount = {dedupCollectorFieldName: len(duplicateDocIds)}
                 else:
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
                 hit.score = scoreDoc.score

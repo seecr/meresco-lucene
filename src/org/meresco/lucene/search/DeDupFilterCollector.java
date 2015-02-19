@@ -2,8 +2,9 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -25,6 +26,7 @@
 
 package org.meresco.lucene.search;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.Map;
@@ -83,14 +85,14 @@ public class DeDupFilterCollector extends Collector {
             long sortByValue = this.sortByValues.get(doc);
             Key key = this.keys.get(keyValue);
             if (key != null) {
-                key.count++;
+                key.addDuplicate(absDoc);
                 if (key.sortByValue < sortByValue) {
                     key.sortByValue = sortByValue;
                     key.docId = absDoc;
                 }
                 return;
             }
-            this.keys.put(keyValue, new Key(absDoc, sortByValue, 1));
+            this.keys.put(keyValue, new Key(absDoc, sortByValue));
         }
         this.delegate.collect(doc);
     }
@@ -134,22 +136,26 @@ public class DeDupFilterCollector extends Collector {
     }
 
     public class Key {
-        public int docId;
+        private int docId;
         private long sortByValue;
-        public int count;
+        private ArrayList<Integer> duplicateDocIds = new ArrayList<Integer>();
 
-        public Key(int docId, long sortByValue, int count) {
+        private Key(int docId, long sortByValue) {
             this.docId = docId;
             this.sortByValue = sortByValue;
-            this.count = count;
+            this.duplicateDocIds.add(docId);
+        }
+
+        public void addDuplicate(int docId) {
+            this.duplicateDocIds.add(docId);
+        }
+
+        public ArrayList<Integer> getDuplicates() {
+            return this.duplicateDocIds;
         }
 
         public int getDocId() {
             return this.docId;
-        }
-
-        public int getCount() {
-            return this.count;
         }
 
         public long getSortByValue() {

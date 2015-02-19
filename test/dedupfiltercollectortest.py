@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -74,7 +75,8 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         key = c.keyForDocId(docId)
         identifier = self.lucene._index.getDocument(key.getDocId()).get(IDFIELD)
         self.assertEquals('urn:2', identifier)
-        self.assertEquals(2, key.count)
+        duplicates = key.getDuplicates()
+        self.assertEquals([0, 1], sorted(list(duplicates)))
 
     def testCollectorFiltersTwoTimesTwoSimilarOneNot(self):
         self._addDocument("urn:1",  1, 2001)
@@ -93,7 +95,7 @@ class DeDupFilterCollectorTest(SeecrTestCase):
         netDocIds = [c.keyForDocId(rawDocId).docId for rawDocId in rawDocIds]
         identifiers = set(self.lucene._index.getDocument(doc).get(IDFIELD) for doc in netDocIds)
         self.assertEquals(set(["urn:2", "urn:3", "urn:5"]), identifiers)
-        self.assertEquals([1,2,2], list(sorted(c.keyForDocId(d).count for d in netDocIds)))
+        self.assertEquals([1,2,2], list(sorted(c.keyForDocId(d).getDuplicates().size() for d in netDocIds)))
 
     def testSilentyYieldsWrongResultWhenFieldNameDoesNotMatch(self):
         self._addDocument("urn:1", 2)

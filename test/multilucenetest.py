@@ -114,6 +114,7 @@ class MultiLuceneTest(SeecrTestCase):
     def tearDown(self):
         self.luceneA.close()
         self.luceneB.close()
+        self.luceneC.close()
         SeecrTestCase.tearDown(self)
 
     def hitIds(self, hits):

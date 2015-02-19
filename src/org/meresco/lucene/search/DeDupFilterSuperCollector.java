@@ -210,7 +210,7 @@ class DeDupFilterSubCollector extends SubCollector {
         }
 
         public ArrayList<Integer> getDuplicates() {
-            return this.duplicateDocIds;
+            return (ArrayList<Integer>) this.duplicateDocIds.clone();
         }
 
         public int getDocId() {

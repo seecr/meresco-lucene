@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -45,6 +46,7 @@ from cqltolucenequerytest import CqlToLuceneQueryTest
 from dedupfiltercollectortest import DeDupFilterCollectorTest
 from fieldregistrytest import FieldRegistryTest
 from fields2lucenedoctest import Fields2LuceneDocTest
+from groupcollectortest import GroupCollectorTest
 from lrucachetest import LruCacheTest
 from lucenequerycomposertest import LuceneQueryComposerTest
 from luceneremotetest import LuceneRemoteTest

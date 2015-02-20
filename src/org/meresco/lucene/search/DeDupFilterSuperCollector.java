@@ -200,7 +200,7 @@ class DeDupFilterSubCollector extends SubCollector {
         private Key(Key key, int docId, long sortByValue) {
             this(docId, sortByValue);
             if (key != null) {
-                this.duplicateDocIds = key.getDuplicates();
+                this.duplicateDocIds = new ArrayList<Integer>(key.getDuplicates());
                 this.duplicateDocIds.add(docId);
                 if (key.sortByValue >= sortByValue) {
                     this.sortByValue = key.sortByValue;
@@ -210,7 +210,7 @@ class DeDupFilterSubCollector extends SubCollector {
         }
 
         public ArrayList<Integer> getDuplicates() {
-            return (ArrayList<Integer>) this.duplicateDocIds.clone();
+            return this.duplicateDocIds;
         }
 
         public int getDocId() {

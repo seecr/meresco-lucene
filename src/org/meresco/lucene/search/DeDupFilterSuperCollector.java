@@ -2,9 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
- * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -28,7 +27,6 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -160,7 +158,7 @@ class DeDupFilterSubCollector extends SubCollector {
                     throw new RuntimeException("More than 10000 tries in DeDupFilterSubCollector.collect.");
                 }
             }
-            if (newKey.duplicateDocIds.size() != 1) {
+            if (newKey.count != 1) {
                 return;
             }
         }
@@ -189,32 +187,31 @@ class DeDupFilterSubCollector extends SubCollector {
     public class Key {
         private int docId;
         private long sortByValue;
-        private ArrayList<Integer> duplicateDocIds = new ArrayList<Integer>();
+        private int count;
 
-        private Key(int docId, long sortByValue) {
+        public Key(int docId, long sortByValue, int count) {
             this.docId = docId;
             this.sortByValue = sortByValue;
-            this.duplicateDocIds.add(docId);
+            this.count = count;
         }
 
-        private Key(Key key, int docId, long sortByValue) {
-            this(docId, sortByValue);
+        public Key(Key key, int docId, long sortByValue) {
+            this(docId, sortByValue, 1);
             if (key != null) {
-                this.duplicateDocIds = new ArrayList<Integer>(key.getDuplicates());
-                this.duplicateDocIds.add(docId);
                 if (key.sortByValue >= sortByValue) {
                     this.sortByValue = key.sortByValue;
                     this.docId = key.docId;
                 }
+                this.count = key.count + 1;
             }
-        }
-
-        public ArrayList<Integer> getDuplicates() {
-            return this.duplicateDocIds;
         }
 
         public int getDocId() {
             return this.docId;
+        }
+
+        public int getCount() {
+            return this.count;
         }
 
         public long getSortByValue() {

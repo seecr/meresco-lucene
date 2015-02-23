@@ -280,12 +280,9 @@ class Lucene(object):
                     keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc)
                     newDocId = keyForDocId.getDocId() if keyForDocId else scoreDoc.doc
                     hit = Hit(self._index.getDocument(newDocId).get(IDFIELD))
-                    hit.duplicates = {dedupCollectorFieldName: [hit.id]}
                     hit.duplicateCount = {dedupCollectorFieldName: 1}
                     if keyForDocId:
-                        duplicateDocIds = [self._index.getDocument(d).get(IDFIELD) for d in keyForDocId.getDuplicates()]
-                        hit.duplicates = {dedupCollectorFieldName: duplicateDocIds}
-                        hit.duplicateCount = {dedupCollectorFieldName: len(duplicateDocIds)}
+                        hit.duplicateCount = {dedupCollectorFieldName: keyForDocId.getCount()}
                 elif groupingCollector:
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
                     if hit.id in seenIds:

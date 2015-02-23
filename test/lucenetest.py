@@ -514,13 +514,11 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals(4, result.totalWithDuplicates)
         expectedHits = [
-            Hit(score=1.0, id=u'urn:2', duplicateCount={u'__key__': 3}, duplicates={u'__key__': [u'urn:1', u'urn:2', u'urn:3']}),
-            Hit(score=1.0, id=u'urn:4', duplicateCount={u'__key__': 1}, duplicates={u'__key__': [u'urn:4']}),
+            Hit(score=1.0, id=u'urn:2', duplicateCount={u'__key__': 3}),
+            Hit(score=1.0, id=u'urn:4', duplicateCount={u'__key__': 1}),
         ]
         resultHits = list(hit for hit in result.hits)
         resultHits.sort(key=lambda h:h.id)
-        for hit in resultHits:
-            hit.duplicates['__key__'].sort()
         self.assertEquals(expectedHits[0].__dict__, resultHits[0].__dict__)
         self.assertEquals(expectedHits, resultHits)
         self.assertEquals({'count': 4, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])

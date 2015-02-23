@@ -274,7 +274,7 @@ class Lucene(object):
         if hasattr(collector, "topDocs"):
             count = 0
             for scoreDoc in collector.topDocs(start).scoreDocs:
-                if count > stop:
+                if count >= stop:
                     break
                 if dedupCollector:
                     keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc)

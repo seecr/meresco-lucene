@@ -557,6 +557,21 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(expectedHits[0].__dict__, resultHits[0].__dict__)
         self.assertEquals(expectedHits, resultHits)
 
+    def testGroupingCollectorReturnsMaxHitAfterGrouping(self):
+        doc = document(field0='v0')
+        doc.add(NumericDocValuesField("__key__", long(42)))
+        consume(self.lucene.addDocument("urn:1", doc))
+        doc = document(field0='v0')
+        doc.add(NumericDocValuesField("__key__", long(42)))
+        consume(self.lucene.addDocument("urn:2", doc))
+        for i in range(3, 11):
+            doc = document(field0='v0')
+            consume(self.lucene.addDocument("urn:%s" % i, doc))
+        self.lucene.commit()
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__key__", stop=5))
+        self.assertEquals(10, result.total)
+        self.assertEquals(5, len(result.hits))
+
     def testDutchStemming(self):
         self.lucene.close()
         settings = LuceneSettings(commitCount=1, analyzer=MerescoDutchStemmingAnalyzer(), verbose=False)

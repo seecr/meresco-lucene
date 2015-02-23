@@ -24,9 +24,9 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause, MultiCollector, TotalHitCountCollector, TopScoreDocCollector, TopFieldCollector
-from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector, DeDupFilterCollector, GroupSuperCollector
-from org.meresco.lucene.search.join import ScoreSuperCollector, ScoreCollector, KeySuperCollector, KeyCollector
+from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause
+from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector, GroupSuperCollector
+from org.meresco.lucene.search.join import ScoreSuperCollector, KeySuperCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search import SortField
@@ -54,7 +54,6 @@ class Lucene(object):
     def __init__(self, path, reactor, settings, name=None, **kwargs):
         self._reactor = reactor
         self.settings = settings
-        self._multithreaded = settings.multithreaded
         self._fieldRegistry = settings.fieldRegistry
         self._commitCount = 0
         self._commitTimerToken = None
@@ -148,7 +147,7 @@ class Lucene(object):
             resultsCollector = groupingCollector = GroupSuperCollector(groupingField, topCollector)
         elif dedupField:
             topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
-            constructor = DeDupFilterSuperCollector if self._multithreaded else DeDupFilterCollector
+            constructor = DeDupFilterSuperCollector
             resultsCollector = dedupCollector = constructor(dedupField, dedupSortField, topCollector)
         else:
             resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
@@ -161,11 +160,10 @@ class Lucene(object):
         if keyCollector:
             collectors.append(keyCollector)
 
-        if self._multithreaded:
-            multiSubCollectors = ArrayList().of_(SuperCollector)
-            for c in collectors:
-                multiSubCollectors.add(c)
-        collector = MultiSuperCollector(multiSubCollectors) if self._multithreaded else MultiCollector.wrap(collectors)
+        multiSubCollectors = ArrayList().of_(SuperCollector)
+        for c in collectors:
+            multiSubCollectors.add(c)
+        collector = MultiSuperCollector(multiSubCollectors)
 
         if scoreCollector:
             scoreCollector.setDelegate(collector)
@@ -242,7 +240,7 @@ class Lucene(object):
         return self._scoreCollectorCache.get((keyName, query))
 
     def _scoreCollector(self, keyName, query):
-        scoreCollector = ScoreSuperCollector(keyName) if self._multithreaded else ScoreCollector(keyName)
+        scoreCollector = ScoreSuperCollector(keyName)
         self.search(query=query, collector=scoreCollector)
         return scoreCollector
 
@@ -254,7 +252,7 @@ class Lucene(object):
             return self._collectKeys(filter, keyName, query=query)
 
     def _collectKeys(self, filter, keyName, query):
-        keyCollector = KeySuperCollector(keyName) if self._multithreaded else KeyCollector(keyName)
+        keyCollector = KeySuperCollector(keyName)
         self.search(query=query or MatchAllDocsQuery(), filterQuery=filter, collector=keyCollector)
         return keyCollector.getCollectedKeys()
 
@@ -312,8 +310,6 @@ class Lucene(object):
 
     def _facetResult(self, facetCollector, facets):
         facetResult = facetCollector
-        if not self._multithreaded:
-            facetResult = self._index.facetResult(facetCollector)
         result = []
         for f in facets:
             sortBy = f.get('sortBy')
@@ -344,7 +340,7 @@ class Lucene(object):
 
     def _topCollector(self, start, stop, sortKeys):
         if stop <= start:
-            return TotalHitCountSuperCollector() if self._multithreaded else TotalHitCountCollector()
+            return TotalHitCountSuperCollector()
         # fillFields = False # always true for multi-threading/sharding
         trackDocScores = True
         trackMaxScore = False
@@ -356,12 +352,8 @@ class Lucene(object):
             ]
             sort = Sort(sortFields)
         else:
-            return TopScoreDocSuperCollector(stop, docsScoredInOrder) if self._multithreaded else TopScoreDocCollector.create(stop, docsScoredInOrder)
-        if self._multithreaded:
-            return TopFieldSuperCollector(sort, stop, trackDocScores, trackMaxScore, docsScoredInOrder)
-        else:
-            fillFields = False
-            return TopFieldCollector.create(sort, stop, fillFields, trackDocScores, trackMaxScore, docsScoredInOrder)
+            return TopScoreDocSuperCollector(stop, docsScoredInOrder)
+        return TopFieldSuperCollector(sort, stop, trackDocScores, trackMaxScore, docsScoredInOrder)
 
     def _sortField(self, fieldname, sortDescending):
         result = SortField(fieldname, SortField.Type.STRING, sortDescending)

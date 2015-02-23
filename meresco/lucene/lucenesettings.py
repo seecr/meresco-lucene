@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -32,7 +33,6 @@ class LuceneSettings(object):
     def __init__(self,
                 commitTimeout=10,
                 commitCount=100000,
-                multithreaded=True,
                 readonly=False,
                 lruTaxonomyWriterCacheSize=4000,
                 analyzer=MerescoStandardAnalyzer(),
@@ -45,7 +45,6 @@ class LuceneSettings(object):
             ):
         self.commitTimeout = commitTimeout
         self.commitCount = commitCount
-        self.multithreaded = multithreaded
         self.readonly = readonly
         self.lruTaxonomyWriterCacheSize = lruTaxonomyWriterCacheSize
         self.analyzer = analyzer

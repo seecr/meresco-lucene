@@ -32,7 +32,7 @@ from meresco.core import Observable
 from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery
-from org.meresco.lucene.search.join import KeySuperCollector, ScoreCollector, AggregateScoreCollector, AggregateScoreSuperCollector, ScoreSuperCollector, KeyCollector
+from org.meresco.lucene.search.join import KeySuperCollector, AggregateScoreSuperCollector, ScoreSuperCollector
 from org.meresco.lucene.queries import KeyFilter
 from java.util import ArrayList
 
@@ -40,10 +40,9 @@ from _lucene import millis
 
 
 class MultiLucene(Observable):
-    def __init__(self, defaultCore, multithreaded=True):
+    def __init__(self, defaultCore):
         Observable.__init__(self)
         self._defaultCore = defaultCore
-        self._multithreaded = multithreaded
 
     def executeQuery(self, core=None, **kwargs):
         coreName = self._defaultCore if core is None else core
@@ -91,7 +90,7 @@ class MultiLucene(Observable):
 
         resultCoreQuery = self._luceneQueryForCore(resultCoreName, query)
         aggregateScoreCollector = self._createAggregateScoreCollector(query, resultCoreKey)
-        keyCollector = KeySuperCollector(resultCoreKey) if self._multithreaded else KeyCollector(resultCoreKey)
+        keyCollector = KeySuperCollector(resultCoreKey)
         result = yield self.any[resultCoreName].executeQuery(
                 luceneQuery=resultCoreQuery or MatchAllDocsQuery(),
                 filter=summaryFilter,
@@ -149,13 +148,13 @@ class MultiLucene(Observable):
         return luceneQuery
 
     def _createAggregateScoreCollector(self, query, keyName):
-        scoreCollectors = ArrayList().of_(ScoreSuperCollector if self._multithreaded else ScoreCollector)
+        scoreCollectors = ArrayList().of_(ScoreSuperCollector)
         for coreName in query.cores:
             rankQuery = query.rankQueryFor(coreName)
             if rankQuery:
                 scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName), query=rankQuery)
                 scoreCollectors.add(scoreCollector)
-        constructor = AggregateScoreSuperCollector if self._multithreaded else AggregateScoreCollector
+        constructor = AggregateScoreSuperCollector
         return constructor(keyName, scoreCollectors) if scoreCollectors.size() > 0 else None
 
     def any_unknown(self, message, **kwargs):

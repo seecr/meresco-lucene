@@ -50,15 +50,11 @@ from seecr.test.io import stdout_replaced
 
 
 class LuceneTest(SeecrTestCase):
-    def __init__(self, *args):
-        super(LuceneTest, self).__init__(*args)
-        self._multithreaded = True
-
     def setUp(self):
         super(LuceneTest, self).setUp()
         self._javaObjects = self._getJavaObjects()
         self._reactor = CallTrace('reactor')
-        self._defaultSettings = LuceneSettings(commitCount=1, commitTimeout=1, multithreaded=self._multithreaded, verbose=False, fieldRegistry=FieldRegistry(
+        self._defaultSettings = LuceneSettings(commitCount=1, commitTimeout=1, verbose=False, fieldRegistry=FieldRegistry(
                 drilldownFields=[
                     DrilldownField(name='field1'),
                     DrilldownField(name='field2'),
@@ -128,7 +124,7 @@ class LuceneTest(SeecrTestCase):
             'type': 'Query'}, result.info)
 
     def testAdd1DocumentWithReadonlyLucene(self):
-        settings = LuceneSettings(commitTimeout=1, multithreaded=self._multithreaded, verbose=False, readonly=True)
+        settings = LuceneSettings(commitTimeout=1, verbose=False, readonly=True)
         readOnlyLucene = Lucene(
             join(self.tempdir, 'lucene'),
             reactor=self._reactor,
@@ -672,11 +668,6 @@ class LuceneTest(SeecrTestCase):
         self.lucene.readerSettingsWrapper.set()
         settings = self.lucene.readerSettingsWrapper.get()
         self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)'}, settings)
-
-class LuceneSingleThreadedTest(LuceneTest):
-    def __init__(self, *args):
-        super(LuceneTest, self).__init__(*args)
-        self._multithreaded = False
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

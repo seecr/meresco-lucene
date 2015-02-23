@@ -40,20 +40,17 @@ from lucenetest import createDocument
 
 
 class MultiLuceneTest(SeecrTestCase):
-    def __init__(self, *args, **kwargs):
-        super(MultiLuceneTest, self).__init__(*args, **kwargs)
-        self._multithreaded = True
 
     def setUp(self):
         SeecrTestCase.setUp(self)
-        settings = LuceneSettings(multithreaded=self._multithreaded, verbose=False)
-        settingsLuceneC = LuceneSettings(multithreaded=self._multithreaded, verbose=False, similarity=TermFrequencySimilarity())
+        settings = LuceneSettings(verbose=False)
+        settingsLuceneC = LuceneSettings(verbose=False, similarity=TermFrequencySimilarity())
 
         self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), settings=settings)
         self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), settings=settings)
         self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), settings=settingsLuceneC)
         self.dna = be((Observable(),
-            (MultiLucene(defaultCore='coreA', multithreaded=self._multithreaded),
+            (MultiLucene(defaultCore='coreA'),
                 (self.luceneA,),
                 (self.luceneB,),
                 (self.luceneC,),
@@ -811,13 +808,6 @@ class MultiLuceneTest(SeecrTestCase):
             identifier=identifier,
             document=createDocument([(KEY_PREFIX + keyField, keyValue) for (keyField, keyValue) in keys]+fields, facets=[('cat_'+field, value) for field, value in fields]),
             ))
-
-
-class MultiLuceneSingleThreadedTest(MultiLuceneTest):
-    def __init__(self, *args, **kwargs):
-        super(MultiLuceneSingleThreadedTest, self).__init__(*args, **kwargs)
-        self._multithreaded = False
-
 
 def luceneQueryFromCql(cqlString):
     return LuceneQueryComposer([], luceneSettings=LuceneSettings()).compose(parseCql(cqlString))

@@ -29,6 +29,7 @@ from org.apache.lucene.document import NumericDocValuesField, Document
 from weightless.core import consume
 from org.meresco.lucene.search import TopScoreDocSuperCollector, GroupSuperCollector
 from org.apache.lucene.search import MatchAllDocsQuery
+from meresco.lucene.fieldregistry import IDFIELD
 
 class GroupCollectorTest(SeecrTestCase):
     def setUp(self):
@@ -49,14 +50,16 @@ class GroupCollectorTest(SeecrTestCase):
         c = GroupSuperCollector("__isformatof__", tc)
         self.lucene.search(query=MatchAllDocsQuery(), collector=c)
         self.assertEquals(3, tc.getTotalHits())
-        docId0, docId1, docId2 = 0,1,2
-        self.assertEquals([docId0, docId1], list(c.group(docId0)))
-        self.assertEquals([docId0, docId1], list(c.group(docId1)))
-        self.assertEquals([docId2], list(c.group(docId2)))
+        idFields = dict((self.lucene._index.getDocument(scoreDoc.doc).get(IDFIELD), scoreDoc.doc) for scoreDoc in tc.topDocs(0).scoreDocs)
 
-    def _addDocument(self, identifier, isformatof):
+        self.assertEquals(2, len(list(c.group(idFields['id:0']))))
+        self.assertEquals(2, len(list(c.group(idFields['id:1']))))
+        self.assertEquals(1, len(list(c.group(idFields['id:2']))))
+
+
+    def _addDocument(self, identifier, isformatof=None):
         doc = Document()
-        if isformatof:
+        if isformatof is not None:
             doc.add(NumericDocValuesField("__isformatof__", long(isformatof)))
         consume(self.lucene.addDocument(identifier, doc))
         self.lucene.commit()  # Explicitly, not required: since commitCount=1.

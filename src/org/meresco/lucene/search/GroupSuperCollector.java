@@ -60,7 +60,7 @@ public class GroupSuperCollector extends SuperCollector<GroupSubCollector> {
         this.delegate.complete();
     }
 
-    public List<Integer> group(int docId) throws IOException{
+    private Long getKeyForDocId(int docId) throws IOException {
         if (this.topLevelReaderContext == null)
             this.topLevelReaderContext = ReaderUtil.getTopLevelContext(super.subs.get(0).context);
 
@@ -69,9 +69,14 @@ public class GroupSuperCollector extends SuperCollector<GroupSubCollector> {
         NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
         if (docValues == null)
             return null;
-        long keyValue = docValues.get(docId - context.docBase);
-        if (keyValue == 0)
+        return docValues.get(docId - context.docBase);
+    }
+
+    public List<Integer> group(int docId) throws IOException{
+        Long keyValue = this.getKeyForDocId(docId);
+        if (keyValue == null) {
             return null;
+        }
         List result = new ArrayList<Integer>();
         for(GroupSubCollector sub : this.subs){
             sub.group(keyValue, result);

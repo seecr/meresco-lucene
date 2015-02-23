@@ -25,7 +25,7 @@
 ## end license ##
 
 from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause, MultiCollector, TotalHitCountCollector, TopScoreDocCollector, TopFieldCollector
-from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector, DeDupFilterCollector
+from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector, DeDupFilterCollector, GroupSuperCollector
 from org.meresco.lucene.search.join import ScoreSuperCollector, ScoreCollector, KeySuperCollector, KeyCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
@@ -135,17 +135,24 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-            filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, keyCollector=None, **kwargs):
+            filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, keyCollector=None, groupingField=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
 
         collectors = []
-        resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
         dedupCollector = None
-        if dedupField:
+        groupingCollector = None
+        if groupingField:
+            topCollector = self._topCollector(start=start, stop=stop * 10, sortKeys=sortKeys)
+            resultsCollector = groupingCollector = GroupSuperCollector(groupingField, topCollector)
+        elif dedupField:
+            topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
             constructor = DeDupFilterSuperCollector if self._multithreaded else DeDupFilterCollector
             resultsCollector = dedupCollector = constructor(dedupField, dedupSortField, topCollector)
+        else:
+            resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
+
         collectors.append(resultsCollector)
 
         if facets:
@@ -170,7 +177,7 @@ class Lucene(object):
             luceneQuery = self.createDrilldownQuery(luceneQuery, drilldownQueries)
         self._index.search(luceneQuery, filter_, collector)
 
-        total, hits = self._topDocsResponse(topCollector, start=start, dedupCollector=dedupCollector if dedupField else None)
+        total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector if dedupField else None)
 
         response = LuceneResponse(total=total, hits=hits, drilldownData=[])
 
@@ -261,11 +268,16 @@ class Lucene(object):
         from sys import stdout; stdout.flush()
         self.close()
 
-    def _topDocsResponse(self, collector, start, dedupCollector=None):
+    def _topDocsResponse(self, collector, start, stop, dedupCollector=None, groupingCollector=None):
         hits = []
         dedupCollectorFieldName = dedupCollector.getKeyName() if dedupCollector else None
+        groupingCollectorFieldName = groupingCollector.getKeyName() if groupingCollector else None
+        seenIds = set()
         if hasattr(collector, "topDocs"):
+            count = 0
             for scoreDoc in collector.topDocs(start).scoreDocs:
+                if count > stop:
+                    break
                 if dedupCollector:
                     keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc)
                     newDocId = keyForDocId.getDocId() if keyForDocId else scoreDoc.doc
@@ -276,10 +288,18 @@ class Lucene(object):
                         duplicateDocIds = [self._index.getDocument(d).get(IDFIELD) for d in keyForDocId.getDuplicates()]
                         hit.duplicates = {dedupCollectorFieldName: duplicateDocIds}
                         hit.duplicateCount = {dedupCollectorFieldName: len(duplicateDocIds)}
+                elif groupingCollector:
+                    hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
+                    if hit.id in seenIds:
+                        continue
+                    duplicateIds = [self._index.getDocument(docId).get(IDFIELD) for docId in groupingCollector.group(scoreDoc.doc)]
+                    seenIds.update(set(duplicateIds))
+                    hit.duplicates = {groupingCollectorFieldName: duplicateIds or [hit.id]}
                 else:
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
                 hit.score = scoreDoc.score
                 hits.append(hit)
+                count += 1
         return collector.getTotalHits(), hits
 
     def _filterFor(self, filterQueries, filter=None):

@@ -529,6 +529,38 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(expectedHits, resultHits)
         self.assertEquals({'count': 4, 'term': u'cat-A'}, result.drilldownData[0]['terms'][0])
 
+    def testGroupingCollector(self):
+        doc = document(field0='v0')
+        doc.add(NumericDocValuesField("__key__", long(42)))
+        consume(self.lucene.addDocument("urn:1", doc))
+
+        doc = document(field0='v1')
+        doc.add(NumericDocValuesField("__key__", long(42)))
+        consume(self.lucene.addDocument("urn:2", doc))
+
+        doc = document(field0='v2')
+        doc.add(NumericDocValuesField("__key__", long(43)))
+        consume(self.lucene.addDocument("urn:3", doc))
+
+        doc = document(field0='v3')
+        consume(self.lucene.addDocument("urn:4", doc))
+
+        self.lucene.commit()
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__key__"))
+        # expected two hits: "urn:2" (3x) and "urn:4" in no particular order
+        self.assertEquals(4, result.total)
+        expectedHits = [
+            Hit(score=1.0, id=u'urn:1', duplicates={u'__key__': [u'urn:1', u'urn:2']}),
+            Hit(score=1.0, id=u'urn:3', duplicates={u'__key__': [u'urn:3']}),
+            Hit(score=1.0, id=u'urn:4', duplicates={u'__key__': [u'urn:4']}),
+        ]
+        resultHits = list(hit for hit in result.hits)
+        resultHits.sort(key=lambda h:h.id)
+        for hit in resultHits:
+            hit.duplicates['__key__'].sort()
+        self.assertEquals(expectedHits[0].__dict__, resultHits[0].__dict__)
+        self.assertEquals(expectedHits, resultHits)
+
     def testDutchStemming(self):
         self.lucene.close()
         settings = LuceneSettings(commitCount=1, analyzer=MerescoDutchStemmingAnalyzer(), verbose=False)

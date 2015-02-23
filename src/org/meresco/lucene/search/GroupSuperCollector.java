@@ -49,6 +49,10 @@ public class GroupSuperCollector extends SuperCollector<GroupSubCollector> {
         this.delegate = delegate;
     }
 
+    public String getKeyName() {
+        return this.keyName;
+    }
+
     @Override
     protected GroupSubCollector createSubCollector() throws IOException {
         SubCollector delegateSubCollector = this.delegate.subCollector();

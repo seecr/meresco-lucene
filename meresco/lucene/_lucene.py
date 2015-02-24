@@ -267,6 +267,7 @@ class Lucene(object):
         self.close()
 
     def _topDocsResponse(self, collector, start, stop, dedupCollector=None, groupingCollector=None):
+        totalHits = collector.getTotalHits()
         hits = []
         dedupCollectorFieldName = dedupCollector.getKeyName() if dedupCollector else None
         groupingCollectorFieldName = groupingCollector.getKeyName() if groupingCollector else None
@@ -287,18 +288,19 @@ class Lucene(object):
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
                     if hit.id in seenIds:
                         continue
-                    groupedDocIds = groupingCollector.group(scoreDoc.doc)
-                    duplicateIds = None
-                    if groupedDocIds:
-                        duplicateIds = [self._index.getDocument(docId).get(IDFIELD) for docId in groupedDocIds]
-                        seenIds.update(set(duplicateIds))
-                    hit.duplicates = {groupingCollectorFieldName: duplicateIds or [hit.id]}
+                    duplicateIds = [hit.id]
+                    if totalHits > (stop - start):
+                        groupedDocIds = list(groupingCollector.group(scoreDoc.doc))
+                        if groupedDocIds:
+                            duplicateIds = [self._index.getDocument(docId).get(IDFIELD) for docId in groupedDocIds]
+                    seenIds.update(set(duplicateIds))
+                    hit.duplicates = {groupingCollectorFieldName: duplicateIds}
                 else:
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
                 hit.score = scoreDoc.score
                 hits.append(hit)
                 count += 1
-        return collector.getTotalHits(), hits
+        return totalHits, hits
 
     def _filterFor(self, filterQueries, filter=None):
         if not filterQueries:

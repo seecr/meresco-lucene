@@ -287,8 +287,11 @@ class Lucene(object):
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
                     if hit.id in seenIds:
                         continue
-                    duplicateIds = [self._index.getDocument(docId).get(IDFIELD) for docId in groupingCollector.group(scoreDoc.doc)]
-                    seenIds.update(set(duplicateIds))
+                    groupedDocIds = groupingCollector.group(scoreDoc.doc)
+                    duplicateIds = None
+                    if groupedDocIds:
+                        duplicateIds = [self._index.getDocument(docId).get(IDFIELD) for docId in groupedDocIds]
+                        seenIds.update(set(duplicateIds))
                     hit.duplicates = {groupingCollectorFieldName: duplicateIds or [hit.id]}
                 else:
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))

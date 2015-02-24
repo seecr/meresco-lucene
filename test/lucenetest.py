@@ -555,6 +555,36 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(expectedHits[0].__dict__, resultHits[0].__dict__)
         self.assertEquals(expectedHits, resultHits)
 
+    def testGroupingOnNonExistingFieldCollector(self):
+        doc = document(field0='v0')
+        doc.add(NumericDocValuesField("__key__", long(42)))
+        consume(self.lucene.addDocument("urn:1", doc))
+
+        doc = document(field0='v1')
+        doc.add(NumericDocValuesField("__key__", long(42)))
+        consume(self.lucene.addDocument("urn:2", doc))
+
+        doc = document(field0='v2')
+        doc.add(NumericDocValuesField("__key__", long(43)))
+        consume(self.lucene.addDocument("urn:3", doc))
+
+        doc = document(field0='v3')
+        consume(self.lucene.addDocument("urn:4", doc))
+
+        self.lucene.commit()
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__other_key__"))
+        # expected two hits: "urn:2" (3x) and "urn:4" in no particular order
+        self.assertEquals(4, result.total)
+        expectedHits = [
+            Hit(score=1.0, id=u'urn:1', duplicates={u'__other_key__': [u'urn:1']}),
+            Hit(score=1.0, id=u'urn:2', duplicates={u'__other_key__': [u'urn:2']}),
+            Hit(score=1.0, id=u'urn:3', duplicates={u'__other_key__': [u'urn:3']}),
+            Hit(score=1.0, id=u'urn:4', duplicates={u'__other_key__': [u'urn:4']}),
+        ]
+        resultHits = list(hit for hit in result.hits)
+        resultHits.sort(key=lambda h:h.id)
+        self.assertEquals(expectedHits, resultHits)
+
     def testGroupingCollectorReturnsMaxHitAfterGrouping(self):
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))

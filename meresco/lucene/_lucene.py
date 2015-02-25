@@ -290,7 +290,7 @@ class Lucene(object):
                         continue
                     duplicateIds = [hit.id]
                     if totalHits > (stop - start):
-                        groupedDocIds = list(groupingCollector.group(scoreDoc.doc))
+                        groupedDocIds = list(groupingCollector.group(scoreDoc.doc) or [])
                         if groupedDocIds:
                             duplicateIds = [self._index.getDocument(docId).get(IDFIELD) for docId in groupedDocIds]
                     seenIds.update(set(duplicateIds))

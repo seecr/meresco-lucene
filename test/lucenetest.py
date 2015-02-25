@@ -572,18 +572,10 @@ class LuceneTest(SeecrTestCase):
         consume(self.lucene.addDocument("urn:4", doc))
 
         self.lucene.commit()
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__other_key__"))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__other_key__", stop=3))
         # expected two hits: "urn:2" (3x) and "urn:4" in no particular order
         self.assertEquals(4, result.total)
-        expectedHits = [
-            Hit(score=1.0, id=u'urn:1', duplicates={u'__other_key__': [u'urn:1']}),
-            Hit(score=1.0, id=u'urn:2', duplicates={u'__other_key__': [u'urn:2']}),
-            Hit(score=1.0, id=u'urn:3', duplicates={u'__other_key__': [u'urn:3']}),
-            Hit(score=1.0, id=u'urn:4', duplicates={u'__other_key__': [u'urn:4']}),
-        ]
-        resultHits = list(hit for hit in result.hits)
-        resultHits.sort(key=lambda h:h.id)
-        self.assertEquals(expectedHits, resultHits)
+        self.assertEquals(3, len(result.hits))
 
     def testDontGroupIfMaxResultsAreLessThanTotalRecords(self):
         doc = document(field0='v0')

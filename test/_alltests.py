@@ -60,6 +60,7 @@ from supercollectortest import SuperCollectorTest
 from superindexsearchertest import SuperIndexSearcherTest
 from facetsupercollectortest import FacetSuperCollectorTest
 from lucenesettingstest import LuceneSettingsTest
+from shingleindextest import ShingleIndexTest
 
 if __name__ == '__main__':
     unittest.main()

@@ -29,13 +29,31 @@ from org.meresco.lucene.suggestion import ShingleIndex
 
 class ShingleIndexTest(SeecrTestCase):
 
+    def testFindShingles(self):
+        s = ShingleIndex(self.tempdir, 2, 4)
+        shingles = s.shingles("Lord of the rings")
+        self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings", "of", "of the", "of the rings", "the", "the rings", "rings"], list(shingles))
+
+    def testFindNgramsForShingle(self):
+        s = ShingleIndex(self.tempdir, 2, 3)
+        ngrams = s.ngrams("lord", False)
+        self.assertEquals(["lo", "or", "rd"], list(ngrams))
+        ngrams = s.ngrams("lord", True)
+        self.assertEquals(["lor", "ord"], list(ngrams))
+        ngrams = s.ngrams("lord of", False)
+        self.assertEquals(["lo", "or", "rd", "of"], list(ngrams))
+        ngrams = s.ngrams("lord of", True)
+        self.assertEquals(["lor", "ord"], list(ngrams))
+
     def testShingleIndex(self):
         s = ShingleIndex(self.tempdir, 2, 4)
         s.add("Lord of the rings")
 
-        self.assertEquals(["lord of", "lord of the", "lord of the rings"], list(s.suggest("lord")))
-        self.assertEquals(["lord of the", "lord of the rings"], list(s.suggest("lord of")))
-        self.assertEquals(["of the rings"], list(s.suggest("of the")))
+        self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings"], list(s.suggest("lo", False)))
+        self.assertEquals([], list(s.suggest("lo", True)))
+        self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings"], list(s.suggest("lord", False)))
+        self.assertEquals(["lord of", "lord of the", "lord of the rings"], list(s.suggest("lord of", False)))
+        self.assertEquals(["lord of the", "lord of the rings", "of the", "of the rings"], list(s.suggest("of the", False)))
 
     def testSuggestFromLongDescription(self):
         self.maxDiff = None
@@ -43,5 +61,16 @@ class ShingleIndexTest(SeecrTestCase):
         # self.assertEquals([], list(ShingleIndex.shingles(description)))
         s = ShingleIndex(self.tempdir, 2, 4)
         s.add(description)
-        self.assertEquals(["een jonge alleenstaande", "een jonge alleenstaande moeder"], list(s.suggest("een jonge")))
-        self.assertEquals(["botte biologische", "botte biologische vader", "botte biologische vader van"], list(s.suggest("botte")))
+        self.assertEquals(['een jonge', 'een jonge alleenstaande', 'een jonge alleenstaande moeder', 'jonge alleenstaande', 'jonge alleenstaande moeder', 'jonge alleenstaande moeder moet'], list(s.suggest("een jonge", False)))
+        self.assertEquals([
+                'vriend en de botte',
+                'en de botte',
+                'en de botte biologische',
+                'de botte',
+                'de botte biologische',
+                'de botte biologische vader',
+                'botte',
+                'botte biologische',
+                'botte biologische vader',
+                'botte biologische vader van'
+            ], list(s.suggest("botte", False)))

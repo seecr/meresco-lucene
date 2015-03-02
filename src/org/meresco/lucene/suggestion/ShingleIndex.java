@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.ngram.NGramTokenFilter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -45,6 +46,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -63,13 +66,17 @@ public class ShingleIndex {
     private IndexSearcher searcher;
     private ShingleAnalyzer findShingles;
     private ShingleAnalyzer shingleAnalyzer;
+    private NGramAnalyzer bigram;
+    private NGramAnalyzer trigram;
 
-    private static final String VALUE_FIELDNAME = "__value__";
     private static final String SHINGLE_FIELDNAME = "__shingle__";
+    private static final String BIGRAM_FIELDNAME = "__bigram__";
+    private static final String TRIGRAM_FIELDNAME = "__trigram__";
 
     public ShingleIndex(String directory, int minShingleSize, int maxShingleSize) throws IOException {
-        this.findShingles = new ShingleAnalyzer(minShingleSize, maxShingleSize, false);
-        this.shingleAnalyzer = new ShingleAnalyzer(minShingleSize, maxShingleSize, true);
+        this.shingleAnalyzer = new ShingleAnalyzer(minShingleSize, maxShingleSize);
+        this.bigram = new NGramAnalyzer(2, 2);
+        this.trigram = new NGramAnalyzer(3, 3);
 
         Directory dir = FSDirectory.open(new File(directory));
         IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new StandardAnalyzer());
@@ -80,57 +87,77 @@ public class ShingleIndex {
     }
 
     public void add(String value) throws IOException {
-        for (String shingle : shingles(value, this.findShingles)) {
+        for (String shingle : shingles(value)) {
             Document doc = new Document();
-            doc.add(new StringField(VALUE_FIELDNAME, shingle, Field.Store.YES));
-            for (String s : shingles(shingle, this.shingleAnalyzer)) {
-                if (shingle.startsWith(s))
-                doc.add(new StringField(SHINGLE_FIELDNAME, s, Field.Store.NO));
+            doc.add(new StringField(SHINGLE_FIELDNAME, shingle, Field.Store.YES));
+            for (String n : ngrams(shingle, false)) {
+                doc.add(new StringField(BIGRAM_FIELDNAME, n, Field.Store.NO));
             }
-            this.writer.addDocument(doc);
+            for (String n : ngrams(shingle, true)) {
+                doc.add(new StringField(TRIGRAM_FIELDNAME, n, Field.Store.NO));
+            }
+            this.writer.updateDocument(new Term(SHINGLE_FIELDNAME, shingle), doc);
         }
         this.writer.commit();
     }
 
-    public String[] suggest(String value) throws IOException {
+    public String[] suggest(String value, Boolean trigram) throws IOException {
         DirectoryReader newReader = DirectoryReader.openIfChanged(this.reader);
         if (newReader != null) {
             this.reader = newReader;
             this.searcher = new IndexSearcher(this.reader);
         }
-        TopDocs t = this.searcher.search(new TermQuery(new Term(SHINGLE_FIELDNAME, value)), 10);
-        String[] suggestions = new String[t.totalHits < 10 ? t.totalHits : 10];
+
+        String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
+        BooleanQuery query = new BooleanQuery();
+        for (String n : ngrams(value, trigram)) {
+            query.add(new TermQuery(new Term(ngramFieldName, n)), BooleanClause.Occur.MUST);
+        }
+        TopDocs t = this.searcher.search(query, 100);
+        String[] suggestions = new String[t.totalHits < 100 ? t.totalHits : 100];
         int i = 0;
         for (ScoreDoc d : t.scoreDocs) {
-            suggestions[i++] = this.searcher.doc(d.doc).get(VALUE_FIELDNAME);
+            suggestions[i++] = this.searcher.doc(d.doc).get(SHINGLE_FIELDNAME);
         }
         return suggestions;
     }
 
-    public List<String> shingles(String s, ShingleAnalyzer analyzer) throws IOException {
+    public List<String> shingles(String s) throws IOException {
         List<String> shingles = new ArrayList<String>();
-        TokenStream stream = analyzer.tokenStream("ignored", s);
+        TokenStream stream = this.shingleAnalyzer.tokenStream("ignored", s);
         stream.reset();
         CharTermAttribute termAttribute = stream.getAttribute(CharTermAttribute.class);
         while (stream.incrementToken()) {
-            String t = termAttribute.toString();
-            if (!t.equals(s)) {
-                shingles.add(t);
-            }
+            shingles.add(termAttribute.toString());
         }
         stream.close();
         return shingles;
     }
 
+    public List<String> ngrams(String s, Boolean trigram) throws IOException {
+        List<String> ngram = new ArrayList<String>();
+        Analyzer ngramAnalyzer = trigram ? this.trigram : this.bigram;
+        TokenStream stream = ngramAnalyzer.tokenStream("ignored", s);
+        stream.reset();
+        CharTermAttribute termAttribute = stream.getAttribute(CharTermAttribute.class);
+        while (stream.incrementToken()) {
+            ngram.add(termAttribute.toString());
+        }
+        stream.close();
+        return ngram;
+    }
+
+    public int numDocs() {
+        return this.reader.numDocs();
+    }
+
     private static class ShingleAnalyzer extends Analyzer {
         private int minShingleSize;
         private int maxShingleSize;
-        private boolean outputUnigrams;
 
-        public ShingleAnalyzer(int minShingleSize, int maxShingleSize, boolean outputUnigrams) {
+        public ShingleAnalyzer(int minShingleSize, int maxShingleSize) {
             this.minShingleSize = minShingleSize;
             this.maxShingleSize = maxShingleSize;
-            this.outputUnigrams = outputUnigrams;
         }
 
         @Override
@@ -138,7 +165,25 @@ public class ShingleIndex {
             Tokenizer source = new StandardTokenizer(reader);
             TokenStream src = new LowerCaseFilter(source);
             ShingleFilter filter = new ShingleFilter(src, this.minShingleSize, this.maxShingleSize);
-            filter.setOutputUnigrams(this.outputUnigrams);
+            return new TokenStreamComponents(source, filter);
+        }
+    }
+
+
+    private static class NGramAnalyzer extends Analyzer {
+        private int minShingleSize;
+        private int maxShingleSize;
+
+        public NGramAnalyzer(int minShingleSize, int maxShingleSize) {
+            this.minShingleSize = minShingleSize;
+            this.maxShingleSize = maxShingleSize;
+        }
+
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+            Tokenizer source = new StandardTokenizer(reader);
+            TokenStream src = new LowerCaseFilter(source);
+            NGramTokenFilter filter = new NGramTokenFilter(src, this.minShingleSize, this.maxShingleSize);
             return new TokenStreamComponents(source, filter);
         }
     }

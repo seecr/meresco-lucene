@@ -205,14 +205,11 @@ public class ShingleIndex {
                 return false;
 
             int length = this.termAtt.length();
-            char[] buffer = this.termAtt.buffer();
             char[] newBuffer = new char[length + 2];
             newBuffer[0] = '$';
-            for (int i = 0; i < length; i++) {
-                newBuffer[i+1] = buffer[i];
-            }
+            System.arraycopy(this.termAtt.buffer(), 0, newBuffer, 1, length);
             newBuffer[length + 1] = '$';
-            this.termAtt.setEmpty();
+
             this.termAtt.copyBuffer(newBuffer, 0, newBuffer.length);
             return true;
         }

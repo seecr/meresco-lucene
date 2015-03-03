@@ -37,20 +37,20 @@ class ShingleIndexTest(SeecrTestCase):
     def testFindNgramsForShingle(self):
         s = ShingleIndex(self.tempdir, 2, 3)
         ngrams = s.ngrams("lord", False)
-        self.assertEquals(["lo", "or", "rd"], list(ngrams))
+        self.assertEquals(["$l", "lo", "or", "rd", "d$"], list(ngrams))
         ngrams = s.ngrams("lord", True)
-        self.assertEquals(["lor", "ord"], list(ngrams))
+        self.assertEquals(["$lo", "lor", "ord", "rd$"], list(ngrams))
         ngrams = s.ngrams("lord of", False)
-        self.assertEquals(["lo", "or", "rd", "of"], list(ngrams))
+        self.assertEquals(["$l", "lo", "or", "rd", "d$", "$o", "of", "f$"], list(ngrams))
         ngrams = s.ngrams("lord of", True)
-        self.assertEquals(["lor", "ord"], list(ngrams))
+        self.assertEquals(["$lo", "lor", "ord", "rd$", "$of", "of$"], list(ngrams))
 
     def testShingleIndex(self):
         s = ShingleIndex(self.tempdir, 2, 4)
         s.add("Lord of the rings")
 
-        self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings"], list(s.suggest("lo", False)))
-        self.assertEquals([], list(s.suggest("lo", True)))
+        self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings"], list(s.suggest("l", False)))
+        self.assertEquals([], list(s.suggest("l", True)))
         self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings"], list(s.suggest("lord", False)))
         self.assertEquals(["lord of", "lord of the", "lord of the rings"], list(s.suggest("lord of", False)))
         self.assertEquals(["lord of the", "lord of the rings", "of the", "of the rings"], list(s.suggest("of the", False)))
@@ -61,7 +61,7 @@ class ShingleIndexTest(SeecrTestCase):
         # self.assertEquals([], list(ShingleIndex.shingles(description)))
         s = ShingleIndex(self.tempdir, 2, 4)
         s.add(description)
-        self.assertEquals(['een jonge', 'een jonge alleenstaande', 'een jonge alleenstaande moeder', 'jonge alleenstaande', 'jonge alleenstaande moeder', 'jonge alleenstaande moeder moet'], list(s.suggest("een jonge", False)))
+        self.assertEquals(['een jonge', 'een jonge alleenstaande', 'een jonge alleenstaande moeder'], list(s.suggest("een jonge", False)))
         self.assertEquals([
                 'vriend en de botte',
                 'en de botte',

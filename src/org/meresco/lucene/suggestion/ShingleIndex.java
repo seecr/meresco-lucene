@@ -27,6 +27,7 @@ package org.meresco.lucene.suggestion;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
+import org.apache.lucene.analysis.ngram.NGramTokenFilter;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -34,7 +35,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ngram.NGramTokenFilter;
+import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -42,12 +43,12 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -110,8 +111,10 @@ public class ShingleIndex {
 
         String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
         BooleanQuery query = new BooleanQuery();
-        for (String n : ngrams(value, trigram)) {
-            query.add(new TermQuery(new Term(ngramFieldName, n)), BooleanClause.Occur.MUST);
+        List<String> ngrams = ngrams(value, trigram);
+        int SKIP_LAST_DOLLAR = 1;
+        for (int i = 0; i < ngrams.size() - SKIP_LAST_DOLLAR; i++) {
+            query.add(new TermQuery(new Term(ngramFieldName, ngrams.get(i))), BooleanClause.Occur.MUST);
         }
         TopDocs t = this.searcher.search(query, 100);
         String[] suggestions = new String[t.totalHits < 100 ? t.totalHits : 100];
@@ -183,8 +186,35 @@ public class ShingleIndex {
         protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
             Tokenizer source = new StandardTokenizer(reader);
             TokenStream src = new LowerCaseFilter(source);
+            src = new AddWordBoundaryFilter(src);
             NGramTokenFilter filter = new NGramTokenFilter(src, this.minShingleSize, this.maxShingleSize);
             return new TokenStreamComponents(source, filter);
+        }
+    }
+
+    private static class AddWordBoundaryFilter extends TokenFilter {
+        private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+
+        public AddWordBoundaryFilter(TokenStream in) {
+            super(in);
+        }
+
+        @Override
+        public final boolean incrementToken() throws IOException {
+            if (!this.input.incrementToken())
+                return false;
+
+            int length = this.termAtt.length();
+            char[] buffer = this.termAtt.buffer();
+            char[] newBuffer = new char[length + 2];
+            newBuffer[0] = '$';
+            for (int i = 0; i < length; i++) {
+                newBuffer[i+1] = buffer[i];
+            }
+            newBuffer[length + 1] = '$';
+            this.termAtt.setEmpty();
+            this.termAtt.copyBuffer(newBuffer, 0, newBuffer.length);
+            return true;
         }
     }
 }

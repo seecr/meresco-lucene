@@ -229,6 +229,11 @@ public class ShingleIndex {
         }
     }
 
+    public void close() throws IOException {
+        this.reader.close();
+        this.writer.close();
+    }
+
     public int numDocs() {
         return this.reader.numDocs();
     }

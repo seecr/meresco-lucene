@@ -86,3 +86,11 @@ class ShingleIndexTest(SeecrTestCase):
                 'botte biologische vader',
                 'botte biologische vader van'
             ], list(s.suggest("botte", False)))
+
+    def testIsPersistent(self):
+        s = ShingleIndex(self.tempdir, 2, 4)
+        s.add("identifier", ["Lord of the rings", "Fellowship of the ring"])
+        s.close()
+
+        s = ShingleIndex(self.tempdir, 2, 4)
+        self.assertEquals(["lord of", "lord of the", "lord of the rings"], list(s.suggest("lord of", False)))

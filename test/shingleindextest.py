@@ -47,20 +47,29 @@ class ShingleIndexTest(SeecrTestCase):
 
     def testShingleIndex(self):
         s = ShingleIndex(self.tempdir, 2, 4)
-        s.add("Lord of the rings")
+        s.add("identifier", ["Lord of the rings", "Fellowship of the ring"])
 
         self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings"], list(s.suggest("l", False)))
         self.assertEquals([], list(s.suggest("l", True)))
         self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings"], list(s.suggest("lord", False)))
         self.assertEquals(["lord of", "lord of the", "lord of the rings"], list(s.suggest("lord of", False)))
-        self.assertEquals(["lord of the", "lord of the rings", "of the", "of the rings"], list(s.suggest("of the", False)))
+        self.assertEquals(["lord of the", "lord of the rings", "of the rings", 'fellowship of the', 'fellowship of the ring', "of the", "of the ring"], list(s.suggest("of the", False)))
+        self.assertEquals(['fellowship', 'fellowship of', 'fellowship of the', 'fellowship of the ring'], list(s.suggest("fel", False)))
+
+    def testShingleInMultipleDocumentsRanksHigherIndex(self):
+        s = ShingleIndex(self.tempdir, 2, 4)
+        s.add("identifier", ["Lord rings", "Lord magic"])
+        s.add("identifier2", ["Lord rings"])
+        s.add("identifier3", ["Lord magic"])
+        s.add("identifier4", ["Lord magic"])
+        self.assertEquals(['lord', 'lord magic', 'lord rings'], list(s.suggest("lo", False)))
 
     def testSuggestFromLongDescription(self):
         self.maxDiff = None
         description = "Een jonge alleenstaande moeder moet kiezen tussen haar betrouwbare vriend en de botte biologische vader van haar dochtertje."
         # self.assertEquals([], list(ShingleIndex.shingles(description)))
         s = ShingleIndex(self.tempdir, 2, 4)
-        s.add(description)
+        s.add("identifier", [description])
         self.assertEquals(['een jonge', 'een jonge alleenstaande', 'een jonge alleenstaande moeder'], list(s.suggest("een jonge", False)))
         self.assertEquals([
                 'vriend en de botte',

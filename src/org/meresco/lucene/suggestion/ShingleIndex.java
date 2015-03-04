@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -60,6 +61,8 @@ import java.io.Reader;
 import java.io.IOException;
 import java.io.File;
 
+import org.meresco.lucene.search.TermFrequencySimilarity;
+
 public class ShingleIndex {
 
     private IndexWriter writer;
@@ -69,58 +72,89 @@ public class ShingleIndex {
     private ShingleAnalyzer shingleAnalyzer;
     private NGramAnalyzer bigram;
     private NGramAnalyzer trigram;
+    private FSDirectory directory;
 
-    private static final String SHINGLE_FIELDNAME = "__shingle__";
-    private static final String BIGRAM_FIELDNAME = "__bigram__";
-    private static final String TRIGRAM_FIELDNAME = "__trigram__";
+    private static final String RECORD_ID_FIELD = "__id__";
+    private static final String RECORD_SHINGLE_FIELD = "__record_shingle__";
+    private static final String SHINGLE_FIELD = "__shingle__";
+    private static final String BIGRAM_FIELD = "__bigram__";
+    private static final String TRIGRAM_FIELD = "__trigram__";
+    private static final String FREQUENCY_FIELD = "__freq__";
 
     public ShingleIndex(String directory, int minShingleSize, int maxShingleSize) throws IOException {
         this.shingleAnalyzer = new ShingleAnalyzer(minShingleSize, maxShingleSize);
         this.bigram = new NGramAnalyzer(2, 2);
         this.trigram = new NGramAnalyzer(3, 3);
 
-        Directory dir = FSDirectory.open(new File(directory));
+        this.directory = FSDirectory.open(new File(directory));
         IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new StandardAnalyzer());
-        this.writer = new IndexWriter(dir, config);
+        this.writer = new IndexWriter(this.directory, config);
         this.writer.commit();
-        this.reader = DirectoryReader.open(dir);
-        this.searcher = new IndexSearcher(this.reader);
+        setReaderAndSearcher();
     }
 
-    public void add(String value) throws IOException {
-        for (String shingle : shingles(value)) {
-            Document doc = new Document();
-            doc.add(new StringField(SHINGLE_FIELDNAME, shingle, Field.Store.YES));
-            for (String n : ngrams(shingle, false)) {
-                doc.add(new StringField(BIGRAM_FIELDNAME, n, Field.Store.NO));
+    public void add(String identifier, String[] values) throws IOException {
+        Document recordDoc = new Document();
+        recordDoc.add(new StringField(RECORD_ID_FIELD, identifier, Field.Store.NO));
+        for (String value : values) {
+            for (String shingle : shingles(value)) {
+                recordDoc.add(new StringField(RECORD_SHINGLE_FIELD, shingle, Field.Store.NO));
+                Document doc = new Document();
+                doc.add(new StringField(SHINGLE_FIELD, shingle, Field.Store.YES));
+                for (String n : ngrams(shingle, false)) {
+                    doc.add(new StringField(BIGRAM_FIELD, n, Field.Store.NO));
+                }
+                for (String n : ngrams(shingle, true)) {
+                    doc.add(new StringField(TRIGRAM_FIELD, n, Field.Store.NO));
+                }
+                doc.add(new TextField(FREQUENCY_FIELD, xForDocFreq(shingle), Field.Store.NO));
+                this.writer.updateDocument(new Term(SHINGLE_FIELD, shingle), doc);
             }
-            for (String n : ngrams(shingle, true)) {
-                doc.add(new StringField(TRIGRAM_FIELDNAME, n, Field.Store.NO));
-            }
-            this.writer.updateDocument(new Term(SHINGLE_FIELDNAME, shingle), doc);
         }
+        this.writer.updateDocument(new Term(RECORD_ID_FIELD, identifier), recordDoc);
         this.writer.commit();
     }
 
-    public String[] suggest(String value, Boolean trigram) throws IOException {
-        DirectoryReader newReader = DirectoryReader.openIfChanged(this.reader);
+    private String xForDocFreq(String shingle) throws IOException{
+        setReaderAndSearcher();
+        int docFreq = this.reader.docFreq(new Term(RECORD_SHINGLE_FIELD, shingle)) + 1;
+        char[] buffer = new char[docFreq*2];
+        for(int i = 0; i < docFreq; i++){
+            buffer[2*i] = 'x';
+            buffer[2*i+1] = ' ';
+        }
+        return new String(buffer);
+    }
+
+    private void setReaderAndSearcher() throws IOException {
+        DirectoryReader newReader = this.reader == null
+                ? DirectoryReader.open(this.directory)
+                : DirectoryReader.openIfChanged(this.reader);
         if (newReader != null) {
             this.reader = newReader;
             this.searcher = new IndexSearcher(this.reader);
+            this.searcher.setSimilarity(new TermFrequencySimilarity());
         }
+    }
 
-        String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
+    public String[] suggest(String value, Boolean trigram) throws IOException {
+        setReaderAndSearcher();
+        String ngramFieldName = trigram ? TRIGRAM_FIELD : BIGRAM_FIELD;
         BooleanQuery query = new BooleanQuery();
         List<String> ngrams = ngrams(value, trigram);
         int SKIP_LAST_DOLLAR = 1;
-        for (int i = 0; i < ngrams.size() - SKIP_LAST_DOLLAR; i++) {
+        int ngramSize = ngrams.size() - SKIP_LAST_DOLLAR;
+        for (int i = 0; i < ngramSize; i++) {
             query.add(new TermQuery(new Term(ngramFieldName, ngrams.get(i))), BooleanClause.Occur.MUST);
+        }
+        if (ngramSize > 0) {
+            query.add(new TermQuery(new Term(FREQUENCY_FIELD, "x")), BooleanClause.Occur.MUST);
         }
         TopDocs t = this.searcher.search(query, 100);
         String[] suggestions = new String[t.totalHits < 100 ? t.totalHits : 100];
         int i = 0;
         for (ScoreDoc d : t.scoreDocs) {
-            suggestions[i++] = this.searcher.doc(d.doc).get(SHINGLE_FIELDNAME);
+            suggestions[i++] = this.searcher.doc(d.doc).get(SHINGLE_FIELD);
         }
         return suggestions;
     }

@@ -48,6 +48,7 @@ class ShingleIndexTest(SeecrTestCase):
     def testShingleIndex(self):
         s = ShingleIndex(self.tempdir, 2, 4)
         s.add("identifier", ["Lord of the rings", "Fellowship of the ring"])
+        s.commit()
 
         self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings"], list(s.suggest("l", False)))
         self.assertEquals([], list(s.suggest("l", True)))
@@ -62,6 +63,7 @@ class ShingleIndexTest(SeecrTestCase):
         s.add("identifier2", ["Lord rings"])
         s.add("identifier3", ["Lord magic"])
         s.add("identifier4", ["Lord magic"])
+        s.commit()
         self.assertEquals(['lord', 'lord magic', 'lord rings'], list(s.suggest("lo", False)))
 
     def testSuggestFromLongDescription(self):
@@ -70,6 +72,7 @@ class ShingleIndexTest(SeecrTestCase):
         # self.assertEquals([], list(ShingleIndex.shingles(description)))
         s = ShingleIndex(self.tempdir, 2, 4)
         s.add("identifier", [description])
+        s.commit()
         self.assertEquals(['een jonge', 'een jonge alleenstaande', 'een jonge alleenstaande moeder'], list(s.suggest("een jonge", False)))
         self.assertEquals([
                 'vriend en de botte',

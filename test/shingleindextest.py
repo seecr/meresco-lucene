@@ -54,7 +54,7 @@ class ShingleIndexTest(SeecrTestCase):
         self.assertEquals([], list(s.suggest("l", True)))
         self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings"], list(s.suggest("lord", False)))
         self.assertEquals(["lord of", "lord of the", "lord of the rings"], list(s.suggest("lord of", False)))
-        self.assertEquals(["lord of the", "lord of the rings", "of the rings", 'fellowship of the', 'fellowship of the ring', "of the", "of the ring"], list(s.suggest("of the", False)))
+        self.assertEquals(["of the", "lord of the", "lord of the rings", "of the rings", 'fellowship of the', 'fellowship of the ring', "of the ring"], list(s.suggest("of the", False)))
         self.assertEquals(['fellowship', 'fellowship of', 'fellowship of the', 'fellowship of the ring'], list(s.suggest("fel", False)))
 
     def testShingleInMultipleDocumentsRanksHigherIndex(self):

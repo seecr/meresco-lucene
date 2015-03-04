@@ -83,14 +83,21 @@ public class ShingleIndex {
     private static final String TRIGRAM_FIELD = "__trigram__";
     private static final String FREQUENCY_FIELD = "__freq__";
 
-    private static final int COMMIT_TIMEOUT = 5 * 60 * 1000;  // in milliseconds // TODO: make configurable
-    private static final int MAX_COMMIT_COUNT = 10000;
+    private final int maxCommitTimeout;
+    private final int maxCommitCount;
     private int commitCount = 0;
     private long lastUpdate = -1;
 
     private Map<String, Integer> lastDocFreqs = new HashMap<String, Integer>();
 
     public ShingleIndex(String directory, int minShingleSize, int maxShingleSize) throws IOException {
+        this(directory, minShingleSize, maxShingleSize, 1, 0);
+    }
+
+    public ShingleIndex(String directory, int minShingleSize, int maxShingleSize, int commitCount, int commitTimeout) throws IOException {
+        this.maxCommitCount = commitCount;
+        this.maxCommitTimeout = commitTimeout;
+
         this.shingleAnalyzer = new ShingleAnalyzer(minShingleSize, maxShingleSize);
         this.bigram = new NGramAnalyzer(2, 2);
         this.trigram = new NGramAnalyzer(3, 3);
@@ -121,8 +128,6 @@ public class ShingleIndex {
                 }
                 doc.add(new TextField(FREQUENCY_FIELD, xForDocFreq(shingle), Field.Store.NO));
                 this.writer.updateDocument(new Term(SHINGLE_FIELD, shingle), doc);
-                Integer currentDocFreq = this.lastDocFreqs.get(shingle);
-                this.lastDocFreqs.put(shingle, currentDocFreq == null ? 1 : currentDocFreq + 1);
             }
         }
         this.writer.updateDocument(new Term(RECORD_ID_FIELD, identifier), recordDoc);
@@ -134,8 +139,11 @@ public class ShingleIndex {
         maybeCommitForQuery();
         Integer docFreq = this.lastDocFreqs.get(shingle);
         if (docFreq == null) {
-            docFreq = this.reader.docFreq(new Term(RECORD_SHINGLE_FIELD, shingle)) + 1;
+            docFreq = this.reader.docFreq(new Term(RECORD_SHINGLE_FIELD, shingle));
         }
+        docFreq++;
+        this.lastDocFreqs.put(shingle, docFreq);
+
         char[] buffer = new char[docFreq*2];
         for(int i = 0; i < docFreq; i++){
             buffer[2*i] = 'x';
@@ -194,7 +202,7 @@ public class ShingleIndex {
     private void maybeCommitAfterUpdate() throws IOException {
         this.commitCount++;
         this.lastUpdate = System.currentTimeMillis();
-        if (this.commitCount >= MAX_COMMIT_COUNT) {
+        if (this.commitCount >= this.maxCommitCount) {
             this.commit();
         }
     }
@@ -203,7 +211,7 @@ public class ShingleIndex {
         if (this.lastUpdate == -1) {
             return;
         }
-        if (System.currentTimeMillis() - this.lastUpdate >= COMMIT_TIMEOUT) {
+        if (System.currentTimeMillis() - this.lastUpdate >= this.maxCommitTimeout) {
             this.commit();
         }
     }

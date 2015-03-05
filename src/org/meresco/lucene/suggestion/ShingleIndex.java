@@ -38,13 +38,13 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.CharacterUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -67,28 +67,58 @@ import org.meresco.lucene.search.TermFrequencySimilarity;
 
 public class ShingleIndex {
 
-    private IndexWriter writer;
-    private DirectoryReader reader;
-    private IndexSearcher searcher;
-    private ShingleAnalyzer findShingles;
-    private ShingleAnalyzer shingleAnalyzer;
-    private NGramAnalyzer bigram;
-    private NGramAnalyzer trigram;
-    private FSDirectory directory;
+    private static final String RECORD_SHINGLE_FIELDNAME = "__record_shingle__";
+    private static final String SHINGLE_FIELDNAME = "__shingle__";
+    private static final String BIGRAM_FIELDNAME = "__bigram__";
+    private static final String TRIGRAM_FIELDNAME = "__trigram__";
 
-    private static final String RECORD_ID_FIELD = "__id__";
-    private static final String RECORD_SHINGLE_FIELD = "__record_shingle__";
-    private static final String SHINGLE_FIELD = "__shingle__";
-    private static final String BIGRAM_FIELD = "__bigram__";
-    private static final String TRIGRAM_FIELD = "__trigram__";
-    private static final String FREQUENCY_FIELD = "__freq__";
+    private static final char FREQUENCY_VALUE = 'x';
 
+    public static final FieldType FREQUENCY_FIELD_TYPE = new FieldType();
+    public static final FieldType SIMPLE_NOT_STORED_STRING_FIELD = new FieldType();
+    public static final FieldType SIMPLE_STORED_STRING_FIELD = new FieldType();
+    static {
+        FREQUENCY_FIELD_TYPE.setIndexed(true);
+        FREQUENCY_FIELD_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+        FREQUENCY_FIELD_TYPE.setTokenized(true);
+        FREQUENCY_FIELD_TYPE.setStored(false);
+        FREQUENCY_FIELD_TYPE.setOmitNorms(true);
+        FREQUENCY_FIELD_TYPE.freeze();
+
+        SIMPLE_NOT_STORED_STRING_FIELD.setIndexed(true);
+        SIMPLE_NOT_STORED_STRING_FIELD.setIndexOptions(IndexOptions.DOCS_ONLY);
+        SIMPLE_NOT_STORED_STRING_FIELD.setOmitNorms(true);
+        SIMPLE_NOT_STORED_STRING_FIELD.setStored(false);
+        SIMPLE_NOT_STORED_STRING_FIELD.setTokenized(false);
+        SIMPLE_NOT_STORED_STRING_FIELD.freeze();
+
+        SIMPLE_STORED_STRING_FIELD.setIndexed(true);
+        SIMPLE_STORED_STRING_FIELD.setIndexOptions(IndexOptions.DOCS_ONLY);
+        SIMPLE_STORED_STRING_FIELD.setOmitNorms(true);
+        SIMPLE_STORED_STRING_FIELD.setStored(true);
+        SIMPLE_STORED_STRING_FIELD.setTokenized(false);
+        SIMPLE_STORED_STRING_FIELD.freeze();
+    }
+
+    private final IndexWriter writer;
+    private final ShingleAnalyzer shingleAnalyzer;
+    private final NGramAnalyzer bigram;
+    private final NGramAnalyzer trigram;
+    private final FSDirectory directory;
     private final int maxCommitTimeout;
     private final int maxCommitCount;
+
+    private DirectoryReader reader;
+    private IndexSearcher searcher;
     private int commitCount = 0;
     private long lastUpdate = -1;
+    private int updateCount = 0;
 
     private Map<String, Integer> lastDocFreqs = new HashMap<String, Integer>();
+
+    private Field frequencyField = new Field("__freq__", "", FREQUENCY_FIELD_TYPE);
+    private Field recordIdField = new Field("__id__", "", SIMPLE_NOT_STORED_STRING_FIELD);
+    private Field shingleField = new Field(SHINGLE_FIELDNAME, "", SIMPLE_STORED_STRING_FIELD);
 
     public ShingleIndex(String directory, int minShingleSize, int maxShingleSize) throws IOException {
         this(directory, minShingleSize, maxShingleSize, 1, 0);
@@ -114,23 +144,28 @@ public class ShingleIndex {
 
     public void add(String identifier, String[] values) throws IOException {
         Document recordDoc = new Document();
-        recordDoc.add(new StringField(RECORD_ID_FIELD, identifier, Field.Store.NO));
+        this.recordIdField.setStringValue(identifier);
+        recordDoc.add(this.recordIdField);
         for (String value : values) {
             for (String shingle : shingles(value)) {
-                recordDoc.add(new StringField(RECORD_SHINGLE_FIELD, shingle, Field.Store.NO));
+                recordDoc.add(new Field(RECORD_SHINGLE_FIELDNAME, shingle, SIMPLE_NOT_STORED_STRING_FIELD));
                 Document doc = new Document();
-                doc.add(new StringField(SHINGLE_FIELD, shingle, Field.Store.YES));
+                this.shingleField.setStringValue(shingle);
+                doc.add(this.shingleField);
                 for (String n : ngrams(shingle, false)) {
-                    doc.add(new StringField(BIGRAM_FIELD, n, Field.Store.NO));
+                    doc.add(new Field(BIGRAM_FIELDNAME, n, SIMPLE_NOT_STORED_STRING_FIELD));
                 }
                 for (String n : ngrams(shingle, true)) {
-                    doc.add(new StringField(TRIGRAM_FIELD, n, Field.Store.NO));
+                    doc.add(new Field(TRIGRAM_FIELDNAME, n, SIMPLE_NOT_STORED_STRING_FIELD));
                 }
-                doc.add(new TextField(FREQUENCY_FIELD, xForDocFreq(shingle), Field.Store.NO));
-                this.writer.updateDocument(new Term(SHINGLE_FIELD, shingle), doc);
+                this.frequencyField.setStringValue(xForDocFreq(shingle));
+                doc.add(this.frequencyField);
+                this.writer.updateDocument(new Term(SHINGLE_FIELDNAME, shingle), doc);
+                updateCount++;
             }
         }
-        this.writer.updateDocument(new Term(RECORD_ID_FIELD, identifier), recordDoc);
+        this.writer.updateDocument(new Term(this.recordIdField.name(), identifier), recordDoc);
+        updateCount++;
 
         maybeCommitAfterUpdate();
     }
@@ -139,14 +174,14 @@ public class ShingleIndex {
         maybeCommitForQuery();
         Integer docFreq = this.lastDocFreqs.get(shingle);
         if (docFreq == null) {
-            docFreq = this.reader.docFreq(new Term(RECORD_SHINGLE_FIELD, shingle));
+            docFreq = this.reader.docFreq(new Term(RECORD_SHINGLE_FIELDNAME, shingle));
         }
         docFreq++;
         this.lastDocFreqs.put(shingle, docFreq);
 
         char[] buffer = new char[docFreq*2];
         for(int i = 0; i < docFreq; i++){
-            buffer[2*i] = 'x';
+            buffer[2*i] = FREQUENCY_VALUE;
             buffer[2*i+1] = ' ';
         }
         return new String(buffer);
@@ -154,7 +189,7 @@ public class ShingleIndex {
 
     public String[] suggest(String value, Boolean trigram) throws IOException {
         maybeCommitForQuery();
-        String ngramFieldName = trigram ? TRIGRAM_FIELD : BIGRAM_FIELD;
+        String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
         BooleanQuery query = new BooleanQuery();
         List<String> ngrams = ngrams(value, trigram);
         int SKIP_LAST_DOLLAR = 1;
@@ -163,13 +198,13 @@ public class ShingleIndex {
             query.add(new TermQuery(new Term(ngramFieldName, ngrams.get(i))), BooleanClause.Occur.MUST);
         }
         if (ngramSize > 0) {
-            query.add(new TermQuery(new Term(FREQUENCY_FIELD, "x")), BooleanClause.Occur.MUST);
+            query.add(new TermQuery(new Term(this.frequencyField.name(), String.valueOf(FREQUENCY_VALUE))), BooleanClause.Occur.MUST);
         }
         TopDocs t = this.searcher.search(query, 25);
         String[] suggestions = new String[t.totalHits < 25 ? t.totalHits : 25];
         int i = 0;
         for (ScoreDoc d : t.scoreDocs) {
-            suggestions[i++] = this.searcher.doc(d.doc).get(SHINGLE_FIELD);
+            suggestions[i++] = this.searcher.doc(d.doc).get(SHINGLE_FIELDNAME);
         }
         return suggestions;
     }
@@ -201,6 +236,7 @@ public class ShingleIndex {
 
     private void maybeCommitAfterUpdate() throws IOException {
         this.commitCount++;
+        System.out.println("Records: " + this.commitCount + "; Updates added: " + this.updateCount);
         this.lastUpdate = System.currentTimeMillis();
         if (this.commitCount >= this.maxCommitCount) {
             this.commit();

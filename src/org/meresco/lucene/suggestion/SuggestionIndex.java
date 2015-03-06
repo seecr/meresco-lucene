@@ -144,9 +144,10 @@ public class SuggestionIndex {
         maybeCommitAfterUpdate();
     }
 
-    private String xForDocFreq(int docFreq) throws IOException{
-        char[] buffer = new char[docFreq*2];
-        for(int i = 0; i < docFreq; i++){
+    private String xForDocFreq(int docFreq) throws IOException {
+        int total = (int) Math.round(Math.log(docFreq) / Math.log(1.01)) + 1;
+        char[] buffer = new char[total*2];
+        for(int i = 0; i < total; i++){
             buffer[2*i] = FREQUENCY_VALUE;
             buffer[2*i+1] = ' ';
         }

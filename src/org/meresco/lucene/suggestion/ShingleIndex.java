@@ -72,12 +72,14 @@ public class ShingleIndex {
     private final int maxCommitCount;
 
     private int commitCount = 0;
-    
+
     private Field recordIdField = new Field("__id__", "", SIMPLE_NOT_STORED_STRING_FIELD);
 
 	private SuggestionIndex suggestionIndex;
-	
+
 	private static int MAX_COMMIT_COUNT_SUGGESTION = 1000000;
+
+	public IndexingState indexingState = null;
 
     public ShingleIndex(String shingleIndexDir, String suggestionIndexDir, int minShingleSize, int maxShingleSize) throws IOException {
         this(shingleIndexDir, suggestionIndexDir, minShingleSize, maxShingleSize, 1);
@@ -85,7 +87,7 @@ public class ShingleIndex {
 
     public ShingleIndex(String shingleIndexDir, String suggestionIndexDir, int minShingleSize, int maxShingleSize, int commitCount) throws IOException {
         this.maxCommitCount = commitCount;
-        
+
         this.shingleAnalyzer = new ShingleAnalyzer(minShingleSize, maxShingleSize);
 
         this.shingleIndexDir = FSDirectory.open(new File(shingleIndexDir));
@@ -119,23 +121,30 @@ public class ShingleIndex {
 
     	Thread create = new Thread(){
 	    	public void run() {
-	    		long t0 = System.currentTimeMillis();
+	    		indexingState = new IndexingState();
 		    	try {
 		    		DirectoryReader reader = DirectoryReader.open(shingleIndexDir);
-			    	suggestionIndex.createSuggestions(reader, RECORD_SHINGLE_FIELDNAME);
+			    	suggestionIndex.createSuggestions(reader, RECORD_SHINGLE_FIELDNAME, indexingState);
 		        	suggestionIndex.commit();
 		        	reader.close();
 		        } catch (IOException e) {
 					e.printStackTrace();
+				} finally {
+					System.out.println("Creating suggestion index took: " + (System.currentTimeMillis() - indexingState.started) / 1000 + "s");
+			        System.out.flush();
+			        indexingState = null;
 				}
-		        System.out.println("Creating suggestion index took: " + (System.currentTimeMillis() - t0) / 1000 + "s");
-		        System.out.flush();
+		        
 		    }
     	};
     	if (wait)
     		create.run();
     	else
     		create.start();
+    }
+
+    public IndexingState indexingState() {
+    	return indexingState;
     }
 
     public int numDocs() throws IOException {
@@ -178,4 +187,13 @@ public class ShingleIndex {
         return shingles;
     }
 
+    public class IndexingState {
+    	public long started;
+    	public int count;
+    	
+    	public IndexingState() {
+    		started = System.currentTimeMillis();
+    		count = 0;
+    	}
+    }
 }

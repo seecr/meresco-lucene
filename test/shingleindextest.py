@@ -27,6 +27,7 @@ from seecr.test import SeecrTestCase
 
 from org.meresco.lucene.suggestion import ShingleIndex, SuggestionIndex
 from os.path import join
+from time import sleep
 
 class ShingleIndexTest(SeecrTestCase):
 
@@ -99,3 +100,16 @@ class ShingleIndexTest(SeecrTestCase):
                 'en de botte biologische',
                 'vriend en de botte'
             ])
+
+    def testCreatingIndexState(self):
+        self.assertEquals(None, self._shingleIndex.indexingState())
+        for i in range(100):
+            self._shingleIndex.add("identifier%s", ["Lord rings", "Lord magic"])
+        try:
+            self._shingleIndex.createSuggestionIndex(False)
+            sleep(0.01) # Wait for thread
+            state = self._shingleIndex.indexingState()
+            self.assertNotEquals(None, state)
+            self.assertTrue(0 <= int(state.count) < 100, state)
+        finally:
+            sleep(0.1) # Wait for thread

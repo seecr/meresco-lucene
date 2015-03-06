@@ -38,13 +38,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -55,6 +55,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.search.TermFrequencySimilarity;
+import org.meresco.lucene.suggestion.ShingleIndex.IndexingState;
 
 public class SuggestionIndex {
 
@@ -84,6 +85,8 @@ public class SuggestionIndex {
     private final IndexWriter writer;
     private final FSDirectory directory;
 	private int commitCount;
+	public long indexingTermsCount;
+	public long totalTerms;
 
 	public SuggestionIndex(String directory) throws IOException {
         this(directory, 1);
@@ -101,11 +104,12 @@ public class SuggestionIndex {
         this.writer.commit();
 	}
 
-	public void createSuggestions(IndexReader reader, String shingleFieldname) throws IOException {
-    	TermsEnum iterator = MultiFields.getTerms(reader, shingleFieldname).iterator(null);
+	public void createSuggestions(IndexReader reader, String shingleFieldname, IndexingState indexingState) throws IOException {
+		TermsEnum iterator = MultiFields.getTerms(reader, shingleFieldname).iterator(null);
     	BytesRef term;
     	while ((term = iterator.next()) != null) {
             indexNGram(term.utf8ToString(), iterator.docFreq());
+            indexingState.count++;
     	}
     	this.commit();
     }

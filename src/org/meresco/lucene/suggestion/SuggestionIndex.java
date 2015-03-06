@@ -192,7 +192,8 @@ public class SuggestionIndex {
             }
     	}
 
-        public int numDocs() {
+        public int numDocs() throws IOException {
+        	maybeReopen();
             return this.reader.numDocs();
         }
 

@@ -107,7 +107,7 @@ class ShingleIndexTest(SeecrTestCase):
             self._shingleIndex.add("identifier%s", ["Lord rings", "Lord magic"])
         try:
             self._shingleIndex.createSuggestionIndex(False)
-            sleep(0.01) # Wait for thread
+            sleep(0.005) # Wait for thread
             state = self._shingleIndex.indexingState()
             self.assertNotEquals(None, state)
             self.assertTrue(0 <= int(state.count) < 100, state)

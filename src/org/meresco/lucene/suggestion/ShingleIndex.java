@@ -115,12 +115,28 @@ public class ShingleIndex {
         maybeCommitAfterUpdate();
     }
 
-    public void createSuggestionIndex() throws IOException {
+    public void createSuggestionIndex(boolean wait) throws IOException {
     	this.commit();
-    	DirectoryReader reader = DirectoryReader.open(this.shingleIndexDir);
-    	this.suggestionIndex.createSuggestions(reader, RECORD_SHINGLE_FIELDNAME);
-        this.suggestionIndex.commit();
-        reader.close();
+
+    	Thread create = new Thread(){
+	    	public void run() {
+	    		long t0 = System.currentTimeMillis();
+		    	try {
+		    		DirectoryReader reader = DirectoryReader.open(shingleIndexDir);
+			    	suggestionIndex.createSuggestions(reader, RECORD_SHINGLE_FIELDNAME);
+		        	suggestionIndex.commit();
+		        	reader.close();
+		        } catch (IOException e) {
+					e.printStackTrace();
+				}
+		        System.out.println("Creating suggestion index took: " + (System.currentTimeMillis() - t0) / 1000 + "s");
+		        System.out.flush();
+		    }
+    	};
+    	if (wait)
+    		create.run();
+    	else
+    		create.start();
     }
 
     public int numDocs() throws IOException {

@@ -30,13 +30,18 @@ from os.path import join
 
 class ShingleIndexTest(SeecrTestCase):
 
+    def setUp(self):
+        super(ShingleIndexTest, self).setUp()
+        shingleIndexDir = join(self.tempdir, "shingles")
+        suggestionIndexDir = join(self.tempdir, "suggestions")
+        self._shingleIndex = ShingleIndex(shingleIndexDir, suggestionIndexDir, 2, 4)
+
     def testFindShingles(self):
-        s = ShingleIndex(self.tempdir, 2, 4)
-        shingles = s.shingles("Lord of the rings")
+        shingles = self._shingleIndex.shingles("Lord of the rings")
         self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings", "of", "of the", "of the rings", "the", "the rings", "rings"], list(shingles))
 
     def testFindNgramsForShingle(self):
-        s = SuggestionIndex(self.tempdir, 2, 3)
+        s = SuggestionIndex(self.tempdir)
         ngrams = s.ngrams("lord", False)
         self.assertEquals(["$l", "lo", "or", "rd", "d$"], list(ngrams))
         ngrams = s.ngrams("lord", True)
@@ -47,14 +52,10 @@ class ShingleIndexTest(SeecrTestCase):
         self.assertEquals(["$lo", "lor", "ord", "rd$", "$of", "of$"], list(ngrams))
 
     def testShingleIndex(self):
-        s = ShingleIndex(self.tempdir, 2, 4)
-        s.add("identifier", ["Lord of the rings", "Fellowship of the ring"])
-        s.commit()
+        self._shingleIndex.add("identifier", ["Lord of the rings", "Fellowship of the ring"])
+        self._shingleIndex.createSuggestionIndex()
 
-        suggestionIndexDir = join(self.tempdir, "suggestions")
-        suggestionIndex = s.createSuggestionIndex(suggestionIndexDir)
-
-        reader = suggestionIndex.getReader()
+        reader = self._shingleIndex.getSuggestionsReader()
         self.assertEquals([u"lord of the rings", u"lord of the", u"lord of", u"lord"], list(reader.suggest("l", False)))
         self.assertEquals([], list(reader.suggest("l", True)))
         self.assertEquals([u"lord of the rings", u"lord of the", u"lord of", u"lord"], list(reader.suggest("lord", False)))
@@ -63,30 +64,22 @@ class ShingleIndexTest(SeecrTestCase):
         self.assertEquals(['fellowship of the ring', 'fellowship of the', 'fellowship of', 'fellowship'], list(reader.suggest("fel", False)))
 
     def testShingleInMultipleDocumentsRanksHigherIndex(self):
-        s = ShingleIndex(self.tempdir, 2, 4)
-        s.add("identifier", ["Lord rings", "Lord magic"])
-        s.add("identifier2", ["Lord rings"])
-        s.add("identifier3", ["Lord magic"])
-        s.add("identifier4", ["Lord magic"])
-        s.commit()
+        self._shingleIndex.add("identifier", ["Lord rings", "Lord magic"])
+        self._shingleIndex.add("identifier2", ["Lord rings"])
+        self._shingleIndex.add("identifier3", ["Lord magic"])
+        self._shingleIndex.add("identifier4", ["Lord magic"])
+        self._shingleIndex.createSuggestionIndex()
 
-        suggestionIndexDir = join(self.tempdir, "suggestions")
-        suggestionIndex = s.createSuggestionIndex(suggestionIndexDir)
-
-        reader = suggestionIndex.getReader()
+        reader = self._shingleIndex.getSuggestionsReader()
         self.assertEquals(['lord', 'lord magic', 'lord rings'], list(reader.suggest("lo", False)))
 
     def testSuggestFromLongDescription(self):
         self.maxDiff = None
         description = "Een jonge alleenstaande moeder moet kiezen tussen haar betrouwbare vriend en de botte biologische vader van haar dochtertje."
-        # self.assertEquals([], list(ShingleIndex.shingles(description)))
-        s = ShingleIndex(self.tempdir, 2, 4)
-        s.add("identifier", [description])
-        s.commit()
-        suggestionIndexDir = join(self.tempdir, "suggestions")
-        suggestionIndex = s.createSuggestionIndex(suggestionIndexDir)
+        self._shingleIndex.add("identifier", [description])
+        self._shingleIndex.createSuggestionIndex()
 
-        reader = suggestionIndex.getReader()
+        reader = self._shingleIndex.getSuggestionsReader()
         self.assertEquals(['een jonge alleenstaande moeder', 'een jonge alleenstaande', 'een jonge'], list(reader.suggest("een jonge", False)))
         self.assertEquals([
                 'botte biologische vader van',

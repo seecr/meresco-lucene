@@ -1,3 +1,28 @@
+/* begin license *
+ *
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ *
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ *
+ * This file is part of "Meresco Lucene"
+ *
+ * "Meresco Lucene" is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * "Meresco Lucene" is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with "Meresco Lucene"; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * end license */
+
 package org.meresco.lucene.suggestion;
 
 import java.io.File;
@@ -48,7 +73,7 @@ public class SuggestionIndex {
         FREQUENCY_FIELD_TYPE.setOmitNorms(true);
         FREQUENCY_FIELD_TYPE.freeze();
     }
-    
+
 	private Field frequencyField = new Field("__freq__", "", FREQUENCY_FIELD_TYPE);
     private Field shingleField = new Field(SHINGLE_FIELDNAME, "", ShingleIndex.SIMPLE_STORED_STRING_FIELD);
 
@@ -60,11 +85,11 @@ public class SuggestionIndex {
     private final IndexWriter writer;
     private final FSDirectory directory;
 	private int commitCount;
-	
+
 	public SuggestionIndex(String directory) throws IOException {
         this(directory, 1, 0);
     }
-	
+
 	public SuggestionIndex(String directory, int commitCount, int commitTimeout) throws IOException {
 		this.maxCommitCount = commitCount;
         this.maxCommitTimeout = commitTimeout;
@@ -77,7 +102,7 @@ public class SuggestionIndex {
         this.writer = new IndexWriter(this.directory, config);
         this.writer.commit();
 	}
-	
+
 	public void createSuggestions(IndexReader reader, String shingleFieldname) throws IOException {
     	TermsEnum iterator = MultiFields.getTerms(reader, shingleFieldname).iterator(null);
     	BytesRef term;
@@ -86,14 +111,14 @@ public class SuggestionIndex {
     	}
     	this.commit();
     }
-	
+
 	private void maybeCommitAfterUpdate() throws IOException {
         this.commitCount++;
         if (this.commitCount >= this.maxCommitCount) {
             this.commit();
         }
     }
-	
+
     public void commit() throws IOException {
         this.writer.commit();
         this.commitCount = 0;
@@ -140,21 +165,21 @@ public class SuggestionIndex {
         stream.close();
         return ngram;
     }
-    
+
     public Reader getReader() throws IOException {
     	return new Reader();
     }
-    
+
     public class Reader {
     	private DirectoryReader reader;
         private IndexSearcher searcher;
-        
+
     	public Reader() throws IOException {
     		this.reader = DirectoryReader.open(directory);
             this.searcher = new IndexSearcher(this.reader);
-            this.searcher.setSimilarity(new TermFrequencySimilarity());	    
+            this.searcher.setSimilarity(new TermFrequencySimilarity());
     	}
-    	
+
     	public void maybeReopen() throws IOException {
     		DirectoryReader newReader = DirectoryReader.openIfChanged(this.reader);
             if (newReader != null) {
@@ -163,7 +188,11 @@ public class SuggestionIndex {
                 this.searcher.setSimilarity(new TermFrequencySimilarity());
             }
     	}
-    	
+
+        public int numDocs() {
+            return this.reader.numDocs();
+        }
+
     	public String[] suggest(String value, Boolean trigram) throws IOException {
             maybeReopen();
             String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
@@ -184,6 +213,10 @@ public class SuggestionIndex {
                 suggestions[i++] = searcher.doc(d.doc).get(SHINGLE_FIELDNAME);
             }
             return suggestions;
+        }
+
+        public void close() throws IOException {
+            this.reader.close();
         }
     }
 }

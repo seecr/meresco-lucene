@@ -68,7 +68,7 @@ public class ShingleIndex {
 
     private final IndexWriter writer;
     private final ShingleAnalyzer shingleAnalyzer;
-    private final FSDirectory directory;
+    private final FSDirectory shingleIndexDir;
     private final int maxCommitTimeout;
     private final int maxCommitCount;
 
@@ -79,22 +79,22 @@ public class ShingleIndex {
 
 	private SuggestionIndex suggestionIndex;
 
-    public ShingleIndex(String directory, int minShingleSize, int maxShingleSize) throws IOException {
-        this(directory, minShingleSize, maxShingleSize, 1, 0);
+    public ShingleIndex(String shingleIndexDir, String suggestionIndexDir, int minShingleSize, int maxShingleSize) throws IOException {
+        this(shingleIndexDir, suggestionIndexDir, minShingleSize, maxShingleSize, 1, 0);
     }
 
-    public ShingleIndex(String directory, int minShingleSize, int maxShingleSize, int commitCount, int commitTimeout) throws IOException {
+    public ShingleIndex(String shingleIndexDir, String suggestionIndexDir, int minShingleSize, int maxShingleSize, int commitCount, int commitTimeout) throws IOException {
         this.maxCommitCount = commitCount;
         this.maxCommitTimeout = commitTimeout;
 
         this.shingleAnalyzer = new ShingleAnalyzer(minShingleSize, maxShingleSize);
 
-        this.directory = FSDirectory.open(new File(directory));
+        this.shingleIndexDir = FSDirectory.open(new File(shingleIndexDir));
         IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new StandardAnalyzer());
-        this.writer = new IndexWriter(this.directory, config);
+        this.writer = new IndexWriter(this.shingleIndexDir, config);
         this.writer.commit();
 
-        this.suggestionIndex = new SuggestionIndex(directory + "/suggestion", this.maxCommitCount, this.maxCommitTimeout);
+        this.suggestionIndex = new SuggestionIndex(suggestionIndexDir, this.maxCommitCount, this.maxCommitTimeout);
     }
 
     public void add(String identifier, String[] values) throws IOException {
@@ -110,12 +110,15 @@ public class ShingleIndex {
         maybeCommitAfterUpdate();
     }
 
-    public SuggestionIndex createSuggestionIndex(String directory) throws IOException {
+    public void createSuggestionIndex() throws IOException {
     	this.commit();
-    	DirectoryReader reader = DirectoryReader.open(this.directory);
+    	DirectoryReader reader = DirectoryReader.open(this.shingleIndexDir);
     	this.suggestionIndex.createSuggestions(reader, RECORD_SHINGLE_FIELDNAME);
-    	this.suggestionIndex.commit();
-    	return this.suggestionIndex;
+        this.suggestionIndex.commit();
+    }
+
+    public SuggestionIndex.Reader getSuggestionsReader() throws IOException {
+        return this.suggestionIndex.getReader();
     }
 
     private void maybeCommitAfterUpdate() throws IOException {
@@ -134,6 +137,7 @@ public class ShingleIndex {
 
     public void close() throws IOException {
         this.writer.close();
+        this.suggestionIndex.close();
     }
 
     public List<String> shingles(String s) throws IOException {

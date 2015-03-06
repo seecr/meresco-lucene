@@ -39,7 +39,7 @@ class ShingleIndexTest(SeecrTestCase):
     def assertSuggestion(self, suggest, expected, trigram=False):
         reader = self._shingleIndex.getSuggestionsReader()
         suggestions = [s.suggestion for s in reader.suggest(suggest, trigram)]
-        self.assertEquals(expected, suggestions)
+        self.assertEquals(set(expected), set(suggestions))
 
     def testFindShingles(self):
         shingles = self._shingleIndex.shingles("Lord of the rings")
@@ -67,7 +67,7 @@ class ShingleIndexTest(SeecrTestCase):
         self.assertSuggestion("of the", ['fellowship of the ring', 'fellowship of the', "lord of the rings", "lord of the", "of the", "of the ring", "of the rings"])
         self.assertSuggestion("fel", ['fellowship of the ring', 'fellowship of the', 'fellowship of', 'fellowship'])
 
-    def testShingleInMultipleDocumentsRanksHigherIndex(self):
+    def testShingleInMultipleDocumentsRanksHigher(self):
         self._shingleIndex.add("identifier", ["Lord rings", "Lord magic"])
         self._shingleIndex.add("identifier2", ["Lord rings"])
         self._shingleIndex.add("identifier3", ["Lord magic"])

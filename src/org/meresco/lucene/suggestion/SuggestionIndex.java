@@ -79,7 +79,6 @@ public class SuggestionIndex {
 
     private final NGramAnalyzer bigram;
     private final NGramAnalyzer trigram;
-    private final int maxCommitTimeout;
     private final int maxCommitCount;
 
     private final IndexWriter writer;
@@ -87,13 +86,12 @@ public class SuggestionIndex {
 	private int commitCount;
 
 	public SuggestionIndex(String directory) throws IOException {
-        this(directory, 1, 0);
+        this(directory, 1);
     }
 
-	public SuggestionIndex(String directory, int commitCount, int commitTimeout) throws IOException {
+	public SuggestionIndex(String directory, int commitCount) throws IOException {
 		this.maxCommitCount = commitCount;
-        this.maxCommitTimeout = commitTimeout;
-
+        
         this.bigram = new NGramAnalyzer(2, 2);
         this.trigram = new NGramAnalyzer(3, 3);
 

@@ -69,24 +69,23 @@ public class ShingleIndex {
     private final IndexWriter writer;
     private final ShingleAnalyzer shingleAnalyzer;
     private final FSDirectory shingleIndexDir;
-    private final int maxCommitTimeout;
     private final int maxCommitCount;
 
     private int commitCount = 0;
-    private long lastUpdate = -1;
-
+    
     private Field recordIdField = new Field("__id__", "", SIMPLE_NOT_STORED_STRING_FIELD);
 
 	private SuggestionIndex suggestionIndex;
+	
+	private static int MAX_COMMIT_COUNT_SUGGESTION = 1000000;
 
     public ShingleIndex(String shingleIndexDir, String suggestionIndexDir, int minShingleSize, int maxShingleSize) throws IOException {
-        this(shingleIndexDir, suggestionIndexDir, minShingleSize, maxShingleSize, 1, 0);
+        this(shingleIndexDir, suggestionIndexDir, minShingleSize, maxShingleSize, 1);
     }
 
-    public ShingleIndex(String shingleIndexDir, String suggestionIndexDir, int minShingleSize, int maxShingleSize, int commitCount, int commitTimeout) throws IOException {
+    public ShingleIndex(String shingleIndexDir, String suggestionIndexDir, int minShingleSize, int maxShingleSize, int commitCount) throws IOException {
         this.maxCommitCount = commitCount;
-        this.maxCommitTimeout = commitTimeout;
-
+        
         this.shingleAnalyzer = new ShingleAnalyzer(minShingleSize, maxShingleSize);
 
         this.shingleIndexDir = FSDirectory.open(new File(shingleIndexDir));
@@ -94,7 +93,7 @@ public class ShingleIndex {
         this.writer = new IndexWriter(this.shingleIndexDir, config);
         this.writer.commit();
 
-        this.suggestionIndex = new SuggestionIndex(suggestionIndexDir, this.maxCommitCount, this.maxCommitTimeout);
+        this.suggestionIndex = new SuggestionIndex(suggestionIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
     }
 
     public void add(String identifier, String[] values) throws IOException {
@@ -152,7 +151,6 @@ public class ShingleIndex {
 
     private void maybeCommitAfterUpdate() throws IOException {
         this.commitCount++;
-        this.lastUpdate = System.currentTimeMillis();
         if (this.commitCount >= this.maxCommitCount) {
             this.commit();
         }
@@ -160,7 +158,6 @@ public class ShingleIndex {
 
     public void commit() throws IOException {
         this.writer.commit();
-        this.lastUpdate  = -1;
         this.commitCount = 0;
     }
 

@@ -194,7 +194,7 @@ public class SuggestionIndex {
             return this.reader.numDocs();
         }
 
-    	public String[] suggest(String value, Boolean trigram) throws IOException {
+    	public Suggestion[] suggest(String value, Boolean trigram) throws IOException {
             maybeReopen();
             String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
             BooleanQuery query = new BooleanQuery();
@@ -208,10 +208,10 @@ public class SuggestionIndex {
                 query.add(new TermQuery(new Term(frequencyField.name(), String.valueOf(FREQUENCY_VALUE))), BooleanClause.Occur.MUST);
             }
             TopDocs t = searcher.search(query, 25);
-            String[] suggestions = new String[t.totalHits < 25 ? t.totalHits : 25];
+            Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
             int i = 0;
             for (ScoreDoc d : t.scoreDocs) {
-                suggestions[i++] = searcher.doc(d.doc).get(SHINGLE_FIELDNAME);
+                suggestions[i++] = new Suggestion(searcher.doc(d.doc).get(SHINGLE_FIELDNAME), d.score);
             }
             return suggestions;
         }
@@ -219,5 +219,15 @@ public class SuggestionIndex {
         public void close() throws IOException {
             this.reader.close();
         }
+    }
+
+    public class Suggestion {
+    	public String suggestion;
+    	public float score;
+
+    	public Suggestion(String suggestion, float score) {
+    		this.suggestion = suggestion;
+    		this.score = score;
+    	}
     }
 }

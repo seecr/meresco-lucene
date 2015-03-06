@@ -36,6 +36,11 @@ class ShingleIndexTest(SeecrTestCase):
         suggestionIndexDir = join(self.tempdir, "suggestions")
         self._shingleIndex = ShingleIndex(shingleIndexDir, suggestionIndexDir, 2, 4)
 
+    def assertSuggestion(self, suggest, expected, trigram=False):
+        reader = self._shingleIndex.getSuggestionsReader()
+        suggestions = [s.suggestion for s in reader.suggest(suggest, trigram)]
+        self.assertEquals(expected, suggestions)
+
     def testFindShingles(self):
         shingles = self._shingleIndex.shingles("Lord of the rings")
         self.assertEquals(["lord", "lord of", "lord of the", "lord of the rings", "of", "of the", "of the rings", "the", "the rings", "rings"], list(shingles))
@@ -55,13 +60,12 @@ class ShingleIndexTest(SeecrTestCase):
         self._shingleIndex.add("identifier", ["Lord of the rings", "Fellowship of the ring"])
         self._shingleIndex.createSuggestionIndex()
 
-        reader = self._shingleIndex.getSuggestionsReader()
-        self.assertEquals([u"lord of the rings", u"lord of the", u"lord of", u"lord"], list(reader.suggest("l", False)))
-        self.assertEquals([], list(reader.suggest("l", True)))
-        self.assertEquals([u"lord of the rings", u"lord of the", u"lord of", u"lord"], list(reader.suggest("lord", False)))
-        self.assertEquals([u"lord of the rings", u"lord of the", u"lord of"], list(reader.suggest("lord of", False)))
-        self.assertEquals(['fellowship of the ring', 'fellowship of the', "lord of the rings", "lord of the", "of the", "of the ring", "of the rings", ], list(reader.suggest("of the", False)))
-        self.assertEquals(['fellowship of the ring', 'fellowship of the', 'fellowship of', 'fellowship'], list(reader.suggest("fel", False)))
+        self.assertSuggestion("l", ["lord of the rings", "lord of the", "lord of", "lord"])
+        self.assertSuggestion("l", [], trigram=True)
+        self.assertSuggestion("lord", ["lord of the rings", "lord of the", "lord of", "lord"])
+        self.assertSuggestion("lord of", ["lord of the rings", "lord of the", "lord of"])
+        self.assertSuggestion("of the", ['fellowship of the ring', 'fellowship of the', "lord of the rings", "lord of the", "of the", "of the ring", "of the rings"])
+        self.assertSuggestion("fel", ['fellowship of the ring', 'fellowship of the', 'fellowship of', 'fellowship'])
 
     def testShingleInMultipleDocumentsRanksHigherIndex(self):
         self._shingleIndex.add("identifier", ["Lord rings", "Lord magic"])
@@ -71,7 +75,10 @@ class ShingleIndexTest(SeecrTestCase):
         self._shingleIndex.createSuggestionIndex()
 
         reader = self._shingleIndex.getSuggestionsReader()
-        self.assertEquals(['lord', 'lord magic', 'lord rings'], list(reader.suggest("lo", False)))
+        suggestions = list(reader.suggest("lo", False))
+        self.assertEquals(3, len(suggestions))
+        self.assertEquals(['lord', 'lord magic', 'lord rings'], [s.suggestion for s in suggestions])
+        self.assertEquals([0.1420000046491623, 0.11299999803304672, 0.0729999989271164], [s.score for s in suggestions])
 
     def testSuggestFromLongDescription(self):
         self.maxDiff = None
@@ -79,9 +86,8 @@ class ShingleIndexTest(SeecrTestCase):
         self._shingleIndex.add("identifier", [description])
         self._shingleIndex.createSuggestionIndex()
 
-        reader = self._shingleIndex.getSuggestionsReader()
-        self.assertEquals(['een jonge alleenstaande moeder', 'een jonge alleenstaande', 'een jonge'], list(reader.suggest("een jonge", False)))
-        self.assertEquals([
+        self.assertSuggestion("een jong", ['een jonge alleenstaande moeder', 'een jonge alleenstaande', 'een jonge'])
+        self.assertSuggestion("botte", [
                 'botte biologische vader van',
                 'botte biologische vader',
                 'de botte biologische',
@@ -92,4 +98,4 @@ class ShingleIndexTest(SeecrTestCase):
                 'en de botte',
                 'en de botte biologische',
                 'vriend en de botte'
-            ], list(reader.suggest("botte", False)))
+            ])

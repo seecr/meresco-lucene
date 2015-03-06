@@ -110,11 +110,24 @@ public class ShingleIndex {
         maybeCommitAfterUpdate();
     }
 
+    public void delete(String identifier) throws IOException {
+        this.writer.deleteDocuments(new Term(this.recordIdField.name(), identifier));
+        maybeCommitAfterUpdate();
+    }
+
     public void createSuggestionIndex() throws IOException {
     	this.commit();
     	DirectoryReader reader = DirectoryReader.open(this.shingleIndexDir);
     	this.suggestionIndex.createSuggestions(reader, RECORD_SHINGLE_FIELDNAME);
         this.suggestionIndex.commit();
+        reader.close();
+    }
+
+    public int numDocs() throws IOException {
+        DirectoryReader reader = DirectoryReader.open(this.shingleIndexDir);
+        int numDocs = reader.numDocs();
+        reader.close();
+        return numDocs;
     }
 
     public SuggestionIndex.Reader getSuggestionsReader() throws IOException {

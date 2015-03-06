@@ -81,6 +81,8 @@ public class ShingleIndex {
 
 	public IndexingState indexingState = null;
 
+	private String suggestionIndexDir;
+
     public ShingleIndex(String shingleIndexDir, String suggestionIndexDir, int minShingleSize, int maxShingleSize) throws IOException {
         this(shingleIndexDir, suggestionIndexDir, minShingleSize, maxShingleSize, 1);
     }
@@ -94,8 +96,8 @@ public class ShingleIndex {
         IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new StandardAnalyzer());
         this.writer = new IndexWriter(this.shingleIndexDir, config);
         this.writer.commit();
-
-        this.suggestionIndex = new SuggestionIndex(suggestionIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
+        this.suggestionIndexDir = suggestionIndexDir;
+        this.suggestionIndex = new SuggestionIndex(this.suggestionIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
     }
 
     public void add(String identifier, String[] values) throws IOException {
@@ -124,18 +126,41 @@ public class ShingleIndex {
 	    		indexingState = new IndexingState();
 		    	try {
 		    		DirectoryReader reader = DirectoryReader.open(shingleIndexDir);
-			    	suggestionIndex.createSuggestions(reader, RECORD_SHINGLE_FIELDNAME, indexingState);
-		        	suggestionIndex.commit();
+		    		String tempDir = suggestionIndexDir+"~";
+		    		String tempTempDir = suggestionIndexDir+"~~";
+		    		deleteIndexDirectory(tempDir);
+		    		deleteIndexDirectory(tempTempDir);
+		    		SuggestionIndex newSuggestionIndex = new SuggestionIndex(tempDir, MAX_COMMIT_COUNT_SUGGESTION);
+		    		newSuggestionIndex.createSuggestions(reader, RECORD_SHINGLE_FIELDNAME, indexingState);
+		    		newSuggestionIndex.close();
 		        	reader.close();
+		        	suggestionIndex.close();
+		        	new File(suggestionIndexDir).renameTo(new File(tempTempDir));
+		        	new File(tempDir).renameTo(new File(suggestionIndexDir));
+		        	
+		        	suggestionIndex = new SuggestionIndex(suggestionIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
+		        	deleteIndexDirectory(tempTempDir);
 		        } catch (IOException e) {
 					e.printStackTrace();
 				} finally {
-					System.out.println("Creating suggestion index took: " + (System.currentTimeMillis() - indexingState.started) / 1000 + "s");
+					long totalTime = (System.currentTimeMillis() - indexingState.started) / 1000;
+					long averageSpeed = totalTime > 0 ? indexingState.count / totalTime : 0;
+					System.out.println("Creating suggestion index took: " + totalTime + "s" + "; Average: " + averageSpeed + "/s");
 			        System.out.flush();
 			        indexingState = null;
 				}
 		        
 		    }
+
+			private void deleteIndexDirectory(String dir) {
+				File[] files = new File(dir).listFiles();
+				if (files != null) {
+					for(File currentFile: new File(dir).listFiles()) {
+				    	currentFile.delete();
+					}
+					new File(dir).delete();
+				}
+			}
     	};
     	if (wait)
     		create.run();

@@ -81,7 +81,7 @@ public class GroupSuperCollector extends SuperCollector<GroupSubCollector> {
         if (keyValue == null) {
             return null;
         }
-        List result = new ArrayList<Integer>();
+        List<Integer> result = new ArrayList<Integer>();
         for(GroupSubCollector sub : this.subs){
             sub.group(keyValue, result);
         }
@@ -94,7 +94,7 @@ class GroupSubCollector extends SubCollector{
     private final SubCollector delegate;
     private final String keyName;
     private NumericDocValues keyValues;
-    AtomicReaderContext context;
+    private AtomicReaderContext context;
     private Map<Long, List<Integer>> keyToDocIds = new HashMap<Long, List<Integer>>();
 
 

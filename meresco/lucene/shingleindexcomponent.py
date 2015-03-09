@@ -74,7 +74,7 @@ class ShingleIndexComponent(Observable):
 
     def handleRequest(self, arguments, path, **kwargs):
         value = arguments.get("value", [None])[0]
-        debug = arguments.get("debug", ["False"])[0] != 'False'
+        debug = arguments.get("x-debug", ["False"])[0] != 'False'
         trigram = arguments.get("trigram", ["False"])[0] != 'False'
         minScore = float(arguments.get("minScore", ["0.03"])[0])
         yield Ok
@@ -95,7 +95,7 @@ class ShingleIndexComponent(Observable):
                     suggestions.append((suggestion, scores))
             suggestions = sorted(suggestions, reverse=True, key=lambda (suggestion, scores): scores['sortScore'])
             if not debug:
-                suggestions = [s[0] for s in suggestions[:10]]
+                suggestions = [s[0] for s in suggestions if s[0].startswith(value.lower())][:10]
             result = [value, suggestions]
         yield JsonList(result).dumps()
 

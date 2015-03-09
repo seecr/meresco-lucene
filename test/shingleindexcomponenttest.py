@@ -68,7 +68,7 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
         sic = ShingleIndexComponent(self.tempdir, commitCount=1)
         sic.addSuggestions("id:1", ["harry", "potter", "hallo", "fiets", "fiets mobiel"])
         sic.createSuggestionIndex(wait=True, verbose=False)
-        header, body = asString(sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], debug=["true"], minScore=["0"]))).split(CRLF*2)
+        header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "x-debug": ["true"], "minScore": ["0"]})).split(CRLF*2)
         self.assertEquals("""HTTP/1.0 200 OK\r
 Content-Type: application/x-suggestions+json\r
 Access-Control-Allow-Origin: *\r

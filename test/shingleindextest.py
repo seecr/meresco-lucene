@@ -59,7 +59,7 @@ class ShingleIndexTest(SeecrTestCase):
 
     def testShingleIndex(self):
         self._shingleIndex.add("identifier", ["Lord of the rings", "Fellowship of the ring"])
-        self._shingleIndex.createSuggestionIndex(True)
+        self._shingleIndex.createSuggestionIndex(True, False)
 
         self.assertSuggestion("l", ["lord of the rings", "lord of the", "lord of", "lord"])
         self.assertSuggestion("l", [], trigram=True)
@@ -73,7 +73,7 @@ class ShingleIndexTest(SeecrTestCase):
         self._shingleIndex.add("identifier2", ["Lord rings"])
         self._shingleIndex.add("identifier3", ["Lord magic"])
         self._shingleIndex.add("identifier4", ["Lord magic"])
-        self._shingleIndex.createSuggestionIndex(True)
+        self._shingleIndex.createSuggestionIndex(True, False)
 
         reader = self._shingleIndex.getSuggestionsReader()
         suggestions = list(reader.suggest("lo", False))
@@ -85,7 +85,7 @@ class ShingleIndexTest(SeecrTestCase):
         self.maxDiff = None
         description = "Een jonge alleenstaande moeder moet kiezen tussen haar betrouwbare vriend en de botte biologische vader van haar dochtertje."
         self._shingleIndex.add("identifier", [description])
-        self._shingleIndex.createSuggestionIndex(True)
+        self._shingleIndex.createSuggestionIndex(True, False)
 
         self.assertSuggestion("een jong", ['een jonge alleenstaande moeder', 'een jonge alleenstaande', 'een jonge'])
         self.assertSuggestion("botte", [
@@ -106,7 +106,7 @@ class ShingleIndexTest(SeecrTestCase):
         for i in range(100):
             self._shingleIndex.add("identifier%s", ["Lord rings", "Lord magic"])
         try:
-            self._shingleIndex.createSuggestionIndex(False)
+            self._shingleIndex.createSuggestionIndex(False, False)
             sleep(0.005) # Wait for thread
             state = self._shingleIndex.indexingState()
             self.assertNotEquals(None, state)

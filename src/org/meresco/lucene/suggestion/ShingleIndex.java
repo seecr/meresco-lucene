@@ -118,7 +118,7 @@ public class ShingleIndex {
         maybeCommitAfterUpdate();
     }
 
-    public void createSuggestionIndex(boolean wait) throws IOException {
+    public void createSuggestionIndex(boolean wait, final boolean verbose) throws IOException {
     	this.commit();
 
     	Thread create = new Thread(){
@@ -137,7 +137,7 @@ public class ShingleIndex {
 		        	suggestionIndex.close();
 		        	new File(suggestionIndexDir).renameTo(new File(tempTempDir));
 		        	new File(tempDir).renameTo(new File(suggestionIndexDir));
-		        	
+
 		        	suggestionIndex = new SuggestionIndex(suggestionIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
 		        	deleteIndexDirectory(tempTempDir);
 		        } catch (IOException e) {
@@ -145,11 +145,13 @@ public class ShingleIndex {
 				} finally {
 					long totalTime = (System.currentTimeMillis() - indexingState.started) / 1000;
 					long averageSpeed = totalTime > 0 ? indexingState.count / totalTime : 0;
-					System.out.println("Creating suggestion index took: " + totalTime + "s" + "; Average: " + averageSpeed + "/s");
-			        System.out.flush();
+                    if (verbose) {
+    					System.out.println("Creating suggestion index took: " + totalTime + "s" + "; Average: " + averageSpeed + "/s");
+    			        System.out.flush();
+                    }
 			        indexingState = null;
 				}
-		        
+
 		    }
 
 			private void deleteIndexDirectory(String dir) {
@@ -215,7 +217,7 @@ public class ShingleIndex {
     public class IndexingState {
     	public long started;
     	public int count;
-    	
+
     	public IndexingState() {
     		started = System.currentTimeMillis();
     		count = 0;

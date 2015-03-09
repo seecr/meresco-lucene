@@ -45,6 +45,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -94,7 +95,7 @@ public class SuggestionIndex {
 
 	public SuggestionIndex(String directory, int commitCount) throws IOException {
 		this.maxCommitCount = commitCount;
-        
+
         this.bigram = new NGramAnalyzer(2, 2);
         this.trigram = new NGramAnalyzer(3, 3);
 
@@ -105,7 +106,10 @@ public class SuggestionIndex {
 	}
 
 	public void createSuggestions(IndexReader reader, String shingleFieldname, IndexingState indexingState) throws IOException {
-		TermsEnum iterator = MultiFields.getTerms(reader, shingleFieldname).iterator(null);
+        Terms terms = MultiFields.getTerms(reader, shingleFieldname);
+        if (terms == null)
+            return;
+		TermsEnum iterator = terms.iterator(null);
     	BytesRef term;
     	while ((term = iterator.next()) != null) {
             indexNGram(term.utf8ToString(), iterator.docFreq());

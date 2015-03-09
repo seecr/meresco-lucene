@@ -113,3 +113,7 @@ class ShingleIndexTest(SeecrTestCase):
             self.assertTrue(0 <= int(state.count) < 100, state)
         finally:
             sleep(0.1) # Wait for thread
+
+    def testCreateSuggestionsForEmptyIndex(self):
+        self._shingleIndex.createSuggestionIndex(True, False)
+        self.assertTrue("Nothing bad happened, no NullPointerException")

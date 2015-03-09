@@ -58,8 +58,10 @@ class ShingleIndexComponentTest(SeecrTestCase):
         sic.addSuggestions("id:1", ["harry", "potter", "hallo", "fiets", "fiets mobiel"])
         sic.createSuggestionIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], minScore=["0"]))).split(CRLF*2)
-        self.assertEquals("""HTTP/1.0 200 Ok\r
-Content-Type: application/json""", header)
+        self.assertEquals("""HTTP/1.0 200 OK\r
+Content-Type: application/x-suggestions+json\r
+Access-Control-Allow-Origin: *\r
+Access-Control-Allow-Headers: X-Requested-With""", header)
         self.assertEquals('["ha", ["hallo", "harry"]]', body)
 
     def testHandleRequestWithDebug(self):
@@ -67,8 +69,10 @@ Content-Type: application/json""", header)
         sic.addSuggestions("id:1", ["harry", "potter", "hallo", "fiets", "fiets mobiel"])
         sic.createSuggestionIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], debug=["true"], minScore=["0"]))).split(CRLF*2)
-        self.assertEquals("""HTTP/1.0 200 Ok\r
-Content-Type: application/json""", header)
+        self.assertEquals("""HTTP/1.0 200 OK\r
+Content-Type: application/x-suggestions+json\r
+Access-Control-Allow-Origin: *\r
+Access-Control-Allow-Headers: X-Requested-With""", header)
         json = loads(body)
         suggestions = [(s[0], dict((k,round(v, 3)) for k,v in s[1].items())) for s in json[1]]
         self.assertEquals([

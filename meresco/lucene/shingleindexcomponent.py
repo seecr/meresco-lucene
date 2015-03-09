@@ -30,7 +30,7 @@ from org.meresco.lucene.suggestion import ShingleIndex
 from os.path import isdir, join
 from os import makedirs
 from meresco.core import Observable
-from meresco.components.http.utils import CRLF
+from meresco.components.http.utils import CRLF, ContentTypeHeader, Ok
 from meresco.components.json import JsonList
 from Levenshtein import distance
 from math import log
@@ -77,8 +77,10 @@ class ShingleIndexComponent(Observable):
         debug = arguments.get("debug", ["False"])[0] != 'False'
         trigram = arguments.get("trigram", ["False"])[0] != 'False'
         minScore = float(arguments.get("minScore", ["0.03"])[0])
-        yield "HTTP/1.0 200 Ok" + CRLF
-        yield "Content-Type: application/json" + CRLF
+        yield Ok
+        yield ContentTypeHeader + "application/x-suggestions+json" + CRLF
+        yield "Access-Control-Allow-Origin: *" + CRLF
+        yield "Access-Control-Allow-Headers: X-Requested-With" + CRLF
         yield CRLF
         result = []
         if value:

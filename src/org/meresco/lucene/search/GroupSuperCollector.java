@@ -25,18 +25,17 @@
 package org.meresco.lucene.search;
 
 import java.io.IOException;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReaderContext;
-
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.search.Scorer;
 
 public class GroupSuperCollector extends SuperCollector<GroupSubCollector> {
     private final String keyName;
@@ -76,13 +75,13 @@ public class GroupSuperCollector extends SuperCollector<GroupSubCollector> {
         return docValues.get(docId - context.docBase);
     }
 
-    public List<Integer> group(int docId) throws IOException{
+    public List<Integer> group(int docId) throws IOException {
         Long keyValue = this.getKeyForDocId(docId);
         if (keyValue == null) {
             return null;
         }
         List<Integer> result = new ArrayList<Integer>();
-        for(GroupSubCollector sub : this.subs){
+        for (GroupSubCollector sub : this.subs) {
             sub.group(keyValue, result);
         }
         return result;
@@ -90,25 +89,26 @@ public class GroupSuperCollector extends SuperCollector<GroupSubCollector> {
 
 }
 
-class GroupSubCollector extends SubCollector{
+class GroupSubCollector extends SubCollector {
     private final SubCollector delegate;
     private final String keyName;
     private NumericDocValues keyValues;
     AtomicReaderContext context;
-    private Map<Long, List<Integer>> keyToDocIds = new HashMap<Long, List<Integer>>();
+    private Map<Long, int[]> keyToDocIds = new HashMap<Long, int[]>();
 
-
-    GroupSubCollector(String keyName, SubCollector delegate){
+    GroupSubCollector(String keyName, SubCollector delegate) {
         this.keyName = keyName;
         this.delegate = delegate;
     }
 
-    public void group(long keyValue, List<Integer> result){
-        List<Integer> docIds = this.keyToDocIds.get(keyValue);
-        if(docIds == null){
+    public void group(long keyValue, List<Integer> result) {
+        int[] docIds = this.keyToDocIds.get(keyValue);
+        if (docIds == null) {
             return;
         }
-        result.addAll(docIds);
+        for (int docId : docIds)
+            if (docId != 0)
+                result.add(docId == -1 ? 0 : docId);
     }
 
     @Override
@@ -125,13 +125,27 @@ class GroupSubCollector extends SubCollector{
     @Override
     public void collect(int doc) throws IOException {
         long keyValue = this.keyValues.get(doc);
-        if (keyValue > 0){
-            List<Integer> docIds = this.keyToDocIds.get(keyValue);
-            if(docIds == null) {
-                docIds = new ArrayList<Integer>();
+        if (keyValue > 0) {
+            int[] docIds = this.keyToDocIds.get(keyValue);
+            int i = 0;
+            if (docIds == null) {
+                docIds = new int[8];
                 this.keyToDocIds.put(keyValue, docIds);
+            } else {
+                for (i = 0; i < docIds.length; i++) {
+                    if (docIds[i] == 0) {
+                        break;
+                    }
+                }
+                if (i == docIds.length) {
+                    int[] newDocIds = new int[docIds.length * 2];
+                    System.arraycopy(docIds, 0, newDocIds, 0, docIds.length);
+                    docIds = newDocIds;
+                    this.keyToDocIds.put(keyValue, docIds);
+                }
             }
-            docIds.add(doc + this.context.docBase);
+            int docId = doc + this.context.docBase;
+            docIds[i] = docId == 0 ? -1 : docId;
         }
         this.delegate.collect(doc);
     }

@@ -3,8 +3,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -47,7 +48,7 @@ fi
 
 LUCENEVERSION=4.10.1
 
-classpath=${luceneJarDir}/lucene-core-$LUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$LUCENEVERSION.jar:${luceneJarDir}/lucene-facet-$LUCENEVERSION.jar:${luceneJarDir}/lucene-queries-$LUCENEVERSION.jar
+classpath=${luceneJarDir}/lucene-core-$LUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$LUCENEVERSION.jar:${luceneJarDir}/lucene-facet-$LUCENEVERSION.jar:${luceneJarDir}/lucene-queries-$LUCENEVERSION.jar:/usr/share/java/trove-3.jar
 
 ${javac} -cp ${classpath} -d ${buildDir} `find org -name "*.java"`
 (cd $buildDir; jar -c org > $buildDir/meresco-lucene.jar)
@@ -59,6 +60,7 @@ python -m jcc.__main__ \
     --shared \
     --arch x86_64 \
     --jar $buildDir/meresco-lucene.jar \
+    --include /usr/share/java/trove-3.jar \
     --python meresco_lucene \
     --build \
     --install

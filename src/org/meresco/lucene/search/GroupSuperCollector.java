@@ -24,11 +24,11 @@
  * end license */
 package org.meresco.lucene.search;
 
+import gnu.trove.map.hash.TLongObjectHashMap;
+
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
@@ -55,7 +55,7 @@ public class GroupSuperCollector extends SuperCollector<GroupSubCollector> {
     @Override
     protected GroupSubCollector createSubCollector() throws IOException {
         SubCollector delegateSubCollector = this.delegate.subCollector();
-        return new GroupSubCollector(this.keyName, delegateSubCollector);
+        return new GroupSubCollector(this.keyName, delegateSubCollector, this);
     }
 
     @Override
@@ -86,7 +86,6 @@ public class GroupSuperCollector extends SuperCollector<GroupSubCollector> {
         }
         return result;
     }
-
 }
 
 class GroupSubCollector extends SubCollector {
@@ -94,11 +93,13 @@ class GroupSubCollector extends SubCollector {
     private final String keyName;
     private NumericDocValues keyValues;
     AtomicReaderContext context;
-    private Map<Long, int[]> keyToDocIds = new HashMap<Long, int[]>();
-
-    GroupSubCollector(String keyName, SubCollector delegate) {
+    private TLongObjectHashMap<int []> keyToDocIds;
+    private GroupSuperCollector groupSuperCollector;
+    
+    GroupSubCollector(String keyName, SubCollector delegate, GroupSuperCollector groupSuperCollector) {
         this.keyName = keyName;
         this.delegate = delegate;
+        this.groupSuperCollector = groupSuperCollector;
     }
 
     public void group(long keyValue, List<Integer> result) {
@@ -113,6 +114,11 @@ class GroupSubCollector extends SubCollector {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
+        if (this.keyToDocIds == null) {
+            float loadFactor = 0.75f;
+            int maxDoc = (int) (ReaderUtil.getTopLevelContext(context).reader().maxDoc() * (1 + (1 - loadFactor)));
+            this.keyToDocIds = new TLongObjectHashMap<int []>(maxDoc / this.groupSuperCollector.subs.size(), loadFactor);
+        }
         this.context = context;
         this.delegate.setNextReader(context);
         NumericDocValues kv = context.reader().getNumericDocValues(this.keyName);
@@ -129,7 +135,7 @@ class GroupSubCollector extends SubCollector {
             int[] docIds = this.keyToDocIds.get(keyValue);
             int i = 0;
             if (docIds == null) {
-                docIds = new int[8];
+                docIds = new int[2];
                 this.keyToDocIds.put(keyValue, docIds);
             } else {
                 for (i = 0; i < docIds.length; i++) {

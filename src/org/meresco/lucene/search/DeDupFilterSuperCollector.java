@@ -72,7 +72,7 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
     }
 
     @Override
-    public void complete() {
+    public void complete() throws IOException {
         this.delegate.complete();
     }
 

@@ -94,7 +94,7 @@ class GroupSubCollector extends SubCollector{
     private final SubCollector delegate;
     private final String keyName;
     private NumericDocValues keyValues;
-    private AtomicReaderContext context;
+    AtomicReaderContext context;
     private Map<Long, List<Integer>> keyToDocIds = new HashMap<Long, List<Integer>>();
 
 

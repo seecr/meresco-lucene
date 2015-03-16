@@ -57,6 +57,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 import org.meresco.lucene.suggestion.ShingleIndex.IndexingState;
+import java.util.concurrent.Executors;
 
 public class SuggestionIndex {
 
@@ -183,7 +184,7 @@ public class SuggestionIndex {
 
     	public Reader() throws IOException {
     		this.reader = DirectoryReader.open(directory);
-            this.searcher = new IndexSearcher(this.reader);
+            this.searcher = new IndexSearcher(this.reader, Executors.newFixedThreadPool(10));
             this.searcher.setSimilarity(new TermFrequencySimilarity());
     	}
 

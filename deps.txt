@@ -17,4 +17,3 @@ python-meresco-html (>= 1.4.1)
 python-meresco-html (<< 1.5)
 python-meresco-pylucene (>= 4.10.1)
 python-meresco-pylucene (<< 4.11)
-libtrove3-java

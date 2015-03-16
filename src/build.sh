@@ -29,6 +29,7 @@ set -o errexit
 
 mydir=$(cd $(dirname $0); pwd)
 buildDir=$mydir/build
+jarsDir=$(dirname $mydir)/jars
 libDir=$1
 if [ -z "$libDir" ]; then
     libDir=$(dirname $mydir)/lib
@@ -48,7 +49,9 @@ fi
 
 LUCENEVERSION=4.10.1
 
-classpath=${luceneJarDir}/lucene-core-$LUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$LUCENEVERSION.jar:${luceneJarDir}/lucene-facet-$LUCENEVERSION.jar:${luceneJarDir}/lucene-queries-$LUCENEVERSION.jar:/usr/share/java/trove-3.jar
+troveJar=${jarsDir}/trove-3.0.2.jar
+echo $troveJar
+classpath=${luceneJarDir}/lucene-core-$LUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$LUCENEVERSION.jar:${luceneJarDir}/lucene-facet-$LUCENEVERSION.jar:${luceneJarDir}/lucene-queries-$LUCENEVERSION.jar:${troveJar}
 
 ${javac} -cp ${classpath} -d ${buildDir} `find org -name "*.java"`
 (cd $buildDir; jar -c org > $buildDir/meresco-lucene.jar)
@@ -60,7 +63,7 @@ python -m jcc.__main__ \
     --shared \
     --arch x86_64 \
     --jar $buildDir/meresco-lucene.jar \
-    --include /usr/share/java/trove-3.jar \
+    --include ${troveJar} \
     --python meresco_lucene \
     --build \
     --install

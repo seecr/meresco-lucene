@@ -8,3 +8,4 @@ gcc
 #wheezy:python-dev
 python-meresco-pylucene (>= 4.10.1)
 python-meresco-pylucene (<< 4.11)
+libtrove3-java

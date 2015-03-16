@@ -74,7 +74,9 @@ Content-Type: application/x-suggestions+json\r
 Access-Control-Allow-Origin: *\r
 Access-Control-Allow-Headers: X-Requested-With""", header)
         json = loads(body)
-        suggestions = [(s[0], dict((k,round(v, 3)) for k,v in s[1].items())) for s in json[1]]
+        self.assertEquals('ha', json['value'])
+        self.assertTrue("time" in json, json)
+        suggestions = [(s[0], dict((k,round(v, 3)) for k,v in s[1].items())) for s in json['suggestions']]
         self.assertEquals([
             ("hallo", {"distanceScore": 0.653, "score": 0.003, "sortScore": 0.0}),
             ("harry", {"distanceScore": 0.653, "score": 0.003, "sortScore": 0.0}),

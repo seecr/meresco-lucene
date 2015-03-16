@@ -31,9 +31,10 @@ from os.path import isdir, join
 from os import makedirs
 from meresco.core import Observable
 from meresco.components.http.utils import CRLF, ContentTypeHeader, Ok
-from meresco.components.json import JsonList
+from meresco.components.json import JsonList, JsonDict
 from Levenshtein import distance
 from math import log
+from time import time
 
 class ShingleIndexComponent(Observable):
 
@@ -85,7 +86,10 @@ class ShingleIndexComponent(Observable):
         result = []
         if value:
             suggestions = []
-            for s in self.suggest(value, trigram=trigram):
+            t0 = time()
+            suggest = self.suggest(value, trigram=trigram)
+            tTotal = time() - t0
+            for s in suggest:
                 suggestion = str(s.suggestion)
                 distanceScore = max(0, -log(distance(value, suggestion) + 1) / 4 + 1)
                 score = float(s.score)
@@ -97,6 +101,9 @@ class ShingleIndexComponent(Observable):
             if not debug:
                 suggestions = [s[0] for s in suggestions if s[0].startswith(value.lower())][:10]
             result = [value, suggestions]
+            if debug:
+                yield JsonDict(dict(value=result[0], suggestions=result[1], time=tTotal)).dumps()
+                return
         yield JsonList(result).dumps()
 
     def handleShutdown(self):

@@ -25,7 +25,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE
+from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE, STRINGFIELD
 from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.document import StringField, TextField
 from meresco.lucene import DrilldownField
@@ -100,3 +100,18 @@ class FieldRegistryTest(SeecrTestCase):
         newField2 = registry.createField('fieldname', 'newvalue', mayReUse=False)
         self.assertEquals("newvalue", newField2.stringValue())
         self.assertNotEqual(newField, newField2)
+
+    def testDefaultDefinition(self):
+        registry = FieldRegistry()
+        field = registry.createField('aField', 'id:1')
+        self.assertTrue(field.fieldType().tokenized())
+        self.assertFalse(field.fieldType().stored())
+        self.assertTrue(field.fieldType().indexed())
+        self.assertFalse(registry.isUntokenized('aField'))
+
+        registry = FieldRegistry(defaultDefinition=STRINGFIELD)
+        field = registry.createField('aField', 'id:1')
+        self.assertFalse(field.fieldType().tokenized())
+        self.assertFalse(field.fieldType().stored())
+        self.assertTrue(field.fieldType().indexed())
+        self.assertTrue(registry.isUntokenized('aField'))

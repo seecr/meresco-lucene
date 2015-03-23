@@ -36,10 +36,11 @@ KEY_PREFIX = "__key__."
 NUMERIC_PREFIX = "__numeric__."
 
 class FieldRegistry(object):
-    def __init__(self, drilldownFields=None):
+    def __init__(self, drilldownFields=None, defaultDefinition=None):
         self._fieldDefinitions = {
             IDFIELD: _FieldDefinition.define(type=StringField.TYPE_STORED, name=IDFIELD),
         }
+        self._defaultDefinition = defaultDefinition or TEXTFIELD
         self._drilldownFieldNames = set()
         self._hierarchicalDrilldownFieldNames = set()
         self._multivaluedDrilldownFieldNames = set()
@@ -94,7 +95,7 @@ class FieldRegistry(object):
         fieldDefinition = self._fieldDefinitions.get(fieldname)
         if fieldDefinition is not None:
             return fieldDefinition
-        fieldDefinitionCreator = TEXTFIELD
+        fieldDefinitionCreator = self._defaultDefinition
         if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
             fieldDefinitionCreator = STRINGFIELD
         if fieldname.startswith(KEY_PREFIX) or fieldname.startswith(NUMERIC_PREFIX):

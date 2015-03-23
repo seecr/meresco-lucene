@@ -36,7 +36,7 @@ from weightless.core import consume, retval
 from meresco.lucene import Lucene, VM, DrilldownField, LuceneSettings
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
-from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, FieldRegistry
+from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, FieldRegistry, INTFIELD
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause, PhraseQuery
@@ -54,15 +54,7 @@ class LuceneTest(SeecrTestCase):
         super(LuceneTest, self).setUp()
         self._javaObjects = self._getJavaObjects()
         self._reactor = CallTrace('reactor')
-        self._defaultSettings = LuceneSettings(commitCount=1, commitTimeout=1, verbose=False, fieldRegistry=FieldRegistry(
-                drilldownFields=[
-                    DrilldownField(name='field1'),
-                    DrilldownField(name='field2'),
-                    DrilldownField('field3'),
-                    DrilldownField('fieldHier', hierarchical=True),
-                    DrilldownField('cat'),
-                ]
-            ))
+        self._defaultSettings = LuceneSettings(commitCount=1, commitTimeout=1, verbose=False, fieldRegistry=FIELD_REGISTRY)
         self.lucene = Lucene(
             join(self.tempdir, 'lucene'),
             reactor=self._reactor,
@@ -143,7 +135,6 @@ class LuceneTest(SeecrTestCase):
 
         readOnlyLucene.close()
         readOnlyLucene = None
-
 
     def testAddAndDeleteDocument(self):
         retval(self.lucene.addDocument(identifier="id:0", document=Document()))
@@ -414,6 +405,13 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(['value1', 'value0'], response.hits)
         self.assertTrue(response.queryTime > 0, response.asJson())
 
+    def testPrefixSearchForIntField(self):
+        retval(self.lucene.addDocument(identifier='id:0', document=createDocument([('intField', 1)])))
+        for i in xrange(5):
+            retval(self.lucene.addDocument(identifier='id:%s' % (i+20), document=createDocument([('intField', i+20)])))
+        response = retval(self.lucene.prefixSearch(fieldname='intField', prefix=None))
+        self.assertEquals([0, 0, 0, 24, 23, 22, 21, 20, 1], response.hits) # No fix for the 0's yet
+
     def testSuggestions(self):
         retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field3', 'value2')])))
         response = retval(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), suggestionRequest=dict(count=2, query="value0 and valeu", field="field3")))
@@ -478,11 +476,11 @@ class LuceneTest(SeecrTestCase):
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))
         doc.add(FacetField("cat", ["cat-A"]))
-        consume(self.lucene.addDocument("urn:1", doc))
+        consume(self.lucene.addDocument(identifier="urn:1", document=doc))
         doc = document(field0='v1')
         doc.add(NumericDocValuesField("__key__", long(42)))
         doc.add(FacetField("cat", ["cat-A"]))
-        consume(self.lucene.addDocument("urn:2", doc))
+        consume(self.lucene.addDocument(identifier="urn:2", document=doc))
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
                         dedupField="__key__", facets=facets(cat=10)))
@@ -497,22 +495,22 @@ class LuceneTest(SeecrTestCase):
         doc.add(NumericDocValuesField("__key__", long(42)))
         doc.add(NumericDocValuesField("__key__.date", long(2012)))
         doc.add(FacetField("cat", ["cat-A"]))
-        consume(self.lucene.addDocument("urn:1", doc))
+        consume(self.lucene.addDocument(identifier="urn:1", document=doc))
 
         doc = document(field0='v1')
         doc.add(NumericDocValuesField("__key__", long(42)))
         doc.add(NumericDocValuesField("__key__.date", long(2013))) # first hit of 3 duplicates
         doc.add(FacetField("cat", ["cat-A"]))
-        consume(self.lucene.addDocument("urn:2", doc))
+        consume(self.lucene.addDocument(identifier="urn:2", document=doc))
 
         doc = document(field0='v2')
         doc.add(NumericDocValuesField("__key__", long(42)))
         doc.add(FacetField("cat", ["cat-A"]))
-        consume(self.lucene.addDocument("urn:3", doc))
+        consume(self.lucene.addDocument(identifier="urn:3", document=doc))
 
         doc = document(field0='v3')
         doc.add(FacetField("cat", ["cat-A"]))
-        consume(self.lucene.addDocument("urn:4", doc))
+        consume(self.lucene.addDocument(identifier="urn:4", document=doc))
 
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(),
@@ -533,18 +531,18 @@ class LuceneTest(SeecrTestCase):
     def testGroupingCollector(self):
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:1", doc))
+        consume(self.lucene.addDocument(identifier="urn:1", document=doc))
 
         doc = document(field0='v1')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:2", doc))
+        consume(self.lucene.addDocument(identifier="urn:2", document=doc))
 
         doc = document(field0='v2')
         doc.add(NumericDocValuesField("__key__", long(43)))
-        consume(self.lucene.addDocument("urn:3", doc))
+        consume(self.lucene.addDocument(identifier="urn:3", document=doc))
 
         doc = document(field0='v3')
-        consume(self.lucene.addDocument("urn:4", doc))
+        consume(self.lucene.addDocument(identifier="urn:4", document=doc))
 
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__key__", stop=3))
@@ -565,18 +563,18 @@ class LuceneTest(SeecrTestCase):
     def testGroupingOnNonExistingFieldCollector(self):
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:1", doc))
+        consume(self.lucene.addDocument(identifier="urn:1", document=doc))
 
         doc = document(field0='v1')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:2", doc))
+        consume(self.lucene.addDocument(identifier="urn:2", document=doc))
 
         doc = document(field0='v2')
         doc.add(NumericDocValuesField("__key__", long(43)))
-        consume(self.lucene.addDocument("urn:3", doc))
+        consume(self.lucene.addDocument(identifier="urn:3", document=doc))
 
         doc = document(field0='v3')
-        consume(self.lucene.addDocument("urn:4", doc))
+        consume(self.lucene.addDocument(identifier="urn:4", document=doc))
 
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__other_key__", stop=3))
@@ -587,11 +585,11 @@ class LuceneTest(SeecrTestCase):
     def testDontGroupIfMaxResultsAreLessThanTotalRecords(self):
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:1", doc))
+        consume(self.lucene.addDocument(identifier="urn:1", document=doc))
 
         doc = document(field0='v1')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:2", doc))
+        consume(self.lucene.addDocument(identifier="urn:2", document=doc))
 
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__key__", stop=10))
@@ -608,13 +606,13 @@ class LuceneTest(SeecrTestCase):
     def testGroupingCollectorReturnsMaxHitAfterGrouping(self):
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:1", doc))
+        consume(self.lucene.addDocument(identifier="urn:1", document=doc))
         doc = document(field0='v0')
         doc.add(NumericDocValuesField("__key__", long(42)))
-        consume(self.lucene.addDocument("urn:2", doc))
+        consume(self.lucene.addDocument(identifier="urn:2", document=doc))
         for i in range(3, 11):
             doc = document(field0='v0')
-            consume(self.lucene.addDocument("urn:%s" % i, doc))
+            consume(self.lucene.addDocument(identifier="urn:%s" % i, document=doc))
         self.lucene.commit()
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__key__", stop=5))
         self.assertEquals(10, result.total)
@@ -625,7 +623,7 @@ class LuceneTest(SeecrTestCase):
         settings = LuceneSettings(commitCount=1, analyzer=MerescoDutchStemmingAnalyzer(), verbose=False)
         self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, settings=settings)
         doc = document(field0='katten en honden')
-        consume(self.lucene.addDocument("urn:1", doc))
+        consume(self.lucene.addDocument(identifier="urn:1", document=doc))
         self.lucene.commit()
 
         result = retval(self.lucene.executeQuery(TermQuery(Term("field0", 'katten'))))
@@ -658,9 +656,9 @@ class LuceneTest(SeecrTestCase):
 
     def testDrilldownQuery(self):
         doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-A")])
-        consume(self.lucene.addDocument("urn:1", doc))
+        consume(self.lucene.addDocument(identifier="urn:1", document=doc))
         doc = createDocument(fields=[("field0", 'v2')], facets=[("cat", "cat-B")])
-        consume(self.lucene.addDocument("urn:2", doc))
+        consume(self.lucene.addDocument(identifier="urn:2", document=doc))
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(2, result.total)
@@ -673,11 +671,11 @@ class LuceneTest(SeecrTestCase):
 
     def testMultipleDrilldownQueryOnSameField(self):
         doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-A"), ("cat", "cat-B")])
-        consume(self.lucene.addDocument("urn:1", doc))
+        consume(self.lucene.addDocument(identifier="urn:1", document=doc))
         doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-B",)])
-        consume(self.lucene.addDocument("urn:2", doc))
+        consume(self.lucene.addDocument(identifier="urn:2", document=doc))
         doc = createDocument(fields=[("field0", 'v1')], facets=[("cat", "cat-C",)])
-        consume(self.lucene.addDocument("urn:3", doc))
+        consume(self.lucene.addDocument(identifier="urn:3", document=doc))
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(3, result.total)
@@ -691,16 +689,16 @@ class LuceneTest(SeecrTestCase):
         factory.register("no.term.frequency2", NO_TERMS_FREQUENCY_FIELDTYPE)
         doc = Document()
         doc.add(factory.createField("no.term.frequency", "aap noot noot noot vuur"))
-        consume(self.lucene.addDocument("no.term.frequency", doc))
+        consume(self.lucene.addDocument(identifier="no.term.frequency", document=doc))
 
         doc = createDocument(fields=[('term.frequency', "aap noot noot noot vuur")])
-        consume(self.lucene.addDocument("term.frequency", doc))
+        consume(self.lucene.addDocument(identifier="term.frequency", document=doc))
 
         doc = Document()
         doc.add(factory.createField("no.term.frequency2", "aap noot"))
         doc.add(factory.createField("no.term.frequency2", "noot noot"))
         doc.add(factory.createField("no.term.frequency2", "vuur"))
-        consume(self.lucene.addDocument("no.term.frequency2", doc))
+        consume(self.lucene.addDocument(identifier="no.term.frequency2", document=doc))
 
         result1 = retval(self.lucene.executeQuery(TermQuery(Term("no.term.frequency", "aap"))))
         result2 = retval(self.lucene.executeQuery(TermQuery(Term("no.term.frequency", "noot"))))
@@ -738,12 +736,21 @@ def facets(**fields):
 def document(**fields):
     return createDocument(fields.items())
 
-DEFAULT_FACTORY = FieldRegistry()
+FIELD_REGISTRY = FieldRegistry(
+    drilldownFields=[
+            DrilldownField(name='field1'),
+            DrilldownField(name='field2'),
+            DrilldownField('field3'),
+            DrilldownField('fieldHier', hierarchical=True),
+            DrilldownField('cat'),
+        ]
+    )
+FIELD_REGISTRY.register(fieldname='intField', fieldDefinition=INTFIELD)
 
 def createDocument(fields, facets=None):
     document = Document()
     for name, value in fields:
-        document.add(DEFAULT_FACTORY.createField(name, value))
+        document.add(FIELD_REGISTRY.createField(name, value))
     for facet, value in facets or []:
         if hasattr(value, 'extend'):
             path = [str(category) for category in value]

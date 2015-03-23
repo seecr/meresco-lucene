@@ -37,7 +37,7 @@ from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields,
 from org.apache.lucene.index import TieredMergePolicy
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.store import MMapDirectory
-from org.apache.lucene.util import BytesRef, BytesRefIterator
+from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils, BytesRefBuilder
 from org.apache.lucene.util import Version
 from org.meresco.lucene.search import FacetSuperCollector
 
@@ -92,7 +92,13 @@ class Index(object):
         return suggestions
 
     def termsForField(self, field, prefix=None, limit=10, **kwargs):
-        convert = lambda term: term.utf8ToString()
+        t = self._settings.fieldRegistry.pythonType(field)
+        if t == str:
+            convert = lambda term: term.utf8ToString()
+        elif t == int:
+            convert = lambda term: NumericUtils.prefixCodedToInt(term)
+        elif t == long:
+            convert = lambda term: NumericUtils.prefixCodedToLong(term)
         terms = []
         termsEnum = MultiFields.getTerms(self._indexAndTaxonomy.searcher.getIndexReader(), field)
         if termsEnum is None:
@@ -177,4 +183,3 @@ class Index(object):
         finally:
             ts.close()
         return result
-

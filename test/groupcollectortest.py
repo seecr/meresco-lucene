@@ -61,5 +61,5 @@ class GroupCollectorTest(SeecrTestCase):
         doc = Document()
         if isformatof is not None:
             doc.add(NumericDocValuesField("__isformatof__", long(isformatof)))
-        consume(self.lucene.addDocument(identifier, doc))
+        consume(self.lucene.addDocument(identifier=identifier, document=doc))
         self.lucene.commit()  # Explicitly, not required: since commitCount=1.

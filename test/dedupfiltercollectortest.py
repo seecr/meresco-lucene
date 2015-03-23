@@ -58,7 +58,7 @@ class DeDupFilterCollectorTest(SeecrTestCase):
             doc.add(NumericDocValuesField("__isformatof__", long(isformatof)))
         if sort:
             doc.add(NumericDocValuesField("__sort__", long(sort)))
-        consume(self.lucene.addDocument(identifier, doc))
+        consume(self.lucene.addDocument(identifier=identifier, document=doc))
         self.lucene.commit()  # Explicitly, not required: since commitCount=1.
 
     def testCollectorFiltersTwoSimilar(self):

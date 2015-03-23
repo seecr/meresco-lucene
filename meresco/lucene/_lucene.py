@@ -78,9 +78,12 @@ class Lucene(object):
             self._startCommitTimer()
         self.log = self._log if settings.verbose else lambda v: None
 
-    def addDocument(self, identifier, document):
-        document.add(self._fieldRegistry.createIdField(identifier))
-        self._index.addDocument(term=Term(IDFIELD, identifier), document=document)
+    def addDocument(self, document, identifier=None):
+        term = None
+        if identifier:
+            document.add(self._fieldRegistry.createIdField(identifier))
+            term = Term(IDFIELD, identifier)
+        self._index.addDocument(term=term, document=document)
         self.commit()
         return
         yield

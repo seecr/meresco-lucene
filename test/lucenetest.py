@@ -154,6 +154,13 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals(set(['id:0', 'id:2']), set(self.hitIds(result.hits)))
 
+    def testAddDocumentWithoutIdentifier(self):
+        retval(self.lucene.addDocument(document=Document()))
+        retval(self.lucene.addDocument(document=Document()))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(2, result.total)
+        self.assertEquals([None, None], self.hitIds(result.hits))
+
     def testAddCommitAfterTimeout(self):
         self.lucene.close()
         self._defaultSettings.commitTimeout = 42

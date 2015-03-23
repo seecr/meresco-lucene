@@ -70,9 +70,12 @@ class Index(object):
 
         self._ordinalsReader = CachedOrdinalsReader(DocValuesOrdinalsReader())
 
-    def addDocument(self, term, document):
+    def addDocument(self, document, term=None):
         document = self._facetsConfig.build(self._taxoWriter, document)
-        self._indexWriter.updateDocument(term, document)
+        if term is None:
+            self._indexWriter.addDocument(document)
+        else:
+            self._indexWriter.updateDocument(term, document)
 
     def deleteDocument(self, term):
         self._indexWriter.deleteDocuments(term)

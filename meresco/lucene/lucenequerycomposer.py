@@ -24,14 +24,16 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery
+from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
 from org.apache.lucene.index import Term
+from org.apache.lucene.util import BytesRefBuilder
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
 from java.io import StringReader
 
 from cqlparser import CqlVisitor, UnsupportedCQL
 from re import compile
 from org.meresco.lucene.analysis import MerescoStandardAnalyzer
+from org.apache.lucene.util import NumericUtils
 
 
 class LuceneQueryComposer(object):
@@ -79,7 +81,7 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
                 return MatchAllDocsQuery()
             subQueries = []
             for fieldname, boost in self._unqualifiedTermFields:
-                subQuery = self._termOrPhraseQuery(fieldname, unqualifiedRhs)
+                subQuery = self._determineQuery(fieldname, unqualifiedRhs)
                 if isinstance(subQuery, PhraseQuery) and not self._fieldRegistry.phraseQueryPossible(fieldname):
                     continue
                 subQuery.setBoost(boost)
@@ -94,9 +96,9 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         elif firstChild == 'INDEX':
             (left, (relation, boost), right) = results
             if relation in ['==', 'exact'] or (relation == '=' and self._fieldRegistry.isUntokenized(left)):
-                query = TermQuery(self._createTerm(left, right))
+                query = self._createQuery(left, right)
             elif relation == '=':
-                query = self._termOrPhraseQuery(left, right)
+                query = self._determineQuery(left, right)
             elif relation in ['<','<=','>=','>']:
                 query = self._termRangeQuery(left, relation, right)
             else:
@@ -118,23 +120,23 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
             boost = float(value)
         return relation, boost
 
-    def _termOrPhraseQuery(self, index, termString):
+    def _determineQuery(self, index, termString):
         terms = self._pre_analyzeToken(termString)
         if len(terms) == 1:
             if prefixRegexp.match(termString):
-                return PrefixQuery(self._createTerm(index, terms[0]))
+                return PrefixQuery(self._createStringTerm(index, terms[0]))
             else:
                 terms = self._post_analyzeToken(terms[0])
                 if len(terms) == 1:
-                    return TermQuery(self._createTerm(index, terms[0]))
+                    return self._createQuery(index, terms[0])
                 query = BooleanQuery()
                 for term in terms:
-                    query.add(TermQuery(self._createTerm(index, term)), BooleanClause.Occur.SHOULD)
+                    query.add(self._createQuery(index, term), BooleanClause.Occur.SHOULD)
                 return query
         else:
             query = PhraseQuery()
             for term in terms:
-                query.add(self._createTerm(index, term))
+                query.add(self._createStringTerm(index, term))
             return query
 
     def _termRangeQuery(self, index, relation, termString):
@@ -144,6 +146,13 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         else:
             lowerTerm, upperTerm = termString, None
         includeLower, includeUpper = relation == '>=', relation == '<='
+        t = self._fieldRegistry.pythonType(field)
+        lowerTerm = t(lowerTerm) if lowerTerm else None
+        upperTerm = t(upperTerm) if upperTerm else None
+        if t == int:
+            return NumericRangeQuery.newIntRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
+        elif t == long:
+            return NumericRangeQuery.newLongRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
         return TermRangeQuery.newStringRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
 
     def _pre_analyzeToken(self, token):
@@ -156,7 +165,16 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
             return list(self._analyzer.post_analyse(token))
         return [token]
 
-    def _createTerm(self, field, value):
+    def _createQuery(self, field, term):
+        t = self._fieldRegistry.pythonType(field)
+        if t == int:
+            return NumericRangeQuery.newIntRange(field, int(term), int(term), True, True)
+        elif t == long:
+            return NumericRangeQuery.newLongRange(field, long(term), long(term), True, True)
+        else:
+            return TermQuery(self._createStringTerm(field, term))
+
+    def _createStringTerm(self, field, value):
         if self._fieldRegistry.isDrilldownField(field):
             if self._fieldRegistry.isHierarchicalDrilldown(field):
                 value = value.split('>')

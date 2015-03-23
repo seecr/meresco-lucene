@@ -30,11 +30,11 @@ from unittest import TestCase
 from cqlparser import parseString as parseCql, UnsupportedCQL
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery
+from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
 from org.apache.lucene.index import Term
 
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
-from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE
+from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE, INTFIELD, LONGFIELD
 from org.apache.lucene.document import StringField
 from meresco.lucene import DrilldownField, LuceneSettings
 from org.apache.lucene.facet import DrillDownQuery
@@ -44,7 +44,10 @@ from org.apache.lucene.analysis.core import WhitespaceAnalyzer
 class LuceneQueryComposerTest(TestCase):
     def setUp(self):
         super(LuceneQueryComposerTest, self).setUp()
-        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings())
+        fieldRegistry = FieldRegistry()
+        fieldRegistry.register("intField", fieldDefinition=INTFIELD)
+        fieldRegistry.register("longField", fieldDefinition=LONGFIELD)
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(fieldRegistry=fieldRegistry))
 
     def testOneTermOutput(self):
         self.assertConversion(TermQuery(Term("unqualified", "cat")), "cat")
@@ -67,7 +70,6 @@ class LuceneQueryComposerTest(TestCase):
         query.add(Term("unqualified", "kat"))
         query.add(Term("unqualified", "hond"))
         self.assertConversion(query, '"kat hond"')
-
 
     def testPhraseOutputDoesNoDutchStemming(self):
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer()))
@@ -240,6 +242,20 @@ class LuceneQueryComposerTest(TestCase):
         self.assertConversion(TermRangeQuery.newStringRange('field', None, 'value', False, False), 'field < value')
         self.assertConversion(TermRangeQuery.newStringRange('field', None, 'value', False, True), 'field <= value')
 
+    def testIntRangeQuery(self):
+        # (field, lowerTerm, upperTerm, includeLower, includeUpper)
+        self.assertConversion(NumericRangeQuery.newIntRange('intField', 1, None, False, False), 'intField > 1')
+        self.assertConversion(NumericRangeQuery.newIntRange('intField', 1, None, True, False), 'intField >= 1')
+        self.assertConversion(NumericRangeQuery.newIntRange('intField', None, 3, False, False), 'intField < 3')
+        self.assertConversion(NumericRangeQuery.newIntRange('intField', None, 3, False, True), 'intField <= 3')
+
+    def testLongRangeQuery(self):
+        # (field, lowerTerm, upperTerm, includeLower, includeUpper)
+        self.assertConversion(NumericRangeQuery.newLongRange('longField', 1, None, False, False), 'longField > 1')
+        self.assertConversion(NumericRangeQuery.newLongRange('longField', 1, None, True, False), 'longField >= 1')
+        self.assertConversion(NumericRangeQuery.newLongRange('longField', None, 3, False, False), 'longField < 3')
+        self.assertConversion(NumericRangeQuery.newLongRange('longField', None, 3, False, True), 'longField <= 3')
+
     def testDrilldownFieldQuery(self):
         fieldRegistry = FieldRegistry([DrilldownField('field')])
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(fieldRegistry=fieldRegistry))
@@ -252,6 +268,17 @@ class LuceneQueryComposerTest(TestCase):
         expected = PhraseQuery()
         expected.add(Term("unqualified", "phrase query"))
         self.assertConversion(expected, '"phrase query"')
+
+    def testQueryForIntField(self):
+        expected = NumericRangeQuery.newIntRange("intField", 5, 5, True, True)
+        self.assertConversion(expected, "intField=5")
+
+        expected = NumericRangeQuery.newIntRange("intField", 5, 5, True, True)
+        self.assertConversion(expected, "intField exact 5")
+
+    def testQueryForLongField(self):
+        expected = NumericRangeQuery.newLongRange("longField", long(5), long(5), True, True)
+        self.assertConversion(expected, "longField=5")
 
     def assertConversion(self, expected, input):
         result = self.composer.compose(parseCql(input))

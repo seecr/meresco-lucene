@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -23,7 +24,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType
+from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType, IntField, LongField
 from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.facet import FacetsConfig, DrillDownQuery
 
@@ -41,6 +42,7 @@ class FieldRegistry(object):
         }
         self._drilldownFieldNames = set()
         self._hierarchicalDrilldownFieldNames = set()
+        self._multivaluedDrilldownFieldNames = set()
         self.facetsConfig = FacetsConfig()
         for field in (drilldownFields or []):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued)
@@ -51,8 +53,11 @@ class FieldRegistry(object):
     def createIdField(self, value):
         return self.createField(IDFIELD, value)
 
-    def register(self, fieldname, fieldType):
-        self._fieldDefinitions[fieldname] = _FieldDefinition.define(type=fieldType, name=fieldname)
+    def register(self, fieldname, fieldType=None, fieldDefinition=None):
+        if fieldType:
+            self._fieldDefinitions[fieldname] = _FieldDefinition.define(type=fieldType, name=fieldname)
+        else:
+            self._fieldDefinitions[fieldname] = fieldDefinition(fieldname)
 
     def phraseQueryPossible(self, fieldname):
         return self._getFieldDefinition(fieldname).phraseQueryPossible
@@ -64,6 +69,8 @@ class FieldRegistry(object):
         self._drilldownFieldNames.add(fieldname)
         if hierarchical:
             self._hierarchicalDrilldownFieldNames.add(fieldname)
+        if multiValued:
+            self._multivaluedDrilldownFieldNames.add(fieldname)
         self.facetsConfig.setMultiValued(fieldname, multiValued)
         self.facetsConfig.setHierarchical(fieldname, hierarchical)
 
@@ -73,9 +80,15 @@ class FieldRegistry(object):
     def isHierarchicalDrilldown(self, fieldname):
         return fieldname in self._hierarchicalDrilldownFieldNames
 
+    def isMultivaluedDrilldown(self, fieldname):
+        return fieldname in self._multivaluedDrilldownFieldNames
+
     def makeDrilldownTerm(self, fieldname, path):
         indexFieldName = self.facetsConfig.getDimConfig(fieldname).indexFieldName;
         return DrillDownQuery.term(indexFieldName, fieldname, path)
+
+    def pythonType(self, fieldname):
+        return self._getFieldDefinition(fieldname).pythonType
 
     def _getFieldDefinition(self, fieldname):
         fieldDefinition = self._fieldDefinitions.get(fieldname)
@@ -91,8 +104,9 @@ class FieldRegistry(object):
         return fieldDefinition
 
 class _FieldDefinition(object):
-    def __init__(self, type, field, update, create):
+    def __init__(self, type, pythonType, field, update, create):
         self.type = type
+        self.pythonType = pythonType
         positionsStored = self.type.indexOptions() in [FieldInfo.IndexOptions.DOCS_ONLY, FieldInfo.IndexOptions.DOCS_AND_FREQS]
         self.phraseQueryPossible = not positionsStored
         self.isUntokenized = not self.type.tokenized()
@@ -113,6 +127,7 @@ class _FieldDefinition(object):
         return cls(
             type=type,
             field=create(""),
+            pythonType=str,
             create=create,
             update=lambda field, value: field.setStringValue(value)
         )
@@ -121,11 +136,26 @@ class _FieldDefinition(object):
 STRINGFIELD = lambda name: _FieldDefinition.define(type=StringField.TYPE_NOT_STORED, name=name)
 NUMERICFIELD = lambda name: _FieldDefinition(
     type=NumericDocValuesField.TYPE,
+    pythonType=long,
     field=NumericDocValuesField(name, long(0)),
     create=lambda value: NumericDocValuesField(name, long(value)),
     update=lambda field, value: field.setLongValue(long(value)),
 )
 TEXTFIELD = lambda name: _FieldDefinition.define(type=TextField.TYPE_NOT_STORED, name=name)
+INTFIELD = lambda name: _FieldDefinition(
+    type=IntField.TYPE_NOT_STORED,
+    pythonType=int,
+    field=IntField(name, int(0), IntField.TYPE_NOT_STORED),
+    create=lambda value: IntField(name, int(value), IntField.TYPE_NOT_STORED),
+    update=lambda field, value: field.setIntValue(int(value)),
+)
+LONGFIELD = lambda name: _FieldDefinition(
+    type=LongField.TYPE_NOT_STORED,
+    pythonType=long,
+    field=LongField(name, long(0), LongField.TYPE_NOT_STORED),
+    create=lambda value: LongField(name, long(value), LongField.TYPE_NOT_STORED),
+    update=lambda field, value: field.setIntValue(long(value)),
+)
 
 
 def _createNoTermsFrequencyFieldType():

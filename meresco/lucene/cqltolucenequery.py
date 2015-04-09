@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -35,7 +36,8 @@ class CqlToLuceneQuery(Transparent, Logger):
     def __init__(self, unqualifiedFields, name=None, **kwargs):
         Transparent.__init__(self, name=name)
         self._additionalKwargs = kwargs
-        self.updateUnqualifiedFields(unqualifiedFields)
+        self._additionalKwargs['unqualifiedTermFields'] = unqualifiedFields
+        self._cqlComposer = LuceneQueryComposer(**self._additionalKwargs)
 
     def executeQuery(self, cqlAbstractSyntaxTree, filterQueries=None, **kwargs):
         if filterQueries:
@@ -48,4 +50,8 @@ class CqlToLuceneQuery(Transparent, Logger):
         return self._cqlComposer.compose(ast)
 
     def updateUnqualifiedFields(self, unqualifiedFields):
-        self._cqlComposer = LuceneQueryComposer(unqualifiedFields, **self._additionalKwargs)
+        self.updateQueryComposerArguments('unqualifiedTermFields', unqualifiedFields)
+
+    def updateQueryComposerArguments(self, key, value):
+        self._additionalKwargs[key] = value
+        self._cqlComposer = LuceneQueryComposer(**self._additionalKwargs)

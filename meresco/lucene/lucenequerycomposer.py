@@ -26,22 +26,20 @@
 
 from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
 from org.apache.lucene.index import Term
-from org.apache.lucene.util import BytesRefBuilder
-from org.apache.lucene.analysis.tokenattributes import CharTermAttribute
 from java.io import StringReader
 
 from cqlparser import CqlVisitor, UnsupportedCQL
 from re import compile
 from org.meresco.lucene.analysis import MerescoStandardAnalyzer
-from org.apache.lucene.util import NumericUtils
 
 
 class LuceneQueryComposer(object):
-    def __init__(self, unqualifiedTermFields, luceneSettings):
+    def __init__(self, unqualifiedTermFields, luceneSettings, ignoreStemmingForWords=None):
         self._additionalKwargs = dict(
                 unqualifiedTermFields=unqualifiedTermFields,
                 analyzer=luceneSettings.analyzer,
                 fieldRegistry=luceneSettings.fieldRegistry,
+                ignoreStemmingForWords=set(ignoreStemmingForWords or []),
             )
 
     def compose(self, ast):
@@ -52,11 +50,12 @@ class LuceneQueryComposer(object):
 
 
 class _Cql2LuceneQueryVisitor(CqlVisitor):
-    def __init__(self, unqualifiedTermFields, node, analyzer, fieldRegistry):
+    def __init__(self, unqualifiedTermFields, node, analyzer, fieldRegistry, ignoreStemmingForWords):
         CqlVisitor.__init__(self, node)
         self._unqualifiedTermFields = unqualifiedTermFields
         self._analyzer = analyzer
         self._fieldRegistry = fieldRegistry
+        self._ignoreStemmingForWords = ignoreStemmingForWords
 
     def visitSCOPED_CLAUSE(self, node):
         clause = CqlVisitor.visitSCOPED_CLAUSE(self, node)
@@ -161,6 +160,8 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         return list(MerescoStandardAnalyzer.readTokenStream(self._analyzer.tokenStream("dummy field name", StringReader(token))))
 
     def _post_analyzeToken(self, token):
+        if token in self._ignoreStemmingForWords:
+            return [token]
         if isinstance(self._analyzer, MerescoStandardAnalyzer):
             return list(self._analyzer.post_analyse(token))
         return [token]

@@ -115,9 +115,8 @@ class GroupSubCollector extends SubCollector {
                 result.add(docId);
             }
         } else {
-            for (int docId : docIds)
-                if (docId != NO_ENTRY_VALUE)
-                    result.add(docId);
+            for (int i=1; i <= docIds[0]; i++)
+                result.add(docIds[i]);
         }
     }
 
@@ -140,31 +139,26 @@ class GroupSubCollector extends SubCollector {
 
     @Override
     public void collect(int doc) throws IOException {
+        int absDoc = doc + this.context.docBase;
         long keyValue = this.keyValues.get(doc);
         if (keyValue > 0) {
             int docId = this.keyToDocId.get(keyValue);
-            int i = 0;
             if (docId == NO_ENTRY_VALUE) {
-                this.keyToDocId.put(keyValue, doc + this.context.docBase);
+                this.keyToDocId.put(keyValue, absDoc);
             } else {
                 int[] docIds = this.keyToDocIds.get(keyValue);
                 if (docIds == null) {
-                    docIds = new int[2];
-                    docIds[0] = docId;
-                    this.keyToDocIds.put(keyValue, docIds);
-                }
-                for (i = 0; i < docIds.length; i++) {
-                    if (docIds[i] == 0) {
-                        break;
+                    this.keyToDocIds.put(keyValue, new int[] { 2, docId, absDoc });
+                } else {
+                    if (docIds[0] + 1 == docIds.length) {
+                        int[] newDocIds = new int[docIds.length * 2];
+                        System.arraycopy(docIds, 0, newDocIds, 0, docIds.length);
+                        docIds = newDocIds;
+                        this.keyToDocIds.put(keyValue, docIds);
                     }
+                    docIds[0]++;
+                    docIds[docIds[0]] = absDoc;
                 }
-                if (i == docIds.length) {
-                    int[] newDocIds = new int[docIds.length * 2];
-                    System.arraycopy(docIds, 0, newDocIds, 0, docIds.length);
-                    docIds = newDocIds;
-                    this.keyToDocIds.put(keyValue, docIds);
-                }
-                docIds[i] = doc + this.context.docBase;
             }
         }
         this.delegate.collect(doc);

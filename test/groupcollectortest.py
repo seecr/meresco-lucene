@@ -45,16 +45,18 @@ class GroupCollectorTest(SeecrTestCase):
     def testOne(self):
         self._addDocument('id:0', isformatof=42)
         self._addDocument('id:1', isformatof=42)
-        self._addDocument('id:2', isformatof=17)
+        self._addDocument('id:2', isformatof=42)
+        self._addDocument('id:3', isformatof=17)
         tc = TopScoreDocSuperCollector(100, True)
         c = GroupSuperCollector("__isformatof__", tc)
         self.lucene.search(query=MatchAllDocsQuery(), collector=c)
-        self.assertEquals(3, tc.getTotalHits())
+        self.assertEquals(4, tc.getTotalHits())
         idFields = dict((self.lucene._index.getDocument(scoreDoc.doc).get(IDFIELD), scoreDoc.doc) for scoreDoc in tc.topDocs(0).scoreDocs)
 
-        self.assertEquals(2, len(list(c.group(idFields['id:0']))))
-        self.assertEquals(2, len(list(c.group(idFields['id:1']))))
-        self.assertEquals(1, len(list(c.group(idFields['id:2']))))
+        self.assertEquals(3, len(list(c.group(idFields['id:0']))))
+        self.assertEquals(3, len(list(c.group(idFields['id:1']))))
+        self.assertEquals(3, len(list(c.group(idFields['id:2']))))
+        self.assertEquals(1, len(list(c.group(idFields['id:3']))))
 
 
     def _addDocument(self, identifier, isformatof=None):

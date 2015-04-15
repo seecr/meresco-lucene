@@ -98,6 +98,9 @@ class GroupSubCollector extends SubCollector {
     private TLongIntHashMap keyToDocId;
     private GroupSuperCollector groupSuperCollector;
 
+    private static int NO_ENTRY_KEY = -1;
+    private static int NO_ENTRY_VALUE = -1;
+
     GroupSubCollector(String keyName, SubCollector delegate, GroupSuperCollector groupSuperCollector) {
         this.keyName = keyName;
         this.delegate = delegate;
@@ -108,13 +111,13 @@ class GroupSubCollector extends SubCollector {
         int[] docIds = this.keyToDocIds.get(keyValue);
         if (docIds == null) {
             int docId = this.keyToDocId.get(keyValue);
-            if (docId != this.keyToDocId.getNoEntryValue()) {
+            if (docId != NO_ENTRY_VALUE) {
                 result.add(docId);
             }
         } else {
             for (int docId : docIds)
-                if (docId != 0)
-                    result.add(docId == -1 ? 0 : docId);
+                if (docId != NO_ENTRY_VALUE)
+                    result.add(docId);
         }
     }
 
@@ -124,7 +127,7 @@ class GroupSubCollector extends SubCollector {
             float loadFactor = 0.75f;
             int maxDoc = (int) (ReaderUtil.getTopLevelContext(context).reader().maxDoc() * (1 + (1 - loadFactor)));
             this.keyToDocIds = new TLongObjectHashMap<int []>(maxDoc / this.groupSuperCollector.subs.size() / 10, loadFactor);
-            this.keyToDocId = new TLongIntHashMap(maxDoc / this.groupSuperCollector.subs.size(), loadFactor);
+            this.keyToDocId = new TLongIntHashMap(maxDoc / this.groupSuperCollector.subs.size(), loadFactor, NO_ENTRY_KEY, NO_ENTRY_VALUE);
         }
         this.context = context;
         this.delegate.setNextReader(context);
@@ -141,7 +144,7 @@ class GroupSubCollector extends SubCollector {
         if (keyValue > 0) {
             int docId = this.keyToDocId.get(keyValue);
             int i = 0;
-            if (docId == this.keyToDocId.getNoEntryValue()) {
+            if (docId == NO_ENTRY_VALUE) {
                 this.keyToDocId.put(keyValue, doc + this.context.docBase);
             } else {
                 int[] docIds = this.keyToDocIds.get(keyValue);
@@ -161,8 +164,7 @@ class GroupSubCollector extends SubCollector {
                     docIds = newDocIds;
                     this.keyToDocIds.put(keyValue, docIds);
                 }
-                int absDoc = doc + this.context.docBase;
-                docIds[i] = absDoc == 0 ? -1 : absDoc;
+                docIds[i] = doc + this.context.docBase;
             }
         }
         this.delegate.collect(doc);

@@ -50,8 +50,8 @@ fi
 LUCENEVERSION=4.10.1
 
 troveJar=${jarsDir}/trove-3.0.2.jar
-echo $troveJar
-classpath=${luceneJarDir}/lucene-core-$LUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$LUCENEVERSION.jar:${luceneJarDir}/lucene-facet-$LUCENEVERSION.jar:${luceneJarDir}/lucene-queries-$LUCENEVERSION.jar:${troveJar}
+apacheMathJar=${jarsDir}/commons-math3-3.4.1.jar
+classpath=${luceneJarDir}/lucene-core-$LUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$LUCENEVERSION.jar:${luceneJarDir}/lucene-facet-$LUCENEVERSION.jar:${luceneJarDir}/lucene-queries-$LUCENEVERSION.jar:${luceneJarDir}/lucene-memory-$LUCENEVERSION.jar:${troveJar}:${apacheMathJar}
 
 ${javac} -cp ${classpath} -d ${buildDir} `find org -name "*.java"`
 (cd $buildDir; jar -c org > $buildDir/meresco-lucene.jar)
@@ -64,6 +64,7 @@ python -m jcc.__main__ \
     --arch x86_64 \
     --jar $buildDir/meresco-lucene.jar \
     --include ${troveJar} \
+    --include ${apacheMathJar} \
     --python meresco_lucene \
     --build \
     --install

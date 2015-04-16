@@ -29,7 +29,7 @@ from os.path import join
 
 from java.io import File, StringReader
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
-from org.apache.lucene.facet import FacetsCollector, Facets
+from org.apache.lucene.facet import Facets
 from org.apache.lucene.facet.taxonomy import CachedOrdinalsReader, DocValuesOrdinalsReader, TaxonomyFacetCounts, TaxonomyReader
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyWriter
 from org.apache.lucene.facet.taxonomy.writercache import LruTaxonomyWriterCache
@@ -37,7 +37,7 @@ from org.apache.lucene.index import IndexWriter, IndexWriterConfig, MultiFields,
 from org.apache.lucene.index import TieredMergePolicy
 from org.apache.lucene.search.spell import DirectSpellChecker
 from org.apache.lucene.store import MMapDirectory
-from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils, BytesRefBuilder
+from org.apache.lucene.util import BytesRef, BytesRefIterator, NumericUtils
 from org.apache.lucene.util import Version
 from org.meresco.lucene.search import FacetSuperCollector
 

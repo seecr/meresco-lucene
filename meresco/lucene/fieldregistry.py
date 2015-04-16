@@ -167,6 +167,18 @@ def _createNoTermsFrequencyFieldType():
     f.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY)
     f.freeze()
     return f
-
 NO_TERMS_FREQUENCY_FIELDTYPE = _createNoTermsFrequencyFieldType()
 
+def _termVectorType():
+    f = FieldType()
+    f.setIndexed(True)
+    f.setStored(False)
+    f.setStoreTermVectors(True)
+    f.setStoreTermVectorOffsets(False)
+    f.setStoreTermVectorPositions(False)
+    f.setStoreTermVectorPayloads(False)
+    f.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS)
+    f.setTokenized(True)  # Eh?? ... depends ... ?!
+    f.freeze()
+    return f
+TERM_VECTOR_FIELDTYPE = _termVectorType()

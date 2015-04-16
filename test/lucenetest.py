@@ -36,14 +36,15 @@ from weightless.core import consume, retval
 from meresco.lucene import Lucene, VM, DrilldownField, LuceneSettings
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
-from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, FieldRegistry, INTFIELD
+from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, TERM_VECTOR_FIELDTYPE, FieldRegistry, INTFIELD
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause, PhraseQuery
 from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
-from org.apache.lucene.index import Term
+from org.apache.lucene.index import Term, AtomicReaderContext
 from org.apache.lucene.facet import FacetField
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
+from org.meresco.lucene.search import Utils, ClusteringCollector
 
 from seecr.test import SeecrTestCase, CallTrace
 from seecr.test.io import stdout_replaced
@@ -729,6 +730,25 @@ class LuceneTest(SeecrTestCase):
         self.lucene.readerSettingsWrapper.set()
         settings = self.lucene.readerSettingsWrapper.get()
         self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)'}, settings)
+
+    def testTermVectors(self):
+        factory = FieldRegistry()
+        factory.register("termvector.field", TERM_VECTOR_FIELDTYPE)
+        doc = Document()
+        doc.add(factory.createField("termvector.field", "aap noot noot noot vuur"))
+        consume(self.lucene.addDocument(identifier="id:1", document=doc))
+
+        doc = Document()
+        doc.add(factory.createField("termvector.field", "aap noot vuur water"))
+        consume(self.lucene.addDocument(identifier="id:2", document=doc))
+
+        reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
+
+        collector = ClusteringCollector(reader, "termvector.field", 1)
+        collector.collect(0)
+        collector.collect(1)
+        collector.finish()
+        self.assertEqual([0, 1], list(collector.cluster(0)))
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

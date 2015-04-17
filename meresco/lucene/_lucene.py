@@ -47,12 +47,12 @@ from meresco.lucene.hit import Hit
 from seecr.utils.generatorutils import generatorReturn
 from .utils import simplifiedDict
 
-CLUSTERING_EPS = 2.0
-CLUSTER_MORE_RECORDS = 100
 
 class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
+    CLUSTERING_EPS = 2.0
+    CLUSTER_MORE_RECORDS = 100
 
     def __init__(self, path, reactor, settings, name=None, **kwargs):
         self._reactor = reactor
@@ -80,12 +80,12 @@ class Lucene(object):
             self._startCommitTimer()
         self.log = self._log if settings.verbose else lambda v: None
 
-        self._clusterMoreRecords = CLUSTER_MORE_RECORDS
-        self._clusteringEps = CLUSTERING_EPS
+        self._clusterMoreRecords = self.CLUSTER_MORE_RECORDS
+        self._clusteringEps = self.CLUSTERING_EPS
 
-    def setSettings(self, clusteringEps=CLUSTERING_EPS, clusterMoreRecords=CLUSTER_MORE_RECORDS, **kwargs):
-        self._clusterMoreRecords = clusterMoreRecords
-        self._clusteringEps = clusteringEps
+    def setSettings(self, clusteringEps=None, clusterMoreRecords=None, **kwargs):
+        self._clusterMoreRecords = clusterMoreRecords or self.CLUSTER_MORE_RECORDS
+        self._clusteringEps = clusteringEps or self.CLUSTERING_EPS
         self._index.setSettings(clusterMoreRecords=clusterMoreRecords, clusteringEps=clusteringEps, **kwargs)
 
     def getSettings(self):

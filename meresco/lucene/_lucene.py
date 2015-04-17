@@ -204,20 +204,24 @@ class Lucene(object):
             total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterField=clusterField)
             times['clusterTime'] = millis(time() - t1)
         else:
+            t1 = time()
             total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector if dedupField else None)
+            times['topDocsTime'] = millis(time() - t1)
 
         response = LuceneResponse(total=total, hits=hits, drilldownData=[])
 
         if dedupCollector:
             response.totalWithDuplicates = dedupCollector.totalHits
 
-        t1 = time()
         if facets:
+            t1 = time()
             response.drilldownData.extend(self._facetResult(facetCollector, facets))
-        times['facetTime'] = millis(time() - t1)
+            times['facetTime'] = millis(time() - t1)
 
         if suggestionRequest:
+            t1 = time()
             response.suggestions = self._index.suggest(**suggestionRequest)
+            times['suggestionTime'] = millis(time() - t1)
 
         response.queryTime = millis(time() - t0)
         if clusterField:

@@ -25,7 +25,7 @@
 ## end license ##
 
 from org.apache.lucene.search import Sort, QueryWrapperFilter, MatchAllDocsQuery, CachingWrapperFilter, BooleanQuery, TermQuery, BooleanClause
-from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector, GroupSuperCollector
+from org.meresco.lucene.search import MultiSuperCollector, TopFieldSuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, DeDupFilterSuperCollector, GroupSuperCollector, MerescoClusterer
 from org.meresco.lucene.search.join import ScoreSuperCollector, KeySuperCollector
 from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
@@ -137,7 +137,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-            filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, keyCollector=None, groupingField=None, **kwargs):
+            filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, keyCollector=None, groupingField=None, clusterField=None, **kwargs):
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -152,6 +152,8 @@ class Lucene(object):
             topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
             constructor = DeDupFilterSuperCollector
             resultsCollector = dedupCollector = constructor(dedupField, dedupSortField, topCollector)
+        elif clusterField:
+            resultsCollector = topCollector = self._topCollector(start=start, stop=stop + 100, sortKeys=sortKeys)
         else:
             resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
 
@@ -178,7 +180,10 @@ class Lucene(object):
             luceneQuery = self.createDrilldownQuery(luceneQuery, drilldownQueries)
         self._index.search(luceneQuery, filter_, collector)
 
-        total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector if dedupField else None)
+        if clusterField:
+            total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterField=clusterField)
+        else:
+            total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector if dedupField else None)
 
         response = LuceneResponse(total=total, hits=hits, drilldownData=[])
 
@@ -300,6 +305,30 @@ class Lucene(object):
                     hit.duplicates = {groupingCollectorFieldName: duplicateIds}
                 else:
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
+                hit.score = scoreDoc.score
+                hits.append(hit)
+                count += 1
+        return totalHits, hits
+
+    def _clusterTopDocsResponse(self, collector, start, stop, clusterField):
+        clusterer = MerescoClusterer(self._index.getIndexReader(), clusterField, 2.0)
+
+        totalHits = collector.getTotalHits()
+        hits = []
+        if hasattr(collector, "topDocs"):
+            clusterer.processTopDocs(start, collector)
+            count = 0
+            seenDocIds = set()
+            for scoreDoc in collector.topDocs(start).scoreDocs:
+                if count >= stop:
+                    break
+                if scoreDoc.doc in seenDocIds:
+                    continue
+                clusteredDocIds = list(clusterer.cluster(scoreDoc.doc) or [scoreDoc.doc])
+                seenDocIds.update(set(clusteredDocIds))
+
+                hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
+                hit.duplicates = {clusterField: [self._index.getDocument(docId).get(IDFIELD) for docId in clusteredDocIds]}
                 hit.score = scoreDoc.score
                 hits.append(hit)
                 count += 1

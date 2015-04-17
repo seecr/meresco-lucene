@@ -86,7 +86,7 @@ class Index(object):
     def suggest(self, query, count, field):
         suggestions = {}
         for token, startOffset, endOffset in self._analyzeToken(query):
-            suggestWords = self._checker.suggestSimilar(Term(field, token), count, self._indexAndTaxonomy.searcher.getIndexReader())
+            suggestWords = self._checker.suggestSimilar(Term(field, token), count, self.getIndexReader())
             if suggestWords:
                 suggestions[token] = (startOffset, endOffset, [suggestWord.string for suggestWord in suggestWords])
         return suggestions
@@ -100,7 +100,7 @@ class Index(object):
         elif t == long:
             convert = lambda term: NumericUtils.prefixCodedToLong(term)
         terms = []
-        termsEnum = MultiFields.getTerms(self._indexAndTaxonomy.searcher.getIndexReader(), field)
+        termsEnum = MultiFields.getTerms(self.getIndexReader(), field)
         if termsEnum is None:
             return terms
         iterator = termsEnum.iterator(None)
@@ -144,7 +144,7 @@ class Index(object):
         return names
 
     def numDocs(self):
-        return self._indexAndTaxonomy.searcher.getIndexReader().numDocs()
+        return self.getIndexReader().numDocs()
 
     def commit(self):
         if not self._settings.readonly:
@@ -167,6 +167,9 @@ class Index(object):
         if not self._settings.readonly:
             self._taxoWriter.close()
             self._indexWriter.close()
+
+    def getIndexReader(self):
+        return self._indexAndTaxonomy.searcher.getIndexReader()
 
     def _analyzeToken(self, token):
         result = []

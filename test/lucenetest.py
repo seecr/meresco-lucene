@@ -41,10 +41,10 @@ from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause, PhraseQuery
 from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
-from org.apache.lucene.index import Term, AtomicReaderContext
+from org.apache.lucene.index import Term
 from org.apache.lucene.facet import FacetField
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
-from org.meresco.lucene.search import Utils, ClusteringCollector
+from org.meresco.lucene.search import MerescoClusterer
 
 from seecr.test import SeecrTestCase, CallTrace
 from seecr.test.io import stdout_replaced
@@ -734,21 +734,74 @@ class LuceneTest(SeecrTestCase):
     def testTermVectors(self):
         factory = FieldRegistry()
         factory.register("termvector.field", TERM_VECTOR_FIELDTYPE)
-        doc = Document()
-        doc.add(factory.createField("termvector.field", "aap noot noot noot vuur"))
-        consume(self.lucene.addDocument(identifier="id:1", document=doc))
+        for i in range(5):
+            doc = Document()
+            doc.add(factory.createField("termvector.field", "aap noot noot noot vuur"))
+            consume(self.lucene.addDocument(identifier="id:%s" % i , document=doc))
 
-        doc = Document()
-        doc.add(factory.createField("termvector.field", "aap noot vuur water"))
-        consume(self.lucene.addDocument(identifier="id:2", document=doc))
+        for i in range(5, 10):
+            doc = Document()
+            doc.add(factory.createField("termvector.field", "something else"))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
 
+        for i in range(10, 15):
+            doc = Document()
+            doc.add(factory.createField("termvector.field", "iets anders"))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        self.lucene.commit()
         reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
 
-        collector = ClusteringCollector(reader, "termvector.field", 1)
-        collector.collect(0)
-        collector.collect(1)
+        collector = MerescoClusterer(reader, "termvector.field", 1.0)
+        for i in range(15):
+            collector.collect(i)
         collector.finish()
-        self.assertEqual([0, 1], list(collector.cluster(0)))
+
+        cluster1 = list(collector.cluster(0))
+        self.assertEqual(5, len(cluster1))
+
+        cluster2 = list(collector.cluster(5))
+        self.assertEqual(5, len(cluster2))
+
+        cluster3 = list(collector.cluster(10))
+        self.assertEqual(5, len(cluster3))
+
+        self.assertNotEqual(cluster1, cluster2)
+        self.assertNotEqual(cluster1, cluster3)
+
+    def testClustering(self):
+        factory = FieldRegistry()
+        factory.register("termvector", TERM_VECTOR_FIELDTYPE)
+        for i in range(5):
+            doc = Document()
+            doc.add(factory.createField("termvector", "aap noot vuur %s" % i))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        self.lucene.commit()
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterField="termvector"))
+        self.assertEquals(1, len(result.hits))
+        self.assertEqual(sorted(['id:4', 'id:3', 'id:2', 'id:0', 'id:1']), sorted(result.hits[0].duplicates['termvector']))
+
+    def testClusteringShowOnlyRequestTop(self):
+        factory = FieldRegistry()
+        factory.register("termvector", TERM_VECTOR_FIELDTYPE)
+        for i in range(5):
+            doc = Document()
+            doc.add(factory.createField("termvector", "aap noot vuur %s" % i))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        for i in range(5, 10):
+            doc = Document()
+            doc.add(factory.createField("termvector", "something"))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        for i in range(10, 15):
+            doc = Document()
+            doc.add(factory.createField("termvector", "totally other data with more text"))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        self.lucene.commit()
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterField="termvector", start=0, stop=2))
+        self.assertEquals(15, result.total)
+        self.assertEquals(2, len(result.hits))
+
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

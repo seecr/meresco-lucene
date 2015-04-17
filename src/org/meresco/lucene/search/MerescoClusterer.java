@@ -34,44 +34,58 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.ml.clustering.CentroidCluster;
 import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer;
+import org.apache.commons.math3.ml.clustering.Cluster;
+import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
-public class ClusteringCollector {
+public class MerescoClusterer {
 
     private IndexReader reader;
     private String fieldname;
-    private List<OurClusterable> clusters = new ArrayList<OurClusterable>();
+    private List<MerescoClusterable> clusters = new ArrayList<MerescoClusterable>();
     private BytesRefHash ords = new BytesRefHash();
-    private List<CentroidCluster<OurClusterable>> cluster;
-    private int clusterSize;
+    private List<Cluster<MerescoClusterable>> cluster;
+    private double eps;
+    private int minPoints;
 
-    public ClusteringCollector(IndexReader reader, String fieldname, int clusterSize) {
+    public MerescoClusterer(IndexReader reader, String fieldname, double eps) {
+        this(reader, fieldname, eps, 2);
+    }
+
+    public MerescoClusterer(IndexReader reader, String fieldname, double eps, int minPoints) {
         this.reader = reader;
         this.fieldname = fieldname;
-        this.clusterSize = clusterSize;
+        this.eps = eps;
+        this.minPoints = minPoints;
     }
 
     public void collect(int doc) throws IOException {
-        OurClusterable tv = termVector(doc, fieldname);
-        this.clusters.add(tv);
+        this.clusters.add(termVector(doc, fieldname));
+    }
+
+    public void processTopDocs(int start, TopDocSuperCollector collector) throws IOException {
+        for (ScoreDoc scoreDoc : collector.topDocs(start).scoreDocs)
+            this.collect(scoreDoc.doc);
+        this.finish();
     }
 
     public void finish() {
-        this.cluster = new KMeansPlusPlusClusterer<OurClusterable>(this.clusterSize).cluster(this.clusters);
+        this.cluster = new DBSCANClusterer<MerescoClusterable>(this.eps, this.minPoints).cluster(this.clusters);
     }
 
     public int[] cluster(int docId) {
-        for (CentroidCluster<OurClusterable> c : this.cluster) {
-            List<OurClusterable> points = c.getPoints();
-            for (OurClusterable oc : points) {
+        for (Cluster<MerescoClusterable> c : this.cluster) {
+            List<MerescoClusterable> points = c.getPoints();
+            for (MerescoClusterable oc : points) {
                 if (oc.docId == docId) {
                     int[] result = new int[points.size()];
                     int i=0;
-                    for (OurClusterable oc1 : points) {
+                    for (MerescoClusterable oc1 : points) {
                         result[i++] = oc1.docId;
                     }
                     return result;
@@ -81,36 +95,32 @@ public class ClusteringCollector {
         return null;
     }
 
-    public OurClusterable termVector(final int docId, String field) throws IOException {
+    public MerescoClusterable termVector(final int docId, String field) throws IOException {
         Terms terms = this.reader.getTermVector(docId, field);
         TermsEnum termsEnum = terms.iterator(null);
-        final RealVector tv = new OpenMapRealVector(10000);
+        final RealVector vector = new OpenMapRealVector(10000);
         while (termsEnum.next() != null) {
             BytesRef term = termsEnum.term();
             int ord = ords.add(term);
             if (ord < 0)
                 ord = -ord - 1;
-            tv.setEntry(ord, termsEnum.totalTermFreq());
+            vector.setEntry(ord, termsEnum.totalTermFreq());
         }
-        return new OurClusterable(tv, docId);
+        return new MerescoClusterable(vector, docId);
     }
 
-    public double cosSimilarity(RealVector vector1, RealVector vector2) throws IOException {
-        return vector1.dotProduct(vector2);
-    }
-
-    class OurClusterable implements Clusterable {
-        private RealVector tv;
+    class MerescoClusterable implements Clusterable {
+        private RealVector vector;
         private int docId;
 
-        public OurClusterable(RealVector tv, int docId) {
-            this.tv = tv;
+        public MerescoClusterable(RealVector vector, int docId) {
+            this.vector = vector;
             this.docId = docId;
         }
 
         @Override
         public double[] getPoint() {
-            return this.tv.toArray();
+            return this.vector.toArray();
         }
 
         public int docId() {

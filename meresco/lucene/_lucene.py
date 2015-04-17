@@ -161,15 +161,15 @@ class Lucene(object):
         collectors = []
         dedupCollector = None
         groupingCollector = None
-        if groupingField:
+        if clusterField:
+            resultsCollector = topCollector = self._topCollector(start=start, stop=stop + self._clusterMoreRecords, sortKeys=sortKeys)
+        elif groupingField:
             topCollector = self._topCollector(start=start, stop=stop * 10, sortKeys=sortKeys)
             resultsCollector = groupingCollector = GroupSuperCollector(groupingField, topCollector)
         elif dedupField:
             topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
             constructor = DeDupFilterSuperCollector
             resultsCollector = dedupCollector = constructor(dedupField, dedupSortField, topCollector)
-        elif clusterField:
-            resultsCollector = topCollector = self._topCollector(start=start, stop=stop + self._clusterMoreRecords, sortKeys=sortKeys)
         else:
             resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
 
@@ -197,7 +197,9 @@ class Lucene(object):
         self._index.search(luceneQuery, filter_, collector)
 
         if clusterField:
+            t1 = time()
             total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterField=clusterField)
+            clusteringTime = millis(time() - t1)
         else:
             total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector if dedupField else None)
 
@@ -213,6 +215,8 @@ class Lucene(object):
             response.suggestions = self._index.suggest(**suggestionRequest)
 
         response.queryTime = millis(time() - t0)
+        if clusterField:
+            response.clusteringTime = clusteringTime
         response.info = {
             'type': 'Query',
             'query': simplifiedDict(dict(

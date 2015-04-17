@@ -804,6 +804,29 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(15, result.total)
         self.assertEquals(2, len(result.hits))
 
+    def testClusteringWinsOverGroupingAndDedup(self):
+        factory = FieldRegistry()
+        factory.register("termvector", TERM_VECTOR_FIELDTYPE)
+        for i in range(15):
+            doc = Document()
+            doc.add(factory.createField("termvector", "aap noot vuur"))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        doc = Document()
+        doc.add(factory.createField("termvector", "something else"))
+        consume(self.lucene.addDocument(identifier="id:95", document=doc))
+        doc = Document()
+        doc.add(factory.createField("termvector", "totally other data with more text"))
+        consume(self.lucene.addDocument(identifier="id:96", document=doc))
+        doc = Document()
+        doc.add(factory.createField("termvector", "this is again a record"))
+        consume(self.lucene.addDocument(identifier="id:97", document=doc))
+        doc = Document()
+        doc.add(factory.createField("termvector", "and this is also just something"))
+        consume(self.lucene.addDocument(identifier="id:98", document=doc))
+        self.lucene.commit()
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterField="termvector", start=0, stop=5))
+        self.assertEquals(5, len(result.hits))
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

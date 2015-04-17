@@ -79,9 +79,11 @@ def main(arguments, Body=None, **kwargs):
             qKwargs['stop'] = int(stop)
         if facetfields:
             qKwargs['facets'] = [dict(fieldname=f, maxTerms=10) for f in facetfields]
+        if arguments:
+            qKwargs.update(dict((k, v[0]) for k, v in arguments.items()))
         response = yield observable.any.executeQuery(core=name, **qKwargs)
 
-        formatMethod = niceFormat if queryArgs.get('format') == 'nice' else jsonFormat
+        formatMethod = niceFormat if arguments.get('format') == ['nice'] else jsonFormat
         yield formatMethod(response, qKwargs)
 
 

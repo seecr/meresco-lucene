@@ -38,6 +38,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
@@ -68,8 +69,8 @@ public class MerescoClusterer {
             this.clusters.add(vector);
     }
 
-    public void processTopDocs(int start, TopDocSuperCollector collector) throws IOException {
-        for (ScoreDoc scoreDoc : collector.topDocs(start).scoreDocs)
+    public void processTopDocs(TopDocs topDocs) throws IOException {
+        for (ScoreDoc scoreDoc : topDocs.scoreDocs)
             this.collect(scoreDoc.doc);
         this.finish();
     }

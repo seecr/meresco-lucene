@@ -154,6 +154,7 @@ class Lucene(object):
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
             filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, keyCollector=None, groupingField=None, clusterField=None, **kwargs):
+        times = {}
         t0 = time()
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
@@ -194,12 +195,14 @@ class Lucene(object):
 
         if drilldownQueries:
             luceneQuery = self.createDrilldownQuery(luceneQuery, drilldownQueries)
+        t1 = time()
         self._index.search(luceneQuery, filter_, collector)
+        times['searchTime'] = millis(time() - t1)
 
         if clusterField:
             t1 = time()
             total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterField=clusterField)
-            clusteringTime = millis(time() - t1)
+            times['clusterTime'] = millis(time() - t1)
         else:
             total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector if dedupField else None)
 
@@ -208,15 +211,17 @@ class Lucene(object):
         if dedupCollector:
             response.totalWithDuplicates = dedupCollector.totalHits
 
+        t1 = time()
         if facets:
             response.drilldownData.extend(self._facetResult(facetCollector, facets))
+        times['facetTime'] = millis(time() - t1)
 
         if suggestionRequest:
             response.suggestions = self._index.suggest(**suggestionRequest)
 
         response.queryTime = millis(time() - t0)
         if clusterField:
-            response.clusteringTime = clusteringTime
+            response.times = times
         response.info = {
             'type': 'Query',
             'query': simplifiedDict(dict(
@@ -336,10 +341,11 @@ class Lucene(object):
         totalHits = collector.getTotalHits()
         hits = []
         if hasattr(collector, "topDocs"):
-            clusterer.processTopDocs(start, collector)
+            topDocs = collector.topDocs(start)
+            clusterer.processTopDocs(topDocs)
             count = 0
             seenDocIds = set()
-            for scoreDoc in collector.topDocs(start).scoreDocs:
+            for scoreDoc in topDocs.scoreDocs:
                 if count >= stop:
                     break
                 if scoreDoc.doc in seenDocIds:

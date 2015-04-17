@@ -31,10 +31,8 @@ import java.util.List;
 
 import org.apache.commons.math3.linear.OpenMapRealVector;
 import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.ml.clustering.CentroidCluster;
-import org.apache.commons.math3.ml.clustering.Clusterable;
-import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer;
 import org.apache.commons.math3.ml.clustering.Cluster;
+import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
@@ -47,9 +45,9 @@ public class MerescoClusterer {
 
     private IndexReader reader;
     private String fieldname;
-    private List<MerescoClusterable> clusters = new ArrayList<MerescoClusterable>();
+    private List<MerescoVector> clusters = new ArrayList<MerescoVector>();
     private BytesRefHash ords = new BytesRefHash();
-    private List<Cluster<MerescoClusterable>> cluster;
+    private List<Cluster<MerescoVector>> cluster;
     private double eps;
     private int minPoints;
 
@@ -65,7 +63,9 @@ public class MerescoClusterer {
     }
 
     public void collect(int doc) throws IOException {
-        this.clusters.add(termVector(doc, fieldname));
+        MerescoVector vector = termVector(doc, fieldname);
+        if (vector != null)
+            this.clusters.add(vector);
     }
 
     public void processTopDocs(int start, TopDocSuperCollector collector) throws IOException {
@@ -75,17 +75,17 @@ public class MerescoClusterer {
     }
 
     public void finish() {
-        this.cluster = new DBSCANClusterer<MerescoClusterable>(this.eps, this.minPoints).cluster(this.clusters);
+        this.cluster = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints).cluster(this.clusters);
     }
 
     public int[] cluster(int docId) {
-        for (Cluster<MerescoClusterable> c : this.cluster) {
-            List<MerescoClusterable> points = c.getPoints();
-            for (MerescoClusterable oc : points) {
+        for (Cluster<MerescoVector> c : this.cluster) {
+            List<MerescoVector> points = c.getPoints();
+            for (MerescoVector oc : points) {
                 if (oc.docId == docId) {
                     int[] result = new int[points.size()];
                     int i=0;
-                    for (MerescoClusterable oc1 : points) {
+                    for (MerescoVector oc1 : points) {
                         result[i++] = oc1.docId;
                     }
                     return result;
@@ -95,8 +95,10 @@ public class MerescoClusterer {
         return null;
     }
 
-    public MerescoClusterable termVector(final int docId, String field) throws IOException {
+    public MerescoVector termVector(final int docId, String field) throws IOException {
         Terms terms = this.reader.getTermVector(docId, field);
+        if (terms == null)
+            return null;
         TermsEnum termsEnum = terms.iterator(null);
         final RealVector vector = new OpenMapRealVector(10000);
         while (termsEnum.next() != null) {
@@ -106,14 +108,14 @@ public class MerescoClusterer {
                 ord = -ord - 1;
             vector.setEntry(ord, termsEnum.totalTermFreq());
         }
-        return new MerescoClusterable(vector, docId);
+        return new MerescoVector(vector, docId);
     }
 
-    class MerescoClusterable implements Clusterable {
+    class MerescoVector implements Clusterable {
         private RealVector vector;
         private int docId;
 
-        public MerescoClusterable(RealVector vector, int docId) {
+        public MerescoVector(RealVector vector, int docId) {
             this.vector = vector;
             this.docId = docId;
         }

@@ -775,10 +775,12 @@ class LuceneTest(SeecrTestCase):
             doc = Document()
             doc.add(factory.createField("termvector", "aap noot vuur %s" % i))
             consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        doc = Document()
+        consume(self.lucene.addDocument(identifier="id:6", document=doc))
         self.lucene.commit()
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterField="termvector"))
-        self.assertEquals(1, len(result.hits))
+        self.assertEquals(2, len(result.hits))
         self.assertEqual(sorted(['id:4', 'id:3', 'id:2', 'id:0', 'id:1']), sorted(result.hits[0].duplicates['termvector']))
 
     def testClusteringShowOnlyRequestTop(self):

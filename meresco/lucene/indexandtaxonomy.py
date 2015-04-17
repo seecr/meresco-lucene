@@ -28,9 +28,7 @@ from org.apache.lucene.index import DirectoryReader
 from org.apache.lucene.search.similarities import BM25Similarity
 from org.apache.lucene.facet.taxonomy.directory import DirectoryTaxonomyReader
 from org.meresco.lucene.search import SuperIndexSearcher
-from org.apache.lucene.search import IndexSearcher
 from java.util.concurrent import Executors
-from time import time
 
 
 class IndexAndTaxonomy(object):
@@ -41,9 +39,6 @@ class IndexAndTaxonomy(object):
         self._numberOfConcurrentTasks = settings.numberOfConcurrentTasks
         self._reader = DirectoryReader.open(indexDirectory)
         self.taxoReader = DirectoryTaxonomyReader(taxoDirectory)
-        self._readerSettingsWrapper = ReaderSettingsWrapper()
-        self._readerSettingsWrapper.get = lambda: {"similarity": self.searcher.getSimilarity().toString(), "numberOfConcurrentTasks": self._numberOfConcurrentTasks}
-        self._readerSettingsWrapper.set = self._setReadSettings
         self._searcher = None
         self._executor = None
         self._reopenSearcher = True
@@ -74,7 +69,7 @@ class IndexAndTaxonomy(object):
         self._reopenSearcher = False
         return self._searcher
 
-    def _setReadSettings(self, similarity=None, numberOfConcurrentTasks=None):
+    def setSettings(self, similarity=None, numberOfConcurrentTasks=None, **kwargs):
         # This method must be thread-safe
         if similarity is None:
             self._similarity = self._settings.similarity
@@ -87,9 +82,9 @@ class IndexAndTaxonomy(object):
             self._numberOfConcurrentTasks = numberOfConcurrentTasks
         self._reopenSearcher = True
 
+    def getSettings(self):
+        return {"similarity": self.searcher.getSimilarity().toString(), "numberOfConcurrentTasks": self._numberOfConcurrentTasks}
+
     def close(self):
         self.taxoReader.close()
         self._reader.close()
-
-class ReaderSettingsWrapper(object):
-    pass

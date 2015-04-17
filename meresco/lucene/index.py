@@ -64,7 +64,8 @@ class Index(object):
             self._taxoWriter.commit()
 
         self._indexAndTaxonomy = IndexAndTaxonomy(settings, indexDirectory, taxoDirectory)
-        self._readerSettingsWrapper = self._indexAndTaxonomy._readerSettingsWrapper
+        self.setSettings = self._indexAndTaxonomy.setSettings
+        self.getSettings = self._indexAndTaxonomy.getSettings
 
         self._facetsConfig = settings.fieldRegistry.facetsConfig
 

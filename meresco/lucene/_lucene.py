@@ -47,6 +47,9 @@ from meresco.lucene.hit import Hit
 from seecr.utils.generatorutils import generatorReturn
 from .utils import simplifiedDict
 
+CLUSTERING_EPS = 2.0
+CLUSTER_MORE_RECORDS = 100
+
 class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
@@ -58,7 +61,6 @@ class Lucene(object):
         self._commitCount = 0
         self._commitTimerToken = None
         self._index = Index(path, settings=settings, **kwargs)
-        self.readerSettingsWrapper = self._index._readerSettingsWrapper
         if name is not None:
             self.observable_name = lambda: name
         self.coreName = name or basename(path)
@@ -77,6 +79,20 @@ class Lucene(object):
         if settings.readonly:
             self._startCommitTimer()
         self.log = self._log if settings.verbose else lambda v: None
+
+        self._clusterMoreRecords = CLUSTER_MORE_RECORDS
+        self._clusteringEps = CLUSTERING_EPS
+
+    def setSettings(self, clusteringEps=CLUSTERING_EPS, clusterMoreRecords=CLUSTER_MORE_RECORDS, **kwargs):
+        self._clusterMoreRecords = clusterMoreRecords
+        self._clusteringEps = clusteringEps
+        self._index.setSettings(clusterMoreRecords=clusterMoreRecords, clusteringEps=clusteringEps, **kwargs)
+
+    def getSettings(self):
+        settings = self._index.getSettings()
+        settings['clusterMoreRecords'] = self._clusterMoreRecords
+        settings['clusteringEps'] = self._clusteringEps
+        return settings
 
     def addDocument(self, document, identifier=None):
         term = None
@@ -153,7 +169,7 @@ class Lucene(object):
             constructor = DeDupFilterSuperCollector
             resultsCollector = dedupCollector = constructor(dedupField, dedupSortField, topCollector)
         elif clusterField:
-            resultsCollector = topCollector = self._topCollector(start=start, stop=stop + 100, sortKeys=sortKeys)
+            resultsCollector = topCollector = self._topCollector(start=start, stop=stop + self._clusterMoreRecords, sortKeys=sortKeys)
         else:
             resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
 
@@ -311,7 +327,7 @@ class Lucene(object):
         return totalHits, hits
 
     def _clusterTopDocsResponse(self, collector, start, stop, clusterField):
-        clusterer = MerescoClusterer(self._index.getIndexReader(), clusterField, 2.0)
+        clusterer = MerescoClusterer(self._index.getIndexReader(), clusterField, self._clusteringEps)
 
         totalHits = collector.getTotalHits()
         hits = []
@@ -423,7 +439,4 @@ def _termsFromFacetResult(facetResult, facet, path):
             termDict['subterms'] = subterms
         terms.append(termDict)
     return terms
-
-
-MAX_FACET_DEPTH = 10
 

@@ -339,7 +339,9 @@ class Lucene(object):
         return totalHits, hits
 
     def _clusterTopDocsResponse(self, collector, start, stop, clusterFields):
-        clusterer = MerescoClusterer(self._index.getIndexReader(), clusterFields, self._clusteringEps)
+        clusterer = MerescoClusterer(self._index.getIndexReader(), self._clusteringEps)
+        for fieldname, weight in clusterFields:
+            clusterer.registerField(fieldname, float(weight))
 
         totalHits = collector.getTotalHits()
         hits = []

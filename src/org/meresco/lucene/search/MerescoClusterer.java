@@ -27,7 +27,9 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.math3.linear.OpenMapRealVector;
 import org.apache.commons.math3.linear.RealVector;
@@ -45,24 +47,27 @@ import org.apache.lucene.util.BytesRefHash;
 public class MerescoClusterer {
 
     private IndexReader reader;
-    private String[] fieldnames;
+    private Map<String, Double> fieldnames = new HashMap<String, Double>();
     private List<MerescoVector> clusters = new ArrayList<MerescoVector>();
     private BytesRefHash ords = new BytesRefHash();
     private List<Cluster<MerescoVector>> cluster;
     private double eps;
     private int minPoints;
 
-    public MerescoClusterer(IndexReader reader, String[] fieldnames, double eps) {
-        this(reader, fieldnames, eps, 2);
+    public MerescoClusterer(IndexReader reader, double eps) {
+        this(reader, eps, 2);
     }
 
-    public MerescoClusterer(IndexReader reader, String[] fieldnames, double eps, int minPoints) {
+    public MerescoClusterer(IndexReader reader, double eps, int minPoints) {
         this.reader = reader;
-        this.fieldnames = fieldnames;
         this.eps = eps;
         this.minPoints = minPoints;
     }
 
+    public void registerField(String fieldname, double weight) {
+        fieldnames.put(fieldname, weight);
+    }
+    
     public void collect(int doc) throws IOException {
         MerescoVector vector = createVector(doc);   
         if (vector != null)
@@ -98,13 +103,15 @@ public class MerescoClusterer {
 
     public MerescoVector createVector(int docId) throws IOException {
         RealVector vector = null;
-        for (String fieldname : fieldnames) {
+        double vectorWeight = 1.0;
+        for (String fieldname : fieldnames.keySet()) {
             RealVector v = termVector(docId, fieldname);
             if (v != null) {
                 if (vector == null) {
                     vector = v;
+                    vectorWeight = this.fieldnames.get(fieldname);
                 } else {
-                    vector.combineToSelf(1.0, 1.0, v);
+                    vector.combineToSelf(vectorWeight, this.fieldnames.get(fieldname), v);
                 }
             }
         }

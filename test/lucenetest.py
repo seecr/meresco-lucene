@@ -752,7 +752,8 @@ class LuceneTest(SeecrTestCase):
         self.lucene.commit()
         reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
 
-        collector = MerescoClusterer(reader, "termvector.field", 1.0)
+        collector = MerescoClusterer(reader, 1.0)
+        collector.registerField("termvector.field", 1.0)
         for i in range(15):
             collector.collect(i)
         collector.finish()
@@ -780,7 +781,7 @@ class LuceneTest(SeecrTestCase):
         consume(self.lucene.addDocument(identifier="id:6", document=doc))
         self.lucene.commit()
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=["termvector"]))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1.0)]))
         self.assertEquals(2, len(result.hits))
         duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
         self.assertEqual(sorted([['id:6'], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
@@ -802,7 +803,7 @@ class LuceneTest(SeecrTestCase):
             consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
         self.lucene.commit()
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=["termvector"], start=0, stop=2))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1)], start=0, stop=2))
         self.assertEquals(15, result.total)
         self.assertEquals(2, len(result.hits))
 
@@ -827,7 +828,7 @@ class LuceneTest(SeecrTestCase):
         consume(self.lucene.addDocument(identifier="id:98", document=doc))
         self.lucene.commit()
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=["termvector"], start=0, stop=5))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector", 1)], start=0, stop=5))
         self.assertEquals(5, len(result.hits))
         self.assertTrue(hasattr(result.hits[0], "duplicates"))
 
@@ -858,9 +859,15 @@ class LuceneTest(SeecrTestCase):
         doc = Document()
         consume(self.lucene.addDocument(identifier="id:400", document=doc))
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=["termvector1", "termvector2"], start=0, stop=5))
-        self.assertEquals(2, len(result.hits))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1)], start=0, stop=5))
+        self.assertEquals(3, len(result.hits))
+        duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
+        self.assertTrue('id:200' in [d for d in duplicates if 'id:0' in d][0])
 
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1), ("termvector2", 2)], start=0, stop=5))
+        self.assertEquals(4, len(result.hits))
+        duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
+        self.assertFalse('id:200' in [d for d in duplicates if 'id:0' in d][0])
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

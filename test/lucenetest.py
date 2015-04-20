@@ -36,7 +36,7 @@ from weightless.core import consume, retval
 from meresco.lucene import Lucene, VM, DrilldownField, LuceneSettings
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
-from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, TERM_VECTOR_FIELDTYPE, FieldRegistry, INTFIELD
+from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, FieldRegistry, INTFIELD
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause, PhraseQuery
@@ -733,8 +733,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 2.0}, settings)
 
     def testTermVectors(self):
-        factory = FieldRegistry()
-        factory.register("termvector.field", TERM_VECTOR_FIELDTYPE)
+        factory = FieldRegistry(termVectorFields=['termvector.field'])
         for i in range(5):
             doc = Document()
             doc.add(factory.createField("termvector.field", "aap noot noot noot vuur"))
@@ -771,8 +770,7 @@ class LuceneTest(SeecrTestCase):
         self.assertNotEqual(cluster1, cluster3)
 
     def testClustering(self):
-        factory = FieldRegistry()
-        factory.register("termvector", TERM_VECTOR_FIELDTYPE)
+        factory = FieldRegistry(termVectorFields=['termvector'])
         for i in range(5):
             doc = Document()
             doc.add(factory.createField("termvector", "aap noot vuur %s" % i))
@@ -787,8 +785,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEqual(sorted([['id:6'], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
 
     def testClusteringShowOnlyRequestTop(self):
-        factory = FieldRegistry()
-        factory.register("termvector", TERM_VECTOR_FIELDTYPE)
+        factory = FieldRegistry(termVectorFields=['termvector'])
         for i in range(5):
             doc = Document()
             doc.add(factory.createField("termvector", "aap noot vuur %s" % i))
@@ -808,8 +805,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(2, len(result.hits))
 
     def testClusteringWinsOverGroupingAndDedup(self):
-        factory = FieldRegistry()
-        factory.register("termvector", TERM_VECTOR_FIELDTYPE)
+        factory = FieldRegistry(termVectorFields=['termvector'])
         for i in range(15):
             doc = Document()
             doc.add(factory.createField("termvector", "aap noot vuur"))
@@ -833,10 +829,7 @@ class LuceneTest(SeecrTestCase):
         self.assertTrue(hasattr(result.hits[0], "duplicates"))
 
     def testClusterOnMultipleFields(self):
-        factory = FieldRegistry()
-        factory.register("termvector1", TERM_VECTOR_FIELDTYPE)
-        factory.register("termvector2", TERM_VECTOR_FIELDTYPE)
-
+        factory = FieldRegistry(termVectorFields=['termvector1', 'termvector2'])
         for i in range(15):
             doc = Document()
             doc.add(factory.createField("termvector1", "aap noot vuur"))

@@ -36,7 +36,7 @@ KEY_PREFIX = "__key__."
 NUMERIC_PREFIX = "__numeric__."
 
 class FieldRegistry(object):
-    def __init__(self, drilldownFields=None, defaultDefinition=None):
+    def __init__(self, drilldownFields=None, defaultDefinition=None, termVectorFields=None):
         self._fieldDefinitions = {
             IDFIELD: _FieldDefinition.define(type=StringField.TYPE_STORED, name=IDFIELD),
         }
@@ -44,6 +44,7 @@ class FieldRegistry(object):
         self._drilldownFieldNames = set()
         self._hierarchicalDrilldownFieldNames = set()
         self._multivaluedDrilldownFieldNames = set()
+        self._termVectorFieldNames = termVectorFields or []
         self.facetsConfig = FacetsConfig()
         for field in (drilldownFields or []):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued)
@@ -100,7 +101,7 @@ class FieldRegistry(object):
             fieldDefinitionCreator = STRINGFIELD
         if fieldname.startswith(KEY_PREFIX) or fieldname.startswith(NUMERIC_PREFIX):
             fieldDefinitionCreator = NUMERICFIELD
-        fieldDefinition = fieldDefinitionCreator(name=fieldname)
+        fieldDefinition = fieldDefinitionCreator(name=fieldname, termVectors=fieldname in self._termVectorFieldNames)
         self._fieldDefinitions[fieldname] = fieldDefinition
         return fieldDefinition
 
@@ -123,7 +124,10 @@ class _FieldDefinition(object):
         return self._field
 
     @classmethod
-    def define(cls, type, name):
+    def define(cls, type, name, termVectors=False):
+        if termVectors:
+            type = copyType(type) # Copy constructor of FieldType not in working in PyLucene
+            type.setStoreTermVectors(True)
         create = lambda value: Field(name, value, type)
         return cls(
             type=type,
@@ -133,24 +137,38 @@ class _FieldDefinition(object):
             update=lambda field, value: field.setStringValue(value)
         )
 
+def copyType(orig):
+    new = FieldType()
+    new.setIndexed(orig.indexed())
+    new.setStored(orig.stored())
+    new.setTokenized(orig.tokenized())
+    new.setStoreTermVectors(orig.storeTermVectors())
+    new.setStoreTermVectorOffsets(orig.storeTermVectorOffsets())
+    new.setStoreTermVectorPositions(orig.storeTermVectorPositions())
+    new.setStoreTermVectorPayloads(orig.storeTermVectorPayloads())
+    new.setOmitNorms(orig.omitNorms())
+    new.setIndexOptions(orig.indexOptions())
+    new.setDocValueType(orig.docValueType())
+    new.setNumericType(orig.numericType())
+    return new
 
-STRINGFIELD = lambda name: _FieldDefinition.define(type=StringField.TYPE_NOT_STORED, name=name)
-NUMERICFIELD = lambda name: _FieldDefinition(
+STRINGFIELD = lambda **kwargs: _FieldDefinition.define(type=StringField.TYPE_NOT_STORED, **kwargs)
+NUMERICFIELD = lambda name, **ignored: _FieldDefinition(
     type=NumericDocValuesField.TYPE,
     pythonType=long,
     field=NumericDocValuesField(name, long(0)),
     create=lambda value: NumericDocValuesField(name, long(value)),
     update=lambda field, value: field.setLongValue(long(value)),
 )
-TEXTFIELD = lambda name: _FieldDefinition.define(type=TextField.TYPE_NOT_STORED, name=name)
-INTFIELD = lambda name: _FieldDefinition(
+TEXTFIELD = lambda **kwargs: _FieldDefinition.define(type=TextField.TYPE_NOT_STORED, **kwargs)
+INTFIELD = lambda name, **ignoreds: _FieldDefinition(
     type=IntField.TYPE_NOT_STORED,
     pythonType=int,
     field=IntField(name, int(0), IntField.TYPE_NOT_STORED),
     create=lambda value: IntField(name, int(value), IntField.TYPE_NOT_STORED),
     update=lambda field, value: field.setIntValue(int(value)),
 )
-LONGFIELD = lambda name: _FieldDefinition(
+LONGFIELD = lambda name, **ignored: _FieldDefinition(
     type=LongField.TYPE_NOT_STORED,
     pythonType=long,
     field=LongField(name, long(0), LongField.TYPE_NOT_STORED),
@@ -168,17 +186,3 @@ def _createNoTermsFrequencyFieldType():
     f.freeze()
     return f
 NO_TERMS_FREQUENCY_FIELDTYPE = _createNoTermsFrequencyFieldType()
-
-def _termVectorType():
-    f = FieldType()
-    f.setIndexed(True)
-    f.setStored(False)
-    f.setStoreTermVectors(True)
-    f.setStoreTermVectorOffsets(False)
-    f.setStoreTermVectorPositions(False)
-    f.setStoreTermVectorPayloads(False)
-    f.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS)
-    f.setTokenized(True)  # Eh?? ... depends ... ?!
-    f.freeze()
-    return f
-TERM_VECTOR_FIELDTYPE = _termVectorType()

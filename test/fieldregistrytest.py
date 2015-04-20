@@ -115,3 +115,12 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertFalse(field.fieldType().stored())
         self.assertTrue(field.fieldType().indexed())
         self.assertTrue(registry.isUntokenized('aField'))
+
+    def testTermVectorsForField(self):
+        registry = FieldRegistry(termVectorFields=['field1', 'field2'])
+        field = registry.createField('field1', 'id:1')
+        self.assertTrue(field.fieldType().storeTermVectors())
+        field = registry.createField('field2', 'id:1')
+        self.assertTrue(field.fieldType().storeTermVectors())
+        field = registry.createField('field3', 'id:1')
+        self.assertFalse(field.fieldType().storeTermVectors())

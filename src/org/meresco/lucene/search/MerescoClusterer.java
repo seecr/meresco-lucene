@@ -77,7 +77,6 @@ public class MerescoClusterer {
     public void processTopDocs(TopDocs topDocs) throws IOException {
         for (ScoreDoc scoreDoc : topDocs.scoreDocs)
             this.collect(scoreDoc.doc);
-        this.finish();
     }
 
     public void finish() {

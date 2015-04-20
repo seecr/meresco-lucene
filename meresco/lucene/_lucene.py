@@ -201,8 +201,8 @@ class Lucene(object):
 
         if clusterFields:
             t1 = time()
-            total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterFields=clusterFields)
-            times['clusterTime'] = millis(time() - t1)
+            total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterFields=clusterFields, times=times)
+            times['totalClusterTime'] = millis(time() - t1)
         else:
             t1 = time()
             total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector if dedupField else None)
@@ -338,7 +338,7 @@ class Lucene(object):
                 count += 1
         return totalHits, hits
 
-    def _clusterTopDocsResponse(self, collector, start, stop, clusterFields):
+    def _clusterTopDocsResponse(self, collector, start, stop, clusterFields, times):
         clusterer = MerescoClusterer(self._index.getIndexReader(), self._clusteringEps)
         for fieldname, weight in clusterFields:
             clusterer.registerField(fieldname, float(weight))
@@ -347,9 +347,15 @@ class Lucene(object):
         hits = []
         if hasattr(collector, "topDocs"):
             topDocs = collector.topDocs(start)
+            t0 = time()
             clusterer.processTopDocs(topDocs)
+            times['processTopDocsForClustering'] = millis(time() - t0)
+            t0 = time()
+            clusterer.finish()
+            times['clusteringAlgorithm'] = millis(time() - t0)
             count = 0
             seenDocIds = set()
+            t0 = time()
             for scoreDoc in topDocs.scoreDocs:
                 if count >= stop:
                     break
@@ -363,6 +369,7 @@ class Lucene(object):
                 hit.score = scoreDoc.score
                 hits.append(hit)
                 count += 1
+            times['collectClusters'] = millis(time() - t0)
         return totalHits, hits
 
     def _filterFor(self, filterQueries, filter=None):

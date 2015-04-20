@@ -153,7 +153,7 @@ class Lucene(object):
         yield
 
     def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-            filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, keyCollector=None, groupingField=None, clusterField=None, **kwargs):
+            filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, keyCollector=None, groupingField=None, clusterFields=None, **kwargs):
         times = {}
         t0 = time()
         stop = 10 if stop is None else stop
@@ -162,7 +162,7 @@ class Lucene(object):
         collectors = []
         dedupCollector = None
         groupingCollector = None
-        if clusterField:
+        if clusterFields:
             resultsCollector = topCollector = self._topCollector(start=start, stop=stop + self._clusterMoreRecords, sortKeys=sortKeys)
         elif groupingField:
             topCollector = self._topCollector(start=start, stop=stop * 10, sortKeys=sortKeys)
@@ -199,9 +199,9 @@ class Lucene(object):
         self._index.search(luceneQuery, filter_, collector)
         times['searchTime'] = millis(time() - t1)
 
-        if clusterField:
+        if clusterFields:
             t1 = time()
-            total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterField=clusterField)
+            total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterFields=clusterFields)
             times['clusterTime'] = millis(time() - t1)
         else:
             t1 = time()
@@ -338,8 +338,8 @@ class Lucene(object):
                 count += 1
         return totalHits, hits
 
-    def _clusterTopDocsResponse(self, collector, start, stop, clusterField):
-        clusterer = MerescoClusterer(self._index.getIndexReader(), clusterField, self._clusteringEps)
+    def _clusterTopDocsResponse(self, collector, start, stop, clusterFields):
+        clusterer = MerescoClusterer(self._index.getIndexReader(), clusterFields, self._clusteringEps)
 
         totalHits = collector.getTotalHits()
         hits = []
@@ -357,7 +357,7 @@ class Lucene(object):
                 seenDocIds.update(set(clusteredDocIds))
 
                 hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
-                hit.duplicates = {clusterField: [self._index.getDocument(docId).get(IDFIELD) for docId in clusteredDocIds]}
+                hit.duplicates = {"cluster": [self._index.getDocument(docId).get(IDFIELD) for docId in clusteredDocIds]}
                 hit.score = scoreDoc.score
                 hits.append(hit)
                 count += 1

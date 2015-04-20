@@ -780,9 +780,10 @@ class LuceneTest(SeecrTestCase):
         consume(self.lucene.addDocument(identifier="id:6", document=doc))
         self.lucene.commit()
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterField="termvector"))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=["termvector"]))
         self.assertEquals(2, len(result.hits))
-        self.assertEqual(sorted(['id:4', 'id:3', 'id:2', 'id:0', 'id:1']), sorted(result.hits[0].duplicates['termvector']))
+        duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
+        self.assertEqual(sorted([['id:6'], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
 
     def testClusteringShowOnlyRequestTop(self):
         factory = FieldRegistry()
@@ -801,7 +802,7 @@ class LuceneTest(SeecrTestCase):
             consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
         self.lucene.commit()
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterField="termvector", start=0, stop=2))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=["termvector"], start=0, stop=2))
         self.assertEquals(15, result.total)
         self.assertEquals(2, len(result.hits))
 
@@ -826,8 +827,40 @@ class LuceneTest(SeecrTestCase):
         consume(self.lucene.addDocument(identifier="id:98", document=doc))
         self.lucene.commit()
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterField="termvector", start=0, stop=5))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=["termvector"], start=0, stop=5))
         self.assertEquals(5, len(result.hits))
+        self.assertTrue(hasattr(result.hits[0], "duplicates"))
+
+    def testClusterOnMultipleFields(self):
+        factory = FieldRegistry()
+        factory.register("termvector1", TERM_VECTOR_FIELDTYPE)
+        factory.register("termvector2", TERM_VECTOR_FIELDTYPE)
+
+        for i in range(15):
+            doc = Document()
+            doc.add(factory.createField("termvector1", "aap noot vuur"))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+
+        doc = Document()
+        doc.add(factory.createField("termvector1", "aap noot vuur"))
+        doc.add(factory.createField("termvector2", "mies water"))
+        consume(self.lucene.addDocument(identifier="id:100", document=doc))
+
+        doc = Document()
+        doc.add(factory.createField("termvector1", "aap vuur"))
+        doc.add(factory.createField("termvector2", "mies"))
+        consume(self.lucene.addDocument(identifier="id:200", document=doc))
+
+        doc = Document()
+        doc.add(factory.createField("termvector2", "iets"))
+        consume(self.lucene.addDocument(identifier="id:300", document=doc))
+
+        doc = Document()
+        consume(self.lucene.addDocument(identifier="id:400", document=doc))
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=["termvector1", "termvector2"], start=0, stop=5))
+        self.assertEquals(2, len(result.hits))
+
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

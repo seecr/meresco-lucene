@@ -45,26 +45,26 @@ import org.apache.lucene.util.BytesRefHash;
 public class MerescoClusterer {
 
     private IndexReader reader;
-    private String fieldname;
+    private String[] fieldnames;
     private List<MerescoVector> clusters = new ArrayList<MerescoVector>();
     private BytesRefHash ords = new BytesRefHash();
     private List<Cluster<MerescoVector>> cluster;
     private double eps;
     private int minPoints;
 
-    public MerescoClusterer(IndexReader reader, String fieldname, double eps) {
-        this(reader, fieldname, eps, 2);
+    public MerescoClusterer(IndexReader reader, String[] fieldnames, double eps) {
+        this(reader, fieldnames, eps, 2);
     }
 
-    public MerescoClusterer(IndexReader reader, String fieldname, double eps, int minPoints) {
+    public MerescoClusterer(IndexReader reader, String[] fieldnames, double eps, int minPoints) {
         this.reader = reader;
-        this.fieldname = fieldname;
+        this.fieldnames = fieldnames;
         this.eps = eps;
         this.minPoints = minPoints;
     }
 
     public void collect(int doc) throws IOException {
-        MerescoVector vector = termVector(doc, fieldname);
+        MerescoVector vector = createVector(doc);   
         if (vector != null)
             this.clusters.add(vector);
     }
@@ -96,7 +96,25 @@ public class MerescoClusterer {
         return null;
     }
 
-    public MerescoVector termVector(final int docId, String field) throws IOException {
+    public MerescoVector createVector(int docId) throws IOException {
+        RealVector vector = null;
+        for (String fieldname : fieldnames) {
+            RealVector v = termVector(docId, fieldname);
+            if (v != null) {
+                if (vector == null) {
+                    vector = v;
+                } else {
+                    vector.combineToSelf(1.0, 1.0, v);
+                }
+            }
+        }
+        if (vector == null) {
+            return null;
+        }
+        return new MerescoVector(vector, docId);
+    }
+    
+    public RealVector termVector(final int docId, String field) throws IOException {
         Terms terms = this.reader.getTermVector(docId, field);
         if (terms == null)
             return null;
@@ -109,7 +127,7 @@ public class MerescoClusterer {
                 ord = -ord - 1;
             vector.setEntry(ord, termsEnum.totalTermFreq());
         }
-        return new MerescoVector(vector, docId);
+        return vector;
     }
 
     class MerescoVector implements Clusterable {

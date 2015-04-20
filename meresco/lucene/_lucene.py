@@ -224,8 +224,7 @@ class Lucene(object):
             times['suggestionTime'] = millis(time() - t1)
 
         response.queryTime = millis(time() - t0)
-        if clusterField:
-            response.times = times
+        response.times = times
         response.info = {
             'type': 'Query',
             'query': simplifiedDict(dict(

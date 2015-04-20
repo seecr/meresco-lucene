@@ -89,6 +89,7 @@ class LuceneTest(SeecrTestCase):
     def testCreate(self):
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(0, result.total)
+        self.assertTrue(hasattr(result, 'times'))
 
     def testAdd1Document(self):
         document = Document()

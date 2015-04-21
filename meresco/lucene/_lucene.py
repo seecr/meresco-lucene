@@ -309,7 +309,7 @@ class Lucene(object):
         groupingCollectorFieldName = groupingCollector.getKeyName() if groupingCollector else None
         seenIds = set()
         if hasattr(collector, "topDocs"):
-            count = 0
+            count = start
             for scoreDoc in collector.topDocs(start).scoreDocs:
                 if count >= stop:
                     break
@@ -353,7 +353,7 @@ class Lucene(object):
             t0 = time()
             clusterer.finish()
             times['clusteringAlgorithm'] = millis(time() - t0)
-            count = 0
+            count = start
             seenDocIds = set()
             t0 = time()
             for scoreDoc in topDocs.scoreDocs:

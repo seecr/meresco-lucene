@@ -862,6 +862,28 @@ class LuceneTest(SeecrTestCase):
         duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
         self.assertFalse('id:200' in [d for d in duplicates if 'id:0' in d][0])
 
+    def testReturnNoMoreThanStopForGrouping(self):
+        for i in range(50):
+            doc = Document()
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        doc = Document()
+        consume(self.lucene.addDocument(identifier="id:100", document=doc))
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__key__", start=5, stop=7, sortKeys=[{'sortBy': 'sort', 'sortDescending': False}]))
+        self.assertEqual(51, result.total)
+        self.assertEqual(2, len(result.hits))
+
+    def testReturnNoMoreThanStopForClustering(self):
+        for i in range(50):
+            doc = Document()
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        doc = Document()
+        consume(self.lucene.addDocument(identifier="id:100", document=doc))
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("__key__", 1.0)], start=5, stop=7, sortKeys=[{'sortBy': 'sort', 'sortDescending': False}]))
+        self.assertEqual(51, result.total)
+        self.assertEqual(2, len(result.hits))
+
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]
 

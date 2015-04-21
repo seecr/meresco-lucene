@@ -137,10 +137,15 @@ class LuceneTest(IntegrationTestCase):
     def testDedup(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
         response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.field", core="main", stop=3, sortKeys=[{'sortBy': '__id__', 'sortDescending': False}])
-
         self.assertEquals(
             [('record:1', 1), ('record:10', 1), ('record:100', 1)],
             [(hit.id, hit.duplicateCount['__key__.field']) for hit in response.hits]
+        )
+
+        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.groupfield", dedupSortField="__id__", core="main2", stop=3, sortKeys=[{'sortBy': '__id__', 'sortDescending': False}])
+        self.assertEquals(
+            [('record:100', 100), ('record:1000', 100), ('record:200', 100)],
+            [(hit.id, hit.duplicateCount['__key__.groupfield']) for hit in response.hits]
         )
 
     def testDutchStemming(self):
@@ -159,6 +164,15 @@ class LuceneTest(IntegrationTestCase):
     def testFieldHierarchicalSearch(self):
         response = self.doSruQuery('untokenized.fieldHier exact "parent0>child1>grandchild2"', facet='untokenized.fieldHier', drilldownFormat='json')
         self.assertEquals('3', xpathFirst(response, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))
+
+    def testGrouping(self):
+        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
+        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), groupingField="__key__.groupfield", core="main2", stop=3, sortKeys=[{'sortBy': '__id__', 'sortDescending': False}])
+        self.assertEqual(3, len(response.hits))
+        self.assertEquals(
+            [('record:1', 100), ('record:100', 100), ('record:200', 100)],
+            [(hit.id, len(hit.duplicates['__key__.groupfield'])) for hit in response.hits]
+        )
 
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru', drilldownFormat='xml'):
         arguments={'version': '1.2',

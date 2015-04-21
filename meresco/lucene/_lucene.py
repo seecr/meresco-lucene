@@ -152,16 +152,11 @@ class Lucene(object):
         generatorReturn(self._facetResult(facetCollector, facets))
         yield
 
-    def executeQuery(self, luceneQuery, start=None, stop=None, sortKeys=None, facets=None,
-            filterQueries=None, suggestionRequest=None, filter=None, dedupField=None, dedupSortField=None, scoreCollector=None, drilldownQueries=None, keyCollector=None, groupingField=None, clusterFields=None, **kwargs):
-        times = {}
-        t0 = time()
-        stop = 10 if stop is None else stop
-        start = 0 if start is None else start
-
+    def _createCollectors(self, start, stop, sortKeys=None, clusterFields=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollector=None, scoreCollector=None, **kwargs):
         collectors = []
         dedupCollector = None
         groupingCollector = None
+        facetCollector = None
         if clusterFields:
             resultsCollector = topCollector = self._topCollector(start=start, stop=stop + self._clusterMoreRecords, sortKeys=sortKeys)
         elif groupingField:
@@ -190,30 +185,44 @@ class Lucene(object):
         if scoreCollector:
             scoreCollector.setDelegate(collector)
             collector = scoreCollector
+        return collector, topCollector, groupingCollector, dedupCollector, facetCollector
 
-        filter_ = self._filterFor(filterQueries, filter)
+    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, filterQueries=None, suggestionRequest=None, filter=None, drilldownQueries=None, clusterFields=None, **kwargs):
+        times = {}
+        t0 = time()
+        stop = 10 if stop is None else stop
+        start = 0 if start is None else start
 
-        if drilldownQueries:
-            luceneQuery = self.createDrilldownQuery(luceneQuery, drilldownQueries)
-        t1 = time()
-        self._index.search(luceneQuery, filter_, collector)
-        times['searchTime'] = millis(time() - t1)
+        topCollectorStop = stop
+        while True:
+            collector, topCollector, groupingCollector, dedupCollector, facetCollector = self._createCollectors(start=start, stop=topCollectorStop, facets=facets, **kwargs)
+            filter_ = self._filterFor(filterQueries, filter)
 
-        if clusterFields:
+            if drilldownQueries:
+                luceneQuery = self.createDrilldownQuery(luceneQuery, drilldownQueries)
+
             t1 = time()
-            total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterFields=clusterFields, times=times)
-            times['totalClusterTime'] = millis(time() - t1)
-        else:
-            t1 = time()
-            total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector if dedupField else None)
-            times['topDocsTime'] = millis(time() - t1)
+            self._index.search(luceneQuery, filter_, collector)
+            times['searchTime'] = millis(time() - t1)
+
+            if clusterFields:
+                t1 = time()
+                total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterFields=clusterFields, times=times)
+                times['totalClusterTime'] = millis(time() - t1)
+            else:
+                t1 = time()
+                total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector)
+                times['topDocsTime'] = millis(time() - t1)
+            if len(hits) == stop - start or topCollectorStop >= total:
+                break
+            topCollectorStop *= 10
 
         response = LuceneResponse(total=total, hits=hits, drilldownData=[])
 
         if dedupCollector:
             response.totalWithDuplicates = dedupCollector.totalHits
 
-        if facets:
+        if facetCollector:
             t1 = time()
             response.drilldownData.extend(self._facetResult(facetCollector, facets))
             times['facetTime'] = millis(time() - t1)
@@ -231,13 +240,11 @@ class Lucene(object):
                     luceneQuery=luceneQuery,
                     start=start,
                     stop=stop,
-                    sortKeys=sortKeys,
                     facets=facets,
                     filterQueries=filterQueries,
                     suggestionRequest=suggestionRequest,
-                    dedupField=dedupField,
-                    dedupSortField=dedupSortField,
                     drilldownQueries=drilldownQueries,
+                    **kwargs
                 ))
             }
         raise StopIteration(response)

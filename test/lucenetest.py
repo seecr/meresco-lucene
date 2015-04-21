@@ -40,7 +40,7 @@ from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, FieldRegi
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause, PhraseQuery
-from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField
+from org.apache.lucene.document import Document, TextField, Field, NumericDocValuesField, StringField
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import FacetField
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
@@ -104,13 +104,10 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(1, result.total)
         self.assertTrue(result.queryTime > 0.0001, result.asJson())
         self.assertEquals({'query': {
-                'dedupField': None,
-                'dedupSortField': None,
                 'drilldownQueries': None,
                 'facets': None,
                 'filterQueries': None,
                 'luceneQuery': 'title:the',
-                'sortKeys': None,
                 'start': 0,
                 'stop': 10,
                 'suggestionRequest': None
@@ -861,6 +858,24 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(4, len(result.hits))
         duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
         self.assertFalse('id:200' in [d for d in duplicates if 'id:0' in d][0])
+
+    def testCollectUntilStopWithForGrouping(self):
+        for i in range(20):
+            doc = Document()
+            doc.add(NumericDocValuesField("__key__", long(42)))
+            doc.add(StringField("sort", "%03d" % i, Field.Store.NO))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        doc = Document()
+        doc.add(StringField("sort", "100", Field.Store.NO))
+        consume(self.lucene.addDocument(identifier="id:100", document=doc))
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__key__", start=0, stop=2, sortKeys=[{'sortBy': 'sort', 'sortDescending': False}]))
+        self.assertEqual(21, result.total)
+        self.assertEqual(2, len(result.hits))
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), groupingField="__key__", start=0, stop=5, sortKeys=[{'sortBy': 'sort', 'sortDescending': False}]))
+        self.assertEqual(21, result.total)
+        self.assertEqual(2, len(result.hits))
 
     def testReturnNoMoreThanStopForGrouping(self):
         for i in range(50):

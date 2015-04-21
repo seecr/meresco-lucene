@@ -106,11 +106,12 @@ public class MerescoClusterer {
         for (String fieldname : fieldnames.keySet()) {
             RealVector v = termVector(docId, fieldname);
             if (v != null) {
+                double weight = this.fieldnames.get(fieldname);
                 if (vector == null) {
                     vector = v;
-                    vectorWeight = this.fieldnames.get(fieldname);
+                    vectorWeight = weight;
                 } else {
-                    vector.combineToSelf(vectorWeight, this.fieldnames.get(fieldname), v);
+                    vector.combineToSelf(vectorWeight, weight, v);
                 }
             }
         }

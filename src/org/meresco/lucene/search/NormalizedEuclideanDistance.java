@@ -26,6 +26,7 @@
 package org.meresco.lucene.search;
 
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
+import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.MathArrays;
 
 public class NormalizedEuclideanDistance implements DistanceMeasure {
@@ -33,17 +34,28 @@ public class NormalizedEuclideanDistance implements DistanceMeasure {
     private static final long serialVersionUID = -1340861619355236387L;
 
     @Override
-    public double compute(double[] a, double[] b) {
-        int sizeA = 0, sizeB = 0;
-        for (double x : a) {
-            if (x > 0)
-                sizeA++;
+    public double compute(final double[] a, final double[] b) {
+        final double[] shortest = a.length < b.length ? a : b;
+        final double[] longest = shortest == a ? b : a;
+
+        double sum = 0;
+        int i = 0;
+        int maxSize = 0;
+        for (; i < shortest.length; i++) {
+            final double x = longest[i];
+            final double y = shortest[i];
+            if (x != 0)
+                maxSize++;
+            final double dp = x - y;
+            sum += dp * dp;
         }
-        for (double x : b) {
-            if (x > 0)
-                sizeB++;
+        for (i = i + 1; i < longest.length; i++) {
+            final double x = longest[i];
+            if (x != 0)
+                maxSize++;
+            sum += x * x;
         }
-        return MathArrays.distance(a, b) / (Math.max(sizeA, sizeB));
+        return FastMath.sqrt(sum) / maxSize;
     }
 
 }

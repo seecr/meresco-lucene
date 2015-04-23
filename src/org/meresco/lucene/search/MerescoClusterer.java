@@ -36,6 +36,8 @@ import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
+import org.apache.commons.math3.util.OpenIntToDoubleHashMap;
+import org.apache.commons.math3.util.OpenIntToDoubleHashMap.Iterator;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -102,10 +104,10 @@ public class MerescoClusterer {
     }
 
     public MerescoVector createVector(int docId) throws IOException {
-        RealVector vector = null;
+        MerescoVector vector = null;
         double vectorWeight = 1.0;
         for (String fieldname : fieldnames.keySet()) {
-            RealVector v = termVector(docId, fieldname);
+            MerescoVector v = termVector(docId, fieldname);
             if (v != null) {
                 double weight = this.fieldnames.get(fieldname);
                 if (vector == null) {
@@ -119,15 +121,15 @@ public class MerescoClusterer {
         if (vector == null) {
             return null;
         }
-        return new MerescoVector(vector, docId);
+        return vector;
     }
-    
-    public RealVector termVector(final int docId, String field) throws IOException {
+
+    public MerescoVector termVector(final int docId, String field) throws IOException {
         Terms terms = this.reader.getTermVector(docId, field);
         if (terms == null)
             return null;
         TermsEnum termsEnum = terms.iterator(null);
-        final RealVector vector = new OpenMapRealVector(10000);
+        MerescoVector vector = new MerescoVector(Math.max(10000, ords.size()), docId);
         while (termsEnum.next() != null) {
             BytesRef term = termsEnum.term();
             int ord = ords.add(term);
@@ -139,17 +141,39 @@ public class MerescoClusterer {
     }
 
     class MerescoVector implements Clusterable {
-        private RealVector vector;
+        private OpenIntToDoubleHashMap entries;
         private int docId;
+        private int maxIndex;
 
-        public MerescoVector(RealVector vector, int docId) {
-            this.vector = vector;
+        public MerescoVector(int size, int docId) {
+            this.entries = new OpenIntToDoubleHashMap(size, 0.0);
             this.docId = docId;
+            this.maxIndex = 0;
         }
 
-        @Override
+        public void setEntry(int index, double value) {
+            this.entries.put(index, value);
+            if (index > this.maxIndex)
+                this.maxIndex = index;
+        }
+
+        public void combineToSelf(double a, double b, MerescoVector y) {
+            int maxSize = Math.max(this.maxIndex, y.maxIndex);
+            for (int i = 0; i < maxSize; i++) {
+                final double xi = this.entries.get(i);
+                final double yi = y.entries.get(i);
+                setEntry(i, a * xi + b * yi);
+            }
+        }
+
         public double[] getPoint() {
-            return this.vector.toArray();
+            double[] res = new double[this.maxIndex + 1];
+            Iterator iter = entries.iterator();
+            while (iter.hasNext()) {
+                iter.advance();
+                res[iter.key()] = iter.value();
+            }
+            return res;
         }
 
         public int docId() {

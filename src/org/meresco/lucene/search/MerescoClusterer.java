@@ -55,7 +55,7 @@ public class MerescoClusterer {
     private int minPoints;
 
     public MerescoClusterer(IndexReader reader, double eps) {
-        this(reader, eps, 2);
+        this(reader, eps, 1);
     }
 
     public MerescoClusterer(IndexReader reader, double eps, int minPoints) {
@@ -67,11 +67,12 @@ public class MerescoClusterer {
     public void registerField(String fieldname, double weight) {
         fieldnames.put(fieldname, weight);
     }
-    
+
     public void collect(int doc) throws IOException {
-        MerescoVector vector = createVector(doc);   
-        if (vector != null)
+        MerescoVector vector = createVector(doc);
+        if (vector != null) {
             this.clusters.add(vector);
+        }
     }
 
     public void processTopDocs(TopDocs topDocs) throws IOException {
@@ -80,7 +81,7 @@ public class MerescoClusterer {
     }
 
     public void finish() {
-        this.cluster = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints).cluster(this.clusters);
+        this.cluster = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new NormalizedEuclideanDistance()).cluster(this.clusters);
     }
 
     public int[] cluster(int docId) {

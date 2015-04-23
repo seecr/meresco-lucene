@@ -51,7 +51,7 @@ from .utils import simplifiedDict
 class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
-    CLUSTERING_EPS = 2.0
+    CLUSTERING_EPS = 0.4
     CLUSTER_MORE_RECORDS = 100
 
     def __init__(self, path, reactor, settings, name=None, **kwargs):

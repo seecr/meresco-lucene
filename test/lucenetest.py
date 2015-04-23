@@ -719,7 +719,7 @@ class LuceneTest(SeecrTestCase):
 
     def testUpdateReaderSettings(self):
         settings = self.lucene.getSettings()
-        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 2.0}, settings)
+        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4}, settings)
 
         self.lucene.setSettings(similarity=dict(k1=1.0, b=2.0), numberOfConcurrentTasks=10, clusterMoreRecords=200, clusteringEps=1.0)
         settings = self.lucene.getSettings()
@@ -727,7 +727,7 @@ class LuceneTest(SeecrTestCase):
 
         self.lucene.setSettings(numberOfConcurrentTasks=None, similarity=None, clusterMoreRecords=None, clusteringEps=None)
         settings = self.lucene.getSettings()
-        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 2.0}, settings)
+        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4}, settings)
 
     def testTermVectors(self):
         factory = FieldRegistry(termVectorFields=['termvector.field'])
@@ -748,7 +748,7 @@ class LuceneTest(SeecrTestCase):
         self.lucene.commit()
         reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
 
-        collector = MerescoClusterer(reader, 1.0)
+        collector = MerescoClusterer(reader, 0.5)
         collector.registerField("termvector.field", 1.0)
         for i in range(15):
             collector.collect(i)
@@ -855,7 +855,7 @@ class LuceneTest(SeecrTestCase):
         self.assertTrue('id:200' in [d for d in duplicates if 'id:0' in d][0])
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1), ("termvector2", 2)], start=0, stop=5))
-        self.assertEquals(4, len(result.hits))
+        self.assertEquals(5, len(result.hits))
         duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
         self.assertFalse('id:200' in [d for d in duplicates if 'id:0' in d][0])
 

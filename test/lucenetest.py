@@ -80,6 +80,7 @@ class LuceneTest(SeecrTestCase):
                 for c in refs.keys()
                 if c != 'class java.lang.Class' and
                     c != 'class org.apache.lucene.document.Field' and # Fields are kept in FieldRegistry for reusing
+                    c != 'class org.apache.lucene.document.NumericDocValuesField' and
                     c != 'class org.apache.lucene.facet.FacetsConfig'
             ])
 
@@ -729,7 +730,7 @@ class LuceneTest(SeecrTestCase):
         settings = self.lucene.getSettings()
         self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4}, settings)
 
-    def testTermVectors(self):
+    def testClusterOnTermVectors(self):
         factory = FieldRegistry(termVectorFields=['termvector.field'])
         for i in range(5):
             doc = Document()
@@ -749,7 +750,7 @@ class LuceneTest(SeecrTestCase):
         reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
 
         collector = MerescoClusterer(reader, 0.5)
-        collector.registerField("termvector.field", 1.0)
+        collector.registerField("termvector.field", 1.0, False)
         for i in range(15):
             collector.collect(i)
         collector.finish()
@@ -766,7 +767,44 @@ class LuceneTest(SeecrTestCase):
         self.assertNotEqual(cluster1, cluster2)
         self.assertNotEqual(cluster1, cluster3)
 
-    def testClustering(self):
+    def testClusterOnNumericFields(self):
+        factory = FieldRegistry()
+        for i in range(5):
+            doc = Document()
+            doc.add(factory.createField("__key__.field", long(1)))
+            consume(self.lucene.addDocument(identifier="id:%s" % i , document=doc))
+
+        for i in range(5, 10):
+            doc = Document()
+            doc.add(factory.createField("__key__.field", long(2)))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+
+        for i in range(10, 15):
+            doc = Document()
+            doc.add(factory.createField("__key__.field", long(3)))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        self.lucene.commit()
+        reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
+
+        collector = MerescoClusterer(reader, 0.5)
+        collector.registerField("__key__.field", 1.0, True)
+        for i in range(15):
+            collector.collect(i)
+        collector.finish()
+
+        cluster1 = list(collector.cluster(0))
+        self.assertEqual(5, len(cluster1))
+
+        cluster2 = list(collector.cluster(5))
+        self.assertEqual(5, len(cluster2))
+
+        cluster3 = list(collector.cluster(10))
+        self.assertEqual(5, len(cluster3))
+
+        self.assertNotEqual(cluster1, cluster2)
+        self.assertNotEqual(cluster1, cluster3)
+
+    def testClusteringOnVectors(self):
         factory = FieldRegistry(termVectorFields=['termvector'])
         for i in range(5):
             doc = Document()
@@ -777,6 +815,21 @@ class LuceneTest(SeecrTestCase):
         self.lucene.commit()
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1.0)]))
+        self.assertEquals(2, len(result.hits))
+        duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
+        self.assertEqual(sorted([['id:6'], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
+
+    def testClusteringOnNumericField(self):
+        factory = FieldRegistry()
+        for i in range(5):
+            doc = Document()
+            doc.add(factory.createField("__key__.field", long(1)))
+            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
+        doc = Document()
+        consume(self.lucene.addDocument(identifier="id:6", document=doc))
+        self.lucene.commit()
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("__key__.field", 1.0)]))
         self.assertEquals(2, len(result.hits))
         duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
         self.assertEqual(sorted([['id:6'], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))

@@ -31,20 +31,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.math3.linear.OpenMapRealVector;
-import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
 import org.apache.commons.math3.util.OpenIntToDoubleHashMap;
 import org.apache.commons.math3.util.OpenIntToDoubleHashMap.Iterator;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.NumericUtils;
 
 public class MerescoClusterer {
 
@@ -55,6 +58,7 @@ public class MerescoClusterer {
     private List<Cluster<MerescoVector>> cluster;
     private double eps;
     private int minPoints;
+    private List<String> numericFields = new ArrayList<String>();
 
     public MerescoClusterer(IndexReader reader, double eps) {
         this(reader, eps, 1);
@@ -66,8 +70,10 @@ public class MerescoClusterer {
         this.minPoints = minPoints;
     }
 
-    public void registerField(String fieldname, double weight) {
-        fieldnames.put(fieldname, weight);
+    public void registerField(String fieldname, double weight, boolean numeric) {
+        this.fieldnames.put(fieldname, weight);
+        if (numeric)
+            this.numericFields.add(fieldname);
     }
 
     public void collect(int doc) throws IOException {
@@ -103,7 +109,7 @@ public class MerescoClusterer {
         return null;
     }
 
-    public MerescoVector createVector(int docId) throws IOException {
+    private MerescoVector createVector(int docId) throws IOException {
         MerescoVector vector = null;
         double vectorWeight = 1.0;
         for (String fieldname : fieldnames.keySet()) {
@@ -124,20 +130,46 @@ public class MerescoClusterer {
         return vector;
     }
 
-    public MerescoVector termVector(final int docId, String field) throws IOException {
+    private MerescoVector termVector(final int docId, String field) throws IOException {
+        if (this.numericFields.contains(field)) {
+            return vectorFromNumericField(docId, field);
+        } else {
+            return vectorFromTermVector(docId, field);
+        }
+    }
+
+    private MerescoVector vectorFromTermVector(final int docId, String field) throws IOException {
         Terms terms = this.reader.getTermVector(docId, field);
         if (terms == null)
             return null;
         TermsEnum termsEnum = terms.iterator(null);
-        MerescoVector vector = new MerescoVector(Math.max(10000, ords.size()), docId);
+        MerescoVector vector = new MerescoVector(Math.max(1000, ords.size() + 10), docId);
         while (termsEnum.next() != null) {
             BytesRef term = termsEnum.term();
-            int ord = ords.add(term);
-            if (ord < 0)
-                ord = -ord - 1;
-            vector.setEntry(ord, termsEnum.totalTermFreq());
+            vector.setEntry(ord(term), termsEnum.totalTermFreq());
         }
         return vector;
+    }
+
+    private MerescoVector vectorFromNumericField(final int docId, String field) throws IOException {
+        List<AtomicReaderContext> leaves = this.reader.leaves();
+        AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
+        NumericDocValues docValues = context.reader().getNumericDocValues(field);
+        if (docValues == null) {
+            return null;
+        }
+        BytesRefBuilder term = new BytesRefBuilder();
+        NumericUtils.longToPrefixCoded(docValues.get(docId - context.docBase), 0, term);
+        MerescoVector vector = new MerescoVector(Math.max(1000, ords.size() + 1), docId);
+        vector.setEntry(ord(term.get()), 1);
+        return vector;
+    }
+
+    public int ord(BytesRef b) {
+        int ord = ords.add(b);
+        if (ord < 0)
+            ord = -ord - 1;
+        return ord;
     }
 
     class MerescoVector implements Clusterable {

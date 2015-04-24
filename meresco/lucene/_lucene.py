@@ -348,8 +348,7 @@ class Lucene(object):
     def _clusterTopDocsResponse(self, collector, start, stop, clusterFields, times):
         clusterer = MerescoClusterer(self._index.getIndexReader(), self._clusteringEps)
         for fieldname, weight in clusterFields:
-            clusterer.registerField(fieldname, float(weight))
-
+            clusterer.registerField(fieldname, float(weight), self._fieldRegistry.isNumeric(fieldname))
         totalHits = collector.getTotalHits()
         hits = []
         if hasattr(collector, "topDocs"):

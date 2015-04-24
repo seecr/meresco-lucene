@@ -25,7 +25,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE, STRINGFIELD
+from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE, STRINGFIELD, INTFIELD, LONGFIELD
 from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.document import StringField, TextField
 from meresco.lucene import DrilldownField
@@ -124,3 +124,13 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(field.fieldType().storeTermVectors())
         field = registry.createField('field3', 'id:1')
         self.assertFalse(field.fieldType().storeTermVectors())
+
+    def testIsNumeric(self):
+        registry = FieldRegistry()
+        registry.register("longfield", fieldDefinition=LONGFIELD)
+        registry.register("intfield", fieldDefinition=INTFIELD)
+        self.assertFalse(registry.isNumeric('field1'))
+        self.assertTrue(registry.isNumeric('longfield'))
+        self.assertTrue(registry.isNumeric('intfield'))
+        self.assertTrue(registry.isNumeric('__key__.field1'))
+

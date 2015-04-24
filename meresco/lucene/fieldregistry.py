@@ -67,6 +67,10 @@ class FieldRegistry(object):
     def isUntokenized(self, fieldname):
         return self._getFieldDefinition(fieldname).isUntokenized
 
+    def isNumeric(self, fieldname):
+        fieldType = self._getFieldDefinition(fieldname).type
+        return fieldType.numericType() is not None or fieldType.docValueType() == FieldInfo.DocValuesType.NUMERIC
+
     def registerDrilldownField(self, fieldname, hierarchical=False, multiValued=True):
         self._drilldownFieldNames.add(fieldname)
         if hierarchical:

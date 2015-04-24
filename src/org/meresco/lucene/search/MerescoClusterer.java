@@ -89,7 +89,9 @@ public class MerescoClusterer {
     }
 
     public void finish() {
-        this.cluster = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new NormalizedEuclideanDistance()).cluster(this.clusters);
+        this.cluster = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new NormalizedEuclideanDistance())
+                .cluster(this.clusters);
+        // System.out.println("Ords: " + this.ords.size());
     }
 
     public int[] cluster(int docId) {
@@ -98,7 +100,7 @@ public class MerescoClusterer {
             for (MerescoVector oc : points) {
                 if (oc.docId == docId) {
                     int[] result = new int[points.size()];
-                    int i=0;
+                    int i = 0;
                     for (MerescoVector oc1 : points) {
                         result[i++] = oc1.docId;
                     }
@@ -113,7 +115,7 @@ public class MerescoClusterer {
         MerescoVector vector = null;
         double vectorWeight = 1.0;
         for (String fieldname : fieldnames.keySet()) {
-            MerescoVector v = termVector(docId, fieldname);
+            MerescoVector v = this.termVector(docId, fieldname);
             if (v != null) {
                 double weight = this.fieldnames.get(fieldname);
                 if (vector == null) {
@@ -132,9 +134,9 @@ public class MerescoClusterer {
 
     private MerescoVector termVector(final int docId, String field) throws IOException {
         if (this.numericFields.contains(field)) {
-            return vectorFromNumericField(docId, field);
+            return this.vectorFromNumericField(docId, field);
         } else {
-            return vectorFromTermVector(docId, field);
+            return this.vectorFromTermVector(docId, field);
         }
     }
 
@@ -143,7 +145,7 @@ public class MerescoClusterer {
         if (terms == null)
             return null;
         TermsEnum termsEnum = terms.iterator(null);
-        MerescoVector vector = new MerescoVector(Math.max(1000, ords.size() + 10), docId);
+        MerescoVector vector = new MerescoVector(docId);
         while (termsEnum.next() != null) {
             BytesRef term = termsEnum.term();
             vector.setEntry(ord(term), termsEnum.totalTermFreq());
@@ -160,7 +162,7 @@ public class MerescoClusterer {
         }
         BytesRefBuilder term = new BytesRefBuilder();
         NumericUtils.longToPrefixCoded(docValues.get(docId - context.docBase), 0, term);
-        MerescoVector vector = new MerescoVector(Math.max(1000, ords.size() + 1), docId);
+        MerescoVector vector = new MerescoVector(docId);
         vector.setEntry(ord(term.get()), 1);
         return vector;
     }
@@ -172,13 +174,14 @@ public class MerescoClusterer {
         return ord;
     }
 
-    class MerescoVector implements Clusterable {
+    static class MerescoVector implements Clusterable {
         private OpenIntToDoubleHashMap entries;
         private int docId;
         private int maxIndex;
+        private double[] point = null;
 
-        public MerescoVector(int size, int docId) {
-            this.entries = new OpenIntToDoubleHashMap(size, 0.0);
+        public MerescoVector(int docId) {
+            this.entries = new OpenIntToDoubleHashMap(0.0);
             this.docId = docId;
             this.maxIndex = 0;
         }
@@ -199,13 +202,15 @@ public class MerescoClusterer {
         }
 
         public double[] getPoint() {
-            double[] res = new double[this.maxIndex + 1];
-            Iterator iter = entries.iterator();
-            while (iter.hasNext()) {
-                iter.advance();
-                res[iter.key()] = iter.value();
+            if (this.point == null) {
+                this.point = new double[this.maxIndex + 1];
+                Iterator iter = entries.iterator();
+                while (iter.hasNext()) {
+                    iter.advance();
+                    this.point[iter.key()] = iter.value();
+                }
             }
-            return res;
+            return this.point;
         }
 
         public int docId() {

@@ -32,6 +32,8 @@ public class NormalizedEuclideanDistance implements DistanceMeasure {
 
     private static final long serialVersionUID = -1340861619355236387L;
 
+    static int n = 0;
+    
     @Override
     public double compute(final double[] a, final double[] b) {
         final double[] shortest = a.length < b.length ? a : b;

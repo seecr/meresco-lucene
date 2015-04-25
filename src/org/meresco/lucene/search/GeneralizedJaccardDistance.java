@@ -26,8 +26,9 @@
 package org.meresco.lucene.search;
 
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
+import org.apache.commons.math3.util.FastMath;
 
-public class InverseJaccardDistance implements DistanceMeasure {
+public class GeneralizedJaccardDistance implements DistanceMeasure {
 
     private static final long serialVersionUID = -1340861619355236388L;
 
@@ -35,23 +36,20 @@ public class InverseJaccardDistance implements DistanceMeasure {
 
     @Override
     public double compute(final double[] a, final double[] b) {
-        final double[] shortest = a.length < b.length ? a : b;
-        final double[] longest = shortest == a ? b : a;
+        final double[] X = a.length < b.length ? a : b;
+        final double[] Y = X == a ? b : a;
 
+        double sum_min = 0.0;
+        double sum_max = 0.0;
         int i = 0;
-        int d = 0;
-        int v = 0;
-        for (; i < shortest.length; i++) {
-            final double l = longest[i];
-            final double s = shortest[i];
-            if (l > 0 || s > 0)
-                v++;
-            if (l > 0 && s > 0)
-                d++;
+        for (; i < X.length; i++) {
+            final double x = X[i];
+            final double y = Y[i];
+            sum_min += FastMath.min(x, y);
+            sum_max += FastMath.max(x, y);
         }
-        for (i = i + 1; i < longest.length; i++)
-            if (longest[i] > 0)
-                v++;
-        return (double) v / (double) d;
+        for (i = i + 1; i < Y.length; i++)
+            sum_max += Y[i];
+        return 1.0 - sum_min / sum_max;
     }
 }

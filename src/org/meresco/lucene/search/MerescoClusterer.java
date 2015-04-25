@@ -89,7 +89,7 @@ public class MerescoClusterer {
     }
 
     public void finish() {
-        this.cluster = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new InverseJaccardDistance())
+        this.cluster = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new GeneralizedJaccardDistance())
                 .cluster(this.docvectors);
         // System.out.println("Ords: " + this.ords.size());
     }

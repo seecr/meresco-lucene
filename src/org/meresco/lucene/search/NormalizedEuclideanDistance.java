@@ -59,7 +59,7 @@ public class NormalizedEuclideanDistance implements DistanceMeasure {
                 totalL++;
             sum += l * l;
         }
-        return FastMath.sqrt(sum) / FastMath.max(totalL, totalS);
+        return FastMath.sqrt(sum); // / FastMath.max(totalL, totalS);
     }
 
 }

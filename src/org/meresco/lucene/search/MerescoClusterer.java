@@ -53,7 +53,7 @@ public class MerescoClusterer {
 
     private IndexReader reader;
     private Map<String, Double> fieldnames = new HashMap<String, Double>();
-    private List<MerescoVector> clusters = new ArrayList<MerescoVector>();
+    private List<MerescoVector> docvectors = new ArrayList<MerescoVector>();
     private BytesRefHash ords = new BytesRefHash();
     private List<Cluster<MerescoVector>> cluster;
     private double eps;
@@ -79,7 +79,7 @@ public class MerescoClusterer {
     public void collect(int doc) throws IOException {
         MerescoVector vector = createVector(doc);
         if (vector != null) {
-            this.clusters.add(vector);
+            this.docvectors.add(vector);
         }
     }
 
@@ -89,9 +89,18 @@ public class MerescoClusterer {
     }
 
     public void finish() {
-        this.cluster = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new NormalizedEuclideanDistance())
-                .cluster(this.clusters);
+        this.cluster = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new InverseJaccardDistance())
+                .cluster(this.docvectors);
         // System.out.println("Ords: " + this.ords.size());
+    }
+
+    public void printClusters() {
+        for (Cluster<MerescoVector> c : this.cluster) {
+            System.out.println(" -- cluster --");
+            for (MerescoVector v : c.getPoints()) {
+                v.printVector(this.ords);
+            }
+        }
     }
 
     public int[] cluster(int docId) {
@@ -184,6 +193,19 @@ public class MerescoClusterer {
             this.entries = new OpenIntToDoubleHashMap(0.0);
             this.docId = docId;
             this.maxIndex = 0;
+        }
+
+        public void printVector(BytesRefHash hash) {
+            Iterator iter = entries.iterator();
+            while (iter.hasNext()) {
+                iter.advance();
+                if (iter.value() > 0) {
+                    BytesRef b = new BytesRef();
+                    hash.get(iter.key(), b);
+                    System.out.print(b.utf8ToString() + ":" + iter.value() + "  ");
+                }
+            }
+            System.out.println();
         }
 
         public void setEntry(int index, double value) {

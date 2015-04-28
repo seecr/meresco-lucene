@@ -62,6 +62,7 @@ from facetsupercollectortest import FacetSuperCollectorTest
 from lucenesettingstest import LuceneSettingsTest
 from shingleindextest import ShingleIndexTest
 from shingleindexcomponenttest import ShingleIndexComponentTest
+from generalizedjaccarddistancetest import GeneralizedJaccardDistanceTest
 
 if __name__ == '__main__':
     unittest.main()

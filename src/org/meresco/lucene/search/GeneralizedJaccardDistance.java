@@ -30,9 +30,7 @@ import org.apache.commons.math3.util.FastMath;
 
 public class GeneralizedJaccardDistance implements DistanceMeasure {
 
-    private static final long serialVersionUID = -1340861619355236388L;
-
-    // static int n = 0;
+    private static final long serialVersionUID = 8855957906768499207L;
 
     @Override
     public double compute(final double[] a, final double[] b) {
@@ -41,15 +39,16 @@ public class GeneralizedJaccardDistance implements DistanceMeasure {
 
         double sum_min = 0.0;
         double sum_max = 0.0;
-        int i = 0;
-        for (; i < X.length; i++) {
-            final double x = X[i];
-            final double y = Y[i];
-            sum_min += FastMath.min(x, y);
-            sum_max += FastMath.max(x, y);
+
+        // X[i] >= 0 and Y[i] >= 0
+        for (int i = 0; i < X.length; i++) {
+            sum_min += FastMath.min(X[i], Y[i]);
+            sum_max += FastMath.max(X[i], Y[i]);
         }
-        for (i = i + 1; i < Y.length; i++)
+
+        for (int i = X.length; i < Y.length; i++)
             sum_max += Y[i];
+
         return 1.0 - sum_min / sum_max;
     }
 }

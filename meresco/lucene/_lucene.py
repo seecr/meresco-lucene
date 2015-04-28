@@ -195,7 +195,7 @@ class Lucene(object):
 
         topCollectorStop = stop
         while True:
-            collector, topCollector, groupingCollector, dedupCollector, facetCollector = self._createCollectors(start=start, stop=topCollectorStop, facets=facets, **kwargs)
+            collector, topCollector, groupingCollector, dedupCollector, facetCollector = self._createCollectors(start=start, stop=topCollectorStop, facets=facets, clusterFields=clusterFields, **kwargs)
             filter_ = self._filterFor(filterQueries, filter)
 
             if drilldownQueries:

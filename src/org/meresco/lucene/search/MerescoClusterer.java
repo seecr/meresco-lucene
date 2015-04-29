@@ -55,10 +55,10 @@ public class MerescoClusterer {
     private static final double FAR_FAR_AWAY = 0.7;
     private static final double CLOSE_PROXIMITY = 0.5;
     private IndexReader reader;
-    private Map<String, Double> fieldnames = new HashMap<String, Double>();
+    private Map<String, Double> fieldsWeight = new HashMap<String, Double>();
     private List<MerescoVector> docvectors = new ArrayList<MerescoVector>();
     private BytesRefHash ords = new BytesRefHash();
-    public List<Cluster<MerescoVector>> cluster;
+    public List<Cluster<MerescoVector>> clusters;
     private double eps;
     private int minPoints;
     private List<String> numericFields = new ArrayList<String>();
@@ -74,7 +74,7 @@ public class MerescoClusterer {
     }
 
     public void registerField(String fieldname, double weight, boolean numeric) {
-        this.fieldnames.put(fieldname, weight);
+        this.fieldsWeight.put(fieldname, weight);
         if (numeric)
             this.numericFields.add(fieldname);
     }
@@ -92,14 +92,14 @@ public class MerescoClusterer {
     }
 
     public void finish() {
-        this.cluster = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new GeneralizedJaccardDistance())
+        this.clusters = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new GeneralizedJaccardDistance())
                 .cluster(this.docvectors);
         // System.out.println("Ords: " + this.ords.size());
     }
 
     public void printClusters() {
-        System.out.println("Aantal clusters: " + this.cluster.size());
-        List<Cluster<MerescoVector>> clusters = new ArrayList<Cluster<MerescoVector>>(this.cluster);
+        System.out.println("Aantal clusters: " + this.clusters.size());
+        List<Cluster<MerescoVector>> clusters = new ArrayList<Cluster<MerescoVector>>(this.clusters);
         if (clusters.isEmpty())
             return;
         Cluster<MerescoVector> cl = clusters.remove(0);
@@ -147,7 +147,7 @@ public class MerescoClusterer {
     }
 
     public int[] cluster(int docId) {
-        for (Cluster<MerescoVector> c : this.cluster) {
+        for (Cluster<MerescoVector> c : this.clusters) {
             List<MerescoVector> points = c.getPoints();
             for (MerescoVector oc : points) {
                 if (oc.docId == docId) {
@@ -166,15 +166,16 @@ public class MerescoClusterer {
     private MerescoVector createVector(int docId) throws IOException {
         MerescoVector vector = null;
         double vectorWeight = 1.0;
-        for (String fieldname : fieldnames.keySet()) {
+        for (String fieldname : this.fieldsWeight.keySet()) {
             MerescoVector v = this.termVector(docId, fieldname);
             if (v != null) {
-                double weight = this.fieldnames.get(fieldname);
+                double weight = this.fieldsWeight.get(fieldname);
                 if (vector == null) {
                     vector = v;
                     vectorWeight = weight;
                 } else {
                     vector.combineToSelf(vectorWeight, weight, v);
+                    vectorWeight = 1;
                 }
             }
         }
@@ -213,7 +214,11 @@ public class MerescoClusterer {
             return null;
         }
         BytesRefBuilder term = new BytesRefBuilder();
-        NumericUtils.longToPrefixCoded(docValues.get(docId - context.docBase), 0, term);
+        long docValue = docValues.get(docId - context.docBase);
+        if (docValue == 0) {
+            return null;
+        }
+        NumericUtils.longToPrefixCoded(docValue, 0, term);
         MerescoVector vector = new MerescoVector(docId);
         vector.setEntry(ord(term.get()), 1);
         return vector;
@@ -262,8 +267,8 @@ public class MerescoClusterer {
         }
 
         public void combineToSelf(double a, double b, MerescoVector y) {
-            int maxSize = Math.max(this.maxIndex, y.maxIndex);
-            for (int i = 0; i < maxSize; i++) {
+            int maxIndex = Math.max(this.maxIndex, y.maxIndex);
+            for (int i = 0; i <= maxIndex; i++) {
                 final double xi = this.entries.get(i);
                 final double yi = y.entries.get(i);
                 setEntry(i, a * xi + b * yi);

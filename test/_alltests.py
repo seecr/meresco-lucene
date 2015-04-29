@@ -61,7 +61,7 @@ from superindexsearchertest import SuperIndexSearcherTest
 from facetsupercollectortest import FacetSuperCollectorTest
 from lucenesettingstest import LuceneSettingsTest
 from shingleindextest import ShingleIndexTest
-from shingleindexcomponenttest import ShingleIndexComponentTest
+from suggestionindexcomponenttest import SuggestionIndexComponentTest
 from generalizedjaccarddistancetest import GeneralizedJaccardDistanceTest
 
 if __name__ == '__main__':

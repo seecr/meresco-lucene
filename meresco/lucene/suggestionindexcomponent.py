@@ -26,7 +26,7 @@
 #
 ## end license ##
 
-from org.meresco.lucene.suggestion import ShingleIndex
+from org.meresco.lucene.suggestion import SuggestionIndex
 from os.path import isdir, join
 from os import makedirs
 from meresco.core import Observable
@@ -36,15 +36,15 @@ from Levenshtein import distance
 from math import log
 from time import time
 
-class ShingleIndexComponent(Observable):
+class SuggestionIndexComponent(Observable):
 
     def __init__(self, stateDir, minShingles=2, maxShingles=6, commitCount=10000, **kwargs):
-        super(ShingleIndexComponent, self).__init__(**kwargs)
-        self._shingleIndexDir = join(stateDir, 'shingles')
+        super(SuggestionIndexComponent, self).__init__(**kwargs)
         self._suggestionIndexDir = join(stateDir, 'suggestions')
-        isdir(self._shingleIndexDir) or makedirs(self._shingleIndexDir)
+        self._ngramIndexDir = join(stateDir, 'ngram')
         isdir(self._suggestionIndexDir) or makedirs(self._suggestionIndexDir)
-        self._index = ShingleIndex(self._shingleIndexDir, self._suggestionIndexDir, minShingles, maxShingles, commitCount)
+        isdir(self._ngramIndexDir) or makedirs(self._ngramIndexDir)
+        self._index = SuggestionIndex(self._suggestionIndexDir, self._ngramIndexDir, minShingles, maxShingles, commitCount)
         self._reader = self._index.getSuggestionsReader()
 
     def addSuggestions(self, identifier, values):
@@ -53,8 +53,8 @@ class ShingleIndexComponent(Observable):
     def deleteSuggestions(self, identifier):
         self._index.delete(identifier)
 
-    def createSuggestionIndex(self, wait=False, verbose=True):
-        self._index.createSuggestionIndex(wait, verbose)
+    def createSuggestionNGramIndex(self, wait=False, verbose=True):
+        self._index.createSuggestionNGramIndex(wait, verbose)
 
     def suggest(self, value, trigram=False):
         if not self._reader:
@@ -99,7 +99,7 @@ class ShingleIndexComponent(Observable):
                     suggestions.append((suggestion, scores))
             suggestions = sorted(suggestions, reverse=True, key=lambda (suggestion, scores): scores['sortScore'])
             if not debug:
-                suggestions = [s[0] for s in suggestions if s[0].startswith(value.lower())][:10]
+                suggestions = [s[0] for s in suggestions if s[0].lower().startswith(value.lower())][:10]
             result = [value, suggestions]
             if debug:
                 yield JsonDict(dict(value=result[0], suggestions=result[1], time=tTotal)).dumps()

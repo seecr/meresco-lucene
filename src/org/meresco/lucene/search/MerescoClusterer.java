@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
@@ -229,7 +230,7 @@ public class MerescoClusterer {
         private OpenIntToDoubleHashMap entries;
         private int docId;
         private int maxIndex;
-        private double[] point = null;
+        private ArrayRealVector point = null;
 
         public MerescoVector(int docId) {
             this.entries = new OpenIntToDoubleHashMap(0.0);
@@ -271,14 +272,15 @@ public class MerescoClusterer {
 
         public double[] getPoint() {
             if (this.point == null) {
-                this.point = new double[this.maxIndex + 1];
+                this.point = new ArrayRealVector(this.maxIndex + 1);
                 Iterator iter = entries.iterator();
                 while (iter.hasNext()) {
                     iter.advance();
-                    this.point[iter.key()] = iter.value();
+                    this.point.setEntry(iter.key(), iter.value());
                 }
             }
-            return this.point;
+            this.point.unitize();
+            return this.point.getDataRef();
         }
 
         public int docId() {

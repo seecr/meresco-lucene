@@ -48,7 +48,7 @@ from weightless.io import Reactor
 from weightless.core import compose, be
 from meresco.lucene.multicqltolucenequery import MultiCqlToLuceneQuery
 from meresco.xml import namespaces
-from meresco.lucene.shingleindexcomponent import ShingleIndexComponent
+from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
 
 
 myPath = abspath(dirname(__file__))
@@ -205,7 +205,7 @@ def main(reactor, port, databasePath):
                         )
                     ),
                     (PathFilter('/suggestion'),
-                        (ShingleIndexComponent(join(databasePath, 'suggestions')),
+                        (SuggestionIndexComponent(join(databasePath, 'suggestions')),
                             (lucene,),
                         )
                     )

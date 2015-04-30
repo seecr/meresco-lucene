@@ -77,7 +77,8 @@ class SuggestionIndexComponent(Observable):
         value = arguments.get("value", [None])[0]
         debug = arguments.get("x-debug", ["False"])[0] != 'False'
         trigram = arguments.get("trigram", ["False"])[0] != 'False'
-        minScore = float(arguments.get("minScore", ["0.03"])[0])
+        showConcepts = arguments.get("concepts", ["False"])[0] != 'False'
+        minScore = float(arguments.get("minScore", ["0"])[0])
         yield Ok
         yield ContentTypeHeader + "application/x-suggestions+json" + CRLF
         yield "Access-Control-Allow-Origin: *" + CRLF
@@ -91,19 +92,23 @@ class SuggestionIndexComponent(Observable):
             tTotal = time() - t0
             for s in suggest:
                 suggestion = str(s.suggestion)
+                uri = str(s.uri) if s.uri else None
                 distanceScore = max(0, -log(distance(value, suggestion) + 1) / 4 + 1)
                 score = float(s.score)
                 sortScore = distanceScore*score**2
                 scores = dict(distanceScore=distanceScore, score=score, sortScore=sortScore)
                 if sortScore > minScore:
-                    suggestions.append((suggestion, scores))
-            suggestions = sorted(suggestions, reverse=True, key=lambda (suggestion, scores): scores['sortScore'])
-            if not debug:
-                suggestions = [s[0] for s in suggestions if s[0].lower().startswith(value.lower())][:10]
-            result = [value, suggestions]
+                    suggestions.append((suggestion, uri, scores))
+            suggestions = sorted(suggestions, reverse=True, key=lambda (suggestion, uri, scores): scores['sortScore'])
             if debug:
-                yield JsonDict(dict(value=result[0], suggestions=result[1], time=tTotal)).dumps()
+                concepts = [(s, u) for s, u, _ in suggestions if u]
+                yield JsonDict(dict(value=value, suggestions=suggestions, concepts=concepts, time=tTotal)).dumps()
                 return
+            concepts = [(s, u) for s, u, _ in suggestions if u and s.lower().startswith(value.lower())][:10]
+            suggestions = [s[0] for s in suggestions if s[0].lower().startswith(value.lower())][:10]
+            result = [value, suggestions]
+            if showConcepts:
+                result.append(concepts)
         yield JsonList(result).dumps()
 
     def handleShutdown(self):

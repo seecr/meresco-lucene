@@ -73,6 +73,17 @@ Access-Control-Allow-Origin: *\r
 Access-Control-Allow-Headers: X-Requested-With""", header)
         self.assertEquals('["ha", ["hallo", "harry"]]', body)
 
+    def testHandleRequestWithConceptUris(self):
+        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
+        sic.addSuggestions("id:1", [("harry", 'uri:harry'), ("potter", None), ("hallo", None), ("fiets", 'uri:fiets'), ("fiets mobiel", None)])
+        sic.createSuggestionNGramIndex(wait=True, verbose=False)
+        header, body = asString(sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], minScore=["0"], concepts=["True"]))).split(CRLF*2)
+        self.assertEquals("""HTTP/1.0 200 OK\r
+Content-Type: application/x-suggestions+json\r
+Access-Control-Allow-Origin: *\r
+Access-Control-Allow-Headers: X-Requested-With""", header)
+        self.assertEquals('["ha", ["harry", "hallo"], [["harry", "uri:harry"]]]', body)
+
     def testHandleRequestWithDebug(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
         sic.addSuggestions("id:1", [("harry", None), ("potter", None), ("hallo", None), ("fiets", None), ("fiets mobiel", None)])
@@ -85,7 +96,7 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
         json = loads(body)
         self.assertEquals('ha', json['value'])
         self.assertTrue("time" in json, json)
-        suggestions = [(s[0], dict((k,round(v, 3)) for k,v in s[1].items())) for s in json['suggestions']]
+        suggestions = [(s[0], dict((k,round(v, 3)) for k,v in s[2].items())) for s in json['suggestions']]
         self.assertEquals([
             ("hallo", {"distanceScore": 0.653, "score": 0.003, "sortScore": 0.0}),
             ("harry", {"distanceScore": 0.653, "score": 0.003, "sortScore": 0.0}),

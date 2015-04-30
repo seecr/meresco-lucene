@@ -37,12 +37,12 @@ class SuggestionIndexComponentTest(SeecrTestCase):
 
     def testSuggestionsAreEmptyIfNotCreated(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", ["harry", "potter", "hallo", "fiets", "fiets mobiel"])
+        sic.addSuggestions("id:1", [("harry", None), ("potter", None), ("hallo", None), ("fiets", None), ("fiets mobiel", None)])
         self.assertEquals([], sic.suggest('ha'))
 
     def testSuggest(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", ["harry", "potter", "hallo", "fiets", "fiets mobiel"])
+        sic.addSuggestions("id:1", [("harry", None), ("potter", None), ("hallo", None), ("fiets", None), ("fiets mobiel", None)])
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
 
         suggestions = sic.suggest("ha")
@@ -55,7 +55,7 @@ class SuggestionIndexComponentTest(SeecrTestCase):
 
     def testHandleRequest(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", ["harry", "potter", "hallo", "fiets", "fiets mobiel"])
+        sic.addSuggestions("id:1", [("harry", None), ("potter", None), ("hallo", None), ("fiets", None), ("fiets mobiel", None)])
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], minScore=["0"]))).split(CRLF*2)
         self.assertEquals("""HTTP/1.0 200 OK\r
@@ -66,7 +66,7 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
 
     def testHandleRequestWithDebug(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", ["harry", "potter", "hallo", "fiets", "fiets mobiel"])
+        sic.addSuggestions("id:1", [("harry", None), ("potter", None), ("hallo", None), ("fiets", None), ("fiets mobiel", None)])
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "x-debug": ["true"], "minScore": ["0"]})).split(CRLF*2)
         self.assertEquals("""HTTP/1.0 200 OK\r
@@ -90,7 +90,7 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
     @stdout_replaced
     def testPersistentShingles(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", ["harry", "potter", "hallo", "fiets", "fiets mobiel"])
+        sic.addSuggestions("id:1", [("harry", None), ("potter", None), ("hallo", None), ("fiets", None), ("fiets mobiel", None)])
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         sic.handleShutdown()
 
@@ -100,8 +100,8 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
 
     def testAddDelete(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", ["harry", "fiets"])
-        sic.addSuggestions("id:2", ["harry potter"])
+        sic.addSuggestions("id:1", [("harry", None), ("fiets", None)])
+        sic.addSuggestions("id:2", [("harry potter", None)])
         self.assertEquals(2, sic.totalShingleRecords())
         sic.deleteSuggestions("id:1")
         self.assertEquals(1, sic.totalShingleRecords())

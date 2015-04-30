@@ -48,7 +48,7 @@ class SuggestionIndexComponent(Observable):
         self._reader = self._index.getSuggestionsReader()
 
     def addSuggestions(self, identifier, values):
-        self._index.add(identifier, values)
+        self._index.add(identifier, [v[0] for v in values], [v[1] for v in values])
 
     def deleteSuggestions(self, identifier):
         self._index.delete(identifier)

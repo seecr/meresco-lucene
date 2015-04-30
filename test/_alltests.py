@@ -60,7 +60,7 @@ from supercollectortest import SuperCollectorTest
 from superindexsearchertest import SuperIndexSearcherTest
 from facetsupercollectortest import FacetSuperCollectorTest
 from lucenesettingstest import LuceneSettingsTest
-from shingleindextest import ShingleIndexTest
+from suggestionindextest import SuggestionIndexTest
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
 from generalizedjaccarddistancetest import GeneralizedJaccardDistanceTest
 from pageranktest import PageRankTest

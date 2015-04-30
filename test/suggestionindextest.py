@@ -29,10 +29,10 @@ from org.meresco.lucene.suggestion import SuggestionIndex, SuggestionNGramIndex
 from os.path import join
 from time import sleep
 
-class ShingleIndexTest(SeecrTestCase):
+class SuggestionIndexTest(SeecrTestCase):
 
     def setUp(self):
-        super(ShingleIndexTest, self).setUp()
+        super(SuggestionIndexTest, self).setUp()
         suggestionIndexDir = join(self.tempdir, "shingles")
         ngramIndexDir = join(self.tempdir, "suggestions")
         self._suggestionIndex = SuggestionIndex(suggestionIndexDir, ngramIndexDir, 2, 4)
@@ -58,7 +58,7 @@ class ShingleIndexTest(SeecrTestCase):
         self.assertEquals(["$lo", "lor", "ord", "rd$", "$of", "of$"], list(ngrams))
 
     def testSuggestionIndex(self):
-        self._suggestionIndex.add("identifier", ["Lord of the rings", "Fellowship of the ring"])
+        self._suggestionIndex.add("identifier", ["Lord of the rings", "Fellowship of the ring"], [None, None])
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
 
         self.assertSuggestion("l", ["Lord of the rings"])
@@ -69,10 +69,10 @@ class ShingleIndexTest(SeecrTestCase):
         self.assertSuggestion("fel", ['Fellowship of the ring'])
 
     def testShingleInMultipleDocumentsRanksHigher(self):
-        self._suggestionIndex.add("identifier", ["Lord rings", "Lord magic"])
-        self._suggestionIndex.add("identifier2", ["Lord rings"])
-        self._suggestionIndex.add("identifier3", ["Lord magic"])
-        self._suggestionIndex.add("identifier4", ["Lord magic"])
+        self._suggestionIndex.add("identifier", ["Lord rings", "Lord magic"], [None, None])
+        self._suggestionIndex.add("identifier2", ["Lord rings"], [None])
+        self._suggestionIndex.add("identifier3", ["Lord magic"], [None])
+        self._suggestionIndex.add("identifier4", ["Lord magic"], [None])
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
 
         reader = self._suggestionIndex.getSuggestionsReader()
@@ -84,7 +84,7 @@ class ShingleIndexTest(SeecrTestCase):
     def testCreatingIndexState(self):
         self.assertEquals(None, self._suggestionIndex.indexingState())
         for i in range(100):
-            self._suggestionIndex.add("identifier%s", ["Lord rings", "Lord magic"])
+            self._suggestionIndex.add("identifier%s", ["Lord rings", "Lord magic"], [None, None])
         try:
             self._suggestionIndex.createSuggestionNGramIndex(False, False)
             sleep(0.005) # Wait for thread
@@ -97,3 +97,13 @@ class ShingleIndexTest(SeecrTestCase):
     def testCreateSuggestionsForEmptyIndex(self):
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
         self.assertTrue("Nothing bad happened, no NullPointerException")
+
+    def testSuggestionWithUriOfConcept(self):
+        self._suggestionIndex.add("identifier", ["Lord of the rings", "Lord magic"], ["uri:rings", None])
+        self._suggestionIndex.createSuggestionNGramIndex(True, False)
+
+        reader = self._suggestionIndex.getSuggestionsReader()
+        suggestions = list(reader.suggest("lo", False))
+        self.assertEquals(2, len(suggestions))
+        self.assertEquals(['Lord of the rings', 'Lord magic'], [s.suggestion for s in suggestions])
+        self.assertEquals(['uri:rings', None], [s.uri for s in suggestions])

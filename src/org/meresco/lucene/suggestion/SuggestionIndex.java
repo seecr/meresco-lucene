@@ -46,7 +46,7 @@ import org.apache.lucene.util.Version;
 
 public class SuggestionIndex {
 
-    private static final String RECORD_SHINGLE_FIELDNAME = "__record_shingle__";
+    private static final String RECORD_VALUE_FIELDNAME = "__record_value__";
 
     public static final FieldType SIMPLE_NOT_STORED_STRING_FIELD = new FieldType();
     public static final FieldType SIMPLE_STORED_STRING_FIELD = new FieldType();
@@ -100,12 +100,13 @@ public class SuggestionIndex {
         this.suggestionNGramIndex = new SuggestionNGramIndex(this.suggestionNGramIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
     }
 
-    public void add(String identifier, String[] values) throws IOException {
+    public void add(String identifier, String[] values, String[] conceptUris) throws IOException {
         Document recordDoc = new Document();
         this.recordIdField.setStringValue(identifier);
         recordDoc.add(this.recordIdField);
-        for (String value : values) {
-            recordDoc.add(new Field(RECORD_SHINGLE_FIELDNAME, value, SIMPLE_NOT_STORED_STRING_FIELD));
+        for (int i = 0; i < values.length; i++) {
+            String value = (conceptUris[i] != null ? conceptUris[i] : "") + "|" + values[i];
+            recordDoc.add(new Field(RECORD_VALUE_FIELDNAME, value, SIMPLE_NOT_STORED_STRING_FIELD));
         }
         this.writer.updateDocument(new Term(this.recordIdField.name(), identifier), recordDoc);
         maybeCommitAfterUpdate();
@@ -129,7 +130,7 @@ public class SuggestionIndex {
 		    		deleteIndexDirectory(tempDir);
 		    		deleteIndexDirectory(tempTempDir);
 		    		SuggestionNGramIndex newSuggestionNGramIndex = new SuggestionNGramIndex(tempDir, MAX_COMMIT_COUNT_SUGGESTION);
-		    		newSuggestionNGramIndex.createSuggestions(reader, RECORD_SHINGLE_FIELDNAME, indexingState);
+		    		newSuggestionNGramIndex.createSuggestions(reader, RECORD_VALUE_FIELDNAME, indexingState);
 		    		newSuggestionNGramIndex.close();
 		        	reader.close();
 		        	suggestionNGramIndex.close();

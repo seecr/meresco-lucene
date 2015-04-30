@@ -62,6 +62,7 @@ import java.util.concurrent.Executors;
 public class SuggestionNGramIndex {
 
 	private static final String SUGGESTION_FIELDNAME = "__suggestion__";
+	private static final String CONCEPT_URI_FIELDNAME = "__uri__";
     private static final String BIGRAM_FIELDNAME = "__bigram__";
     private static final String TRIGRAM_FIELDNAME = "__trigram__";
 
@@ -79,6 +80,7 @@ public class SuggestionNGramIndex {
 
 	private Field frequencyField = new Field("__freq__", "", FREQUENCY_FIELD_TYPE);
     private Field suggestionField = new Field(SUGGESTION_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
+    private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
 
     private final NGramAnalyzer bigram;
     private final NGramAnalyzer trigram;
@@ -113,7 +115,8 @@ public class SuggestionNGramIndex {
 		TermsEnum iterator = terms.iterator(null);
     	BytesRef term;
     	while ((term = iterator.next()) != null) {
-            indexNGram(term.utf8ToString(), iterator.docFreq());
+            String[] values = term.utf8ToString().split("\\|");
+            indexNGram(values[0], values[1], iterator.docFreq());
             indexingState.count++;
     	}
     	this.commit();
@@ -135,10 +138,14 @@ public class SuggestionNGramIndex {
         this.writer.close();
     }
 
-    private void indexNGram(String term, int docFreq) throws IOException {
+    private void indexNGram(String uri, String term, int docFreq) throws IOException {
         Document doc = new Document();
         this.suggestionField.setStringValue(term);
         doc.add(this.suggestionField);
+        if (!uri.equals("")) {
+            this.conceptUriField.setStringValue(uri);
+            doc.add(this.conceptUriField);
+        }
         for (String n : ngrams(term, false)) {
             doc.add(new Field(BIGRAM_FIELDNAME, n, SuggestionIndex.SIMPLE_NOT_STORED_STRING_FIELD));
         }
@@ -219,7 +226,8 @@ public class SuggestionNGramIndex {
             Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
             int i = 0;
             for (ScoreDoc d : t.scoreDocs) {
-                suggestions[i++] = new Suggestion(searcher.doc(d.doc).get(SUGGESTION_FIELDNAME), d.score);
+                Document doc = searcher.doc(d.doc);
+                suggestions[i++] = new Suggestion(doc.get(SUGGESTION_FIELDNAME), doc.get(CONCEPT_URI_FIELDNAME), d.score);
             }
             return suggestions;
         }
@@ -231,10 +239,12 @@ public class SuggestionNGramIndex {
 
     public class Suggestion {
     	public String suggestion;
+    	public String uri;
     	public float score;
 
-    	public Suggestion(String suggestion, float score) {
+    	public Suggestion(String suggestion, String uri, float score) {
     		this.suggestion = suggestion;
+    		this.uri = uri;
     		this.score = score;
     	}
     }

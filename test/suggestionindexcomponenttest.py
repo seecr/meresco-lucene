@@ -53,6 +53,15 @@ class SuggestionIndexComponentTest(SeecrTestCase):
 
         self.assertEquals(5, sic.totalSuggestions())
 
+    def testSuggestWithUris(self):
+        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
+        sic.addSuggestions("id:1", [("harry potter", "uri:bnl:hp"), ("hallo", None)])
+        sic.createSuggestionNGramIndex(wait=True, verbose=False)
+
+        suggestions = sic.suggest("ha")
+        self.assertEquals(["harry potter", "hallo"], [s.suggestion for s in suggestions])
+        self.assertEquals(["uri:bnl:hp", None], [s.uri for s in suggestions])
+
     def testHandleRequest(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
         sic.addSuggestions("id:1", [("harry", None), ("potter", None), ("hallo", None), ("fiets", None), ("fiets mobiel", None)])

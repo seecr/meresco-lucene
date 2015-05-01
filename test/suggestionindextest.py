@@ -79,7 +79,7 @@ class SuggestionIndexTest(SeecrTestCase):
         suggestions = list(reader.suggest("lo", False))
         self.assertEquals(3, len(suggestions))
         self.assertEquals([u'Lord rings', u'Lord magic', u'Lord rings'], [s.suggestion for s in suggestions])
-        self.assertEquals([0.0729999989271164, 0.003000000026077032, 0.003000000026077032], [s.score for s in suggestions])
+        self.assertEquals([0.004000000189989805, 0.003000000026077032, 0.003000000026077032], [s.score for s in suggestions])
 
     def testCreatingIndexState(self):
         self.assertEquals(None, self._suggestionIndex.indexingState())

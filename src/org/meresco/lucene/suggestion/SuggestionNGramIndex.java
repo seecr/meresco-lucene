@@ -152,16 +152,15 @@ public class SuggestionNGramIndex {
         for (String n : ngrams(term, true)) {
             doc.add(new Field(TRIGRAM_FIELDNAME, n, SuggestionIndex.SIMPLE_NOT_STORED_STRING_FIELD));
         }
-        this.rankField.setStringValue(xForDocFreq(rank));
+        this.rankField.setStringValue(xForRank(rank));
         doc.add(this.rankField);
         this.writer.addDocument(doc);
         maybeCommitAfterUpdate();
     }
 
-    private String xForDocFreq(int docFreq) throws IOException {
-        int total = (int) Math.round(Math.log(docFreq) / Math.log(1.01)) + 1;
-        char[] buffer = new char[total*2];
-        for(int i = 0; i < total; i++){
+    private String xForRank(int rank) throws IOException {
+        char[] buffer = new char[rank*2];
+        for(int i = 0; i < rank; i++){
             buffer[2*i] = RANK_VALUE;
             buffer[2*i+1] = ' ';
         }

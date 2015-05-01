@@ -100,12 +100,12 @@ public class SuggestionIndex {
         this.suggestionNGramIndex = new SuggestionNGramIndex(this.suggestionNGramIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
     }
 
-    public void add(String identifier, String[] values, String[] conceptUris) throws IOException {
+    public void add(String identifier, String[] values, String[] types, int[] ranks) throws IOException {
         Document recordDoc = new Document();
         this.recordIdField.setStringValue(identifier);
         recordDoc.add(this.recordIdField);
         for (int i = 0; i < values.length; i++) {
-            String value = (conceptUris[i] != null ? conceptUris[i] : "") + "|" + values[i];
+            String value = ranks[i] + "|" + (types[i] != null ? types[i] : "") + "|" + values[i];
             recordDoc.add(new Field(RECORD_VALUE_FIELDNAME, value, SIMPLE_NOT_STORED_STRING_FIELD));
         }
         this.writer.updateDocument(new Term(this.recordIdField.name(), identifier), recordDoc);

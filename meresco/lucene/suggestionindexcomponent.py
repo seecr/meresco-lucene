@@ -48,7 +48,10 @@ class SuggestionIndexComponent(Observable):
         self._reader = self._index.getSuggestionsReader()
 
     def addSuggestions(self, identifier, values):
-        self._index.add(identifier, [v[0] for v in values], [v[1] for v in values])
+        titles = [v[0] for v in values]
+        types = [v[1] for v in values]
+        ranks = [int(v[2]) for v in values]
+        self._index.add(identifier, titles, types, ranks)
 
     def deleteSuggestions(self, identifier):
         self._index.delete(identifier)
@@ -92,20 +95,20 @@ class SuggestionIndexComponent(Observable):
             tTotal = time() - t0
             for s in suggest:
                 suggestion = str(s.suggestion)
-                uri = str(s.uri) if s.uri else None
+                recordType = str(s.type) if s.type else None
                 distanceScore = max(0, -log(distance(value, suggestion) + 1) / 4 + 1)
                 score = float(s.score)
                 sortScore = distanceScore*score**2
                 scores = dict(distanceScore=distanceScore, score=score, sortScore=sortScore)
                 if sortScore > minScore:
-                    suggestions.append((suggestion, uri, scores))
-            suggestions = sorted(suggestions, reverse=True, key=lambda (suggestion, uri, scores): scores['sortScore'])
+                    suggestions.append((suggestion, recordType, scores))
+            suggestions = sorted(suggestions, reverse=True, key=lambda (suggestion, recordType, scores): scores['sortScore'])
             if debug:
-                concepts = [(s, u) for s, u, _ in suggestions if u]
+                concepts = [(s, t) for s, t, _ in suggestions if t]
                 yield JsonDict(dict(value=value, suggestions=suggestions, concepts=concepts, time=tTotal)).dumps()
                 return
-            concepts = [(s, u) for s, u, _ in suggestions if u and s.lower().startswith(value.lower())][:10]
-            suggestions = [s[0] for s in suggestions if s[0].lower().startswith(value.lower())][:10]
+            concepts = [(s, t) for s, t, _ in suggestions if t and s.lower().startswith(value.lower())][:10]
+            suggestions = list(set([s[0] for s in suggestions if s[0].lower().startswith(value.lower())][:10]))
             result = [value, suggestions]
             if showConcepts:
                 result.append(concepts)

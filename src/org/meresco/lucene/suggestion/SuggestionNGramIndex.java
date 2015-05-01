@@ -66,19 +66,19 @@ public class SuggestionNGramIndex {
     private static final String BIGRAM_FIELDNAME = "__bigram__";
     private static final String TRIGRAM_FIELDNAME = "__trigram__";
 
-    private static final char FREQUENCY_VALUE = 'x';
+    private static final char RANK_VALUE = 'x';
 
-    public static final FieldType FREQUENCY_FIELD_TYPE = new FieldType();
+    public static final FieldType RANK_FIELD_TYPE = new FieldType();
     static {
-        FREQUENCY_FIELD_TYPE.setIndexed(true);
-        FREQUENCY_FIELD_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-        FREQUENCY_FIELD_TYPE.setTokenized(true);
-        FREQUENCY_FIELD_TYPE.setStored(false);
-        FREQUENCY_FIELD_TYPE.setOmitNorms(true);
-        FREQUENCY_FIELD_TYPE.freeze();
+        RANK_FIELD_TYPE.setIndexed(true);
+        RANK_FIELD_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+        RANK_FIELD_TYPE.setTokenized(true);
+        RANK_FIELD_TYPE.setStored(false);
+        RANK_FIELD_TYPE.setOmitNorms(true);
+        RANK_FIELD_TYPE.freeze();
     }
 
-	private Field frequencyField = new Field("__freq__", "", FREQUENCY_FIELD_TYPE);
+	private Field rankField = new Field("__rank__", "", RANK_FIELD_TYPE);
     private Field suggestionField = new Field(SUGGESTION_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
 
@@ -116,7 +116,7 @@ public class SuggestionNGramIndex {
     	BytesRef term;
     	while ((term = iterator.next()) != null) {
             String[] values = term.utf8ToString().split("\\|");
-            indexNGram(values[0], values[1], iterator.docFreq());
+            indexNGram(values[1], values[2], Integer.parseInt(values[0]));
             indexingState.count++;
     	}
     	this.commit();
@@ -138,12 +138,12 @@ public class SuggestionNGramIndex {
         this.writer.close();
     }
 
-    private void indexNGram(String uri, String term, int docFreq) throws IOException {
+    private void indexNGram(String type, String term, int rank) throws IOException {
         Document doc = new Document();
         this.suggestionField.setStringValue(term);
         doc.add(this.suggestionField);
-        if (!uri.equals("")) {
-            this.conceptUriField.setStringValue(uri);
+        if (!type.equals("")) {
+            this.conceptUriField.setStringValue(type);
             doc.add(this.conceptUriField);
         }
         for (String n : ngrams(term, false)) {
@@ -152,8 +152,8 @@ public class SuggestionNGramIndex {
         for (String n : ngrams(term, true)) {
             doc.add(new Field(TRIGRAM_FIELDNAME, n, SuggestionIndex.SIMPLE_NOT_STORED_STRING_FIELD));
         }
-        this.frequencyField.setStringValue(xForDocFreq(docFreq));
-        doc.add(this.frequencyField);
+        this.rankField.setStringValue(xForDocFreq(rank));
+        doc.add(this.rankField);
         this.writer.addDocument(doc);
         maybeCommitAfterUpdate();
     }
@@ -162,7 +162,7 @@ public class SuggestionNGramIndex {
         int total = (int) Math.round(Math.log(docFreq) / Math.log(1.01)) + 1;
         char[] buffer = new char[total*2];
         for(int i = 0; i < total; i++){
-            buffer[2*i] = FREQUENCY_VALUE;
+            buffer[2*i] = RANK_VALUE;
             buffer[2*i+1] = ' ';
         }
         return new String(buffer);
@@ -220,7 +220,7 @@ public class SuggestionNGramIndex {
                 query.add(new TermQuery(new Term(ngramFieldName, ngrams.get(i))), BooleanClause.Occur.MUST);
             }
             if (ngramSize > 0) {
-                query.add(new TermQuery(new Term(frequencyField.name(), String.valueOf(FREQUENCY_VALUE))), BooleanClause.Occur.MUST);
+                query.add(new TermQuery(new Term(rankField.name(), String.valueOf(RANK_VALUE))), BooleanClause.Occur.MUST);
             }
             TopDocs t = searcher.search(query, 25);
             Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
@@ -239,12 +239,12 @@ public class SuggestionNGramIndex {
 
     public class Suggestion {
     	public String suggestion;
-    	public String uri;
+    	public String type;
     	public float score;
 
-    	public Suggestion(String suggestion, String uri, float score) {
+    	public Suggestion(String suggestion, String type, float score) {
     		this.suggestion = suggestion;
-    		this.uri = uri;
+    		this.type = type;
     		this.score = score;
     	}
     }

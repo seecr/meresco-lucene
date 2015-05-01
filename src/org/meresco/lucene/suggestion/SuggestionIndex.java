@@ -145,7 +145,7 @@ public class SuggestionIndex {
 					long totalTime = (System.currentTimeMillis() - indexingState.started) / 1000;
 					long averageSpeed = totalTime > 0 ? indexingState.count / totalTime : 0;
                     if (verbose) {
-    					System.out.println("Creating suggestion index took: " + totalTime + "s" + "; Average: " + averageSpeed + "/s");
+    					System.out.println("Creating " + indexingState.count + " suggestions took: " + totalTime + "s" + "; Average: " + averageSpeed + "/s");
     			        System.out.flush();
                     }
 			        indexingState = null;

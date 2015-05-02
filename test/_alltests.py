@@ -63,6 +63,7 @@ from lucenesettingstest import LuceneSettingsTest
 from shingleindextest import ShingleIndexTest
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
 from generalizedjaccarddistancetest import GeneralizedJaccardDistanceTest
+from pageranktest import PageRankTest
 
 if __name__ == '__main__':
     unittest.main()

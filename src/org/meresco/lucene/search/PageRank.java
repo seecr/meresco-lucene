@@ -6,7 +6,7 @@ import java.util.List;
 public class PageRank {
     // https://nl.wikipedia.org/wiki/PageRank
 
-    public static class Node {
+    private static final class Node {
         public final int id;
         private static double damping = 0.85;
         private int edges;
@@ -39,20 +39,22 @@ public class PageRank {
         }
     }
 
-    static class Edge {
-        private final Node docnode;
-        private final Node termnode;
+    private static final class Edge {
+        private final Node lsh;
+        private final Node rhs;
         private final double weight;
 
-        public Edge(Node docnode, Node termnode, double weight) {
-            this.docnode = docnode;
-            this.termnode = termnode;
+        public Edge(Node lhs, Node rhs, double weight) {
+            this.lsh = lhs;
+            this.rhs = rhs;
             this.weight = weight;
+            lhs.countEdge();
+            rhs.countEdge();
         }
 
         public void propagatePR() {
-            this.docnode.addPR(this.termnode, this.weight);
-            this.termnode.addPR(this.docnode, this.weight);
+            this.lsh.addPR(this.rhs, this.weight);
+            this.rhs.addPR(this.lsh, this.weight);
         }
     }
 
@@ -63,32 +65,29 @@ public class PageRank {
 
     public void add(int docid, double[] docvector) {
         Node docnode = this.addDocNode(docid);
-        for (int ord = 0; ord < docvector.length; ord++) {
-            Node termnode = this.addTermNode(ord);
-            this.addEdge(docnode, termnode, docvector[ord]);
-        }
+        for (int ord = 0; ord < docvector.length; ord++)
+            this.addEdge(docnode, this.addTermNode(ord), docvector[ord]);
     }
 
     private Node addDocNode(int docid) {
-        Node docnode = new Node(docid);
+        Node docnode = this.createNode(docid);
         this.docnodes.add(docnode);
-        docnode.countEdge();
-        this.node_count++;
         return docnode;
     }
 
-    private void addEdge(Node docnode, Node termnode, double weight) {
-        this.edges.add(new Edge(docnode, termnode, weight));
+    private Node addTermNode(int ord) {
+        if (this.termnodes[ord] == null)
+            termnodes[ord] = this.createNode(ord);
+        return this.termnodes[ord];
     }
 
-    private Node addTermNode(int ord) {
-        Node termnode = this.termnodes[ord];
-        if (termnode == null) {
-            termnodes[ord] = termnode = new Node(ord);
-            this.node_count++;
-        }
-        termnode.countEdge();
-        return termnode;
+    private Node createNode(int id) {
+        this.node_count++;
+        return new Node(id);
+    }
+
+    private void addEdge(Node lhs, Node rhs, double weight) {
+        this.edges.add(new Edge(lhs, rhs, weight));
     }
 
     public void prepare() {

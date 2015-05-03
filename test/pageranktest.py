@@ -70,9 +70,10 @@ class PageRankTest(SeecrTestCase):
         pr = PageRank()
         pr.add(5, [0.3, 0.0, 0.4])  # docid, termvector
         pr.add(3, [0.2, 0.4])
-        pr.prepare()  # #nodes=5 so 1/p = 0.2
-        self.assertAlmostEqual(0.2, pr.getDocRank(0))
-        self.assertAlmostEqual(0.2, pr.getDocRank(1))
+        pr.add(6, [0.3, 0.4, 0.4, 0.0, 0.1])
+        pr.add(2, [0.0, 0.0, 0.0, 0.0, 0.0])
+        pr.add(1, [0.2, 1.0, 2.0, 0.4, 0.0])
+        pr.prepare()
         for i in range(10):
+            print pr.getDocRank(0), " ", pr.getDocRank(1), " ", pr.getDocRank(2), " ", pr.getDocRank(3), " ", pr.getDocRank(4)
             pr.iterate()
-            print pr.getDocRank(0), pr.getDocRank(1)

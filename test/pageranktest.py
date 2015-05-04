@@ -74,6 +74,11 @@ class PageRankTest(SeecrTestCase):
         pr.add(2, [0.0, 0.0, 0.0, 0.0, 0.0])
         pr.add(1, [0.2, 1.0, 2.0, 0.4, 0.0])
         pr.prepare()
-        for i in range(10):
-            print pr.getDocRank(0), " ", pr.getDocRank(1), " ", pr.getDocRank(2), " ", pr.getDocRank(3), " ", pr.getDocRank(4)
-            pr.iterate()
+        topDocs = pr.topDocs()
+        self.assertEquals([0.1] * 5, [td.getPR() for td in topDocs])
+        self.assertEquals([5, 3, 6, 2, 1], [td.id for td in topDocs])
+        pr.iterate()
+        topDocs = pr.topDocs()
+        self.assertEquals([0.27325000000000005, 0.1875416666666667, 0.16770833333333335, 0.16558333333333336, 0.15000000000000002] , [td.getPR() for td in topDocs])
+        self.assertEquals([1, 6, 5, 3, 2], [td.id for td in topDocs])
+

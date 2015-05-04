@@ -1,12 +1,13 @@
 package org.meresco.lucene.search;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class PageRank {
     // https://nl.wikipedia.org/wiki/PageRank
 
-    private static final class Node {
+    public static final class Node implements Comparable<Node> {
         public final int id;
         private static double damping = 0.85;
         private int edges;
@@ -35,7 +36,13 @@ public class PageRank {
         }
 
         public void addPR(Node node, double weight) {
+            System.out.println("adding to node " + this.id + ": " + node.PR0 + "/" + node.edges + " * " + weight);
             this.PR1 += node.PR0 / node.edges * weight;
+        }
+
+        @Override
+        public int compareTo(Node rhs) {
+            return Double.compare(rhs.PR0, this.PR0);
         }
     }
 
@@ -66,7 +73,8 @@ public class PageRank {
     public void add(int docid, double[] docvector) {
         Node docnode = this.addDocNode(docid);
         for (int ord = 0; ord < docvector.length; ord++)
-            this.addEdge(docnode, this.addTermNode(ord), docvector[ord]);
+            if (docvector[ord] > 0.0)
+                this.addEdge(docnode, this.addTermNode(ord), docvector[ord]);
     }
 
     private Node addDocNode(int docid) {
@@ -111,5 +119,10 @@ public class PageRank {
 
     public double getDocRank(int i) {
         return this.docnodes.get(i).getPR();
+    }
+
+    public List<Node> topDocs() {
+        Collections.sort(this.docnodes);
+        return this.docnodes;
     }
 }

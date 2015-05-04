@@ -52,6 +52,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
@@ -66,8 +68,6 @@ public class SuggestionNGramIndex {
     private static final String BIGRAM_FIELDNAME = "__bigram__";
     private static final String TRIGRAM_FIELDNAME = "__trigram__";
 
-    private static final char RANK_VALUE = 'x';
-
     public static final FieldType RANK_FIELD_TYPE = new FieldType();
     static {
         RANK_FIELD_TYPE.setIndexed(true);
@@ -78,7 +78,6 @@ public class SuggestionNGramIndex {
         RANK_FIELD_TYPE.freeze();
     }
 
-	private Field rankField = new Field("__rank__", "", RANK_FIELD_TYPE);
     private Field suggestionField = new Field(SUGGESTION_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
 
@@ -116,7 +115,7 @@ public class SuggestionNGramIndex {
     	BytesRef term;
     	while ((term = iterator.next()) != null) {
             String[] values = term.utf8ToString().split("\\|");
-            indexNGram(values[1], values[2], Integer.parseInt(values[0]));
+            indexNGram(values[0], values[1]);
             indexingState.count++;
     	}
     	this.commit();
@@ -138,7 +137,7 @@ public class SuggestionNGramIndex {
         this.writer.close();
     }
 
-    private void indexNGram(String type, String term, int rank) throws IOException {
+    private void indexNGram(String type, String term) throws IOException {
         Document doc = new Document();
         this.suggestionField.setStringValue(term);
         doc.add(this.suggestionField);
@@ -152,19 +151,8 @@ public class SuggestionNGramIndex {
         for (String n : ngrams(term, true)) {
             doc.add(new Field(TRIGRAM_FIELDNAME, n, SuggestionIndex.SIMPLE_NOT_STORED_STRING_FIELD));
         }
-        this.rankField.setStringValue(xForRank(rank));
-        doc.add(this.rankField);
         this.writer.addDocument(doc);
         maybeCommitAfterUpdate();
-    }
-
-    private String xForRank(int rank) throws IOException {
-        char[] buffer = new char[rank*2];
-        for(int i = 0; i < rank; i++){
-            buffer[2*i] = RANK_VALUE;
-            buffer[2*i+1] = ' ';
-        }
-        return new String(buffer);
     }
 
     public List<String> ngrams(String s, Boolean trigram) throws IOException {
@@ -191,7 +179,6 @@ public class SuggestionNGramIndex {
     	public Reader() throws IOException {
     		this.reader = DirectoryReader.open(directory);
             this.searcher = new IndexSearcher(this.reader, Executors.newFixedThreadPool(10));
-            this.searcher.setSimilarity(new TermFrequencySimilarity());
     	}
 
     	public void maybeReopen() throws IOException {
@@ -199,7 +186,6 @@ public class SuggestionNGramIndex {
             if (newReader != null) {
                 this.reader = newReader;
                 this.searcher = new IndexSearcher(this.reader);
-                this.searcher.setSimilarity(new TermFrequencySimilarity());
             }
     	}
 
@@ -217,9 +203,6 @@ public class SuggestionNGramIndex {
             int ngramSize = ngrams.size() - SKIP_LAST_DOLLAR;
             for (int i = 0; i < ngramSize; i++) {
                 query.add(new TermQuery(new Term(ngramFieldName, ngrams.get(i))), BooleanClause.Occur.MUST);
-            }
-            if (ngramSize > 0) {
-                query.add(new TermQuery(new Term(rankField.name(), String.valueOf(RANK_VALUE))), BooleanClause.Occur.MUST);
             }
             TopDocs t = searcher.search(query, 25);
             Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];

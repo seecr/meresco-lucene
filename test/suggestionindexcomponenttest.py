@@ -37,12 +37,12 @@ class SuggestionIndexComponentTest(SeecrTestCase):
 
     def testSuggestionsAreEmptyIfNotCreated(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", [("harry", "uri:book", 1), ("potter", "uri:book", 1), ("hallo", "uri:book", 1), ("fiets", "uri:book", 1), ("fiets mobiel", "uri:book", 1)])
+        sic.addSuggestions("id:1", [("harry", "uri:book"), ("potter", "uri:book"), ("hallo", "uri:book"), ("fiets", "uri:book"), ("fiets mobiel", "uri:book")])
         self.assertEquals([], sic.suggest('ha'))
 
     def testSuggest(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", [("harry", "uri:book", 1), ("potter", "uri:book", 1), ("hallo", "uri:book", 1), ("fiets", "uri:book", 1), ("fiets mobiel", "uri:book", 1)])
+        sic.addSuggestions("id:1", [("harry", "uri:book"), ("potter", "uri:book"), ("hallo", "uri:book"), ("fiets", "uri:book"), ("fiets mobiel", "uri:book")])
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
 
         suggestions = sic.suggest("ha")
@@ -55,7 +55,7 @@ class SuggestionIndexComponentTest(SeecrTestCase):
 
     def testSuggestWithTypes(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", [("harry potter", "uri:book", 1), ("hallo", "uri:book", 1)])
+        sic.addSuggestions("id:1", [("harry potter", "uri:book"), ("hallo", "uri:book")])
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
 
         suggestions = sic.suggest("ha")
@@ -64,7 +64,7 @@ class SuggestionIndexComponentTest(SeecrTestCase):
 
     def testHandleRequest(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", [("harry", "uri:book", 1), ("potter", "uri:book", 1), ("hallo", "uri:book", 1), ("fiets", "uri:book", 1), ("fiets mobiel", "uri:book", 1)])
+        sic.addSuggestions("id:1", [("harry", "uri:book"), ("potter", "uri:book"), ("hallo", "uri:book"), ("fiets", "uri:book"), ("fiets mobiel", "uri:book")])
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], minScore=["0"]))).split(CRLF*2)
         self.assertEquals("""HTTP/1.0 200 OK\r
@@ -75,7 +75,7 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
 
     def testHandleRequestWithTypes(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", [("harry", 'uri:harry', 1), ("potter", "uri:book", 1), ("hallo", "uri:book", 1), ("fiets", 'uri:fiets', 1), ("fiets mobiel", "uri:book", 1)])
+        sic.addSuggestions("id:1", [("harry", 'uri:harry'), ("potter", "uri:book"), ("hallo", "uri:book"), ("fiets", 'uri:fiets'), ("fiets mobiel", "uri:book")])
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], minScore=["0"], concepts=["True"]))).split(CRLF*2)
         self.assertEquals("""HTTP/1.0 200 OK\r
@@ -86,7 +86,7 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
 
     def testHandleRequestWithDebug(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", [("harry", "uri:book", 1), ("potter", "uri:book", 1), ("hallo", "uri:book", 1), ("fiets", "uri:book", 1), ("fiets mobiel", "uri:book", 1)])
+        sic.addSuggestions("id:1", [("harry", "uri:book"), ("potter", "uri:book"), ("hallo", "uri:book"), ("fiets", "uri:book"), ("fiets mobiel", "uri:book")])
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "x-debug": ["true"], "minScore": ["0"]})).split(CRLF*2)
         self.assertEquals("""HTTP/1.0 200 OK\r
@@ -97,10 +97,10 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
         self.assertEquals('ha', json['value'])
         self.assertTrue("time" in json, json)
         suggestions = [(s[0], dict((k,round(v, 3)) for k,v in s[2].items())) for s in json['suggestions']]
-        self.assertEquals([
-            ("hallo", {"distanceScore": 0.653, "score": 0.003, "sortScore": 0.0}),
-            ("harry", {"distanceScore": 0.653, "score": 0.003, "sortScore": 0.0}),
-            ], suggestions)
+        self.assertEquals(sorted([
+            ("hallo", {"distanceScore": 0.653, "score": 0.801, "sortScore": 0.839, "matchScore": 1.0}),
+            ("harry", {"distanceScore": 0.653, "score": 0.801, "sortScore": 0.839, "matchScore": 1.0}),
+            ]), sorted(suggestions))
 
     def testHandleRequestWithEmptyValue(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
@@ -110,7 +110,7 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
     @stdout_replaced
     def testPersistentShingles(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", [("harry", "uri:book", 1), ("potter", "uri:book", 1), ("hallo", "uri:book", 1), ("fiets", "uri:book", 1), ("fiets mobiel", "uri:book", 1)])
+        sic.addSuggestions("id:1", [("harry", "uri:book"), ("potter", "uri:book"), ("hallo", "uri:book"), ("fiets", "uri:book"), ("fiets mobiel", "uri:book")])
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         sic.handleShutdown()
 
@@ -120,8 +120,8 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
 
     def testAddDelete(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", [("harry", "uri:book", 1), ("fiets", "uri:book", 1)])
-        sic.addSuggestions("id:2", [("harry potter", "uri:book", 1)])
+        sic.addSuggestions("id:1", [("harry", "uri:book"), ("fiets", "uri:book")])
+        sic.addSuggestions("id:2", [("harry potter", "uri:book")])
         self.assertEquals(2, sic.totalShingleRecords())
         sic.deleteSuggestions("id:1")
         self.assertEquals(1, sic.totalShingleRecords())

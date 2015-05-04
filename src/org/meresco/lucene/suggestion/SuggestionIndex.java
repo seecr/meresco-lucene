@@ -52,8 +52,8 @@ public class SuggestionIndex {
     public static final FieldType SIMPLE_STORED_STRING_FIELD = new FieldType();
     static {
         SIMPLE_NOT_STORED_STRING_FIELD.setIndexed(true);
-        SIMPLE_NOT_STORED_STRING_FIELD.setIndexOptions(IndexOptions.DOCS_ONLY);
-        SIMPLE_NOT_STORED_STRING_FIELD.setOmitNorms(true);
+        SIMPLE_NOT_STORED_STRING_FIELD.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+        SIMPLE_NOT_STORED_STRING_FIELD.setOmitNorms(false);
         SIMPLE_NOT_STORED_STRING_FIELD.setStored(false);
         SIMPLE_NOT_STORED_STRING_FIELD.setTokenized(false);
         SIMPLE_NOT_STORED_STRING_FIELD.freeze();
@@ -100,12 +100,12 @@ public class SuggestionIndex {
         this.suggestionNGramIndex = new SuggestionNGramIndex(this.suggestionNGramIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
     }
 
-    public void add(String identifier, String[] values, String[] types, int[] ranks) throws IOException {
+    public void add(String identifier, String[] values, String[] types) throws IOException {
         Document recordDoc = new Document();
         this.recordIdField.setStringValue(identifier);
         recordDoc.add(this.recordIdField);
         for (int i = 0; i < values.length; i++) {
-            String value = ranks[i] + "|" + (types[i] != null ? types[i] : "") + "|" + values[i];
+            String value = (types[i] != null ? types[i] : "") + "|" + values[i];
             recordDoc.add(new Field(RECORD_VALUE_FIELDNAME, value, SIMPLE_NOT_STORED_STRING_FIELD));
         }
         this.writer.updateDocument(new Term(this.recordIdField.name(), identifier), recordDoc);

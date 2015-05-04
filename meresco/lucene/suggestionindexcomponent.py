@@ -50,8 +50,7 @@ class SuggestionIndexComponent(Observable):
     def addSuggestions(self, identifier, values):
         titles = [v[0] for v in values]
         types = [v[1] for v in values]
-        ranks = [int(v[2]) for v in values]
-        self._index.add(identifier, titles, types, ranks)
+        self._index.add(identifier, titles, types)
 
     def deleteSuggestions(self, identifier):
         self._index.delete(identifier)
@@ -96,10 +95,11 @@ class SuggestionIndexComponent(Observable):
             for s in suggest:
                 suggestion = str(s.suggestion)
                 recordType = str(s.type) if s.type else None
-                distanceScore = max(0, -log(distance(value, suggestion) + 1) / 4 + 1)
+                distanceScore = max(0, -log(distance(value.lower(), suggestion.lower()) + 1) / 4 + 1)
+                matchScore = match(value.lower(), suggestion.lower())
                 score = float(s.score)
-                sortScore = distanceScore*score**2
-                scores = dict(distanceScore=distanceScore, score=score, sortScore=sortScore)
+                sortScore = distanceScore * score**2 * (matchScore + 1)
+                scores = dict(distanceScore=distanceScore, score=score, sortScore=sortScore, matchScore=matchScore)
                 if sortScore > minScore:
                     suggestions.append((suggestion, recordType, scores))
             suggestions = sorted(suggestions, reverse=True, key=lambda (suggestion, recordType, scores): scores['sortScore'])
@@ -107,8 +107,8 @@ class SuggestionIndexComponent(Observable):
                 concepts = [(s, t) for s, t, _ in suggestions if t]
                 yield JsonDict(dict(value=value, suggestions=suggestions, concepts=concepts, time=tTotal)).dumps()
                 return
-            concepts = [(s, t) for s, t, _ in suggestions if t and s.lower().startswith(value.lower())][:10]
-            suggestions = list(set([s[0] for s in suggestions if s[0].lower().startswith(value.lower())][:10]))
+            concepts = [(s, t) for s, t, _ in suggestions if t][:10]
+            suggestions = [s[0] for s in suggestions][:10]
             result = [value, suggestions]
             if showConcepts:
                 result.append(concepts)
@@ -119,3 +119,10 @@ class SuggestionIndexComponent(Observable):
         from sys import stdout; stdout.flush()
         self._index.close()
         self._reader.close()
+
+def match(value, suggestion):
+    matches = 0
+    for v in value.split():
+        if v in suggestion:
+            matches += 1
+    return matches

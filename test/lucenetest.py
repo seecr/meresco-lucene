@@ -902,15 +902,15 @@ class LuceneTest(SeecrTestCase):
         doc = Document()
         consume(self.lucene.addDocument(identifier="id:400", document=doc))
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1)], start=0, stop=5))
-        self.assertEquals(3, len(result.hits))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1)], start=0, stop=10))
+        self.assertEquals(4, len(result.hits))
         duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
-        self.assertTrue('id:200' in [d for d in duplicates if 'id:0' in d][0])
+        self.assertTrue('id:100' in [d for d in duplicates if 'id:0' in d][0])
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1), ("termvector2", 2)], start=0, stop=5))
         self.assertEquals(5, len(result.hits))
         duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
-        self.assertFalse('id:200' in [d for d in duplicates if 'id:0' in d][0])
+        self.assertFalse('id:100' in [d for d in duplicates if 'id:0' in d][0])
 
     def testCollectUntilStopWithForGrouping(self):
         for i in range(20):

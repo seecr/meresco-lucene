@@ -40,7 +40,6 @@ class SuggestionIndexTest(SeecrTestCase):
     def assertSuggestion(self, input, expected, trigram=False):
         reader = self._suggestionIndex.getSuggestionsReader()
         suggestions = [s.suggestion for s in reader.suggest(input, trigram)]
-        print suggestions
         self.assertEquals(set(expected), set(suggestions))
 
     def testFindShingles(self):

@@ -36,7 +36,6 @@ public class PageRank {
         }
 
         public void addPR(Node node, double weight) {
-            System.out.println("adding to node " + this.id + ": " + node.PR0 + "/" + node.edges + " * " + weight);
             this.PR1 += node.PR0 / node.edges * weight;
         }
 
@@ -117,12 +116,18 @@ public class PageRank {
                 node.commitPR();
     }
 
-    public double getDocRank(int i) {
-        return this.docnodes.get(i).getPR();
-    }
-
     public List<Node> topDocs() {
         Collections.sort(this.docnodes);
         return this.docnodes;
+    }
+
+    public List<Node> topTerms() {
+        List<Node> result = new ArrayList<Node>();
+        for (Node node : this.termnodes)
+            if (node != null)
+                result.add(node);
+        Collections.sort(result);
+        return result;
+
     }
 }

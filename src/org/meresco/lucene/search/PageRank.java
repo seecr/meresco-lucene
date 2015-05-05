@@ -10,7 +10,7 @@ public class PageRank {
     public static final class Node implements Comparable<Node> {
         public final int id;
         private static double damping = 0.85;
-        private int edges;
+        public int edges;
         private double PR0 = 0.0;
         private double PR1 = 0.0;
 
@@ -64,10 +64,14 @@ public class PageRank {
         }
     }
 
-    private Node[] termnodes = new Node[100]; // sparse, a few 100's large TODO
+    private Node[] termnodes;
     private List<Node> docnodes = new ArrayList<Node>(); // dense, a few 10's
     private List<Edge> edges = new ArrayList<Edge>(); // dense, a few 10's
-    private int node_count = 0;
+    public int node_count = 0;
+    
+    public PageRank(int max_ord) {
+        this.termnodes = new Node[max_ord];
+    }
 
     public void add(int docid, double[] docvector) {
         Node docnode = this.addDocNode(docid);

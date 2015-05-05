@@ -33,21 +33,26 @@ from org.meresco.lucene.search import PageRank
 
 class PageRankTest(SeecrTestCase):
 
-    def XXXtestCreate(self):
-        pr = PageRank()
+    def testCreate(self):
+        pr = PageRank(5)
         pr.add(5, [0.3, 0.0, 0.4])  # docid, termvector
         pr.add(3, [0.2, 0.4])
-        nodes = pr.node_count();  # graph contains 2 docs and 3 terms
+        nodes = pr.node_count;  # graph contains 2 docs and 3 terms
         self.assertEquals(5, nodes)
         pr.add(6, [0.3, 0.4, 0.4, 0.0, 0.1])
-        nodes = pr.node_count();  # graph contains 3 docs and 4 terms
+        nodes = pr.node_count;  # graph contains 3 docs and 4 terms
         self.assertEquals(7, nodes)
         pr.add(2, [0.0, 0.0, 0.0, 0.0, 0.0])
-        nodes = pr.node_count();  # graph contains 3 docs and 4 terms
+        nodes = pr.node_count;  # graph contains 3 docs and 4 terms
         self.assertEquals(8, nodes)
+        try:
+            pr.add(9, [1.0, 2.0, 3.0, 4.0, 5.0])
+        except Exception, e:
+            self.assertTrue("ArrayIndexOutOfBoundsException: 4" in e.getMessage(), str(e))
 
     def XXXtestUniqueDocId(self):
-        pr = PageRank()
+        '''Requires a reparate datastructure; forget it'''
+        pr = PageRank(2)
         pr.add(5, [1.0])
         try:
             pr.add(5, [1.0])
@@ -55,38 +60,43 @@ class PageRankTest(SeecrTestCase):
         except Exception, e:
             self.assertEquals("java.lang.RuntimeException: duplicate docid 5", str(e.message))
 
-
-    def XXXtestTermRanks(self):
-        pr = PageRank()
-        pr.add(5, [0.3, 0.0, 0.4])  # docid, termvector
-        pr.add(3, [0.2, 0.4])
-        R = 1.0 / pr.node_count()
-        term_ranks = pr.getDocs()
-        self.assertEquals(R, term_ranks.get(0))
-        self.assertEquals(R, term_ranks.get(1))
-        self.assertEquals(R, term_ranks.get(2))
-
     def testDocRanks(self):
-        pr = PageRank()
-        pr.add(5, [0.3, 0.0, 0.4])  # docid, termvector
-        pr.add(3, [0.2, 0.4])
-        pr.add(6, [0.3, 0.4, 0.4, 0.0, 0.1])
-        pr.add(2, [0.0, 0.0, 0.0, 0.0, 0.0])
-        pr.add(1, [0.2, 1.0, 2.0, 0.4, 0.0])
+        pr = PageRank(5)
+        pr.add(50, [0.3, 0.0, 0.4])  # docid, termvector
+        pr.add(30, [0.2, 0.4])
+        pr.add(60, [0.3, 0.4, 0.4, 0.0, 0.1])
+        pr.add(20, [0.0, 0.0, 0.0, 0.0, 0.0])
+        pr.add(10, [0.2, 1.0, 2.0, 0.4, 0.0])
         pr.prepare()
+        self.assertEquals(10, pr.node_count)
         topDocs = pr.topDocs()
-        self.assertEquals([0.1] * 5, [td.getPR() for td in topDocs])
-        self.assertEquals([5, 3, 6, 2, 1], [td.id for td in topDocs])
+        topTerms = pr.topTerms()
+        P = 1.0 / 10
+        self.assertEquals([P, P, P, P, P], [node.getPR() for node in topDocs])
+        self.assertEqual([0, 1, 2, 3, 4], [node.id for node in topTerms])
+        self.assertEquals([50, 30, 60, 20, 10], [node.id for node in topDocs])
+        self.assertEquals([2, 2, 4, 0, 4], [node.edges for node in topDocs])
+        self.assertEquals([4, 3, 3, 1, 1], [node.edges for node in topTerms])
         pr.iterate()
         topDocs = pr.topDocs()
         topTerms = pr.topTerms()
-        self.assertEquals([1, 6, 5, 3, 2], [td.id for td in topDocs])
-        self.assertEquals([0.27325000000000005, 0.1875416666666667, 0.16770833333333335, 0.16558333333333336, 0.15000000000000002] , [td.getPR() for td in topDocs])
-        self.assertEqual([2, 1, 0, 3, 4], [tt.id for tt in topTerms])
+        self.assertEquals([10, 60, 50, 30, 20], [node.id for node in topDocs])
+        self.assertEquals([0.27325000000000005, 0.1875416666666667, 0.16770833333333335, 0.16558333333333336, 0.15000000000000002],
+                          [node.getPR() for node in topDocs])
+        self.assertEqual([2, 1, 0, 3, 4], [node.id for node in topTerms])
+        self.assertEquals([0.21800000000000003, 0.19675000000000004, 0.181875, 0.15850000000000003, 0.152125],
+                            [node.getPR() for node in topTerms])
+        self.assertEquals([4, 4, 2, 2, 0], [node.edges for node in topDocs])
+        self.assertEquals([3, 3, 4, 1, 1], [node.edges for node in topTerms])
         pr.iterate()
         topDocs = pr.topDocs()
         topTerms = pr.topTerms()
-        self.assertEquals([1, 6, 5, 3, 2], [td.id for td in topDocs])
-        self.assertEquals([0.3908988541666667, 0.22153015625000003, 0.1863011979166667, 0.18002802083333336, 0.15000000000000002] , [td.getPR() for td in topDocs])
-        self.assertEqual([2, 1, 0, 3, 4], [tt.id for tt in topTerms])
+        self.assertEquals([10, 60, 50, 30, 20], [node.id for node in topDocs])
+        self.assertEquals([0.3908988541666667, 0.22153015625000003, 0.1863011979166667, 0.18002802083333336, 0.15000000000000002],
+                           [node.getPR() for node in topDocs])
+        self.assertEqual([2, 1, 0, 3, 4], [node.id for node in topTerms])
+        self.assertEquals([0.31058270833333335, 0.25215583333333336, 0.20902630208333337, 0.17322625000000003, 0.15398526041666669],
+                            [node.getPR() for node in topTerms])
+        self.assertEquals([4, 4, 2, 2, 0], [node.edges for node in topDocs])
+        self.assertEquals([3, 3, 4, 1, 1], [node.edges for node in topTerms])
 

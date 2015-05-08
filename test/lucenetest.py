@@ -854,6 +854,32 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(15, result.total)
         self.assertEquals(2, len(result.hits))
 
+    def testClusteringRanksMostRelevantOfGroup(self):
+        factory = FieldRegistry(termVectorFields=['termvector'])
+        doc = Document()
+        doc.add(factory.createField("termvector", "aap"))
+        doc.add(factory.createField("termvector", "noot"))
+        doc.add(factory.createField("termvector", "mies"))
+        doc.add(factory.createField("termvector", "vuur"))
+        consume(self.lucene.addDocument(identifier="id:1", document=doc))
+
+        doc = Document()
+        doc.add(factory.createField("termvector", "aap"))
+        doc.add(factory.createField("termvector", "mies"))
+        doc.add(factory.createField("termvector", "vuur"))
+        consume(self.lucene.addDocument(identifier="id:2", document=doc))
+
+        doc = Document()
+        doc.add(factory.createField("termvector", "aap"))
+        doc.add(factory.createField("termvector", "noot"))
+        consume(self.lucene.addDocument(identifier="id:3", document=doc))
+
+        self.lucene.setSettings(clusteringEps=10.0)
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1)]))
+        self.assertEquals(3, result.total)
+        self.assertEquals(1, len(result.hits))
+        self.assertEqual(['id:1', 'id:2', 'id:3'], result.hits[0].duplicates['cluster'])
+
     def testClusteringWinsOverGroupingAndDedup(self):
         factory = FieldRegistry(termVectorFields=['termvector'])
         for i in range(15):

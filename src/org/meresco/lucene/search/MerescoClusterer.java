@@ -96,17 +96,27 @@ public class MerescoClusterer {
         // System.out.println("Ords: " + this.ords.size());
     }
 
+    private int[] rankCluster(List<MerescoVector> vectors) {
+        PageRank pageRank = new PageRank(this.ords.size());
+        for (MerescoVector vector : vectors) {
+            pageRank.add(vector.docId, vector.getPoint());
+        }
+        pageRank.prepare();
+        pageRank.iterate();
+        int[] result = new int[vectors.size()];
+        int i = 0;
+        for (PageRank.Node n : pageRank.topDocs()) {
+            result[i++] = n.id;
+        }
+        return result;
+    }
+
     public int[] cluster(int docId) {
         for (Cluster<MerescoVector> c : this.clusters) {
             List<MerescoVector> points = c.getPoints();
             for (MerescoVector oc : points) {
                 if (oc.docId == docId) {
-                    int[] result = new int[points.size()];
-                    int i = 0;
-                    for (MerescoVector oc1 : points) {
-                        result[i++] = oc1.docId;
-                    }
-                    return result;
+                    return rankCluster(c.getPoints());
                 }
             }
         }
@@ -180,7 +190,7 @@ public class MerescoClusterer {
             ord = -ord - 1;
         return ord;
     }
-    
+
     public void printClusters() {
         System.out.println("Aantal clusters: " + this.clusters.size());
         List<Cluster<MerescoVector>> clusters = new ArrayList<Cluster<MerescoVector>>(this.clusters);
@@ -277,7 +287,7 @@ public class MerescoClusterer {
         public int docId() {
             return this.docId;
         }
-        
+
         public void printVector(BytesRefHash hash) {
             Iterator iter = entries.iterator();
             while (iter.hasNext()) {

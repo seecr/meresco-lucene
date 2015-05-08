@@ -750,7 +750,7 @@ class LuceneTest(SeecrTestCase):
         reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
 
         collector = MerescoClusterer(reader, 0.5)
-        collector.registerField("termvector.field", 1.0, False)
+        collector.registerField("termvector.field", 1.0)
         for i in range(15):
             collector.collect(i)
         collector.finish()
@@ -770,43 +770,6 @@ class LuceneTest(SeecrTestCase):
         self.assertNotEqual(cluster1.topDocs, cluster2.topDocs)
         self.assertNotEqual(cluster1.topDocs, cluster3.topDocs)
 
-    def testClusterOnNumericFields(self):
-        factory = FieldRegistry()
-        for i in range(5):
-            doc = Document()
-            doc.add(factory.createField("__key__.field", long(1)))
-            consume(self.lucene.addDocument(identifier="id:%s" % i , document=doc))
-
-        for i in range(5, 10):
-            doc = Document()
-            doc.add(factory.createField("__key__.field", long(2)))
-            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
-
-        for i in range(10, 15):
-            doc = Document()
-            doc.add(factory.createField("__key__.field", long(3)))
-            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
-        self.lucene.commit()
-        reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
-
-        collector = MerescoClusterer(reader, 0.5)
-        collector.registerField("__key__.field", 1.0, True)
-        for i in range(15):
-            collector.collect(i)
-        collector.finish()
-
-        cluster1 = list(collector.cluster(0))
-        self.assertEqual(5, len(cluster1))
-
-        cluster2 = list(collector.cluster(5))
-        self.assertEqual(5, len(cluster2))
-
-        cluster3 = list(collector.cluster(10))
-        self.assertEqual(5, len(cluster3))
-
-        self.assertNotEqual(cluster1, cluster2)
-        self.assertNotEqual(cluster1, cluster3)
-
     def testClusteringOnVectors(self):
         factory = FieldRegistry(termVectorFields=['termvector'])
         for i in range(5):
@@ -819,22 +782,7 @@ class LuceneTest(SeecrTestCase):
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1.0)]))
         self.assertEquals(2, len(result.hits))
-        duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
-        self.assertEqual(sorted([['id:6'], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
-
-    def testClusteringOnNumericField(self):
-        factory = FieldRegistry()
-        for i in range(5):
-            doc = Document()
-            doc.add(factory.createField("__key__.field", long(1)))
-            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
-        doc = Document()
-        consume(self.lucene.addDocument(identifier="id:6", document=doc))
-        self.lucene.commit()
-
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("__key__.field", 1.0)]))
-        self.assertEquals(2, len(result.hits))
-        duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
+        duplicates = [sorted(h.duplicates['topDocs']) for h in result.hits]
         self.assertEqual(sorted([['id:6'], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
 
     def testClusteringShowOnlyRequestTop(self):
@@ -882,7 +830,8 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(3, result.total)
         self.assertEquals(1, len(result.hits))
         self.assertEqual('id:1', result.hits[0].id)
-        self.assertEqual(['id:1', 'id:2', 'id:3'], result.hits[0].duplicates['cluster'])
+        self.assertEqual(['id:1', 'id:2', 'id:3'], result.hits[0].duplicates['topDocs'])
+        self.assertEqual(['aap', 'noot', 'mies', 'vuur'], result.hits[0].duplicates['topTerms'])
 
     def testClusteringWinsOverGroupingAndDedup(self):
         factory = FieldRegistry(termVectorFields=['termvector'])
@@ -934,12 +883,12 @@ class LuceneTest(SeecrTestCase):
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1)], start=0, stop=10))
         self.assertEquals(4, len(result.hits))
-        duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
+        duplicates = [sorted(h.duplicates['topDocs']) for h in result.hits]
         self.assertTrue('id:100' in [d for d in duplicates if 'id:0' in d][0])
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1), ("termvector2", 2)], start=0, stop=5))
         self.assertEquals(5, len(result.hits))
-        duplicates = [sorted(h.duplicates['cluster']) for h in result.hits]
+        duplicates = [sorted(h.duplicates['topDocs']) for h in result.hits]
         self.assertFalse('id:100' in [d for d in duplicates if 'id:0' in d][0])
 
     def testCollectUntilStopWithForGrouping(self):

@@ -37,18 +37,13 @@ import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
 import org.apache.commons.math3.util.OpenIntToDoubleHashMap;
 import org.apache.commons.math3.util.OpenIntToDoubleHashMap.Iterator;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.NumericUtils;
 import org.meresco.lucene.search.PageRank.Node;
 
 public class MerescoClusterer {
@@ -62,8 +57,7 @@ public class MerescoClusterer {
     public List<Cluster<MerescoVector>> clusters;
     private double eps;
     private int minPoints;
-    private List<String> numericFields = new ArrayList<String>();
-
+   
     public MerescoClusterer(IndexReader reader, double eps) {
         this(reader, eps, 1);
     }
@@ -74,10 +68,8 @@ public class MerescoClusterer {
         this.minPoints = minPoints;
     }
 
-    public void registerField(String fieldname, double weight, boolean numeric) {
+    public void registerField(String fieldname, double weight) {
         this.fieldsWeight.put(fieldname, weight);
-        if (numeric)
-            this.numericFields.add(fieldname);
     }
 
     public void collect(int doc) throws IOException {
@@ -109,7 +101,7 @@ public class MerescoClusterer {
         for (PageRank.Node n : pageRank.topDocs()) {
             topDocs[i++] = n.id;
         }
-        
+
         i = 0;
         List<Node> rankedTerms = pageRank.topTerms();
         String[] topTerms = new String[rankedTerms.size()];
@@ -156,14 +148,6 @@ public class MerescoClusterer {
     }
 
     private MerescoVector termVector(final int docId, String field) throws IOException {
-        if (this.numericFields.contains(field)) {
-            return this.vectorFromNumericField(docId, field);
-        } else {
-            return this.vectorFromTermVector(docId, field);
-        }
-    }
-
-    private MerescoVector vectorFromTermVector(final int docId, String field) throws IOException {
         Terms terms = this.reader.getTermVector(docId, field);
         if (terms == null)
             return null;
@@ -176,23 +160,6 @@ public class MerescoClusterer {
         return vector;
     }
 
-    private MerescoVector vectorFromNumericField(final int docId, String field) throws IOException {
-        List<AtomicReaderContext> leaves = this.reader.leaves();
-        AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
-        NumericDocValues docValues = context.reader().getNumericDocValues(field);
-        if (docValues == null) {
-            return null;
-        }
-        BytesRefBuilder term = new BytesRefBuilder();
-        long docValue = docValues.get(docId - context.docBase);
-        if (docValue == 0) {
-            return null;
-        }
-        NumericUtils.longToPrefixCoded(docValue, 0, term);
-        MerescoVector vector = new MerescoVector(docId);
-        vector.setEntry(ord(term.get()), 1);
-        return vector;
-    }
 
     private int ord(BytesRef b) {
         int ord = ords.add(b);
@@ -311,7 +278,7 @@ public class MerescoClusterer {
             System.out.println();
         }
     }
-    
+
     public class MerescoCluster {
 
         public String[] topTerms;
@@ -321,7 +288,5 @@ public class MerescoClusterer {
             this.topDocs = topDocs;
             this.topTerms = topTerms;
         }
-
     }
-
 }

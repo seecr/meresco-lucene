@@ -348,7 +348,7 @@ class Lucene(object):
     def _clusterTopDocsResponse(self, collector, start, stop, clusterFields, times):
         clusterer = MerescoClusterer(self._index.getIndexReader(), self._clusteringEps)
         for fieldname, weight in clusterFields:
-            clusterer.registerField(fieldname, float(weight), self._fieldRegistry.isNumeric(fieldname))
+            clusterer.registerField(fieldname, float(weight))
         totalHits = collector.getTotalHits()
         hits = []
         if hasattr(collector, "topDocs"):
@@ -372,7 +372,10 @@ class Lucene(object):
                 seenDocIds.update(set(clusteredDocIds))
 
                 hit = Hit(self._index.getDocument(clusteredDocIds[0]).get(IDFIELD))
-                hit.duplicates = {"cluster": [self._index.getDocument(docId).get(IDFIELD) for docId in clusteredDocIds]}
+                hit.duplicates = {
+                        "topDocs": [self._index.getDocument(docId).get(IDFIELD) for docId in clusteredDocIds],
+                        "topTerms": list(cluster.topTerms) if cluster else []
+                    }
                 hit.score = scoreDoc.score
                 hits.append(hit)
                 count += 1

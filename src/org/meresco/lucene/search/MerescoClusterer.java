@@ -49,6 +49,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.NumericUtils;
+import org.meresco.lucene.search.PageRank.Node;
 
 public class MerescoClusterer {
 
@@ -96,22 +97,31 @@ public class MerescoClusterer {
         // System.out.println("Ords: " + this.ords.size());
     }
 
-    private int[] rankCluster(List<MerescoVector> vectors) {
+    private MerescoCluster rankCluster(List<MerescoVector> vectors) {
         PageRank pageRank = new PageRank(this.ords.size());
         for (MerescoVector vector : vectors) {
             pageRank.add(vector.docId, vector.getPoint());
         }
         pageRank.prepare();
         pageRank.iterate();
-        int[] result = new int[vectors.size()];
+        int[] topDocs = new int[vectors.size()];
         int i = 0;
         for (PageRank.Node n : pageRank.topDocs()) {
-            result[i++] = n.id;
+            topDocs[i++] = n.id;
         }
-        return result;
+        
+        i = 0;
+        List<Node> rankedTerms = pageRank.topTerms();
+        String[] topTerms = new String[rankedTerms.size()];
+        for (PageRank.Node n : rankedTerms) {
+            BytesRef ref = new BytesRef();
+            this.ords.get(n.id, ref);
+            topTerms[i++] = ref.utf8ToString();
+        }
+        return new MerescoCluster(topDocs, topTerms);
     }
 
-    public int[] cluster(int docId) {
+    public MerescoCluster cluster(int docId) {
         for (Cluster<MerescoVector> c : this.clusters) {
             List<MerescoVector> points = c.getPoints();
             for (MerescoVector oc : points) {
@@ -184,7 +194,7 @@ public class MerescoClusterer {
         return vector;
     }
 
-    public int ord(BytesRef b) {
+    private int ord(BytesRef b) {
         int ord = ords.add(b);
         if (ord < 0)
             ord = -ord - 1;
@@ -301,4 +311,17 @@ public class MerescoClusterer {
             System.out.println();
         }
     }
+    
+    public class MerescoCluster {
+
+        public String[] topTerms;
+        public int[] topDocs;
+
+        public MerescoCluster(int[] topDocs, String[] topTerms) {
+            this.topDocs = topDocs;
+            this.topTerms = topTerms;
+        }
+
+    }
+
 }

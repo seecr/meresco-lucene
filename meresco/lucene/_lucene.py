@@ -367,7 +367,8 @@ class Lucene(object):
                     break
                 if scoreDoc.doc in seenDocIds:
                     continue
-                clusteredDocIds = list(clusterer.cluster(scoreDoc.doc) or [scoreDoc.doc])
+                cluster = clusterer.cluster(scoreDoc.doc)
+                clusteredDocIds = list(cluster.topDocs) if cluster else [scoreDoc.doc]
                 seenDocIds.update(set(clusteredDocIds))
 
                 hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))

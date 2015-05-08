@@ -755,17 +755,20 @@ class LuceneTest(SeecrTestCase):
             collector.collect(i)
         collector.finish()
 
-        cluster1 = list(collector.cluster(0))
-        self.assertEqual(5, len(cluster1))
+        cluster1 = collector.cluster(0)
+        self.assertEqual(5, len(list(cluster1.topDocs)))
+        self.assertEqual(['else', 'something'], list(cluster1.topTerms))
 
-        cluster2 = list(collector.cluster(5))
-        self.assertEqual(5, len(cluster2))
+        cluster2 = collector.cluster(5)
+        self.assertEqual(5, len(list(cluster2.topDocs)))
+        self.assertEqual(['noot', 'aap', 'vuur'], list(cluster2.topTerms))
 
-        cluster3 = list(collector.cluster(10))
-        self.assertEqual(5, len(cluster3))
+        cluster3 = collector.cluster(10)
+        self.assertEqual(5, len(list(cluster3.topDocs)))
+        self.assertEqual(['anders', 'iets'], list(cluster3.topTerms))
 
-        self.assertNotEqual(cluster1, cluster2)
-        self.assertNotEqual(cluster1, cluster3)
+        self.assertNotEqual(cluster1.topDocs, cluster2.topDocs)
+        self.assertNotEqual(cluster1.topDocs, cluster3.topDocs)
 
     def testClusterOnNumericFields(self):
         factory = FieldRegistry()

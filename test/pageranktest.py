@@ -26,7 +26,7 @@
 # # end license ##
 
 
-from seecr.test import SeecrTestCase, CallTrace
+from seecr.test import SeecrTestCase
 
 from org.meresco.lucene.search import PageRank
 

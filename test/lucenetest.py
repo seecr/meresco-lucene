@@ -881,6 +881,7 @@ class LuceneTest(SeecrTestCase):
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1)]))
         self.assertEquals(3, result.total)
         self.assertEquals(1, len(result.hits))
+        self.assertEqual('id:1', result.hits[0].id)
         self.assertEqual(['id:1', 'id:2', 'id:3'], result.hits[0].duplicates['cluster'])
 
     def testClusteringWinsOverGroupingAndDedup(self):

@@ -371,7 +371,7 @@ class Lucene(object):
                 clusteredDocIds = list(cluster.topDocs) if cluster else [scoreDoc.doc]
                 seenDocIds.update(set(clusteredDocIds))
 
-                hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
+                hit = Hit(self._index.getDocument(clusteredDocIds[0]).get(IDFIELD))
                 hit.duplicates = {"cluster": [self._index.getDocument(docId).get(IDFIELD) for docId in clusteredDocIds]}
                 hit.score = scoreDoc.score
                 hits.append(hit)

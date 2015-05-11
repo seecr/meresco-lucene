@@ -120,12 +120,12 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         return relation, boost
 
     def _determineQuery(self, index, termString):
-        terms = self._pre_analyzeToken(termString)
+        terms = self._pre_analyzeToken(index, termString)
         if len(terms) == 1:
             if prefixRegexp.match(termString):
                 return PrefixQuery(self._createStringTerm(index, terms[0]))
             else:
-                terms = self._post_analyzeToken(terms[0])
+                terms = self._post_analyzeToken(index, terms[0])
                 if len(terms) == 1:
                     return self._createQuery(index, terms[0])
                 query = BooleanQuery()
@@ -154,16 +154,16 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
             return NumericRangeQuery.newLongRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
         return TermRangeQuery.newStringRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
 
-    def _pre_analyzeToken(self, token):
+    def _pre_analyzeToken(self, index, token):
         if isinstance(self._analyzer, MerescoStandardAnalyzer):
-            return list(self._analyzer.pre_analyse(token))
+            return list(self._analyzer.pre_analyse(index, token))
         return list(MerescoStandardAnalyzer.readTokenStream(self._analyzer.tokenStream("dummy field name", StringReader(token))))
 
-    def _post_analyzeToken(self, token):
+    def _post_analyzeToken(self, index, token):
         if token in self._ignoreStemmingForWords:
             return [token]
         if isinstance(self._analyzer, MerescoStandardAnalyzer):
-            return list(self._analyzer.post_analyse(token))
+            return list(self._analyzer.post_analyse(index, token))
         return [token]
 
     def _createQuery(self, field, term):

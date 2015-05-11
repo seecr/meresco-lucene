@@ -45,22 +45,22 @@ import org.apache.lucene.util.Version;
 
 public class MerescoStandardAnalyzer extends Analyzer {
 
-    public List<String> pre_analyse(String string) throws IOException {
+    public List<String> pre_analyse(String fieldName, String string) throws IOException {
         Reader reader = new StringReader(string);
         TokenStream tok = this.pre_analyzer(reader).getTokenStream();
         return this.readTokenStream(tok);
     }
 
-    public List<String> post_analyse(String string) throws IOException {
+    public List<String> post_analyse(String fieldName, String string) throws IOException {
         ClassicTokenizer src = new ClassicTokenizer(new StringReader(string));
-        TokenStream tok = this.post_analyzer(src);
+        TokenStream tok = this.post_analyzer(fieldName, src);
         return this.readTokenStream(tok);
     }
 
     public Analyzer.TokenStreamComponents createComponents(String fieldName, java.io.Reader reader) {
         Analyzer.TokenStreamComponents tsc = this.pre_analyzer(reader);
         TokenStream tok = tsc.getTokenStream();
-        tok = this.post_analyzer(tok);
+        tok = this.post_analyzer(fieldName, tok);
         return new Analyzer.TokenStreamComponents(tsc.getTokenizer(), tok);
     }
 
@@ -72,7 +72,7 @@ public class MerescoStandardAnalyzer extends Analyzer {
         return new Analyzer.TokenStreamComponents(src, tok);
     }
 
-    protected TokenStream post_analyzer(TokenStream tok) {
+    protected TokenStream post_analyzer(String fieldName, TokenStream tok) {
         return tok;
     }
 

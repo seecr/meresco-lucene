@@ -31,11 +31,25 @@ import org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilter;
 import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.tartarus.snowball.ext.DutchStemmer;
-
+import java.util.Arrays;
+import java.util.List;
 
 public class MerescoDutchStemmingAnalyzer extends MerescoStandardAnalyzer {
+
+    private List<String> stemmingFields;
+
+    public MerescoDutchStemmingAnalyzer() {
+        this.stemmingFields = null;
+    }
+
+    public MerescoDutchStemmingAnalyzer(String[] stemmingFields) {
+        this.stemmingFields = Arrays.asList(stemmingFields);
+    }
+
     @Override
-    public TokenStream post_analyzer(TokenStream tok) {
+    public TokenStream post_analyzer(String fieldName, TokenStream tok) {
+        if (stemmingFields != null && stemmingFields.indexOf(fieldName) == -1)
+            return tok;
         tok = new KeywordRepeatFilter(tok); // repeat every word as term and as keyword
         tok = new SnowballFilter(tok, new DutchStemmer()); // ignores keywords
         tok = new RemoveDuplicatesTokenFilter(tok); // removes one if keyword and term are still the same

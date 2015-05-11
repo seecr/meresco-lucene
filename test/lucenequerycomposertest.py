@@ -85,6 +85,17 @@ class LuceneQueryComposerTest(TestCase):
         query.add(TermQuery(Term("unqualified", "hond")), BooleanClause.Occur.SHOULD)
         self.assertConversion(query, 'honden')
 
+    def testDutchStemmingOnlyForGivenFields(self):
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer(["unqualified"])))
+        query = BooleanQuery()
+        query.add(TermQuery(Term("unqualified", "honden")), BooleanClause.Occur.SHOULD)
+        query.add(TermQuery(Term("unqualified", "hond")), BooleanClause.Occur.SHOULD)
+        self.assertConversion(query, 'honden')
+
+        query = TermQuery(Term("field", "honden"))
+        result = self.composer.compose(parseCql("field=honden"))
+        self.assertEquals(repr(query), repr(result))
+
     def testIgnoreStemming(self):
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0)], luceneSettings=LuceneSettings(analyzer=MerescoDutchStemmingAnalyzer()), ignoreStemmingForWords=['kate', 'wageningen'])
         query = TermQuery(Term("unqualified", "kate"))

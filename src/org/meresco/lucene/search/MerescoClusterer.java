@@ -57,7 +57,7 @@ public class MerescoClusterer {
     public List<Cluster<MerescoVector>> clusters;
     private double eps;
     private int minPoints;
-   
+
     public MerescoClusterer(IndexReader reader, double eps) {
         this(reader, eps, 1);
     }
@@ -86,7 +86,6 @@ public class MerescoClusterer {
 
     public void finish() {
         this.clusters = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new GeneralizedJaccardDistance()).cluster(this.docvectors);
-        // System.out.println("Ords: " + this.ords.size());
     }
 
     private MerescoCluster rankCluster(List<MerescoVector> vectors) {
@@ -96,19 +95,20 @@ public class MerescoClusterer {
         }
         pageRank.prepare();
         pageRank.iterate();
-        int[] topDocs = new int[vectors.size()];
+        pageRank.iterate();
+        MerescoCluster.DocScore[] topDocs = new MerescoCluster.DocScore[vectors.size()];
         int i = 0;
         for (PageRank.Node n : pageRank.topDocs()) {
-            topDocs[i++] = n.id;
+            topDocs[i++] = new MerescoCluster.DocScore(n.id, n.getPR());
         }
 
         i = 0;
         List<Node> rankedTerms = pageRank.topTerms();
-        String[] topTerms = new String[rankedTerms.size()];
+        MerescoCluster.TermScore[] topTerms = new MerescoCluster.TermScore[rankedTerms.size()];
         for (PageRank.Node n : rankedTerms) {
             BytesRef ref = new BytesRef();
             this.ords.get(n.id, ref);
-            topTerms[i++] = ref.utf8ToString();
+            topTerms[i++] = new MerescoCluster.TermScore(ref.utf8ToString(), n.getPR());
         }
         return new MerescoCluster(topDocs, topTerms);
     }
@@ -279,14 +279,35 @@ public class MerescoClusterer {
         }
     }
 
-    public class MerescoCluster {
+    public static final class MerescoCluster {
 
-        public String[] topTerms;
-        public int[] topDocs;
+        public final DocScore[] topDocs;
+        public final TermScore[] topTerms;
 
-        public MerescoCluster(int[] topDocs, String[] topTerms) {
+        public MerescoCluster(DocScore[] topDocs, TermScore[] topTerms) {
             this.topDocs = topDocs;
             this.topTerms = topTerms;
         }
+
+        public static final class DocScore {
+            public final int id;
+            public final double score;
+
+            public DocScore(int id, double score) {
+                this.id = id;
+                this.score = score;
+            }
+        }
+
+        public static final class TermScore {
+            public final String term;
+            public final double score;
+
+            public TermScore(String term, double score) {
+                this.term = term;
+                this.score = score;
+            }
+        }
+
     }
 }

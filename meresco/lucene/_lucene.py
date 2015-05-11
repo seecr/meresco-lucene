@@ -337,7 +337,7 @@ class Lucene(object):
                         if groupedDocIds:
                             duplicateIds = [self._index.getDocument(docId).get(IDFIELD) for docId in groupedDocIds]
                     seenIds.update(set(duplicateIds))
-                    hit.duplicates = {groupingCollectorFieldName: duplicateIds}
+                    hit.duplicates = {groupingCollectorFieldName: [{"id": i} for i in duplicateIds]}
                 else:
                     hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
                 hit.score = scoreDoc.score
@@ -368,13 +368,15 @@ class Lucene(object):
                 if scoreDoc.doc in seenDocIds:
                     continue
                 cluster = clusterer.cluster(scoreDoc.doc)
-                clusteredDocIds = list(cluster.topDocs) if cluster else [scoreDoc.doc]
+                topDocs = cluster.topDocs if cluster else []
+
+                clusteredDocIds = [t.id for t in topDocs] if cluster else [scoreDoc.doc]
                 seenDocIds.update(set(clusteredDocIds))
 
                 hit = Hit(self._index.getDocument(clusteredDocIds[0]).get(IDFIELD))
                 hit.duplicates = {
-                        "topDocs": [self._index.getDocument(docId).get(IDFIELD) for docId in clusteredDocIds],
-                        "topTerms": list(cluster.topTerms) if cluster else []
+                        "topDocs": [{"id": self._index.getDocument(t.id).get(IDFIELD), "score": t.score} for t in topDocs],
+                        "topTerms": [{"term": t.term, "score": t.score} for t in cluster.topTerms] if cluster else []
                     }
                 hit.score = scoreDoc.score
                 hits.append(hit)

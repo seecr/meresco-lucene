@@ -549,9 +549,9 @@ class LuceneTest(SeecrTestCase):
         # expected two hits: "urn:2" (3x) and "urn:4" in no particular order
         self.assertEquals(4, result.total)
         expectedHits = [
-            Hit(score=1.0, id=u'urn:1', duplicates={u'__key__': [u'urn:1', u'urn:2']}),
-            Hit(score=1.0, id=u'urn:3', duplicates={u'__key__': [u'urn:3']}),
-            Hit(score=1.0, id=u'urn:4', duplicates={u'__key__': [u'urn:4']}),
+            Hit(score=1.0, id=u'urn:1', duplicates={u'__key__': [{'id': 'urn:1'}, {'id': 'urn:2'}]}),
+            Hit(score=1.0, id=u'urn:3', duplicates={u'__key__': [{'id': 'urn:3'}]}),
+            Hit(score=1.0, id=u'urn:4', duplicates={u'__key__': [{'id': 'urn:4'}]}),
         ]
         resultHits = list(hit for hit in result.hits)
         resultHits.sort(key=lambda h:h.id)
@@ -596,8 +596,8 @@ class LuceneTest(SeecrTestCase):
         # expected two hits: "urn:2" (3x) and "urn:4" in no particular order
         self.assertEquals(2, result.total)
         expectedHits = [
-            Hit(score=1.0, id=u'urn:1', duplicates={u'__key__': [u'urn:1']}),
-            Hit(score=1.0, id=u'urn:2', duplicates={u'__key__': [u'urn:2']}),
+            Hit(score=1.0, id=u'urn:1', duplicates={u'__key__': [{'id': 'urn:1'}]}),
+            Hit(score=1.0, id=u'urn:2', duplicates={u'__key__': [{'id': 'urn:2'}]}),
         ]
         resultHits = list(hit for hit in result.hits)
         resultHits.sort(key=lambda h:h.id)
@@ -757,15 +757,15 @@ class LuceneTest(SeecrTestCase):
 
         cluster1 = collector.cluster(0)
         self.assertEqual(5, len(list(cluster1.topDocs)))
-        self.assertEqual(['else', 'something'], list(cluster1.topTerms))
+        self.assertEqual(['else', 'something'], list([t.term for t in cluster1.topTerms]))
 
         cluster2 = collector.cluster(5)
         self.assertEqual(5, len(list(cluster2.topDocs)))
-        self.assertEqual(['noot', 'aap', 'vuur'], list(cluster2.topTerms))
+        self.assertEqual(['noot', 'aap', 'vuur'], list([t.term for t in cluster2.topTerms]))
 
         cluster3 = collector.cluster(10)
         self.assertEqual(5, len(list(cluster3.topDocs)))
-        self.assertEqual(['anders', 'iets'], list(cluster3.topTerms))
+        self.assertEqual(['anders', 'iets'], list([t.term for t in cluster3.topTerms]))
 
         self.assertNotEqual(cluster1.topDocs, cluster2.topDocs)
         self.assertNotEqual(cluster1.topDocs, cluster3.topDocs)
@@ -782,8 +782,8 @@ class LuceneTest(SeecrTestCase):
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1.0)]))
         self.assertEquals(2, len(result.hits))
-        duplicates = [sorted(h.duplicates['topDocs']) for h in result.hits]
-        self.assertEqual(sorted([['id:6'], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
+        duplicates = [sorted([t['id'] for t in h.duplicates['topDocs']]) for h in result.hits]
+        self.assertEqual(sorted([[], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
 
     def testClusteringShowOnlyRequestTop(self):
         factory = FieldRegistry(termVectorFields=['termvector'])
@@ -830,8 +830,8 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(3, result.total)
         self.assertEquals(1, len(result.hits))
         self.assertEqual('id:1', result.hits[0].id)
-        self.assertEqual(['id:1', 'id:2', 'id:3'], result.hits[0].duplicates['topDocs'])
-        self.assertEqual(['aap', 'noot', 'mies', 'vuur'], result.hits[0].duplicates['topTerms'])
+        self.assertEqual(['id:1', 'id:2', 'id:3'], [t['id'] for t in result.hits[0].duplicates['topDocs']])
+        self.assertEqual(['aap', 'noot', 'mies', 'vuur'], [t['term'] for t in result.hits[0].duplicates['topTerms']])
 
     def testClusteringWinsOverGroupingAndDedup(self):
         factory = FieldRegistry(termVectorFields=['termvector'])
@@ -883,12 +883,12 @@ class LuceneTest(SeecrTestCase):
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1)], start=0, stop=10))
         self.assertEquals(4, len(result.hits))
-        duplicates = [sorted(h.duplicates['topDocs']) for h in result.hits]
+        duplicates = [sorted([t['id'] for t in h.duplicates['topDocs']]) for h in result.hits]
         self.assertTrue('id:100' in [d for d in duplicates if 'id:0' in d][0])
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1), ("termvector2", 2)], start=0, stop=5))
         self.assertEquals(5, len(result.hits))
-        duplicates = [sorted(h.duplicates['topDocs']) for h in result.hits]
+        duplicates = [sorted([t['id'] for t in h.duplicates['topDocs']]) for h in result.hits]
         self.assertFalse('id:100' in [d for d in duplicates if 'id:0' in d][0])
 
     def testCollectUntilStopWithForGrouping(self):

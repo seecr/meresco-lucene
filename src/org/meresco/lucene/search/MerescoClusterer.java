@@ -94,8 +94,8 @@ public class MerescoClusterer {
             pageRank.add(vector.docId, vector.getPoint());
         }
         pageRank.prepare();
-        pageRank.iterate();
-        pageRank.iterate();
+        for (int i=0; i<5; i++)
+            pageRank.iterate();
         MerescoCluster.DocScore[] topDocs = new MerescoCluster.DocScore[vectors.size()];
         int i = 0;
         for (PageRank.Node n : pageRank.topDocs()) {

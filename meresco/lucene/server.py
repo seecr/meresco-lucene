@@ -102,7 +102,7 @@ def main(reactor, port, databasePath):
     drilldownFields = [DrilldownField('untokenized.field2'), DrilldownField('untokenized.fieldHier', hierarchical=True)]
 
     fieldRegistry = FieldRegistry(drilldownFields)
-    luceneSettings = LuceneSettings(fieldRegistry=fieldRegistry, commitCount=30, commitTimeout=1, analyzer=MerescoDutchStemmingAnalyzer())
+    luceneSettings = LuceneSettings(fieldRegistry=fieldRegistry, commitCount=30, commitTimeout=1, analyzer=MerescoDutchStemmingAnalyzer(['field4', 'field5']))
     lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, name='main', settings=luceneSettings)
 
     lucene2Settings = LuceneSettings(fieldRegistry=fieldRegistry, commitTimeout=0.1)

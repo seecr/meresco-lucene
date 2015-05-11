@@ -45,6 +45,14 @@ import org.apache.lucene.util.Version;
 
 public class MerescoStandardAnalyzer extends Analyzer {
 
+    public MerescoStandardAnalyzer() {
+        super();
+    }
+
+    public MerescoStandardAnalyzer(Analyzer.ReuseStrategy reuseStrategy) {
+        super(reuseStrategy);
+    }
+
     public List<String> pre_analyse(String fieldName, String string) throws IOException {
         Reader reader = new StringReader(string);
         TokenStream tok = this.pre_analyzer(reader).getTokenStream();

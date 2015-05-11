@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilter;
 import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.tartarus.snowball.ext.DutchStemmer;
+import org.apache.lucene.analysis.Analyzer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -39,10 +40,12 @@ public class MerescoDutchStemmingAnalyzer extends MerescoStandardAnalyzer {
     private List<String> stemmingFields;
 
     public MerescoDutchStemmingAnalyzer() {
+        super();
         this.stemmingFields = null;
     }
 
     public MerescoDutchStemmingAnalyzer(String[] stemmingFields) {
+        super(Analyzer.PER_FIELD_REUSE_STRATEGY);
         this.stemmingFields = Arrays.asList(stemmingFields);
     }
 

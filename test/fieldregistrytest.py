@@ -91,6 +91,12 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(dimConfigs.get('noot').multiValued)
         self.assertFalse(dimConfigs.get('mies').multiValued)
 
+    def testGenericDrilldownFields(self):
+        registry = FieldRegistry(isDrilldownFieldFunction=lambda name: name.startswith('drilldown'))
+        self.assertTrue(registry.isDrilldownField('drilldown.aap'))
+        self.assertTrue(registry.isDrilldownField('drilldown.noot'))
+        self.assertFalse(registry.isDrilldownField('noot'))
+
     def testReuseCreatedField(self):
         registry = FieldRegistry()
         field = registry.createField('fieldname', 'value')

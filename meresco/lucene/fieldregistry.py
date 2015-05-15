@@ -38,7 +38,7 @@ NUMERIC_PREFIX = "__numeric__."
 RANGE_DOUBLE_PREFIX = 'range.double.'
 
 class FieldRegistry(object):
-    def __init__(self, drilldownFields=None, defaultDefinition=None, termVectorFields=None):
+    def __init__(self, drilldownFields=None, defaultDefinition=None, termVectorFields=None, isDrilldownFieldFunction=None):
         self._fieldDefinitions = {
             IDFIELD: _FieldDefinition.define(type=StringField.TYPE_STORED, name=IDFIELD),
         }
@@ -50,6 +50,7 @@ class FieldRegistry(object):
         self.facetsConfig = FacetsConfig()
         for field in (drilldownFields or []):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued)
+        self._isDrilldownFieldFunction = isDrilldownFieldFunction or (lambda name: False)
 
     def createField(self, fieldname, value, mayReUse=False):
         return self._getFieldDefinition(fieldname).createField(value, mayReUse=mayReUse)
@@ -83,6 +84,8 @@ class FieldRegistry(object):
         self.facetsConfig.setHierarchical(fieldname, hierarchical)
 
     def isDrilldownField(self, fieldname):
+        if self._isDrilldownFieldFunction(fieldname):
+            self.registerDrilldownField(fieldname, multiValued=True)
         return fieldname in self._drilldownFieldNames
 
     def isHierarchicalDrilldown(self, fieldname):

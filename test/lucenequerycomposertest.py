@@ -298,6 +298,10 @@ class LuceneQueryComposerTest(TestCase):
         expected = NumericRangeQuery.newLongRange("longField", long(5), long(5), True, True)
         self.assertConversion(expected, "longField=5")
 
+    def testQueryForDoubleField(self):
+        expected = NumericRangeQuery.newDoubleRange("range.double.field", float(5), float(5), True, True)
+        self.assertConversion(expected, "range.double.field=5")
+
     def assertConversion(self, expected, input):
         result = self.composer.compose(parseCql(input))
         self.assertEquals(type(expected), type(result), "expected %s, but got %s" % (repr(expected), repr(result)))

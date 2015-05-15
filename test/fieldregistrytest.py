@@ -27,6 +27,7 @@
 from seecr.test import SeecrTestCase
 from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE, STRINGFIELD, INTFIELD, LONGFIELD
 from org.apache.lucene.index import FieldInfo
+from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery
 from org.apache.lucene.document import StringField, TextField
 from meresco.lucene import DrilldownField
 
@@ -133,4 +134,22 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(registry.isNumeric('longfield'))
         self.assertTrue(registry.isNumeric('intfield'))
         self.assertTrue(registry.isNumeric('__key__.field1'))
+        self.assertTrue(registry.isNumeric('range.double.afield'))
 
+    def testRangeQueryAndType(self):
+        registry = FieldRegistry()
+        registry.register("longfield", fieldDefinition=LONGFIELD)
+        registry.register("intfield", fieldDefinition=INTFIELD)
+        q, t = registry.rangeQueryAndType('longfield')
+        self.assertEqual(NumericRangeQuery.newLongRange, q)
+        self.assertEqual(long, t)
+        q, t = registry.rangeQueryAndType('intfield')
+        self.assertEqual(NumericRangeQuery.newIntRange, q)
+        self.assertEqual(int, t)
+        q, t = registry.rangeQueryAndType('range.double.field')
+        self.assertEqual(NumericRangeQuery.newDoubleRange, q)
+        self.assertEqual(float, t)
+
+        q, t = registry.rangeQueryAndType('anyfield')
+        self.assertEqual(TermRangeQuery.newStringRange, q)
+        self.assertEqual(str, t)

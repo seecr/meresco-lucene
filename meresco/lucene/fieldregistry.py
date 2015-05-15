@@ -24,7 +24,8 @@
 #
 ## end license ##
 
-from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType, IntField, LongField
+from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType, IntField, LongField, DoubleField
+from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery
 from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.facet import FacetsConfig, DrillDownQuery
 
@@ -34,6 +35,7 @@ SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."
 KEY_PREFIX = "__key__."
 NUMERIC_PREFIX = "__numeric__."
+RANGE_DOUBLE_PREFIX = 'range.double.'
 
 class FieldRegistry(object):
     def __init__(self, drilldownFields=None, defaultDefinition=None, termVectorFields=None):
@@ -96,6 +98,20 @@ class FieldRegistry(object):
     def pythonType(self, fieldname):
         return self._getFieldDefinition(fieldname).pythonType
 
+    def rangeQueryAndType(self, fieldname):
+        if not self.isNumeric(fieldname):
+            return TermRangeQuery.newStringRange, str
+        definition = self._getFieldDefinition(fieldname)
+        query = NumericRangeQuery.newLongRange
+        numericType = definition.type.numericType()
+        if numericType == FieldType.NumericType.INT:
+            query = NumericRangeQuery.newIntRange
+        elif numericType == FieldType.NumericType.DOUBLE:
+            query = NumericRangeQuery.newDoubleRange
+        elif numericType == FieldType.NumericType.FLOAT:
+            query = NumericRangeQuery.newFloatRange
+        return query, definition.pythonType
+
     def _getFieldDefinition(self, fieldname):
         fieldDefinition = self._fieldDefinitions.get(fieldname)
         if fieldDefinition is not None:
@@ -103,8 +119,10 @@ class FieldRegistry(object):
         fieldDefinitionCreator = self._defaultDefinition
         if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
             fieldDefinitionCreator = STRINGFIELD
-        if fieldname.startswith(KEY_PREFIX) or fieldname.startswith(NUMERIC_PREFIX):
+        elif fieldname.startswith(KEY_PREFIX) or fieldname.startswith(NUMERIC_PREFIX):
             fieldDefinitionCreator = NUMERICFIELD
+        elif fieldname.startswith(RANGE_DOUBLE_PREFIX):
+            fieldDefinitionCreator = DOUBLEFIELD
         fieldDefinition = fieldDefinitionCreator(name=fieldname, termVectors=fieldname in self._termVectorFieldNames)
         self._fieldDefinitions[fieldname] = fieldDefinition
         return fieldDefinition
@@ -177,7 +195,14 @@ LONGFIELD = lambda name, **ignored: _FieldDefinition(
     pythonType=long,
     field=LongField(name, long(0), LongField.TYPE_NOT_STORED),
     create=lambda value: LongField(name, long(value), LongField.TYPE_NOT_STORED),
-    update=lambda field, value: field.setIntValue(long(value)),
+    update=lambda field, value: field.setLongValue(long(value)),
+)
+DOUBLEFIELD = lambda name, **ignored: _FieldDefinition(
+    type=DoubleField.TYPE_NOT_STORED,
+    pythonType=float,
+    field=DoubleField(name, float(0), DoubleField.TYPE_NOT_STORED),
+    create=lambda value: DoubleField(name, float(value), DoubleField.TYPE_NOT_STORED),
+    update=lambda field, value: field.setDoubleValue(float(value)),
 )
 
 

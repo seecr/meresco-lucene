@@ -145,14 +145,10 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         else:
             lowerTerm, upperTerm = termString, None
         includeLower, includeUpper = relation == '>=', relation == '<='
-        t = self._fieldRegistry.pythonType(field)
-        lowerTerm = t(lowerTerm) if lowerTerm else None
-        upperTerm = t(upperTerm) if upperTerm else None
-        if t == int:
-            return NumericRangeQuery.newIntRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
-        elif t == long:
-            return NumericRangeQuery.newLongRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
-        return TermRangeQuery.newStringRange(field, lowerTerm, upperTerm, includeLower, includeUpper)
+        rangeQuery, pythonType = self._fieldRegistry.rangeQueryAndType(field)
+        lowerTerm = pythonType(lowerTerm) if lowerTerm else None
+        upperTerm = pythonType(upperTerm) if upperTerm else None
+        return rangeQuery(field, lowerTerm, upperTerm, includeLower, includeUpper)
 
     def _pre_analyzeToken(self, index, token):
         if isinstance(self._analyzer, MerescoStandardAnalyzer):
@@ -167,11 +163,10 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
         return [token]
 
     def _createQuery(self, field, term):
-        t = self._fieldRegistry.pythonType(field)
-        if t == int:
-            return NumericRangeQuery.newIntRange(field, int(term), int(term), True, True)
-        elif t == long:
-            return NumericRangeQuery.newLongRange(field, long(term), long(term), True, True)
+        if self._fieldRegistry.isNumeric(field):
+            rangeQuery, pythonType = self._fieldRegistry.rangeQueryAndType(field)
+            term = pythonType(term) if term else None
+            return rangeQuery(field, term, term, True, True)
         else:
             return TermQuery(self._createStringTerm(field, term))
 

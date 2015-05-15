@@ -59,7 +59,7 @@ class FieldRegistry(object):
         if fieldType:
             self._fieldDefinitions[fieldname] = _FieldDefinition.define(type=fieldType, name=fieldname)
         else:
-            self._fieldDefinitions[fieldname] = fieldDefinition(fieldname)
+            self._fieldDefinitions[fieldname] = fieldDefinition(name=fieldname)
 
     def phraseQueryPossible(self, fieldname):
         return self._getFieldDefinition(fieldname).phraseQueryPossible

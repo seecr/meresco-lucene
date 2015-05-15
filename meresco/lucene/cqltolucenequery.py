@@ -33,10 +33,11 @@ from seecr.utils.generatorutils import generatorReturn
 
 
 class CqlToLuceneQuery(Transparent, Logger):
-    def __init__(self, unqualifiedFields, name=None, **kwargs):
+    def __init__(self, unqualifiedFields, luceneSettings, name=None, **kwargs):
         Transparent.__init__(self, name=name)
         self._additionalKwargs = kwargs
         self._additionalKwargs['unqualifiedTermFields'] = unqualifiedFields
+        self._additionalKwargs['luceneSettings'] = luceneSettings
         self._cqlComposer = LuceneQueryComposer(**self._additionalKwargs)
 
     def executeQuery(self, cqlAbstractSyntaxTree, filterQueries=None, **kwargs):

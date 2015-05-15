@@ -42,28 +42,30 @@ if version >= '2.7':
 
 
 from composedquerytest import ComposedQueryTest
+from converttocomposedquerytest import ConvertToComposedQueryTest
 from cqltolucenequerytest import CqlToLuceneQueryTest
 from dedupfiltercollectortest import DeDupFilterCollectorTest
+from facetsupercollectortest import FacetSuperCollectorTest
 from fieldregistrytest import FieldRegistryTest
 from fields2lucenedoctest import Fields2LuceneDocTest
+from generalizedjaccarddistancetest import GeneralizedJaccardDistanceTest
 from groupcollectortest import GroupCollectorTest
 from lrucachetest import LruCacheTest
 from lucenequerycomposertest import LuceneQueryComposerTest
 from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
+from lucenesettingstest import LuceneSettingsTest
 from lucenetest import LuceneTest
 from multicqltolucenequerytest import MultiCqlToLuceneQueryTest
 from multilucenetest import MultiLuceneTest
-from termfrequencysimilaritytest import TermFrequencySimilarityTest
-from termnumeratortest import TermNumeratorTest
+from pageranktest import PageRankTest
+from suggestionindexcomponenttest import SuggestionIndexComponentTest
+from suggestionindextest import SuggestionIndexTest
 from supercollectortest import SuperCollectorTest
 from superindexsearchertest import SuperIndexSearcherTest
-from facetsupercollectortest import FacetSuperCollectorTest
-from lucenesettingstest import LuceneSettingsTest
-from suggestionindextest import SuggestionIndexTest
-from suggestionindexcomponenttest import SuggestionIndexComponentTest
-from generalizedjaccarddistancetest import GeneralizedJaccardDistanceTest
-from pageranktest import PageRankTest
+from termfrequencysimilaritytest import TermFrequencySimilarityTest
+from termnumeratortest import TermNumeratorTest
+
 
 if __name__ == '__main__':
     unittest.main()

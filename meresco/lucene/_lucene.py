@@ -51,6 +51,7 @@ from .utils import simplifiedDict
 class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
+    SORT_ON_SCORE = 'score'
     CLUSTERING_EPS = 0.4
     CLUSTERING_MIN_POINTS = 1
     CLUSTER_MORE_RECORDS = 100
@@ -444,6 +445,8 @@ class Lucene(object):
         return TopFieldSuperCollector(sort, stop, trackDocScores, trackMaxScore, docsScoredInOrder)
 
     def _sortField(self, fieldname, sortDescending):
+        if fieldname == self.SORT_ON_SCORE:
+            return SortField(None, SortField.Type.SCORE, not sortDescending)
         result = SortField(fieldname, SortField.Type.STRING, sortDescending)
         result.setMissingValue(SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST)
         return result

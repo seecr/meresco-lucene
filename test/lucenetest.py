@@ -210,15 +210,18 @@ class LuceneTest(SeecrTestCase):
                 ('field0', 'AA'),
                 ('field1', 'ZZ'),
                 ('field2', 'AA'),
+                ('field3', 'X'),
             ])))
         retval(self.lucene.addDocument(identifier="id:1", document=createDocument([
                 ('field0', 'BB'),
                 ('field1', 'AA'),
                 ('field2', 'ZZ'),
+                ('field3', 'X X'),
             ])))
         retval(self.lucene.addDocument(identifier="id:2", document=createDocument([
                 ('field0', 'CC'),
                 ('field1', 'ZZ'),
+                ('field3', 'X X X'),
             ])))
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field0', sortDescending=False)]))
         self.assertEquals(3, result.total)
@@ -231,6 +234,10 @@ class LuceneTest(SeecrTestCase):
         self.assertEquals(['id:1', 'id:0', 'id:2'], self.hitIds(result.hits))
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field2', sortDescending=False)]))
         self.assertEquals(['id:0', 'id:1', 'id:2'], self.hitIds(result.hits))
+
+        result = retval(self.lucene.executeQuery(TermQuery(Term('field3', 'x')), sortKeys=[dict(sortBy='score', sortDescending=True), dict(sortBy='field1', sortDescending=True)]))
+        self.assertEquals(['id:2', 'id:1', 'id:0'], self.hitIds(result.hits))
+
 
     def testStartStop(self):
         retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'ishallnotbetokenizedA')])))

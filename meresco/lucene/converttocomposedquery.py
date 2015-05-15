@@ -53,7 +53,8 @@ class ConvertToComposedQuery(Observable):
             clusterFields.append((fieldname, fieldWeights.get(fieldname, 1.0)))
         self._clusterFields = clusterFields
 
-    def executeQuery(self, cqlAbstractSyntaxTree, extraArguments, facets=None, drilldownQueries=None, **kwargs):
+    def executeQuery(self, cqlAbstractSyntaxTree, extraArguments=None, facets=None, drilldownQueries=None, **kwargs):
+        extraArguments = extraArguments or {}
         cq = ComposedQuery(self._resultsFrom)
 
         for match in self._matches:

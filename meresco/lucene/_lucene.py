@@ -52,6 +52,7 @@ class Lucene(object):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
     CLUSTERING_EPS = 0.4
+    CLUSTERING_MIN_POINTS = 1
     CLUSTER_MORE_RECORDS = 100
 
     def __init__(self, path, reactor, settings, name=None, **kwargs):
@@ -82,16 +83,19 @@ class Lucene(object):
 
         self._clusterMoreRecords = self.CLUSTER_MORE_RECORDS
         self._clusteringEps = self.CLUSTERING_EPS
+        self._clusteringMinPoints = self.CLUSTERING_MIN_POINTS
 
-    def setSettings(self, clusteringEps=None, clusterMoreRecords=None, **kwargs):
+    def setSettings(self, clusteringEps=None, clusteringMinPoints=None, clusterMoreRecords=None, **kwargs):
         self._clusterMoreRecords = clusterMoreRecords or self.CLUSTER_MORE_RECORDS
         self._clusteringEps = clusteringEps or self.CLUSTERING_EPS
+        self._clusteringMinPoints = clusteringMinPoints or self.CLUSTERING_MIN_POINTS
         self._index.setSettings(clusterMoreRecords=clusterMoreRecords, clusteringEps=clusteringEps, **kwargs)
 
     def getSettings(self):
         settings = self._index.getSettings()
         settings['clusterMoreRecords'] = self._clusterMoreRecords
         settings['clusteringEps'] = self._clusteringEps
+        settings['clusteringMinPoints'] = self._clusteringMinPoints
         return settings
 
     def addDocument(self, document, identifier=None):
@@ -346,7 +350,7 @@ class Lucene(object):
         return totalHits, hits
 
     def _clusterTopDocsResponse(self, collector, start, stop, clusterFields, times):
-        clusterer = MerescoClusterer(self._index.getIndexReader(), self._clusteringEps)
+        clusterer = MerescoClusterer(self._index.getIndexReader(), self._clusteringEps, self._clusteringMinPoints)
         for fieldname, weight in clusterFields:
             clusterer.registerField(fieldname, float(weight))
         totalHits = collector.getTotalHits()

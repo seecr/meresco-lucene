@@ -720,15 +720,15 @@ class LuceneTest(SeecrTestCase):
 
     def testUpdateReaderSettings(self):
         settings = self.lucene.getSettings()
-        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4}, settings)
+        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4, 'clusteringMinPoints': 1}, settings)
 
-        self.lucene.setSettings(similarity=dict(k1=1.0, b=2.0), numberOfConcurrentTasks=10, clusterMoreRecords=200, clusteringEps=1.0)
+        self.lucene.setSettings(similarity=dict(k1=1.0, b=2.0), numberOfConcurrentTasks=10, clusterMoreRecords=200, clusteringEps=1.0, clusteringMinPoints=2)
         settings = self.lucene.getSettings()
-        self.assertEquals({'numberOfConcurrentTasks': 10, 'similarity': u'BM25(k1=1.0,b=2.0)', 'clusterMoreRecords': 200, 'clusteringEps': 1.0}, settings)
+        self.assertEquals({'numberOfConcurrentTasks': 10, 'similarity': u'BM25(k1=1.0,b=2.0)', 'clusterMoreRecords': 200, 'clusteringEps': 1.0, 'clusteringMinPoints': 2}, settings)
 
         self.lucene.setSettings(numberOfConcurrentTasks=None, similarity=None, clusterMoreRecords=None, clusteringEps=None)
         settings = self.lucene.getSettings()
-        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4}, settings)
+        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4, 'clusteringMinPoints': 1}, settings)
 
     def testClusterOnTermVectors(self):
         factory = FieldRegistry(termVectorFields=['termvector.field'])

@@ -1,5 +1,5 @@
 python-meresco-components (>= 4.9.15)
-python-meresco-components (<< 4.11)
+python-meresco-components (<< 4.12)
 python-lxml (>=2.1)
 python-lxml (<<3.5)
 python-cqlparser (>= 1.7.1)

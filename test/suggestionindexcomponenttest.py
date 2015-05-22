@@ -126,3 +126,9 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
         sic.deleteSuggestions("id:1")
         self.assertEquals(1, sic.totalShingleRecords())
 
+    def testSkipDuplicates(self):
+        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
+        sic.addSuggestions("id:1", [("harry", "uri:book"), ("harry", "uri:e-book"), ("harry", "uri:track"), ("harry potter", "uri:person")])
+        sic.createSuggestionNGramIndex(wait=True, verbose=False)
+        header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"]})).split(CRLF*2)
+        self.assertEqual('["ha", ["harry potter", "harry"], [["harry", "uri:book"], ["harry", "uri:e-book"], ["harry", "uri:track"], ["harry potter", "uri:person"]]]', body)

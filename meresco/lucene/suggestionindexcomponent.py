@@ -108,7 +108,11 @@ class SuggestionIndexComponent(Observable):
                 yield JsonDict(dict(value=value, suggestions=suggestions, concepts=concepts, time=tTotal)).dumps()
                 return
             concepts = [(s, t) for s, t, _ in suggestions if t][:10]
-            suggestions = list(set([s[0] for s in suggestions]))[:10]
+            dedupSuggestions = []
+            for s in suggestions:
+                if s[0] not in dedupSuggestions:
+                    dedupSuggestions.append(s[0])
+            suggestions = dedupSuggestions[:10]
             result = [value, suggestions]
             if showConcepts:
                 result.append(concepts)

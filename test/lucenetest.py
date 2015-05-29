@@ -804,7 +804,7 @@ class LuceneTest(LuceneTestCase):
 
         doc = Document()
         doc.add(factory.createField("termvector1", "aap noot vuur"))
-        doc.add(factory.createField("termvector2", "mies water"))
+        doc.add(factory.createField("termvector2", "mies iets water"))
         consume(self.lucene.addDocument(identifier="id:100", document=doc))
 
         doc = Document()
@@ -813,7 +813,7 @@ class LuceneTest(LuceneTestCase):
         consume(self.lucene.addDocument(identifier="id:200", document=doc))
 
         doc = Document()
-        doc.add(factory.createField("termvector2", "iets"))
+        doc.add(factory.createField("termvector2", "iets water"))
         consume(self.lucene.addDocument(identifier="id:300", document=doc))
 
         doc = Document()

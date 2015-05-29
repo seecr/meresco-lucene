@@ -58,6 +58,7 @@ from lucenesettingstest import LuceneSettingsTest
 from lucenetest import LuceneTest
 from multicqltolucenequerytest import MultiCqlToLuceneQueryTest
 from multilucenetest import MultiLuceneTest
+from merescoclusterertest import MerescoClustererTest
 from pageranktest import PageRankTest
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
 from suggestionindextest import SuggestionIndexTest

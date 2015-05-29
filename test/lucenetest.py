@@ -46,43 +46,14 @@ from org.apache.lucene.facet import FacetField
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 from org.meresco.lucene.search import MerescoClusterer
 
-from seecr.test import SeecrTestCase, CallTrace
+from seecr.test import CallTrace
 from seecr.test.io import stdout_replaced
 
+from lucenetestcase import LuceneTestCase
 
-class LuceneTest(SeecrTestCase):
+class LuceneTest(LuceneTestCase):
     def setUp(self):
-        super(LuceneTest, self).setUp()
-        self._javaObjects = self._getJavaObjects()
-        self._reactor = CallTrace('reactor')
-        self._defaultSettings = LuceneSettings(commitCount=1, commitTimeout=1, verbose=False, fieldRegistry=FIELD_REGISTRY)
-        self.lucene = Lucene(
-            join(self.tempdir, 'lucene'),
-            reactor=self._reactor,
-            settings=self._defaultSettings,
-        )
-
-    def tearDown(self):
-        try:
-            self._reactor.calledMethods.reset() # don't keep any references.
-            self.lucene.close()
-            self.lucene = None
-            gc.collect()
-            diff = self._getJavaObjects() - self._javaObjects
-            self.assertEquals(0, len(diff), diff)
-        finally:
-            SeecrTestCase.tearDown(self)
-
-    def _getJavaObjects(self):
-        refs = VM._dumpRefs(classes=True)
-        return set(
-                [(c, refs[c])
-                for c in refs.keys()
-                if c != 'class java.lang.Class' and
-                    c != 'class org.apache.lucene.document.Field' and # Fields are kept in FieldRegistry for reusing
-                    c != 'class org.apache.lucene.document.NumericDocValuesField' and
-                    c != 'class org.apache.lucene.facet.FacetsConfig'
-            ])
+        super(LuceneTest, self).setUp(FIELD_REGISTRY)
 
     def hitIds(self, hits):
         return [hit.id for hit in hits]
@@ -736,46 +707,6 @@ class LuceneTest(SeecrTestCase):
         self.lucene.setSettings(numberOfConcurrentTasks=None, similarity=None, clusterMoreRecords=None, clusteringEps=None)
         settings = self.lucene.getSettings()
         self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4, 'clusteringMinPoints': 1}, settings)
-
-    def testClusterOnTermVectors(self):
-        factory = FieldRegistry(termVectorFields=['termvector.field'])
-        for i in range(5):
-            doc = Document()
-            doc.add(factory.createField("termvector.field", "aap noot noot noot vuur"))
-            consume(self.lucene.addDocument(identifier="id:%s" % i , document=doc))
-
-        for i in range(5, 10):
-            doc = Document()
-            doc.add(factory.createField("termvector.field", "something else"))
-            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
-
-        for i in range(10, 15):
-            doc = Document()
-            doc.add(factory.createField("termvector.field", "iets anders"))
-            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
-        self.lucene.commit()
-        reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
-
-        collector = MerescoClusterer(reader, 0.5)
-        collector.registerField("termvector.field", 1.0)
-        for i in range(15):
-            collector.collect(i)
-        collector.finish()
-
-        cluster1 = collector.cluster(0)
-        self.assertEqual(5, len(list(cluster1.topDocs)))
-        self.assertEqual(['else', 'something'], list([t.term for t in cluster1.topTerms]))
-
-        cluster2 = collector.cluster(5)
-        self.assertEqual(5, len(list(cluster2.topDocs)))
-        self.assertEqual(['noot', 'aap', 'vuur'], list([t.term for t in cluster2.topTerms]))
-
-        cluster3 = collector.cluster(10)
-        self.assertEqual(5, len(list(cluster3.topDocs)))
-        self.assertEqual(['anders', 'iets'], list([t.term for t in cluster3.topTerms]))
-
-        self.assertNotEqual(cluster1.topDocs, cluster2.topDocs)
-        self.assertNotEqual(cluster1.topDocs, cluster3.topDocs)
 
     def testClusteringOnVectors(self):
         factory = FieldRegistry(termVectorFields=['termvector'])

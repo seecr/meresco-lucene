@@ -67,7 +67,7 @@ public class MerescoClusterer {
     }
 
     public void collect(int doc) throws IOException {
-        MerescoVector vector = createVector(doc);
+        MerescoVector vector = this.createVector(doc);
         if (vector != null) {
             this.docvectors.add(vector);
         }

@@ -4,7 +4,6 @@ import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.apache.commons.math3.ml.clustering.evaluation.SumOfClusterVariances;
 import org.apache.commons.math3.ml.distance.DistanceMeasure;
-import org.meresco.lucene.search.MerescoClusterer.MerescoVector;
 
 public class MySumOfClusterVariances extends SumOfClusterVariances<MerescoVector> {
 

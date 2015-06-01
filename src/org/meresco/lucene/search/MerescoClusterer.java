@@ -102,7 +102,7 @@ public class MerescoClusterer {
         MerescoCluster.TermScore[] topTerms = new MerescoCluster.TermScore[rankedTerms.size()];
         for (PageRank.Node n : rankedTerms) {
             BytesRef ref = new BytesRef();
-            this.ords.get(n.id, ref);
+            this.frequentOrds.get(n.id, ref);
             topTerms[i++] = new MerescoCluster.TermScore(ref.utf8ToString(), n.getPR());
         }
         return new MerescoCluster(topDocs, topTerms);

@@ -37,7 +37,7 @@ class MerescoClustererTest(LuceneTestCase):
         self.factory = factory = FieldRegistry(termVectorFields=['termvector.field'])
         for i in range(5):
             doc = Document()
-            doc.add(factory.createField("termvector.field", "aap noot noot noot vuur"))
+            doc.add(factory.createField("termvector.field", "noise%s aap noot noot noot vuur" % i))
             consume(self.lucene.addDocument(identifier="id:%s" % i , document=doc))
 
         for i in range(5, 10):
@@ -81,7 +81,7 @@ class MerescoClustererTest(LuceneTestCase):
 
     def testRemoveNoise(self):
         doc = Document()
-        doc.add(self.factory.createField("termvector.field", "aap noot vuur unique"))
+        doc.add(self.factory.createField("termvector.field", "unique aap noot vuur"))
         consume(self.lucene.addDocument(identifier="id:98", document=doc))
         doc = Document()
         doc.add(self.factory.createField("termvector.field", "only noise"))
@@ -100,3 +100,5 @@ class MerescoClustererTest(LuceneTestCase):
         clusterTerms = [t.term for t in c.cluster(15).topTerms]
         self.assertTrue("unique" not in clusterTerms)
         self.assertTrue("aap" in clusterTerms)
+        self.assertTrue("noot" in clusterTerms)
+        self.assertTrue("vuur" in clusterTerms)

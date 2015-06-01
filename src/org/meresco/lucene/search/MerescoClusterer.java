@@ -34,6 +34,7 @@ import java.util.Map;
 import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ScoreDoc;
@@ -51,7 +52,9 @@ public class MerescoClusterer {
     public List<Cluster<MerescoVector>> clusters;
     private double eps;
     private int minPoints;
-    private BytesRefHash frequentOrds = new BytesRefHash();
+    private Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
+    private Map<Integer, Integer> freqs = new HashMap<Integer, Integer>();
+    private int numHits;
 
     public MerescoClusterer(IndexReader reader, double eps) {
         this(reader, eps, 1);
@@ -75,6 +78,7 @@ public class MerescoClusterer {
     }
 
     public void processTopDocs(TopDocs topDocs) throws IOException {
+        this.numHits = topDocs.totalHits;
         for (ScoreDoc scoreDoc : topDocs.scoreDocs)
             this.collect(scoreDoc.doc);
     }
@@ -102,7 +106,7 @@ public class MerescoClusterer {
         MerescoCluster.TermScore[] topTerms = new MerescoCluster.TermScore[rankedTerms.size()];
         for (PageRank.Node n : rankedTerms) {
             BytesRef ref = new BytesRef();
-            this.frequentOrds.get(n.id, ref);
+            this.ords.get(n.id, ref);
             topTerms[i++] = new MerescoCluster.TermScore(ref.utf8ToString(), n.getPR());
         }
         return new MerescoCluster(topDocs, topTerms);
@@ -145,8 +149,8 @@ public class MerescoClusterer {
     public List<String> allTerms() {
         List<String> terms = new ArrayList<String>();
         BytesRef b = new BytesRef();
-        for (int i = 0; i < this.frequentOrds.size(); i++) {
-            this.frequentOrds.get(i, b);
+        for (int i = 0; i < this.ords.size(); i++) {
+            this.ords.get(i, b);
             terms.add(b.utf8ToString());
         }
         return terms;
@@ -157,21 +161,29 @@ public class MerescoClusterer {
         if (terms == null)
             return null;
         TermsEnum termsEnum = terms.iterator(null);
-        MerescoVector vector = new MerescoVector(docId, this.ords, this.frequentOrds);
+        MerescoVector vector = new MerescoVector(docId, this.reader.numDocs(), this.numHits, this.ords, this.counts, this.freqs);
         while (termsEnum.next() != null) {
             BytesRef term = termsEnum.term();
-            int ord = ord(term);
+            int ord = register(term);
             vector.setEntry(ord, termsEnum.totalTermFreq());
         }
         return vector;
     }
 
-    private int ord(BytesRef b) {
+    private int register(BytesRef b) {
         int ord = ords.add(b);
-        if (ord < 0) {
+        if (ord < 0)
             ord = -ord - 1;
-            this.frequentOrds.add(b);
-        }
+        Integer count = this.counts.get(ord);
+        if (count == null)
+            count = 0;
+        this.counts.put(ord, ++count);
+        if (!this.freqs.containsKey(ord))
+            try {
+                this.freqs.put(ord, this.reader.docFreq(new Term("__all__", b)));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         return ord;
     }
 

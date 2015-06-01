@@ -1,5 +1,7 @@
 package org.meresco.lucene.search;
 
+import java.util.Map;
+
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.ml.clustering.Clusterable;
 import org.apache.commons.math3.util.OpenIntToDoubleHashMap;
@@ -13,18 +15,26 @@ class MerescoVector implements Clusterable {
     private int maxIndex;
     private ArrayRealVector point = null;
     private BytesRefHash ords;
-    private BytesRefHash frequentOrds;
+    private Map<Integer, Integer> counts;
+    private Map<Integer, Integer> freqs;
+    private int numDocs;
+    private int numHits;
 
-    public MerescoVector(int docId, BytesRefHash ords, BytesRefHash frequentOrds) {
+    public MerescoVector(int docId, int numDocs, int numHits, BytesRefHash ords, Map<Integer, Integer> counts, Map<Integer, Integer> freqs) {
         this.entries = new OpenIntToDoubleHashMap(0.0);
         this.docId = docId;
         this.maxIndex = 0;
         this.ords = ords;
-        this.frequentOrds = frequentOrds;
+        this.counts = counts;
+        this.freqs = freqs;
+        this.numDocs = numDocs;
+        this.numHits = numHits;
+        if (numHits == 0)
+            throw new RuntimeException("0");
     }
 
     public MerescoVector() {
-        this(-1, null, null);
+        this(-1, 0, 0, null, null, null);
     }
 
     public void setEntry(int index, double value) {
@@ -45,16 +55,25 @@ class MerescoVector implements Clusterable {
     @Override
     public double[] getPoint() {
         if (this.point == null) {
-            this.point = new ArrayRealVector(this.frequentOrds.size());
+            this.point = new ArrayRealVector(this.ords.size());
             Iterator iter = entries.iterator();
-            BytesRef ref = new BytesRef();
+            double i = 0;
             while (iter.hasNext()) {
                 iter.advance();
-                this.ords.get(iter.key(), ref);
-                int ord = this.frequentOrds.find(ref);
-                if (ord >= 0)
-                    this.point.setEntry(ord, iter.value());
+                int ord = iter.key();
+                double p_x = this.freqs.get(ord) / (double) this.numDocs;
+                double p_y = this.numHits / (double) this.numDocs;
+                double p_x_y = this.counts.get(ord) / (double) this.ords.size();
+                double mi = p_x_y * Math.log(p_x_y / (p_x * p_y));
+                BytesRef br = new BytesRef();
+                this.ords.get(ord, br);
+                if (mi > 0.05) {
+                    i++;
+                }
+                System.out.println("MI (" + br.utf8ToString() + ") = " + mi);
+                this.point.setEntry(ord, iter.value());
             }
+            System.out.println(i + "/" + this.entries.size() + "=" + i / entries.size());
         }
         if (this.point.getMaxValue() > 0.0)
             this.point.unitize();

@@ -34,6 +34,7 @@ import java.util.Map;
 import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ScoreDoc;
@@ -51,6 +52,9 @@ public class MerescoClusterer {
     public List<Cluster<MerescoVector>> clusters;
     private double eps;
     private int minPoints;
+    private Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
+    private Map<Integer, Integer> freqs = new HashMap<Integer, Integer>();
+    private int numHits;
 
     public MerescoClusterer(IndexReader reader, double eps) {
         this(reader, eps, 1);
@@ -74,6 +78,7 @@ public class MerescoClusterer {
     }
 
     public void processTopDocs(TopDocs topDocs) throws IOException {
+        this.numHits = topDocs.totalHits;
         for (ScoreDoc scoreDoc : topDocs.scoreDocs)
             this.collect(scoreDoc.doc);
     }
@@ -141,23 +146,44 @@ public class MerescoClusterer {
         return vector;
     }
 
+    public List<String> allTerms() {
+        List<String> terms = new ArrayList<String>();
+        BytesRef b = new BytesRef();
+        for (int i = 0; i < this.ords.size(); i++) {
+            this.ords.get(i, b);
+            terms.add(b.utf8ToString());
+        }
+        return terms;
+    }
+
     private MerescoVector termVector(final int docId, String field) throws IOException {
         Terms terms = this.reader.getTermVector(docId, field);
         if (terms == null)
             return null;
         TermsEnum termsEnum = terms.iterator(null);
-        MerescoVector vector = new MerescoVector(docId);
+        MerescoVector vector = new MerescoVector(docId, this.reader.numDocs(), this.numHits, this.ords, this.counts, this.freqs);
         while (termsEnum.next() != null) {
             BytesRef term = termsEnum.term();
-            vector.setEntry(ord(term), termsEnum.totalTermFreq());
+            int ord = register(term);
+            vector.setEntry(ord, termsEnum.totalTermFreq());
         }
         return vector;
     }
 
-    private int ord(BytesRef b) {
+    private int register(BytesRef b) {
         int ord = ords.add(b);
         if (ord < 0)
             ord = -ord - 1;
+        Integer count = this.counts.get(ord);
+        if (count == null)
+            count = 0;
+        this.counts.put(ord, ++count);
+        if (!this.freqs.containsKey(ord))
+            try {
+                this.freqs.put(ord, this.reader.docFreq(new Term("__all__", b)));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         return ord;
     }
 

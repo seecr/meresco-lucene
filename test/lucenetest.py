@@ -718,11 +718,26 @@ class LuceneTest(LuceneTestCase):
         consume(self.lucene.addDocument(identifier="id:6", document=doc))
         self.lucene.commit()
 
+        self.lucene._interpolateEpsilon = lambda *args: 0.4
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1.0)]))
         self.assertEquals(2, len(result.hits))
         duplicates = [sorted([t['id'] for t in h.duplicates['topDocs']]) for h in result.hits]
         self.assertEqual(sorted([[], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
 
+    def testInterpolateEps(self):
+        self.assertEquals(0, self.lucene._interpolateEpsilon( 0, 10))
+        self.assertEquals(0, self.lucene._interpolateEpsilon( 10, 10))
+        self.assertEquals(0.004, self.lucene._interpolateEpsilon( 11, 10))
+        self.assertEquals(0.4, self.lucene._interpolateEpsilon(110, 10))
+        self.assertEquals(0.4, self.lucene._interpolateEpsilon(111, 10))
+
+        self.assertEquals(0, self.lucene._interpolateEpsilon(0, 20))
+        self.assertEquals(0, self.lucene._interpolateEpsilon(20, 20))
+        self.assertEquals(0.004, self.lucene._interpolateEpsilon(21, 20))
+        self.assertEquals(0.32, self.lucene._interpolateEpsilon(100, 20))
+        self.assertEquals(0.4, self.lucene._interpolateEpsilon(120, 20))
+        self.assertEquals(0.4, self.lucene._interpolateEpsilon(121, 20))
+        
     def testClusteringShowOnlyRequestTop(self):
         factory = FieldRegistry(termVectorFields=['termvector'])
         for i in range(5):
@@ -764,6 +779,7 @@ class LuceneTest(LuceneTestCase):
         consume(self.lucene.addDocument(identifier="id:3", document=doc))
 
         self.lucene.setSettings(clusteringEps=10.0)
+        self.lucene._interpolateEpsilon = lambda *args: 10.0
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1)]))
         self.assertEquals(3, result.total)
         self.assertEquals(1, len(result.hits))

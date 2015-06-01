@@ -350,11 +350,16 @@ class Lucene(object):
                 count += 1
         return totalHits, hits
 
+    def _interpolateEpsilon(self, hits, slice):
+        eps = self._clusteringEps * (hits - slice) / self._clusterMoreRecords
+        return max(min(eps, self._clusteringEps), 0.0)
+
     def _clusterTopDocsResponse(self, collector, start, stop, clusterFields, times):
-        clusterer = MerescoClusterer(self._index.getIndexReader(), self._clusteringEps, self._clusteringMinPoints)
+        totalHits = collector.getTotalHits()
+        epsilon = self._interpolateEpsilon(totalHits, stop - start)
+        clusterer = MerescoClusterer(self._index.getIndexReader(), epsilon, self._clusteringMinPoints)
         for fieldname, weight in clusterFields:
             clusterer.registerField(fieldname, float(weight))
-        totalHits = collector.getTotalHits()
         hits = []
         if hasattr(collector, "topDocs"):
             topDocs = collector.topDocs(start)

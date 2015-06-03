@@ -98,7 +98,7 @@ class SuggestionIndexComponent(Observable):
                 distanceScore = max(0, -log(distance(value.lower(), suggestion.lower()) + 1) / 4 + 1)
                 matchScore = match(value.lower(), suggestion.lower())
                 score = float(s.score)
-                sortScore = distanceScore * score**2 * (matchScore + 1)
+                sortScore = distanceScore * score**2 * (matchScore * 2)
                 scores = dict(distanceScore=distanceScore, score=score, sortScore=sortScore, matchScore=matchScore)
                 if sortScore > minScore:
                     suggestions.append((suggestion, recordType, scores))

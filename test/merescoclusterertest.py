@@ -36,7 +36,7 @@ class MerescoClustererTest(LuceneTestCase):
         factory = FieldRegistry(termVectorFields=['termvector.field'])
         for i in range(5):
             doc = Document()
-            doc.add(factory.createField("termvector.field", "noise%s aap noot noot noot vuur" % i))
+            doc.add(factory.createField("termvector.field", "aap noot noot noot vuur"))
             consume(self.lucene.addDocument(identifier="id:%s" % i , document=doc))
 
         for i in range(5, 10):

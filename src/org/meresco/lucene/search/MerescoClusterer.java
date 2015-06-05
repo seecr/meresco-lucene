@@ -51,7 +51,6 @@ public class MerescoClusterer {
     public List<Cluster<MerescoVector>> clusters;
     private double eps;
     private int minPoints;
-    private BytesRefHash frequentOrds = new BytesRefHash();
 
     public MerescoClusterer(IndexReader reader, double eps) {
         this(reader, eps, 1);
@@ -142,36 +141,23 @@ public class MerescoClusterer {
         return vector;
     }
 
-    public List<String> allTerms() {
-        List<String> terms = new ArrayList<String>();
-        BytesRef b = new BytesRef();
-        for (int i = 0; i < this.frequentOrds.size(); i++) {
-            this.frequentOrds.get(i, b);
-            terms.add(b.utf8ToString());
-        }
-        return terms;
-    }
-
     private MerescoVector termVector(final int docId, String field) throws IOException {
         Terms terms = this.reader.getTermVector(docId, field);
         if (terms == null)
             return null;
         TermsEnum termsEnum = terms.iterator(null);
-        MerescoVector vector = new MerescoVector(docId, this.ords, this.frequentOrds);
+        MerescoVector vector = new MerescoVector(docId);
         while (termsEnum.next() != null) {
             BytesRef term = termsEnum.term();
-            int ord = ord(term);
-            vector.setEntry(ord, termsEnum.totalTermFreq());
+            vector.setEntry(ord(term), termsEnum.totalTermFreq());
         }
         return vector;
     }
 
     private int ord(BytesRef b) {
         int ord = ords.add(b);
-        if (ord < 0) {
+        if (ord < 0)
             ord = -ord - 1;
-            this.frequentOrds.add(b);
-        }
         return ord;
     }
 

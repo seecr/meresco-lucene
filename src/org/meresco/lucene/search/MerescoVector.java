@@ -12,19 +12,15 @@ class MerescoVector implements Clusterable {
     int docId;
     private int maxIndex;
     private ArrayRealVector point = null;
-    private BytesRefHash ords;
-    private BytesRefHash frequentOrds;
 
-    public MerescoVector(int docId, BytesRefHash ords, BytesRefHash frequentOrds) {
+    public MerescoVector(int docId) {
         this.entries = new OpenIntToDoubleHashMap(0.0);
         this.docId = docId;
         this.maxIndex = 0;
-        this.ords = ords;
-        this.frequentOrds = frequentOrds;
     }
 
     public MerescoVector() {
-        this(-1, null, null);
+        this(-1);
     }
 
     public void setEntry(int index, double value) {
@@ -42,22 +38,16 @@ class MerescoVector implements Clusterable {
         }
     }
 
-    @Override
     public double[] getPoint() {
         if (this.point == null) {
-            this.point = new ArrayRealVector(this.frequentOrds.size());
+            this.point = new ArrayRealVector(this.maxIndex + 1);
             Iterator iter = entries.iterator();
-            BytesRef ref = new BytesRef();
             while (iter.hasNext()) {
                 iter.advance();
-                this.ords.get(iter.key(), ref);
-                int ord = this.frequentOrds.find(ref);
-                if (ord >= 0)
-                    this.point.setEntry(ord, iter.value());
+                this.point.setEntry(iter.key(), iter.value());
             }
         }
-        if (this.point.getMaxValue() > 0.0)
-            this.point.unitize();
+        this.point.unitize();
         return this.point.getDataRef();
     }
 

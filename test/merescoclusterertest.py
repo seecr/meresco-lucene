@@ -32,9 +32,8 @@ from lucenetestcase import LuceneTestCase
 
 class MerescoClustererTest(LuceneTestCase):
 
-    def setUp(self):
-        super(MerescoClustererTest, self).setUp()
-        self.factory = factory = FieldRegistry(termVectorFields=['termvector.field'])
+    def testClusterOnTermVectors(self):
+        factory = FieldRegistry(termVectorFields=['termvector.field'])
         for i in range(5):
             doc = Document()
             doc.add(factory.createField("termvector.field", "noise%s aap noot noot noot vuur" % i))
@@ -50,15 +49,9 @@ class MerescoClustererTest(LuceneTestCase):
             doc.add(factory.createField("termvector.field", "iets anders"))
             consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
         self.lucene.commit()
-        self.reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
+        reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
 
-    def tearDown(self):
-        del self.reader
-        del self.factory
-        super(MerescoClustererTest, self).tearDown()
-
-    def testClusterOnTermVectors(self):
-        collector = MerescoClusterer(self.reader, 0.5)
+        collector = MerescoClusterer(reader, 0.5)
         collector.registerField("termvector.field", 1.0)
         for i in range(15):
             collector.collect(i)
@@ -78,27 +71,3 @@ class MerescoClustererTest(LuceneTestCase):
 
         self.assertNotEqual(cluster1.topDocs, cluster2.topDocs)
         self.assertNotEqual(cluster1.topDocs, cluster3.topDocs)
-
-    def testRemoveNoise(self):
-        doc = Document()
-        doc.add(self.factory.createField("termvector.field", "unique aap noot vuur"))
-        consume(self.lucene.addDocument(identifier="id:98", document=doc))
-        doc = Document()
-        doc.add(self.factory.createField("termvector.field", "only noise"))
-        consume(self.lucene.addDocument(identifier="id:99", document=doc))
-        self.lucene.commit()
-        reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
-        c = MerescoClusterer(reader, 0.7)
-        c.registerField("termvector.field", 1.0)
-        for i in range(17):
-            c.collect(i)
-        c.finish()
-
-        terms = c.allTerms()
-        self.assertTrue("unique" not in terms)
-
-        clusterTerms = [t.term for t in c.cluster(15).topTerms]
-        self.assertTrue("unique" not in clusterTerms)
-        self.assertTrue("aap" in clusterTerms)
-        self.assertTrue("noot" in clusterTerms)
-        self.assertTrue("vuur" in clusterTerms)

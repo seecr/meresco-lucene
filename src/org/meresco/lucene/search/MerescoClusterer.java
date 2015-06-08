@@ -33,6 +33,7 @@ import java.util.Map;
 
 import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
+import org.apache.commons.math3.util.OpenIntToDoubleHashMap;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -52,9 +53,10 @@ public class MerescoClusterer {
     public List<Cluster<MerescoVector>> clusters;
     private double eps;
     private int minPoints;
-    private Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
-    private Map<Integer, Integer> freqs = new HashMap<Integer, Integer>();
-    private int numHits;
+    private Map<Integer, Integer> jointCounts = new HashMap<Integer, Integer>();
+    private OpenIntToDoubleHashMap marginalProbs = new OpenIntToDoubleHashMap();
+    private double numHits;
+    private double numDocs;
 
     public MerescoClusterer(IndexReader reader, double eps) {
         this(reader, eps, 1);
@@ -64,6 +66,7 @@ public class MerescoClusterer {
         this.reader = reader;
         this.eps = eps;
         this.minPoints = minPoints;
+        this.numDocs = reader.numDocs();
     }
 
     public void registerField(String fieldname, double weight) {
@@ -161,7 +164,7 @@ public class MerescoClusterer {
         if (terms == null)
             return null;
         TermsEnum termsEnum = terms.iterator(null);
-        MerescoVector vector = new MerescoVector(docId, this.reader.numDocs(), this.numHits, this.ords, this.counts, this.freqs);
+        MerescoVector vector = new MerescoVector(docId, this.reader.numDocs(), this.numHits, this.ords, this.jointCounts, this.marginalProbs);
         while (termsEnum.next() != null) {
             BytesRef term = termsEnum.term();
             int ord = register(term);
@@ -174,13 +177,14 @@ public class MerescoClusterer {
         int ord = ords.add(b);
         if (ord < 0)
             ord = -ord - 1;
-        Integer count = this.counts.get(ord);
+        Integer count = this.jointCounts.get(ord);
         if (count == null)
             count = 0;
-        this.counts.put(ord, ++count);
-        if (!this.freqs.containsKey(ord))
+        this.jointCounts.put(ord, ++count);
+        if (!this.marginalProbs.containsKey(ord))
             try {
-                this.freqs.put(ord, this.reader.docFreq(new Term("__all__", b)));
+                double marginalProbability = this.reader.docFreq(new Term("__all__", b)) / this.numDocs;
+                this.marginalProbs.put(ord, marginalProbability);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

@@ -28,8 +28,11 @@ package org.meresco.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
 
 import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.ml.clustering.DBSCANClusterer;
@@ -55,8 +58,9 @@ public class MerescoClusterer {
     private int minPoints;
     private Map<Integer, Integer> jointCounts = new HashMap<Integer, Integer>();
     private OpenIntToDoubleHashMap marginalProbs = new OpenIntToDoubleHashMap();
-    private double numHits;
-    private double numDocs;
+    private int numHits;
+    private int numDocs;
+    private Set<Integer> relevantTerms = new HashSet<Integer>();
 
     public MerescoClusterer(IndexReader reader, double eps) {
         this(reader, eps, 1);
@@ -80,10 +84,44 @@ public class MerescoClusterer {
         }
     }
 
+    static private class MITerm implements Comparable<MITerm> {
+
+        double mi;
+        String term;
+        int ord;
+
+        public MITerm(double mi, String term, int ord) {
+            this.mi = mi;
+            this.term = term;
+            this.ord = ord;
+        }
+
+        @Override
+        public int compareTo(MITerm rhs) {
+            return -Double.compare(this.mi, rhs.mi);
+        }
+    }
+
     public void processTopDocs(TopDocs topDocs) throws IOException {
         this.numHits = topDocs.totalHits;
         for (ScoreDoc scoreDoc : topDocs.scoreDocs)
             this.collect(scoreDoc.doc);
+        findMostRelevantTerms();
+    }
+
+    private void findMostRelevantTerms() {
+        PriorityQueue<MITerm> q = new PriorityQueue<MITerm>();
+        for (int i = 0; i < this.ords.size(); i++) {
+            BytesRef br = new BytesRef();
+            this.ords.get(i, br);
+            double mi = this.calc_mi(i);
+            q.add(new MITerm(mi, br.utf8ToString(), i));
+        }
+        for (int i = 0; i < Math.min(100, q.size()); i++) {
+            MITerm mit = q.poll();
+            this.relevantTerms.add(mit.ord);
+            System.out.println(i + ":  " + mit.mi + " => " + mit.term);
+        }
     }
 
     public void finish() {
@@ -164,7 +202,7 @@ public class MerescoClusterer {
         if (terms == null)
             return null;
         TermsEnum termsEnum = terms.iterator(null);
-        MerescoVector vector = new MerescoVector(docId, this.reader.numDocs(), this.numHits, this.ords, this.jointCounts, this.marginalProbs);
+        MerescoVector vector = new MerescoVector(docId, this.ords, this.relevantTerms);
         while (termsEnum.next() != null) {
             BytesRef term = termsEnum.term();
             int ord = register(term);
@@ -183,12 +221,20 @@ public class MerescoClusterer {
         this.jointCounts.put(ord, ++count);
         if (!this.marginalProbs.containsKey(ord))
             try {
-                double marginalProbability = this.reader.docFreq(new Term("__all__", b)) / this.numDocs;
+                double marginalProbability = this.reader.docFreq(new Term("__all__", b)) / (double) this.numDocs;
                 this.marginalProbs.put(ord, marginalProbability);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         return ord;
+    }
+
+    private double calc_mi(int ord) {
+        double p_x = this.marginalProbs.get(ord);
+        double p_y = this.numHits / (double) this.numDocs;
+        double p_x_y = this.jointCounts.get(ord) / (double) this.ords.size();
+        double mi = p_x_y * Math.log(p_x_y / (p_x * p_y));
+        return mi;
     }
 
     public void printClusters() {

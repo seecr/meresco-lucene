@@ -1,6 +1,6 @@
 package org.meresco.lucene.search;
 
-import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.ml.clustering.Clusterable;
@@ -15,26 +15,18 @@ class MerescoVector implements Clusterable {
     private int maxIndex;
     private ArrayRealVector point = null;
     private BytesRefHash ords;
-    private Map<Integer, Integer> counts;
-    private Map<Integer, Integer> freqs;
-    private int numDocs;
-    private int numHits;
+    private Set<Integer> relevantTerms;
 
-    public MerescoVector(int docId, int numDocs, int numHits, BytesRefHash ords, Map<Integer, Integer> counts, Map<Integer, Integer> freqs) {
+    public MerescoVector(int docId, BytesRefHash ords, Set<Integer> relevantTerms) {
         this.entries = new OpenIntToDoubleHashMap(0.0);
         this.docId = docId;
         this.maxIndex = 0;
         this.ords = ords;
-        this.counts = counts;
-        this.freqs = freqs;
-        this.numDocs = numDocs;
-        this.numHits = numHits;
-        if (numHits == 0)
-            throw new RuntimeException("0");
+        this.relevantTerms = relevantTerms;
     }
 
     public MerescoVector() {
-        this(-1, 0, 0, null, null, null);
+        this(-1, null, null);
     }
 
     public void setEntry(int index, double value) {
@@ -56,23 +48,12 @@ class MerescoVector implements Clusterable {
         if (this.point == null) {
             this.point = new ArrayRealVector(this.ords.size());
             Iterator iter = entries.iterator();
-            double i = 0;
             while (iter.hasNext()) {
                 iter.advance();
                 int ord = iter.key();
-                double p_x = this.freqs.get(ord) / (double) this.numDocs;
-                double p_y = this.numHits / (double) this.numDocs;
-                double p_x_y = this.counts.get(ord) / (double) this.ords.size();
-                double mi = p_x_y * Math.log(p_x_y / (p_x * p_y));
-                BytesRef br = new BytesRef();
-                this.ords.get(ord, br);
-                if (mi > 0.05) {
-                    i++;
-                }
-                System.out.println("MI (" + br.utf8ToString() + ") = " + mi);
-                this.point.setEntry(ord, iter.value());
+                if (this.relevantTerms.contains(ord))
+                    this.point.setEntry(ord, iter.value());
             }
-            System.out.println(i + "/" + this.entries.size() + "=" + i / entries.size());
         }
         this.point.unitize();
         return this.point.getDataRef();

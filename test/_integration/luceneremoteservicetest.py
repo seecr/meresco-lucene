@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -71,7 +72,7 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
 
         drilldownFieldList = lists[1]
         drilldownFields = drilldownFieldList.xpath('li/a/text()')
-        self.assertEquals(['untokenized.field2', 'untokenized.fieldHier'], drilldownFields)
+        self.assertEquals(set(['untokenized.field2', 'untokenized.fieldHier', 'untokenized.field2.copy']), set(drilldownFields))
 
     def testRemoteInfoField(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__id__', name='main'), parse=False)

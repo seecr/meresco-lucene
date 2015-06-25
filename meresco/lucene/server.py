@@ -85,6 +85,11 @@ def uploadHelix(lucene, termNumerator, storageComponent, drilldownFields, fieldR
                                     indexHelix,
                                 )
                             ),
+                            (FilterField(lambda name: name == 'field2'),
+                                (RenameField(lambda name: UNTOKENIZED_PREFIX + name + '.copy'),
+                                    indexHelix,
+                                )
+                            ),
                         )
                     ),
                     (FieldHier(),
@@ -99,7 +104,11 @@ def uploadHelix(lucene, termNumerator, storageComponent, drilldownFields, fieldR
     )
 
 def main(reactor, port, databasePath):
-    drilldownFields = [DrilldownField('untokenized.field2'), DrilldownField('untokenized.fieldHier', hierarchical=True)]
+    drilldownFields = [
+        DrilldownField('untokenized.field2'),
+        DrilldownField('untokenized.field2.copy', indexFieldName='copy'),
+        DrilldownField('untokenized.fieldHier', hierarchical=True)
+    ]
 
     fieldRegistry = FieldRegistry(drilldownFields)
     luceneSettings = LuceneSettings(fieldRegistry=fieldRegistry, commitCount=30, commitTimeout=1, analyzer=MerescoDutchStemmingAnalyzer(['field4', 'field5']))

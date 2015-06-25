@@ -93,6 +93,13 @@ class LuceneTest(IntegrationTestCase):
             set([('value0', '10'), ('value9', '10'), ('value8', '10'), ('value7', '10'), ('value6', '10'), ('value5', '10'), ('value4', '10'), ('value3', '10'), ('value2', '10'), ('value1', '9')]),
             set([(i.attrib['value'], i.attrib['count']) for i in ddItems]))
 
+    def testFacet2Copy(self):
+        body = self.doSruQuery('*', facet='untokenized.field2.copy')
+        ddItems = xpath(body, "//drilldown:term-drilldown/drilldown:navigator[@name='untokenized.field2.copy']/drilldown:item")
+        self.assertEquals(
+            set([('value0', '10'), ('value9', '10'), ('value8', '10'), ('value7', '10'), ('value6', '10'), ('value5', '10'), ('value4', '10'), ('value3', '10'), ('value2', '10'), ('value1', '9')]),
+            set([(i.attrib['value'], i.attrib['count']) for i in ddItems]))
+
     def testAutocomplete(self):
         header, body = getRequest(port=self.httpPort, path='/autocomplete', arguments={'field': 'field2', 'prefix': 'va'}, parse=False)
         prefix, completions = loads(body)
@@ -111,12 +118,12 @@ class LuceneTest(IntegrationTestCase):
         q.addFacet(core='main2', facet=dict(fieldname='untokenized.field2', maxTerms=5))
         response = remote.executeComposedQuery(query=q)
         self.assertEquals(19, response.total)
-        self.assertEquals([
+        self.assertEquals(set([
                 'record:10', 'record:11', 'record:20', 'record:21', 'record:30',
                 'record:31', 'record:40', 'record:41', 'record:50', 'record:51',
                 'record:60', 'record:61', 'record:70', 'record:71', 'record:80',
                 'record:81', 'record:90', 'record:91', 'record:100'
-            ], [hit.id for hit in response.hits])
+            ]), set([hit.id for hit in response.hits]))
         self.assertEquals([{
                 'fieldname': 'untokenized.field2',
                 'path': [],

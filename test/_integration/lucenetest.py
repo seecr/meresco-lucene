@@ -86,11 +86,6 @@ class LuceneTest(IntegrationTestCase):
         records = xpath(body, '//srw:recordIdentifier/text()')
         self.assertEquals(['record:%s' % i for i in xrange(100,90, -1)], records)
 
-    def testSortOnTimestamp(self):
-        body = self.doSruQuery('*', sortKeys='__timestamp__,,1', maximumRecords=100)
-        records = xpath(body, '//srw:recordIdentifier/text()')
-        self.assertEquals(['record:%s' % i for i in xrange(1,101)], records)
-
     def testFacet(self):
         body = self.doSruQuery('*', facet='untokenized.field2')
         ddItems = xpath(body, "//drilldown:term-drilldown/drilldown:navigator[@name='untokenized.field2']/drilldown:item")

@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -24,10 +25,11 @@
 ## end license ##
 
 class DrilldownField(object):
-    def __init__(self, name, hierarchical=False, multiValued=True):
+    def __init__(self, name, hierarchical=False, multiValued=True, indexFieldName=None):
         self.name = name
         self.hierarchical = hierarchical
         self.multiValued = multiValued
+        self.indexFieldName = indexFieldName
 
     def __eq__(self, o):
         return o.__class__ is self.__class__ and \

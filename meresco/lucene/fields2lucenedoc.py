@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -25,7 +26,6 @@
 
 from meresco.core import Observable
 from org.apache.lucene.document import Document
-from org.apache.lucene.facet import FacetField
 
 from fieldregistry import IDFIELD, KEY_PREFIX
 
@@ -77,7 +77,7 @@ class Fields2LuceneDoc(Observable):
                         path = [str(category) for category in value]
                     else:
                         path = [str(value)]
-                    doc.add(FacetField(field, path))
+                    doc.add(self._fieldRegistry.createFacetField(field, path))
             else:
                 for value in values:
                     if field == IDFIELD:

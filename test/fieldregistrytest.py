@@ -159,3 +159,9 @@ class FieldRegistryTest(SeecrTestCase):
         q, t = registry.rangeQueryAndType('anyfield')
         self.assertEqual(TermRangeQuery.newStringRange, q)
         self.assertEqual(str, t)
+
+    def testDrilldownField(self):
+        drilldownFields = [DrilldownField(name='aap'), DrilldownField(name='noot', indexFieldName='facetfield')]
+        registry = FieldRegistry(drilldownFields=drilldownFields)
+        self.assertEquals(u'$facets', registry.facetsConfig.getDimConfig('aap').indexFieldName)
+        self.assertEquals(u'facetfield', registry.facetsConfig.getDimConfig('noot').indexFieldName)

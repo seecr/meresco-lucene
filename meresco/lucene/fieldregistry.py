@@ -27,7 +27,7 @@
 from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType, IntField, LongField, DoubleField
 from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery
 from org.apache.lucene.index import FieldInfo
-from org.apache.lucene.facet import FacetsConfig, DrillDownQuery
+from org.apache.lucene.facet import FacetsConfig, DrillDownQuery, FacetField
 
 
 IDFIELD = '__id__'
@@ -49,11 +49,14 @@ class FieldRegistry(object):
         self._termVectorFieldNames = termVectorFields or []
         self.facetsConfig = FacetsConfig()
         for field in (drilldownFields or []):
-            self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued)
+            self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued, indexFieldName=field.indexFieldName)
         self._isDrilldownFieldFunction = isDrilldownFieldFunction or (lambda name: False)
 
     def createField(self, fieldname, value, mayReUse=False):
         return self._getFieldDefinition(fieldname).createField(value, mayReUse=mayReUse)
+
+    def createFacetField(self, field, path):
+        return FacetField(field, path)
 
     def createIdField(self, value):
         return self.createField(IDFIELD, value)
@@ -74,7 +77,7 @@ class FieldRegistry(object):
         fieldType = self._getFieldDefinition(fieldname).type
         return fieldType.numericType() is not None or fieldType.docValueType() == FieldInfo.DocValuesType.NUMERIC
 
-    def registerDrilldownField(self, fieldname, hierarchical=False, multiValued=True):
+    def registerDrilldownField(self, fieldname, hierarchical=False, multiValued=True, indexFieldName=None):
         self._drilldownFieldNames.add(fieldname)
         if hierarchical:
             self._hierarchicalDrilldownFieldNames.add(fieldname)
@@ -82,6 +85,8 @@ class FieldRegistry(object):
             self._multivaluedDrilldownFieldNames.add(fieldname)
         self.facetsConfig.setMultiValued(fieldname, multiValued)
         self.facetsConfig.setHierarchical(fieldname, hierarchical)
+        if indexFieldName is not None:
+            self.facetsConfig.setIndexFieldName(fieldname, indexFieldName)
 
     def isDrilldownField(self, fieldname):
         if self._isDrilldownFieldFunction(fieldname):

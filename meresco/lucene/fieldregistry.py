@@ -42,6 +42,7 @@ class FieldRegistry(object):
         self._fieldDefinitions = {
             IDFIELD: _FieldDefinition.define(type=StringField.TYPE_STORED, name=IDFIELD),
         }
+        self._indexFieldNames = {}
         self._defaultDefinition = defaultDefinition or TEXTFIELD
         self._drilldownFieldNames = set()
         self._hierarchicalDrilldownFieldNames = set()
@@ -87,6 +88,13 @@ class FieldRegistry(object):
         self.facetsConfig.setHierarchical(fieldname, hierarchical)
         if indexFieldName is not None:
             self.facetsConfig.setIndexFieldName(fieldname, indexFieldName)
+        self._indexFieldNames[fieldname] = self.facetsConfig.getDimConfig(fieldname).indexFieldName
+
+    def indexFieldName(self, fieldname):
+        return self._indexFieldNames[fieldname]
+
+    def indexFieldNames(self):
+        return set(self._indexFieldNames.values())
 
     def isDrilldownField(self, fieldname):
         if self._isDrilldownFieldFunction(fieldname):

@@ -69,7 +69,8 @@ class Index(object):
 
         self._facetsConfig = settings.fieldRegistry.facetsConfig
 
-        self._ordinalsReader = CachedOrdinalsReader(DocValuesOrdinalsReader())
+        self._ordinalsReaders = dict((indexFieldName, CachedOrdinalsReader(DocValuesOrdinalsReader()))
+            for indexFieldName in (settings.fieldRegistry.indexFieldNames() or [None]))  #/TJ: HACK for some tests without registring DrilldownFields
 
     def addDocument(self, document, term=None):
         document = self._facetsConfig.build(self._taxoWriter, document)
@@ -157,7 +158,12 @@ class Index(object):
         return self._indexAndTaxonomy.searcher.doc(docId)
 
     def createFacetCollector(self):
-        return FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig, self._ordinalsReader)
+        # TODO: only necessary ordinalsReaders
+        readers = list(self._ordinalsReaders.values())
+        fsc = FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig, readers[0])
+        for reader in readers[1:]:
+            fsc.addOrdinalsReader(reader)
+        return fsc
 
     def facetResult(self, facetCollector):
         facetResult = TaxonomyFacetCounts(self._ordinalsReader, self._indexAndTaxonomy.taxoReader, self._facetsConfig, facetCollector)

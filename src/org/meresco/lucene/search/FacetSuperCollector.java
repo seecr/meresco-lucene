@@ -29,6 +29,8 @@ package org.meresco.lucene.search;
 import java.io.IOException;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetsCollector;
@@ -41,7 +43,7 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
     final TaxonomyReader taxoReader;
     final FacetsConfig facetConfig;
-    final OrdinalsReader ordinalsReader;
+    final List<OrdinalsReader> ordinalsReaders;
     final BlockingDeque<int[]> arrayPool = new LinkedBlockingDeque<int[]>();
     private int[] mergeValues;
 
@@ -49,7 +51,11 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
         super();
         this.taxoReader = taxoReader;
         this.facetConfig = facetConfig;
-        this.ordinalsReader = ordinalsReader;
+        this.ordinalsReaders = new ArrayList();
+        this.ordinalsReaders.add(ordinalsReader);
+    }
+    public void addOrdinalsReader(OrdinalsReader ordinalsReader) {
+        this.ordinalsReaders.add(ordinalsReader);
     }
 
     @Override
@@ -58,8 +64,12 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
     }
 
     public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
-        return new TaxonomyFacetCounts(this.ordinalsReader, this.taxoReader, this.facetConfig, null, this.mergeValues)
-                .getTopChildren(topN, dim, path);
+        // This will not really need a ordinalsReader. but will call getIndexFieldName()
+        return new TaxonomyFacetCounts(this.ordinalsReaders.get(0), this.taxoReader, this.facetConfig, null, this.mergeValues){
+            protected FacetsConfig.DimConfig verifyDim(String dim) {
+                return config.getDimConfig(dim);
+            }
+        }.getTopChildren(topN, dim, path);
     }
 
     @Override
@@ -99,9 +109,11 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
     @Override
     public void complete() throws IOException {
         int[] values = new int[this.parent.taxoReader.getSize()];
-        TaxonomyFacetCounts counts = new TaxonomyFacetCounts(this.parent.ordinalsReader, this.parent.taxoReader,
-                this.parent.facetConfig, this.delegate, values);
-        counts.doCount();
+        for (OrdinalsReader ordinalsReader: this.parent.ordinalsReaders) {
+            TaxonomyFacetCounts counts = new TaxonomyFacetCounts(ordinalsReader, this.parent.taxoReader,
+                    this.parent.facetConfig, this.delegate, values);
+            counts.doCount();
+        }
         this.parent.mergePool(values);
     }
 

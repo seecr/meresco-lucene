@@ -88,7 +88,7 @@ class SuperCollectorTest(SeecrTestCase):
         I.close()
         I = Index(path=self.tempdir, settings=LuceneSettings())
 
-        C = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, I._ordinalsReader)
+        C = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, iter(I._ordinalsReaders.values()).next())
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
         tc = C.getTopChildren(10, "facet1", [])
@@ -115,7 +115,7 @@ class SuperCollectorTest(SeecrTestCase):
         I.close()
         I = Index(path=self.tempdir, settings=LuceneSettings())
 
-        f = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, I._ordinalsReader)
+        f = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, iter(I._ordinalsReaders.values()).next())
         t = TopScoreDocSuperCollector(10, True)
         collectors = ArrayList().of_(SuperCollector)
         collectors.add(t)

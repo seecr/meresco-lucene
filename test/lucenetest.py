@@ -235,6 +235,8 @@ class LuceneTest(LuceneTestCase):
         retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field2', 'first item1'), ('field3', 'other value')])))
         retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('field2', 'first item2'), ('field3', 'second item')])))
 
+        self.assertEquals(set([u'$facets', u'__id__', u'field1']), set(self.lucene._index.fieldnames()))
+
         # does not crash!!!
         retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
@@ -259,6 +261,14 @@ class LuceneTest(LuceneTestCase):
                     {'term': 'other value', 'count': 1},
                 ],
             }],result.drilldownData)
+
+    def testFacetsInMultipleFields(self):
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first item0'), ('field3', 'second item')])))
+        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field2', 'first item1'), ('field3', 'other value')])))
+        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('field2', 'first item2'), ('field3', 'second item')])))
+        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('field_other', 'first item1'), ('field3', 'second item')])))
+
+        self.assertEquals(set([u'$facets', u'other', u'__id__', u'field1']), set(self.lucene._index.fieldnames()))
 
     def testFacetsWithUnsupportedSortBy(self):
         try:
@@ -737,7 +747,7 @@ class LuceneTest(LuceneTestCase):
         self.assertEquals(0.32, self.lucene._interpolateEpsilon(100, 20))
         self.assertEquals(0.4, self.lucene._interpolateEpsilon(120, 20))
         self.assertEquals(0.4, self.lucene._interpolateEpsilon(121, 20))
-        
+
     def testClusteringShowOnlyRequestTop(self):
         factory = FieldRegistry(termVectorFields=['termvector'])
         for i in range(5):
@@ -896,6 +906,7 @@ FIELD_REGISTRY = FieldRegistry(
             DrilldownField(name='field1'),
             DrilldownField(name='field2'),
             DrilldownField('field3'),
+            DrilldownField('field_other', indexFieldName='other'),
             DrilldownField('fieldHier', hierarchical=True),
             DrilldownField('cat'),
         ]

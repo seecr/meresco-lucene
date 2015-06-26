@@ -69,8 +69,10 @@ class Index(object):
 
         self._facetsConfig = settings.fieldRegistry.facetsConfig
 
-        self._ordinalsReaders = dict((indexFieldName, CachedOrdinalsReader(DocValuesOrdinalsReader()))
-            for indexFieldName in (settings.fieldRegistry.indexFieldNames() or [None]))  #/TJ: HACK for some tests without registring DrilldownFields
+        self._ordinalsReaders = {None: CachedOrdinalsReader(DocValuesOrdinalsReader())}
+        for indexFieldName in settings.fieldRegistry.indexFieldNames():
+            if indexFieldName is not None:
+                self._ordinalsReaders[indexFieldName] = CachedOrdinalsReader(DocValuesOrdinalsReader(indexFieldName))
 
     def addDocument(self, document, term=None):
         document = self._facetsConfig.build(self._taxoWriter, document)

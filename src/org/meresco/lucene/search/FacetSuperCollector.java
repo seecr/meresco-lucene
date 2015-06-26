@@ -49,8 +49,6 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
         super();
         this.taxoReader = taxoReader;
         this.facetConfig = facetConfig;
-        System.out.println(">>>!!>> " + facetConfig.getDimConfig("untokenized.field2").indexFieldName);
-        System.out.println(">>>!!>> " + facetConfig.getDimConfig("untokenized.field2.copy").indexFieldName);
         this.ordinalsReader = ordinalsReader;
     }
 

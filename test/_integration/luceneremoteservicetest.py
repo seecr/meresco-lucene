@@ -68,7 +68,7 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         lists = bodyLxml.xpath('//ul')
         fieldList = lists[0]
         fields = fieldList.xpath('li/a/text()')
-        self.assertEquals(12, len(fields))
+        self.assertEquals(13, len(fields))
 
         drilldownFieldList = lists[1]
         drilldownFields = drilldownFieldList.xpath('li/a/text()')

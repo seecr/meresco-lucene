@@ -88,7 +88,7 @@ class FieldRegistry(object):
         self.facetsConfig.setHierarchical(fieldname, hierarchical)
         if indexFieldName is not None:
             self.facetsConfig.setIndexFieldName(fieldname, indexFieldName)
-        self._indexFieldNames[fieldname] = self.facetsConfig.getDimConfig(fieldname).indexFieldName
+        self._indexFieldNames[fieldname] = indexFieldName
 
     def indexFieldName(self, fieldname):
         return self._indexFieldNames[fieldname]

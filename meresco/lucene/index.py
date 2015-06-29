@@ -167,10 +167,6 @@ class Index(object):
             fsc.addOrdinalsReader(reader)
         return fsc
 
-    def facetResult(self, facetCollector):
-        facetResult = TaxonomyFacetCounts(self._ordinalsReader, self._indexAndTaxonomy.taxoReader, self._facetsConfig, facetCollector)
-        return Facets.cast_(facetResult)
-
     def close(self):
         self._indexAndTaxonomy.close()
         if not self._settings.readonly:

@@ -270,6 +270,24 @@ class LuceneTest(LuceneTestCase):
 
         self.assertEquals(set([u'$facets', u'other', u'__id__', u'field1']), set(self.lucene._index.fieldnames()))
 
+    def testFacetsWithMultipleFields(self):
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'value')])))
+        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field_other', 'other_value')])))
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2'), dict(maxTerms=10, fieldname='field_other')]))
+
+        print result.drilldownData
+        self.assertEquals([
+                {   'path': [],
+                    'terms': [{'count': 1, 'term': 'value'}],
+                    'fieldname': 'field2'
+                }, {
+                    'path': [],
+                    'terms': [{'count': 1, 'term': 'other_value'}],
+                    'fieldname': 'field_other'
+                }
+            ],result.drilldownData)
+
     def testFacetsWithUnsupportedSortBy(self):
         try:
             retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2', sortBy='incorrectSort')]))

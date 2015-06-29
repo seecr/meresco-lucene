@@ -109,11 +109,17 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
     @Override
     public void complete() throws IOException {
         int[] values = new int[this.parent.taxoReader.getSize()];
+        TaxonomyFacetCounts counts = null;
         for (OrdinalsReader ordinalsReader: this.parent.ordinalsReaders) {
-            TaxonomyFacetCounts counts = new TaxonomyFacetCounts(ordinalsReader, this.parent.taxoReader,
+            System.out.println("IndexFieldName "+ordinalsReader.getIndexFieldName());
+            if (ordinalsReader.getIndexFieldName() == "$facets"){
+                continue;
+            }
+            counts = new TaxonomyFacetCounts(ordinalsReader, this.parent.taxoReader,
                     this.parent.facetConfig, this.delegate, values);
-            counts.doCount();
+            counts.doCount(false);
         }
+        counts.doRollup();
         this.parent.mergePool(values);
     }
 

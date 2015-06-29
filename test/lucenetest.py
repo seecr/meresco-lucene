@@ -276,7 +276,6 @@ class LuceneTest(LuceneTestCase):
 
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2'), dict(maxTerms=10, fieldname='field_other')]))
 
-        print result.drilldownData
         self.assertEquals([
                 {   'path': [],
                     'terms': [{'count': 1, 'term': 'value'}],

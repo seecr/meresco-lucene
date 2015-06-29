@@ -165,9 +165,9 @@ class FieldRegistryTest(SeecrTestCase):
         registry = FieldRegistry(drilldownFields=drilldownFields)
         self.assertEquals(u'$facets', registry.facetsConfig.getDimConfig('aap').indexFieldName)
         self.assertEquals(u'facetfield', registry.facetsConfig.getDimConfig('noot').indexFieldName)
-        self.assertEquals(set(['$facets', 'facetfield']), registry.indexFieldNames())
-        self.assertEquals('$facets', registry.indexFieldName('aap'))
-        self.assertEquals('$facets', registry.indexFieldName('vuur'))
+        self.assertEquals(set([None, 'facetfield']), registry.indexFieldNames())
+        self.assertEquals(None, registry.indexFieldName('aap'))
+        self.assertEquals(None, registry.indexFieldName('vuur'))
         self.assertEquals('facetfield', registry.indexFieldName('noot'))
         self.assertRaises(KeyError, lambda: registry.indexFieldName('not.registered'))
 

@@ -53,6 +53,10 @@ class FieldRegistry(object):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued, indexFieldName=field.indexFieldName)
         self._isDrilldownFieldFunction = isDrilldownFieldFunction or (lambda name: False)
 
+    #TODO: No more changes allowed.
+    def lock(self):
+        pass
+
     def createField(self, fieldname, value, mayReUse=False):
         return self._getFieldDefinition(fieldname).createField(value, mayReUse=mayReUse)
 
@@ -97,6 +101,7 @@ class FieldRegistry(object):
         return set(self._indexFieldNames.values())
 
     def isDrilldownField(self, fieldname):
+        # TODO: remove side effect.
         if self._isDrilldownFieldFunction(fieldname):
             self.registerDrilldownField(fieldname, multiValued=True)
         return fieldname in self._drilldownFieldNames

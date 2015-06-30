@@ -43,7 +43,7 @@ from org.meresco.lucene.search import FacetSuperCollector
 
 
 class Index(object):
-    def __init__(self, path, settings):
+    def __init__(self, path, settings, log):
         self._settings = settings
         self._checker = DirectSpellChecker()
         indexDirectory = MMapDirectory(File(join(path, 'index')))
@@ -56,6 +56,7 @@ class Index(object):
         mergePolicy.setMaxMergeAtOnce(settings.maxMergeAtOnce)
         mergePolicy.setSegmentsPerTier(settings.segmentsPerTier)
         conf.setMergePolicy(mergePolicy)
+        self.log = (lambda message: None) if log is None else log
 
         if not settings.readonly:
             self._indexWriter = IndexWriter(indexDirectory, conf)
@@ -159,12 +160,13 @@ class Index(object):
     def getDocument(self, docId):
         return self._indexAndTaxonomy.searcher.doc(docId)
 
-    def createFacetCollector(self):
+    def createFacetCollector(self, fieldnames):
         # TODO: only necessary ordinalsReaders
         readers = list(self._ordinalsReaders.values())
         fsc = FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig, readers[0])
         for reader in readers[1:]:
             fsc.addOrdinalsReader(reader)
+        self.log(message="[LuceneIndex] FacetSuperCollector with %d ordinal readers.\n" % len(readers))
         return fsc
 
     def close(self):

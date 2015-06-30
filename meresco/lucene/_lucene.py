@@ -39,6 +39,7 @@ from time import time
 
 from os.path import basename
 
+from meresco.core import Observable
 from meresco.lucene.luceneresponse import LuceneResponse
 from meresco.lucene.index import Index
 from meresco.lucene.cache import LruCache
@@ -48,7 +49,7 @@ from seecr.utils.generatorutils import generatorReturn
 from .utils import simplifiedDict
 
 
-class Lucene(object):
+class Lucene(Observable):
     COUNT = 'count'
     SUPPORTED_SORTBY_VALUES = [COUNT]
     SORT_ON_SCORE = 'score'
@@ -57,14 +58,14 @@ class Lucene(object):
     CLUSTER_MORE_RECORDS = 100
 
     def __init__(self, path, reactor, settings, name=None, **kwargs):
+        Observable.__init__(self, name=name)
         self._reactor = reactor
         self.settings = settings
+        self.log = self._logMessage if settings.verbose else lambda message: None
         self._fieldRegistry = settings.fieldRegistry
         self._commitCount = 0
         self._commitTimerToken = None
-        self._index = Index(path, settings=settings, **kwargs)
-        if name is not None:
-            self.observable_name = lambda: name
+        self._index = Index(path, settings=settings, log=self.log, **kwargs)
         self.coreName = name or basename(path)
         self._filterCache = LruCache(
             keyEqualsFunction=lambda q1, q2: q1.equals(q2),
@@ -80,7 +81,6 @@ class Lucene(object):
         )
         if settings.readonly:
             self._startCommitTimer()
-        self.log = self._log if settings.verbose else lambda v: None
 
         self._clusterMoreRecords = self.CLUSTER_MORE_RECORDS
         self._clusteringEps = self.CLUSTERING_EPS
@@ -139,7 +139,7 @@ class Lucene(object):
         self._collectedKeysCache.clear()
         if self.settings.readonly:
             self._startCommitTimer()
-        self.log("Lucene {0}: commit took: {1:.2f} seconds".format(self.coreName, time() - t0))
+        self.log("[Lucene] {0}: commit took: {1:.2f} seconds\n".format(self.coreName, time() - t0))
 
     def search(self, query=None, filterQuery=None, collector=None):
         filter_ = None
@@ -148,7 +148,7 @@ class Lucene(object):
         self._index.search(query, filter_, collector)
 
     def facets(self, facets, filterQueries, drilldownQueries=None, filter=None):
-        facetCollector = self._facetCollector() if facets else None
+        facetCollector = self._facetCollector(facets)
         filter_ = self._filterFor(filterQueries, filter=filter)
         query = MatchAllDocsQuery()
         if drilldownQueries:
@@ -176,8 +176,8 @@ class Lucene(object):
 
         collectors.append(resultsCollector)
 
-        if facets:
-            facetCollector = self._facetCollector()
+        facetCollector = self._facetCollector(facets)
+        if facetCollector:
             collectors.append(facetCollector)
         if keyCollector:
             collectors.append(keyCollector)
@@ -420,8 +420,10 @@ class Lucene(object):
                         )))
         return result
 
-    def _facetCollector(self):
-        return self._index.createFacetCollector()
+    def _facetCollector(self, facets):
+        if not facets:
+            return None
+        return self._index.createFacetCollector(fieldnames=[f['fieldname'] for f in facets])
 
     def coreInfo(self):
         yield self.LuceneInfo(self)
@@ -456,9 +458,8 @@ class Lucene(object):
         result.setMissingValue(SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST)
         return result
 
-    def _log(self, value):
-        print value
-        from sys import stdout; stdout.flush()
+    def _logMessage(self, message):
+        self.do.log(message=message)
 
 def defaults(parameter, default):
     return default if parameter is None else parameter

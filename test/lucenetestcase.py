@@ -36,12 +36,14 @@ class LuceneTestCase(SeecrTestCase):
         super(LuceneTestCase, self).setUp()
         self._javaObjects = self._getJavaObjects()
         self._reactor = CallTrace('reactor')
-        self._defaultSettings = LuceneSettings(commitCount=1, commitTimeout=1, verbose=False, fieldRegistry=fieldRegistry)
+        self._defaultSettings = LuceneSettings(commitCount=1, commitTimeout=1, fieldRegistry=fieldRegistry)
         self.lucene = Lucene(
             join(self.tempdir, 'lucene'),
             reactor=self._reactor,
             settings=self._defaultSettings,
         )
+        self.observer = CallTrace()
+        self.lucene.addObserver(self.observer)
 
     def tearDown(self):
         try:

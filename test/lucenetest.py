@@ -287,6 +287,21 @@ class LuceneTest(LuceneTestCase):
                 }
             ],result.drilldownData)
 
+    def testFacetsWithMultipleFieldsWillOnlyUseNecessaryOrdinalReaders(self):
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'value')])))
+        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field_other', 'other_value')])))
+
+        self.observer.calledMethods.reset()
+        consume(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2'), dict(maxTerms=10, fieldname='field_other')]))
+        self.assertEquals(['log'], self.observer.calledMethodNames())
+        self.assertEquals('[LuceneIndex] FacetSuperCollector with 2 ordinal readers.\n', self.observer.calledMethods[0].kwargs['message'])
+
+        self.observer.calledMethods.reset()
+        consume(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field_other')]))
+        self.assertEquals(['log'], self.observer.calledMethodNames())
+        self.assertEquals('[LuceneIndex] FacetSuperCollector with 1 ordinal readers.\n', self.observer.calledMethods[0].kwargs['message'])
+
+
     def testFacetsWithUnsupportedSortBy(self):
         try:
             retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2', sortBy='incorrectSort')]))

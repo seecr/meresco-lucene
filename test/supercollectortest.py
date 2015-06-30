@@ -27,6 +27,7 @@ from seecr.test import SeecrTestCase
 
 from lucenetest import document, createDocument
 from meresco.lucene.index import Index
+from org.apache.lucene.facet.taxonomy import DocValuesOrdinalsReader
 from org.apache.lucene.search import MatchAllDocsQuery, Sort, SortField
 from org.meresco.lucene.search import SuperCollector, TotalHitCountSuperCollector, TopScoreDocSuperCollector, FacetSuperCollector, MultiSuperCollector, TopFieldSuperCollector
 from java.util import ArrayList
@@ -87,7 +88,7 @@ class SuperCollectorTest(SeecrTestCase):
         I.close()
         I = Index(path=self.tempdir, settings=LuceneSettings(), log=None)
 
-        C = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, iter(I._ordinalsReaders.values()).next())
+        C = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, DocValuesOrdinalsReader())
         Q = MatchAllDocsQuery()
         I.search(Q, None, C)
         tc = C.getTopChildren(10, "facet1", [])
@@ -114,7 +115,7 @@ class SuperCollectorTest(SeecrTestCase):
         I.close()
         I = Index(path=self.tempdir, settings=LuceneSettings(), log=None)
 
-        f = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, iter(I._ordinalsReaders.values()).next())
+        f = FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, DocValuesOrdinalsReader())
         t = TopScoreDocSuperCollector(10, True)
         collectors = ArrayList().of_(SuperCollector)
         collectors.add(t)

@@ -70,10 +70,7 @@ class Index(object):
 
         self._facetsConfig = settings.fieldRegistry.facetsConfig
 
-        self._ordinalsReaders = {None: CachedOrdinalsReader(DocValuesOrdinalsReader())}
-        for indexFieldName in settings.fieldRegistry.indexFieldNames():
-            if indexFieldName is not None:
-                self._ordinalsReaders[indexFieldName] = CachedOrdinalsReader(DocValuesOrdinalsReader(indexFieldName))
+        self._ordinalsReaders = {}
 
     def addDocument(self, document, term=None):
         document = self._facetsConfig.build(self._taxoWriter, document)
@@ -160,8 +157,16 @@ class Index(object):
     def getDocument(self, docId):
         return self._indexAndTaxonomy.searcher.doc(docId)
 
+    def _getOrdinalsReaders(self, fieldnames):
+        for indexFieldName in self._settings.fieldRegistry.indexFieldNames(fieldnames):
+            reader = self._ordinalsReaders.get(indexFieldName)
+            if reader is None:
+                reader = CachedOrdinalsReader(DocValuesOrdinalsReader() if indexFieldName is None else DocValuesOrdinalsReader(indexFieldName))
+                self._ordinalsReaders[indexFieldName] = reader
+            yield reader
+
     def createFacetCollector(self, fieldnames):
-        readers = list(self._ordinalsReaders[indexFieldName] for indexFieldName in self._settings.fieldRegistry.indexFieldNames(fieldnames))
+        readers = list(self._getOrdinalsReaders(fieldnames))
         if not readers:
             return None
         fsc = FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig, readers[0])

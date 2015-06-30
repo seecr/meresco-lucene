@@ -30,6 +30,7 @@ from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery
 from org.apache.lucene.document import StringField, TextField
 from meresco.lucene import DrilldownField
+import warnings
 
 
 class FieldRegistryTest(SeecrTestCase):
@@ -92,10 +93,12 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertFalse(dimConfigs.get('mies').multiValued)
 
     def testGenericDrilldownFields(self):
-        registry = FieldRegistry(isDrilldownFieldFunction=lambda name: name.startswith('drilldown'))
-        self.assertTrue(registry.isDrilldownField('drilldown.aap', registerIfNeccessary=True))
-        self.assertFalse(registry.isDrilldownField('drilldown.noot'))
-        self.assertFalse(registry.isDrilldownField('noot'))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            registry = FieldRegistry(isDrilldownFieldFunction=lambda name: name.startswith('drilldown'))
+            self.assertTrue(registry.isDrilldownField('drilldown.aap'))
+            self.assertTrue(registry.isDrilldownField('drilldown.noot'))
+            self.assertFalse(registry.isDrilldownField('noot'))
 
     def testReuseCreatedField(self):
         registry = FieldRegistry()

@@ -28,6 +28,7 @@ from org.apache.lucene.document import TextField, StringField, NumericDocValuesF
 from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery
 from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.facet import FacetsConfig, DrillDownQuery, FacetField
+from warnings import warn
 
 
 IDFIELD = '__id__'
@@ -51,11 +52,10 @@ class FieldRegistry(object):
         self.facetsConfig = FacetsConfig()
         for field in (drilldownFields or []):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued, indexFieldName=field.indexFieldName)
-        self._isDrilldownFieldFunction = isDrilldownFieldFunction or (lambda name: False)
-
-    #TODO: No more changes allowed.
-    def lock(self):
-        pass
+        self._isDrilldownFieldFunction = lambda name: False
+        if isDrilldownFieldFunction is not None:
+            self._isDrilldownFieldFunction = isDrilldownFieldFunction
+            warn("isDrilldownFieldFunction can have side effects.")
 
     def createField(self, fieldname, value, mayReUse=False):
         return self._getFieldDefinition(fieldname).createField(value, mayReUse=mayReUse)
@@ -99,10 +99,12 @@ class FieldRegistry(object):
             return set(self._indexFieldNames.values())
         return set(self._indexFieldNames[f] for f in fieldnames if f in self._indexFieldNames)
 
-    def isDrilldownField(self, fieldname, registerIfNeccessary=False):
-        if registerIfNeccessary and self._isDrilldownFieldFunction(fieldname):
+    def isDrilldownField(self, fieldname):
+        if self._isDrilldownFieldFunction(fieldname):
+            # Side effect will only happen when using the _isDrilldownFieldFunction
             if fieldname not in self._drilldownFieldNames:
                 self.registerDrilldownField(fieldname, multiValued=True)
+            return True
         return fieldname in self._drilldownFieldNames
 
     def isHierarchicalDrilldown(self, fieldname):

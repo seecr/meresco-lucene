@@ -71,7 +71,7 @@ class Fields2LuceneDoc(Observable):
         facet_fields = facet_fields or {}
         doc = Document()
         for field, values in (fields.items() + facet_fields.items()):
-            if self._fieldRegistry.isDrilldownField(field, registerIfNeccessary=True):
+            if self._fieldRegistry.isDrilldownField(field):
                 for value in values:
                     if hasattr(value, 'extend'):
                         path = [str(category) for category in value]

@@ -93,8 +93,8 @@ class FieldRegistryTest(SeecrTestCase):
 
     def testGenericDrilldownFields(self):
         registry = FieldRegistry(isDrilldownFieldFunction=lambda name: name.startswith('drilldown'))
-        self.assertTrue(registry.isDrilldownField('drilldown.aap'))
-        self.assertTrue(registry.isDrilldownField('drilldown.noot'))
+        self.assertTrue(registry.isDrilldownField('drilldown.aap', registerIfNeccessary=True))
+        self.assertFalse(registry.isDrilldownField('drilldown.noot'))
         self.assertFalse(registry.isDrilldownField('noot'))
 
     def testReuseCreatedField(self):

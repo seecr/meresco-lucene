@@ -99,10 +99,10 @@ class FieldRegistry(object):
             return set(self._indexFieldNames.values())
         return set(self._indexFieldNames[f] for f in fieldnames if f in self._indexFieldNames)
 
-    def isDrilldownField(self, fieldname):
-        # TODO: remove side effect.
-        if self._isDrilldownFieldFunction(fieldname):
-            self.registerDrilldownField(fieldname, multiValued=True)
+    def isDrilldownField(self, fieldname, registerIfNeccessary=False):
+        if registerIfNeccessary and self._isDrilldownFieldFunction(fieldname):
+            if fieldname not in self._drilldownFieldNames:
+                self.registerDrilldownField(fieldname, multiValued=True)
         return fieldname in self._drilldownFieldNames
 
     def isHierarchicalDrilldown(self, fieldname):

@@ -36,7 +36,6 @@ import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.OrdinalsReader;
-import org.apache.lucene.facet.taxonomy.TaxonomyFacetCounts;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
@@ -51,7 +50,7 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
         super();
         this.taxoReader = taxoReader;
         this.facetConfig = facetConfig;
-        this.ordinalsReaders = new ArrayList();
+        this.ordinalsReaders = new ArrayList<OrdinalsReader>();
         this.ordinalsReaders.add(ordinalsReader);
     }
     public void addOrdinalsReader(OrdinalsReader ordinalsReader) {
@@ -65,11 +64,7 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
     public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
         // This will not really need a ordinalsReader. but will call getIndexFieldName()
-        return new TaxonomyFacetCounts(this.ordinalsReaders.get(0), this.taxoReader, this.facetConfig, null, this.mergeValues){
-            protected FacetsConfig.DimConfig verifyDim(String dim) {
-                return config.getDimConfig(dim);
-            }
-        }.getTopChildren(topN, dim, path);
+        return new MerescoTaxonomyFacetCounts(this.ordinalsReaders, this.taxoReader, this.facetConfig, null, this.mergeValues).getTopChildren(topN, dim, path);
     }
 
     @Override
@@ -109,13 +104,8 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
     @Override
     public void complete() throws IOException {
         int[] values = new int[this.parent.taxoReader.getSize()];
-        TaxonomyFacetCounts counts = null;
-        for (OrdinalsReader ordinalsReader: this.parent.ordinalsReaders) {
-            counts = new TaxonomyFacetCounts(ordinalsReader, this.parent.taxoReader,
-                    this.parent.facetConfig, this.delegate, values);
-            counts.doCount(false);
-        }
-        counts.doRollup();
+        MerescoTaxonomyFacetCounts counts = new MerescoTaxonomyFacetCounts(this.parent.ordinalsReaders, this.parent.taxoReader, this.parent.facetConfig, this.delegate, values);
+        counts.doCount();
         this.parent.mergePool(values);
     }
 

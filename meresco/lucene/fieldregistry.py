@@ -94,11 +94,10 @@ class FieldRegistry(object):
             self.facetsConfig.setIndexFieldName(fieldname, indexFieldName)
         self._indexFieldNames[fieldname] = indexFieldName
 
-    def indexFieldName(self, fieldname):
-        return self._indexFieldNames[fieldname]
-
-    def indexFieldNames(self):
-        return set(self._indexFieldNames.values())
+    def indexFieldNames(self, fieldnames=None):
+        if fieldnames is None:
+            return set(self._indexFieldNames.values())
+        return set(self._indexFieldNames[f] for f in fieldnames if f in self._indexFieldNames)
 
     def isDrilldownField(self, fieldname):
         # TODO: remove side effect.

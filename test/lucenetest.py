@@ -310,7 +310,7 @@ class LuceneTest(LuceneTestCase):
 
     def testFacetsOnUnknownField(self):
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='fieldUnknonw')]))
-        self.assertEquals([{'terms': [], 'path': [], 'fieldname': 'fieldUnknonw'}], result.drilldownData)
+        self.assertEquals([], result.drilldownData)
 
     def testFacetsMaxTerms0(self):
         self.lucene._index._commitCount = 3

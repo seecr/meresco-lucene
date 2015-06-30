@@ -26,9 +26,9 @@
 
 from cqlparser import parseString as parseCql
 from meresco.core import Observable
-from meresco.lucene import Lucene, TermFrequencySimilarity, LuceneSettings
+from meresco.lucene import Lucene, TermFrequencySimilarity, LuceneSettings, DrilldownField
 from meresco.lucene.composedquery import ComposedQuery
-from meresco.lucene.fieldregistry import KEY_PREFIX
+from meresco.lucene.fieldregistry import KEY_PREFIX, FieldRegistry
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from meresco.lucene.multilucene import MultiLucene
 from org.apache.lucene.search import MatchAllDocsQuery, BooleanQuery, BooleanClause
@@ -43,8 +43,9 @@ class MultiLuceneTest(SeecrTestCase):
 
     def setUp(self):
         SeecrTestCase.setUp(self)
-        settings = LuceneSettings(verbose=False)
-        settingsLuceneC = LuceneSettings(verbose=False, similarity=TermFrequencySimilarity())
+        registry = FieldRegistry(drilldownFields=[DrilldownField('cat_%s' % vowel) for vowel in ['M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U']])
+        settings = LuceneSettings(verbose=False, fieldRegistry=registry)
+        settingsLuceneC = LuceneSettings(verbose=False, similarity=TermFrequencySimilarity(), fieldRegistry=registry)
 
         self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), settings=settings)
         self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), settings=settings)

@@ -149,6 +149,8 @@ class Lucene(Observable):
 
     def facets(self, facets, filterQueries, drilldownQueries=None, filter=None):
         facetCollector = self._facetCollector(facets)
+        if facetCollector is None:
+            raise StopIteration([])
         filter_ = self._filterFor(filterQueries, filter=filter)
         query = MatchAllDocsQuery()
         if drilldownQueries:

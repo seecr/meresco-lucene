@@ -161,8 +161,9 @@ class Index(object):
         return self._indexAndTaxonomy.searcher.doc(docId)
 
     def createFacetCollector(self, fieldnames):
-        # TODO: only necessary ordinalsReaders
-        readers = list(self._ordinalsReaders.values())
+        readers = list(self._ordinalsReaders[indexFieldName] for indexFieldName in self._settings.fieldRegistry.indexFieldNames(fieldnames))
+        if not readers:
+            return None
         fsc = FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig, readers[0])
         for reader in readers[1:]:
             fsc.addOrdinalsReader(reader)

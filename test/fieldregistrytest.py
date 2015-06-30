@@ -166,8 +166,22 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertEquals(u'$facets', registry.facetsConfig.getDimConfig('aap').indexFieldName)
         self.assertEquals(u'facetfield', registry.facetsConfig.getDimConfig('noot').indexFieldName)
         self.assertEquals(set([None, 'facetfield']), registry.indexFieldNames())
-        self.assertEquals(None, registry.indexFieldName('aap'))
-        self.assertEquals(None, registry.indexFieldName('vuur'))
-        self.assertEquals('facetfield', registry.indexFieldName('noot'))
-        self.assertRaises(KeyError, lambda: registry.indexFieldName('not.registered'))
+        self.assertEquals(set([None]), registry.indexFieldNames(['aap']))
+        self.assertEquals(set([None]), registry.indexFieldNames(['vuur']))
+        self.assertEquals(set(['facetfield']), registry.indexFieldNames(['noot']))
+
+    def testIndexFieldnamesForFieldname(self):
+        drilldownFields = [
+            DrilldownField(name='aap'),
+            DrilldownField(name='noot', indexFieldName='facetfield'),
+            DrilldownField(name='vis', indexFieldName='facetfield2'),
+            DrilldownField(name='vuur')
+        ]
+        registry = FieldRegistry(drilldownFields=drilldownFields)
+        self.assertEquals(set([None, 'facetfield2']), registry.indexFieldNames(['aap', 'vis', 'vuur']))
+
+    def testIndexFieldNamesForFieldnamesNotRegistered(self):
+        registry = FieldRegistry(drilldownFields=[DrilldownField(name='aap', indexFieldName='aapjes')])
+        self.assertEquals(set(['aapjes']), registry.indexFieldNames(['aap', 'vis', 'vuur']))
+
 

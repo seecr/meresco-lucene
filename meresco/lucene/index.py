@@ -25,7 +25,7 @@
 ## end license ##
 
 from indexandtaxonomy import IndexAndTaxonomy
-from os.path import join
+from os.path import join, basename
 
 from java.io import File, StringReader
 from org.apache.lucene.analysis.tokenattributes import CharTermAttribute, OffsetAttribute
@@ -43,9 +43,10 @@ from org.meresco.lucene.search import FacetSuperCollector
 
 
 class Index(object):
-    def __init__(self, path, settings, log):
+    def __init__(self, path, settings, log, name=None):
         self._settings = settings
         self._checker = DirectSpellChecker()
+        self.name = name or basename(path)
         indexDirectory = MMapDirectory(File(join(path, 'index')))
         indexDirectory.setUseUnmap(False)
         taxoDirectory = MMapDirectory(File(join(path, 'taxo')))
@@ -172,7 +173,7 @@ class Index(object):
         fsc = FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig, readers[0])
         for reader in readers[1:]:
             fsc.addOrdinalsReader(reader)
-        self.log(message="[LuceneIndex] FacetSuperCollector with %d ordinal readers.\n" % len(readers))
+        self.log(message="[LuceneIndex] {0}: FacetSuperCollector with {1:d} ordinal readers.\n".format(self.name, len(readers)))
         return fsc
 
     def close(self):

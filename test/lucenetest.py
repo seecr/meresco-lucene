@@ -294,12 +294,12 @@ class LuceneTest(LuceneTestCase):
         self.observer.calledMethods.reset()
         consume(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2'), dict(maxTerms=10, fieldname='field_other')]))
         self.assertEquals(['log'], self.observer.calledMethodNames())
-        self.assertEquals('[LuceneIndex] FacetSuperCollector with 2 ordinal readers.\n', self.observer.calledMethods[0].kwargs['message'])
+        self.assertEquals('[LuceneIndex] lucene: FacetSuperCollector with 2 ordinal readers.\n', self.observer.calledMethods[0].kwargs['message'])
 
         self.observer.calledMethods.reset()
         consume(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field_other')]))
         self.assertEquals(['log'], self.observer.calledMethodNames())
-        self.assertEquals('[LuceneIndex] FacetSuperCollector with 1 ordinal readers.\n', self.observer.calledMethods[0].kwargs['message'])
+        self.assertEquals('[LuceneIndex] lucene: FacetSuperCollector with 1 ordinal readers.\n', self.observer.calledMethods[0].kwargs['message'])
 
 
     def testFacetsWithUnsupportedSortBy(self):

@@ -65,8 +65,8 @@ class Lucene(Observable):
         self._fieldRegistry = settings.fieldRegistry
         self._commitCount = 0
         self._commitTimerToken = None
-        self._index = Index(path, settings=settings, log=self.log, **kwargs)
         self.coreName = name or basename(path)
+        self._index = Index(path, settings=settings, log=self.log, name=self.coreName, **kwargs)
         self._filterCache = LruCache(
             keyEqualsFunction=lambda q1, q2: q1.equals(q2),
             createFunction=lambda q: CachingWrapperFilter(QueryWrapperFilter(q))
@@ -139,7 +139,7 @@ class Lucene(Observable):
         self._collectedKeysCache.clear()
         if self.settings.readonly:
             self._startCommitTimer()
-        self.log("[Lucene] {0}: commit took: {1:.2f} seconds\n".format(self.coreName, time() - t0))
+        self.log("[Lucene] {0}(readonly={2}): commit took: {1:.2f} seconds\n".format(self.coreName, time() - t0, self.settings.readonly))
 
     def search(self, query=None, filterQuery=None, collector=None):
         filter_ = None

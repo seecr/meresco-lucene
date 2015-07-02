@@ -153,7 +153,7 @@ public class SuggestionNGramIndex {
         return ngram;
     }
 
-    public Reader getReader() throws IOException {
+    public Reader createReader() throws IOException {
     	return new Reader();
     }
 
@@ -162,25 +162,14 @@ public class SuggestionNGramIndex {
         private IndexSearcher searcher;
 
     	public Reader() throws IOException {
-    		this.reader = DirectoryReader.open(directory);
-            this.searcher = new IndexSearcher(this.reader, Executors.newFixedThreadPool(10));
-    	}
-
-    	public void maybeReopen() throws IOException {
-    		DirectoryReader newReader = DirectoryReader.openIfChanged(this.reader);
-            if (newReader != null) {
-                this.reader = newReader;
-                this.searcher = new IndexSearcher(this.reader);
-            }
+    		reopen();
     	}
 
         public int numDocs() throws IOException {
-        	maybeReopen();
             return this.reader.numDocs();
         }
 
     	public Suggestion[] suggest(String value, Boolean trigram) throws IOException {
-            maybeReopen();
             String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
             BooleanQuery query = new BooleanQuery();
             List<String> ngrams = ngrams(value, trigram);
@@ -201,6 +190,11 @@ public class SuggestionNGramIndex {
 
         public void close() throws IOException {
             this.reader.close();
+        }
+
+        public void reopen() throws IOException {
+            this.reader = DirectoryReader.open(directory);
+            this.searcher = new IndexSearcher(this.reader, Executors.newFixedThreadPool(10));
         }
     }
 

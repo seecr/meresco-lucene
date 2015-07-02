@@ -43,6 +43,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
+import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;
 
 public class SuggestionIndex {
 
@@ -82,6 +83,8 @@ public class SuggestionIndex {
 	public IndexingState indexingState = null;
 
 	private String suggestionNGramIndexDir;
+
+    private Reader currentReader;
 
     public SuggestionIndex(String suggestionIndexDir, String suggestionNGramIndexDir, int minShingleSize, int maxShingleSize) throws IOException {
         this(suggestionIndexDir, suggestionNGramIndexDir, minShingleSize, maxShingleSize, 1);
@@ -139,6 +142,9 @@ public class SuggestionIndex {
 
 		        	suggestionNGramIndex = new SuggestionNGramIndex(suggestionNGramIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
 		        	deleteIndexDirectory(tempTempDir);
+		        	
+		        	if (currentReader != null)
+		        	    currentReader.reopen();
 		        } catch (IOException e) {
 					e.printStackTrace();
 				} finally {
@@ -181,7 +187,8 @@ public class SuggestionIndex {
     }
 
     public SuggestionNGramIndex.Reader getSuggestionsReader() throws IOException {
-        return this.suggestionNGramIndex.getReader();
+        this.currentReader = this.suggestionNGramIndex.createReader();
+        return this.currentReader;
     }
 
     private void maybeCommitAfterUpdate() throws IOException {

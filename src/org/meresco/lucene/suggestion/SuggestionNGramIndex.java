@@ -37,9 +37,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -64,16 +62,6 @@ public class SuggestionNGramIndex {
 	private static final String CONCEPT_URI_FIELDNAME = "__uri__";
     private static final String BIGRAM_FIELDNAME = "__bigram__";
     private static final String TRIGRAM_FIELDNAME = "__trigram__";
-
-    public static final FieldType RANK_FIELD_TYPE = new FieldType();
-    static {
-        RANK_FIELD_TYPE.setIndexed(true);
-        RANK_FIELD_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
-        RANK_FIELD_TYPE.setTokenized(true);
-        RANK_FIELD_TYPE.setStored(false);
-        RANK_FIELD_TYPE.setOmitNorms(true);
-        RANK_FIELD_TYPE.freeze();
-    }
 
     private Field suggestionField = new Field(SUGGESTION_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);

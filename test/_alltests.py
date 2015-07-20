@@ -66,7 +66,7 @@ from supercollectortest import SuperCollectorTest
 from superindexsearchertest import SuperIndexSearcherTest
 from termfrequencysimilaritytest import TermFrequencySimilarityTest
 from termnumeratortest import TermNumeratorTest
-
+from fieldslisttolucenedocumenttest import FieldsListToLuceneDocumentTest
 
 if __name__ == '__main__':
     unittest.main()

@@ -59,5 +59,6 @@ from multilucene import MultiLucene
 from termnumerator import TermNumerator
 from composedquery import ComposedQuery
 from drilldownfield import DrilldownField
+from fieldslisttolucenedocument import FieldsListToLuceneDocument
 
 from org.meresco.lucene.search import TermFrequencySimilarity

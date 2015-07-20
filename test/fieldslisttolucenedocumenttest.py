@@ -32,7 +32,6 @@ from weightless.core import consume
 
 from seecr.test import SeecrTestCase, CallTrace
 
-from meresco.triplestore import Uri
 from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene import FieldsListToLuceneDocument, DrilldownField
 
@@ -40,7 +39,7 @@ from org.apache.lucene.facet import FacetField
 
 
 class FieldsListToLuceneDocumentTest(SeecrTestCase):
-    def testAddHoldingAnnotation(self):
+    def testAdd(self):
         class Factory():
             def __init__(self, observable, untokenizedFieldnames):
                 self.observable = observable
@@ -53,17 +52,7 @@ class FieldsListToLuceneDocumentTest(SeecrTestCase):
 
         fieldRegistry = FieldRegistry(drilldownFields=[DrilldownField('drilldown.field')])
         index = FieldsListToLuceneDocument(fieldRegistry, untokenizedFieldnames=[], indexFieldFactory=fieldFactory)
-        def mockExecuteQuery(**kwargs):
-            raise StopIteration([{
-                'parent2': Uri("info:isil:NL-0700130000"),
-                'parent': Uri("info:isil:NL-0835060000")
-            }])
-            yield
-        observer = CallTrace(
-                    emptyGeneratorMethods=['addDocument'],
-                    returnValues=dict(numerateTerm=1),
-                    methods=dict(executeQuery=mockExecuteQuery)
-                )
+        observer = CallTrace(emptyGeneratorMethods=['addDocument'])
         index.addObserver(observer)
         fields = [
             ("field1", "value1"),

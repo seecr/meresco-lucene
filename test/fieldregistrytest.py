@@ -83,6 +83,7 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(registry.isMultivaluedDrilldown('aap'))
         self.assertTrue(registry.isMultivaluedDrilldown('noot'))
         self.assertFalse(registry.isMultivaluedDrilldown('mies'))
+        self.assertTrue(registry.isUntokenized('mies'))
 
         facetsConfig = registry.facetsConfig
         dimConfigs = facetsConfig.getDimConfigs()

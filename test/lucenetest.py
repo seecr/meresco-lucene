@@ -27,13 +27,12 @@
 
 
 from os.path import join
-import gc
 
 from cqlparser import parseString as parseCql
 
 from weightless.core import consume, retval
 
-from meresco.lucene import Lucene, VM, DrilldownField, LuceneSettings
+from meresco.lucene import Lucene, DrilldownField, LuceneSettings
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
 from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, FieldRegistry, INTFIELD
@@ -44,9 +43,7 @@ from org.apache.lucene.document import Document, TextField, Field, NumericDocVal
 from org.apache.lucene.index import Term
 from org.apache.lucene.facet import FacetField
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
-from org.meresco.lucene.search import MerescoClusterer
 
-from seecr.test import CallTrace
 from seecr.test.io import stdout_replaced
 
 from lucenetestcase import LuceneTestCase
@@ -231,20 +228,20 @@ class LuceneTest(LuceneTestCase):
         self.assertEquals(['id:1'], self.hitIds(result.hits))
 
     def testFacets(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first item0'), ('field3', 'second item')])))
-        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field2', 'first item1'), ('field3', 'other value')])))
-        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('field2', 'first item2'), ('field3', 'second item')])))
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('facet-field2', 'first item0'), ('facet-field3', 'second item')])))
+        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('facet-field2', 'first item1'), ('facet-field3', 'other value')])))
+        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('facet-field2', 'first item2'), ('facet-field3', 'second item')])))
 
         self.assertEquals(set([u'$facets', u'__id__', u'field1']), set(self.lucene._index.fieldnames()))
 
         # does not crash!!!
-        retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
+        retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='facet-field2')]))
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals([], result.drilldownData)
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='facet-field2')]))
 
         self.assertEquals([{
-                'fieldname': 'field2',
+                'fieldname': 'facet-field2',
                 'path': [],
                 'terms': [
                     {'term': 'first item0', 'count': 1},
@@ -252,9 +249,9 @@ class LuceneTest(LuceneTestCase):
                     {'term': 'first item2', 'count': 1},
                 ],
             }],result.drilldownData)
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field3')]))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='facet-field3')]))
         self.assertEquals([{
-                'fieldname': 'field3',
+                'fieldname': 'facet-field3',
                 'path': [],
                 'terms': [
                     {'term': 'second item', 'count': 2},
@@ -263,23 +260,23 @@ class LuceneTest(LuceneTestCase):
             }],result.drilldownData)
 
     def testFacetsInMultipleFields(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first item0'), ('field3', 'second item')])))
-        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field2', 'first item1'), ('field3', 'other value')])))
-        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('field2', 'first item2'), ('field3', 'second item')])))
-        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('field_other', 'first item1'), ('field3', 'second item')])))
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('facet-field2', 'first item0'), ('facet-field3', 'second item')])))
+        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('facet-field2', 'first item1'), ('facet-field3', 'other value')])))
+        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('facet-field2', 'first item2'), ('facet-field3', 'second item')])))
+        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('field_other', 'first item1'), ('facet-field3', 'second item')])))
 
         self.assertEquals(set([u'$facets', u'other', u'__id__', u'field1']), set(self.lucene._index.fieldnames()))
 
     def testFacetsWithMultipleFields(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'value')])))
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('facet-field3', 'value')])))
         retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field_other', 'other_value')])))
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2'), dict(maxTerms=10, fieldname='field_other')]))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='facet-field3'), dict(maxTerms=10, fieldname='field_other')]))
 
         self.assertEquals([
                 {   'path': [],
                     'terms': [{'count': 1, 'term': 'value'}],
-                    'fieldname': 'field2'
+                    'fieldname': 'facet-field3'
                 }, {
                     'path': [],
                     'terms': [{'count': 1, 'term': 'other_value'}],
@@ -288,11 +285,11 @@ class LuceneTest(LuceneTestCase):
             ],result.drilldownData)
 
     def testFacetsWithMultipleFieldsWillOnlyUseNecessaryOrdinalReaders(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'value')])))
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('facet-field3', 'value')])))
         retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field_other', 'other_value')])))
 
         self.observer.calledMethods.reset()
-        consume(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2'), dict(maxTerms=10, fieldname='field_other')]))
+        consume(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='facet-field3'), dict(maxTerms=10, fieldname='field_other')]))
         self.assertEquals(['log'], self.observer.calledMethodNames())
         self.assertEquals('[LuceneIndex] lucene: FacetSuperCollector with 2 ordinal readers.\n', self.observer.calledMethods[0].kwargs['message'])
 
@@ -304,7 +301,7 @@ class LuceneTest(LuceneTestCase):
 
     def testFacetsWithUnsupportedSortBy(self):
         try:
-            retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2', sortBy='incorrectSort')]))
+            retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='facet-field2', sortBy='incorrectSort')]))
         except ValueError, e:
             self.assertEquals("""Value of "sortBy" should be in ['count']""", str(e))
 
@@ -314,13 +311,13 @@ class LuceneTest(LuceneTestCase):
 
     def testFacetsMaxTerms0(self):
         self.lucene._index._commitCount = 3
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first item0'), ('field3', 'second item')])))
-        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('field2', 'first item1'), ('field3', 'other value')])))
-        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('field2', 'first item2'), ('field3', 'second item')])))
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('facet-field2', 'first item0'), ('facet-field3', 'second item')])))
+        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('facet-field2', 'first item1'), ('facet-field3', 'other value')])))
+        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('facet-field2', 'first item2'), ('facet-field3', 'second item')])))
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=0, fieldname='field3')]))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=0, fieldname='facet-field3')]))
         self.assertEquals([{
-                'fieldname': 'field3',
+                'fieldname': 'facet-field3',
                 'path': [],
                 'terms': [
                     {'term': 'second item', 'count': 2},
@@ -380,12 +377,12 @@ class LuceneTest(LuceneTestCase):
             }],result.drilldownData)
 
     def testEscapeFacets(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('field2', 'first/item0')])))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='field2')]))
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('facet-field3', 'first/item0')])))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='facet-field3')]))
         self.assertEquals([{
                 'terms': [{'count': 1, 'term': u'first/item0'}],
                 'path': [],
-                'fieldname': u'field2'
+                'fieldname': u'facet-field3'
             }],result.drilldownData)
 
     def testDiacritics(self):
@@ -433,8 +430,8 @@ class LuceneTest(LuceneTestCase):
         self.assertEquals([0, 0, 0, 24, 23, 22, 21, 20, 1], response.hits) # No fix for the 0's yet
 
     def testSuggestions(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field3', 'value2')])))
-        response = retval(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), suggestionRequest=dict(count=2, query="value0 and valeu", field="field3")))
+        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field5', 'value2')])))
+        response = retval(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), suggestionRequest=dict(count=2, query="value0 and valeu", field="field5")))
         self.assertEquals(['id:0'], self.hitIds(response.hits))
         self.assertEquals({'value0': (0, 6, ['value2']), 'valeu': (11, 16, ['value2'])}, response.suggestions)
 
@@ -935,9 +932,8 @@ def document(**fields):
 
 FIELD_REGISTRY = FieldRegistry(
     drilldownFields=[
-            DrilldownField(name='field1'),
-            DrilldownField(name='field2'),
-            DrilldownField('field3'),
+            DrilldownField(name='facet-field2'),
+            DrilldownField(name='facet-field3'),
             DrilldownField('field_other', indexFieldName='other'),
             DrilldownField('fieldHier', hierarchical=True),
             DrilldownField('cat'),

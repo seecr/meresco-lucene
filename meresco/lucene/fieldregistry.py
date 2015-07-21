@@ -93,6 +93,7 @@ class FieldRegistry(object):
         if indexFieldName is not None:
             self.facetsConfig.setIndexFieldName(fieldname, indexFieldName)
         self._indexFieldNames[fieldname] = indexFieldName
+        self._fieldDefinitions[fieldname] = DrilldownFieldDefinition
 
     def indexFieldNames(self, fieldnames=None):
         if fieldnames is None:
@@ -180,6 +181,12 @@ class _FieldDefinition(object):
             create=create,
             update=lambda field, value: field.setStringValue(value)
         )
+
+class DrilldownFieldDefinition(object):
+    isUntokenized = True
+    phraseQueryPossible = False
+    type = StringField.TYPE_NOT_STORED
+DrilldownFieldDefinition = DrilldownFieldDefinition()
 
 def copyType(orig):
     new = FieldType()

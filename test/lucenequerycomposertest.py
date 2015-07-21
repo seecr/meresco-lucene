@@ -305,9 +305,9 @@ class LuceneQueryComposerTest(TestCase):
     def testCreateDrilldownQuery(self):
         fieldRegistry = FieldRegistry(drilldownFields=[DrilldownField('dd-field')])
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[], luceneSettings=LuceneSettings(fieldRegistry=fieldRegistry))
-        expected = TermQuery(fieldRegistry.makeDrilldownTerm("dd-field", "value"))
-        self.assertConversion(expected, 'dd-field exact value')
-        self.assertConversion(expected, 'dd-field=value')
+        expected = TermQuery(fieldRegistry.makeDrilldownTerm("dd-field", "VALUE"))
+        self.assertConversion(expected, 'dd-field exact VALUE')
+        self.assertConversion(expected, 'dd-field=VALUE')
 
     def assertConversion(self, expected, input):
         result = self.composer.compose(parseCql(input))

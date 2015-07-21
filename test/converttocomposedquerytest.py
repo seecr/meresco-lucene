@@ -79,6 +79,18 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals([parseCQL("prefix:field=value")], cq.queriesFor('otherCore'))
         self.assertEquals([parseCQL('*')], cq.queriesFor('defaultCore'))
 
+    def testFilterQuery(self):
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), filterQueries=[('otherCore', 'prefix:field=value')], facets=[], start=1))
+        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
+        cq = self.observer.calledMethods[0].kwargs['query']
+        cq.validate()
+        self.assertEquals(1, cq.start)
+        self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
+        self.assertEquals('keyDefault', cq.keyName('defaultCore'))
+        self.assertEquals('keyOther', cq.keyName('otherCore'))
+        self.assertEquals([parseCQL("prefix:field=value")], cq.queriesFor('otherCore'))
+        self.assertEquals([parseCQL('*')], cq.queriesFor('defaultCore'))
+
     def testMatchesOptional(self):
         self.tree = be(
             (Observable(),

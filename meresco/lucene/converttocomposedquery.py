@@ -53,7 +53,7 @@ class ConvertToComposedQuery(Observable):
             clusterFields.append((fieldname, fieldWeights.get(fieldname, 1.0)))
         self._clusterFields = clusterFields
 
-    def executeQuery(self, cqlAbstractSyntaxTree, extraArguments=None, facets=None, drilldownQueries=None, **kwargs):
+    def executeQuery(self, cqlAbstractSyntaxTree, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, **kwargs):
         extraArguments = extraArguments or {}
         cq = ComposedQuery(self._resultsFrom)
 
@@ -70,6 +70,8 @@ class ConvertToComposedQuery(Observable):
         for f in filters:
             core, filterQuery = self._coreQuery(query=f, cores=self._cores)
             cq.addFilterQuery(core=core, query=filterQuery)
+        for core, filterQuery in filterQueries or []:
+            cq.addFilterQuery(core=core, query=parseCQL(filterQuery))
 
         rankQueries = extraArguments.get('x-rank-query', [])
         if rankQueries:

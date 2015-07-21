@@ -302,6 +302,13 @@ class LuceneQueryComposerTest(TestCase):
         expected = NumericRangeQuery.newDoubleRange("range.double.field", float(5), float(5), True, True)
         self.assertConversion(expected, "range.double.field=5")
 
+    def testCreateDrilldownQuery(self):
+        fieldRegistry = FieldRegistry(drilldownFields=[DrilldownField('dd-field')])
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[], luceneSettings=LuceneSettings(fieldRegistry=fieldRegistry))
+        expected = TermQuery(fieldRegistry.makeDrilldownTerm("dd-field", "value"))
+        self.assertConversion(expected, 'dd-field exact value')
+        self.assertConversion(expected, 'dd-field=value')
+
     def assertConversion(self, expected, input):
         result = self.composer.compose(parseCql(input))
         self.assertEquals(type(expected), type(result), "expected %s, but got %s" % (repr(expected), repr(result)))

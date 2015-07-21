@@ -244,7 +244,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
             ], response.drilldownData)
 
     def testXRankQuery(self):
-        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-rank-query': ['otherCore.prefix:field=value', 'otherCore.otherprefix:otherfield=othervalue', 'defaultCore.field=value']}))
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-rank-query': ['otherCore.prefix:field=value', 'otherCore.otherprefix:otherfield=othervalue', 'field=value']}))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
         cq.validate()
@@ -288,3 +288,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
                 ('contributor', 1.0),
             ], cq.clusterFields)
 
+    def testIgnoreCorePrefixForResultCore(self):
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('defaultCore.field=value')))
+        cq = self.observer.calledMethods[0].kwargs['query']
+        self.assertEqual([parseCQL('defaultCore.field=value')], cq.queriesFor('defaultCore'))

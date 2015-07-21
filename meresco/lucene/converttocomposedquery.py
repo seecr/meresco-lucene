@@ -125,6 +125,8 @@ class ConvertToComposedQuery(Observable):
         return self._parseCorePrefix(drilldownQueryField, cores)
 
     def _parseCorePrefix(self, value, cores):
+        if value.startswith(self._resultsFrom):
+            return self._resultsFrom, value
         core = self._resultsFrom
         try:
             tmpcore, tail = value.split('.', 1)

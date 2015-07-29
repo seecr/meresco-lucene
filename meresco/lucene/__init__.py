@@ -48,7 +48,7 @@ VM = getJVM()
 from meresco_lucene import initVM
 VMM = initVM()
 
-from fieldregistry import SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX, NUMERIC_PREFIX
+from fieldregistry import SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX, NUMERIC_PREFIX, RANGE_DOUBLE_PREFIX
 from _version import version
 from luceneresponse import LuceneResponse
 from _lucene import Lucene

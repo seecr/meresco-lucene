@@ -53,9 +53,14 @@ class ConvertToComposedQueryTest(SeecrTestCase):
                 (ConvertToComposedQuery(
                         resultsFrom='defaultCore',
                         matches=[(
-                            dict(core='defaultCore', uniqueKey='keyDefault'),
-                            dict(core='otherCore', key='keyOther')
-                        )],
+                                dict(core='defaultCore', uniqueKey='keyDefault'),
+                                dict(core='otherCore', key='keyOther')
+                            ),
+                            (
+                                dict(core='defaultCore', uniqueKey='key1'),
+                                dict(core='aDifferentKore', key='key2')
+                            )
+                        ],
                         dedupFieldName=dedupFieldName,
                         dedupSortFieldName=dedupSortFieldName,
                         groupingFieldName=groupingFieldName,
@@ -319,3 +324,4 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('defaultCore.field=value')))
         cq = self.observer.calledMethods[0].kwargs['query']
         self.assertEqual([parseCQL('defaultCore.field=value')], cq.queriesFor('defaultCore'))
+

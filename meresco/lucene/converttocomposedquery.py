@@ -62,8 +62,6 @@ class ConvertToComposedQuery(Observable):
         extraArguments = extraArguments or {}
         cq = ComposedQuery(self._resultsFrom)
 
-        for match in self._matches:
-            cq.addMatch(*match)
         for key in ['start', 'stop', 'suggestionRequest', 'sortKeys']:
             if key in kwargs:
                 setattr(cq, key, kwargs[key])
@@ -112,6 +110,10 @@ class ConvertToComposedQuery(Observable):
             core, fieldname = self._coreDrilldownQuery(drilldownQuery[0], self._cores)
             fieldname = self._drilldownFieldnamesTranslate(fieldname)
             cq.addDrilldownQuery(core=core, drilldownQuery=(fieldname, drilldownQuery[1]))
+
+        for matchTuple in self._matches:
+            if set(match['core'] for match in matchTuple).issubset(cq.cores):
+                cq.addMatch(*matchTuple)
 
         result = yield self.any.executeComposedQuery(query=cq)
 

@@ -44,14 +44,19 @@ class ConvertToComposedQuery(Observable):
         self._clusterFields = []
         self._drilldownFieldnamesTranslate = drilldownFieldnamesTranslate
         self._clusterFieldNames = clusterFieldNames or []
+        self._groupingEnabled = bool(self._groupingFieldName)
+        self._clusteringEnabled = bool(self._clusterFields)
+
 
     @asyncnoreturnvalue
-    def updateConfig(self, indexConfig, **kwargs):
+    def updateConfig(self, config, indexConfig, **kwargs):
+        self._groupingEnabled = bool(self._groupingFieldName) and 'grouping' not in config.get('features_disabled', [])
         clusterFields = []
         fieldWeights = indexConfig.get('clustering', {})
         for fieldname in self._clusterFieldNames:
             clusterFields.append((fieldname, fieldWeights.get(fieldname, 1.0)))
         self._clusterFields = clusterFields
+        self._clusteringEnabled = bool(self._clusterFields) and 'clustering' not in config.get('features_disabled', [])
 
     def executeQuery(self, cqlAbstractSyntaxTree, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, **kwargs):
         extraArguments = extraArguments or {}
@@ -87,10 +92,10 @@ class ConvertToComposedQuery(Observable):
                 setattr(cq, "dedupField", self._dedupFieldName)
                 setattr(cq, "dedupSortField", self._dedupSortFieldName)
 
-        if self._groupingFieldName and 'true' == extraArguments.get('x-grouping', [None])[0]:
+        if self._groupingEnabled and 'true' == extraArguments.get('x-grouping', [None])[0]:
             setattr(cq, "groupingField", self._groupingFieldName)
 
-        if self._clusterFields and 'true' == extraArguments.get('x-clustering', [None])[0]:
+        if self._clusteringEnabled and 'true' == extraArguments.get('x-clustering', [None])[0]:
             setattr(cq, "clusterFields", self._clusterFields)
 
         fieldTranslations = {}

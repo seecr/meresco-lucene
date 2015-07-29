@@ -147,6 +147,21 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq = self.observer.calledMethods[0].kwargs['query']
         self.assertEquals("__key__", cq.otherKwargs().get("groupingField"))
 
+    def testGroupingNotEnabledIfTurnedOffInConfig(self):
+        consume(self.tree.any.updateConfig(config=dict(features_disabled=['grouping']), indexConfig={}))
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('fiets'), extraArguments={'x-grouping': ['true']}, facets=[]))
+        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
+        cq = self.observer.calledMethods[0].kwargs['query']
+        self.assertEquals(None, cq.otherKwargs().get("groupingField"))
+
+    def testClusteringNotEnabledIfTurnedOffInConfig(self):
+        consume(self.tree.any.updateConfig(config=dict(features_disabled=['clustering']), indexConfig={}))
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('fiets'), extraArguments={'x-clustering': ['true']}, facets=[]))
+        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
+        cq = self.observer.calledMethods[0].kwargs['query']
+        self.assertEquals(None, cq.otherKwargs().get("clusterFields"))
+
+
     def testXFilterCommonKeysIgnoredWhenNoDedupFieldSpecified(self):
         self.setupDna(dedupFieldName=None)
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'),
@@ -279,7 +294,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals([('prefix.toBePrefixed', ['path3'])], cq.drilldownQueriesFor('otherCore'))
 
     def testClustering(self):
-        consume(self.tree.all.updateConfig(indexConfig=dict(clustering={'title': 1.5, 'creator': 1.1})))
+        consume(self.tree.all.updateConfig(config={}, indexConfig=dict(clustering={'title': 1.5, 'creator': 1.1})))
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-clustering': ['true']}))
         cq = self.observer.calledMethods[0].kwargs['query']
         self.assertEqual([

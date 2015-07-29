@@ -135,6 +135,13 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals("__key__", cq.otherKwargs().get("dedupField"))
         self.assertEquals("__key__.date", cq.otherKwargs().get("dedupSortField", "not there"))
 
+    def testDedupExplicitlyOnWhichIsAlsoTheDefault(self):
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-filter-common-keys': ['true']}, facets=[]))
+        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
+        cq = self.observer.calledMethods[0].kwargs['query']
+        self.assertEquals("__key__", cq.otherKwargs().get("dedupField"))
+        self.assertEquals("__key__.date", cq.otherKwargs().get("dedupSortField", "not there"))
+
     def testGroupingDefaultTurnedOff(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
@@ -142,10 +149,15 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals(None, cq.otherKwargs().get("groupingField"))
 
     def testGroupingTurnedOn(self):
-        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-grouping': ['true']}, facets=[]))
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('fiets'), extraArguments={'x-grouping': ['true']}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
         self.assertEquals("__key__", cq.otherKwargs().get("groupingField"))
+
+    def testNoGroupingForMatchAllQuery(self):
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-grouping': ['true']}))
+        cq = self.observer.calledMethods[0].kwargs['query']
+        self.assertEqual(None, cq.groupingField)
 
     def testGroupingNotEnabledIfTurnedOffInConfig(self):
         consume(self.tree.any.updateConfig(config=dict(features_disabled=['grouping']), indexConfig={}))

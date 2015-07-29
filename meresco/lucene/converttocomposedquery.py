@@ -88,12 +88,13 @@ class ConvertToComposedQuery(Observable):
                 cq.setRankQuery(core=core, query=parseCQL(' OR '.join(q)))
 
         if self._dedupFieldName:
-            if 'true' == extraArguments.get('x-filter-common-keys', 'true'):
+            if 'true' == extraArguments.get('x-filter-common-keys', ['true'])[0]:
                 setattr(cq, "dedupField", self._dedupFieldName)
                 setattr(cq, "dedupSortField", self._dedupSortFieldName)
 
         if self._groupingEnabled and 'true' == extraArguments.get('x-grouping', [None])[0]:
-            setattr(cq, "groupingField", self._groupingFieldName)
+            if cqlAbstractSyntaxTree != parseCQL('*'):
+                setattr(cq, "groupingField", self._groupingFieldName)
 
         if self._clusteringEnabled and 'true' == extraArguments.get('x-clustering', [None])[0]:
             setattr(cq, "clusterFields", self._clusterFields)

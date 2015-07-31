@@ -170,7 +170,7 @@ class MultiLuceneTest(SeecrTestCase):
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         result = retval(self.dna.any.executeComposedQuery(q))
         self.assertEquals({
-                'query': {'coreKeys': {'coreA': '__key__.A', 'coreB': '__key__.B'},
+            'query': {
                 'cores': ['coreB', 'coreA'],
                 'drilldownQueries': {},
                 'facets': {},
@@ -803,6 +803,24 @@ class MultiLuceneTest(SeecrTestCase):
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         result = retval(self.dna.any.executeComposedQuery(q))
         self.assertEquals(4, len(result.hits))
+
+    def testTwoCoreQueryWithThirdCoreDrilldownWithOtherCore(self):
+        q = ComposedQuery('coreA')
+        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        q.setCoreQuery(core='coreB', query=MatchAllDocsQuery())
+        q.addFacet(core='coreC', facet=dict(fieldname='cat_R', maxTerms=10))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'C'), dict(core='coreC', key=KEY_PREFIX+'C'))
+        result = retval(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(4, len(result.hits))
+        self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), set(h.id for h in result.hits))
+        self.assertEquals([{
+                'terms': [
+                    {'count': 1, 'term': u'true'},
+                ],
+                'path': [],
+                'fieldname': u'cat_R'
+            }], result.drilldownData)
 
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(

@@ -37,7 +37,6 @@ class ComposedQuery(object):
         self._otherCoreFacetFilters = defaultdict(list)
         self._rankQueries = {}
         self._matches = {}
-        self._coreKeys = {}
         self._unites = []
         self.resultsFrom = resultsFromCore
         self.setCoreQuery(resultsFromCore, query=query)
@@ -86,14 +85,9 @@ class ComposedQuery(object):
             if coreName == self.resultsFrom:
                 resultsFromCoreSpecFound = True
                 try:
-                    key = matchCoreSpec['uniqueKey']
+                    matchCoreSpec['uniqueKey']
                 except KeyError:
                     raise ValueError("Match for result core '%s' must have a uniqueKey specification." % self.resultsFrom)
-            else:
-                key = matchCoreSpec.get('uniqueKey', matchCoreSpec.get('key'))
-            if self._coreKeys.get(coreName, key) != key:
-                raise ValueError("Use of different keys for one core ('%s') not yet supported" % coreName)
-            self._coreKeys[coreName] = key
         if not resultsFromCoreSpecFound:
             raise ValueError("Match that does not include resultsFromCore ('%s') not yet supported" % self.resultsFrom)
         return self
@@ -127,8 +121,9 @@ class ComposedQuery(object):
     def uniteQueriesFor(self, core):
         return [d['query'] for d in self._unites if d['core'] == core]
 
-    def keyName(self, core):
-        return self._coreKeys[core]
+    def keyName(self, core, otherCore):
+        coreSpec, _ = self._matchCoreSpecs(core, otherCore)
+        return coreSpec.get('uniqueKey', coreSpec.get('key'))
 
     def queriesFor(self, core):
         return [q for q in [self.queryFor(core)] + self.filterQueriesFor(core) if q]

@@ -79,8 +79,8 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq.validate()
         self.assertEquals(1, cq.start)
         self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
-        self.assertEquals('keyDefault', cq.keyName('defaultCore'))
-        self.assertEquals('keyOther', cq.keyName('otherCore'))
+        self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
+        self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
         self.assertEquals([parseCQL("prefix:field=value")], cq.queriesFor('otherCore'))
         self.assertEquals([parseCQL('*')], cq.queriesFor('defaultCore'))
 
@@ -91,8 +91,8 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq.validate()
         self.assertEquals(1, cq.start)
         self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
-        self.assertEquals('keyDefault', cq.keyName('defaultCore'))
-        self.assertEquals('keyOther', cq.keyName('otherCore'))
+        self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
+        self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
         self.assertEquals([parseCQL("prefix:field=value")], cq.queriesFor('otherCore'))
         self.assertEquals([parseCQL('*')], cq.queriesFor('defaultCore'))
 
@@ -110,7 +110,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq.validate()
         self.assertEquals(1, cq.start)
         self.assertEquals(set(['defaultCore']), cq.cores)
-        self.assertRaises(KeyError, lambda: cq.keyName('defaultCore'))
+        self.assertRaises(KeyError, lambda: cq.keyName('defaultCore', 'otherCore'))
         self.assertEquals([parseCQL("*"), parseCQL("prefix:field=value")], cq.queriesFor('defaultCore'))
 
     def testTwoXFiltersForSameCore(self):
@@ -120,8 +120,8 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq.validate()
         self.assertEquals('defaultCore', cq.resultsFrom)
         self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
-        self.assertEquals('keyDefault', cq.keyName('defaultCore'))
-        self.assertEquals('keyOther', cq.keyName('otherCore'))
+        self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
+        self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
         self.assertEquals([parseCQL("prefix:field=value"), parseCQL('field2=value2')], cq.queriesFor('otherCore'))
 
     def testXFilterWhichIsNoJoinQuery(self):
@@ -244,8 +244,8 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq = self.observer.calledMethods[0].kwargs['query']
         cq.validate()
         self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
-        self.assertEquals('keyDefault', cq.keyName('defaultCore'))
-        self.assertEquals('keyOther', cq.keyName('otherCore'))
+        self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
+        self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
         self.assertEquals([dict(fieldname='prefix:field1', path=[], maxTerms=9), dict(fieldname='prefix:field2', path=[], maxTerms=7)], cq.facetsFor('otherCore'))
         self.assertEquals([dict(fieldname='normal:drilldown', path=[], maxTerms=11), dict(fieldname='unknownJoinName.field', path=[], maxTerms=12)], cq.facetsFor('defaultCore'))
         self.assertEquals([
@@ -281,8 +281,8 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq = self.observer.calledMethods[0].kwargs['query']
         cq.validate()
         self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
-        self.assertEquals('keyDefault', cq.keyName('defaultCore'))
-        self.assertEquals('keyOther', cq.keyName('otherCore'))
+        self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
+        self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
         self.assertEquals(parseCQL("prefix:field=value OR otherprefix:otherfield=othervalue"), cq.rankQueryFor('otherCore'))
         self.assertEquals(parseCQL("field=value"), cq.rankQueryFor('defaultCore'))
         self.assertEquals([], cq.queriesFor('otherCore'))

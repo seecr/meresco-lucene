@@ -77,12 +77,12 @@ class MultiLucene(Observable):
     def _multipleCoreQuery(self, query):
         t0 = time()
         resultCoreName = query.resultsFrom
-        resultCoreKey = query.keyName(resultCoreName)
         otherCoreNames = [coreName for coreName in query.cores if coreName != resultCoreName]
+        resultCoreKey = query.keyName(resultCoreName, otherCoreNames[0]) # TODO, now expect only one other core
 
         finalKeys = self._uniteFilter(query)
         for otherCoreName in otherCoreNames:
-            finalKeys = self._coreQueries(otherCoreName, query, finalKeys)
+            finalKeys = self._coreQueries(otherCoreName, query.resultsFrom, query, finalKeys)
 
         summaryFilter = None
         if finalKeys is not None:
@@ -102,7 +102,7 @@ class MultiLucene(Observable):
 
         for otherCoreName in otherCoreNames:
             if query.facetsFor(otherCoreName):
-                keyFilter = KeyFilter(keyCollector.getCollectedKeys(), query.keyName(otherCoreName))
+                keyFilter = KeyFilter(keyCollector.getCollectedKeys(), query.keyName(otherCoreName, resultCoreName))
                 result.drilldownData.extend((yield self.any[otherCoreName].facets(
                     facets=query.facetsFor(otherCoreName),
                     filterQueries=query.queriesFor(otherCoreName) + query.otherCoreFacetFiltersFor(otherCoreName),
@@ -115,25 +115,29 @@ class MultiLucene(Observable):
 
     def _uniteFilter(self, query):
         keys = None
+        first = True
         for core, q in query.unites:
-            collectedKeys = self.call[core].collectKeys(q, query.keyName(core))
+            otherCore = query.unites[1][0] if first else query.unites[0][0]
+            first = False
+            collectedKeys = self.call[core].collectKeys(q, query.keyName(core, otherCore))
             if keys is None:
                 keys = collectedKeys.clone()
             else:
                 keys.union(collectedKeys)
         for core, qs in query.filterQueries:
             for q in qs:
-                collectedKeys = self.call[core].collectKeys(q, query.keyName(core))
+                keyName = query.keyName(core, query.resultsFrom)
+                collectedKeys = self.call[core].collectKeys(q, keyName)
                 if keys is None:
                     keys = collectedKeys.clone()
                 else:
                     keys.intersect(collectedKeys)
         return keys
 
-    def _coreQueries(self, coreName, query, keys):
+    def _coreQueries(self, coreName, otherCoreName, query, keys):
         luceneQuery = self._luceneQueryForCore(coreName, query)
         if luceneQuery:
-            collectedKeys = self.call[coreName].collectKeys(filter=None, keyName=query.keyName(coreName), query=luceneQuery, cacheCollectedKeys=False)
+            collectedKeys = self.call[coreName].collectKeys(filter=None, keyName=query.keyName(coreName, otherCoreName), query=luceneQuery, cacheCollectedKeys=False)
             if keys:
                 keys.intersect(collectedKeys)
             else:
@@ -152,7 +156,7 @@ class MultiLucene(Observable):
         for coreName in query.cores:
             rankQuery = query.rankQueryFor(coreName)
             if rankQuery:
-                scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName), query=rankQuery)
+                scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName, query.resultsFrom), query=rankQuery)
                 scoreCollectors.add(scoreCollector)
         constructor = AggregateScoreSuperCollector
         return constructor(keyName, scoreCollectors) if scoreCollectors.size() > 0 else None

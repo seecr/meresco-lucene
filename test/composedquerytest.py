@@ -85,11 +85,16 @@ class ComposedQueryTest(SeecrTestCase):
 
     def testKeyName(self):
         composedQuery = ComposedQuery('coreA')
-        composedQuery.setCoreQuery(core='coreA', query=None)
-        composedQuery.setCoreQuery(core='coreB', query=None)
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
-        self.assertEquals('keyA', composedQuery.keyName('coreA'))
-        self.assertEquals('keyB', composedQuery.keyName('coreB'))
+        self.assertEquals('keyA', composedQuery.keyName('coreA', 'coreB'))
+        self.assertEquals('keyB', composedQuery.keyName('coreB', 'coreA'))
+
+    def testKeyNamesDifferPerCore(self):
+        composedQuery = ComposedQuery('coreA')
+        composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
+        composedQuery.addMatch(dict(core='coreA', uniqueKey='keyAC'), dict(core='coreC', key='keyC'))
+        self.assertEquals('keyAC', composedQuery.keyName('coreA', 'coreC'))
+        self.assertEquals('keyC', composedQuery.keyName('coreC', 'coreA'))
 
     def testUnite(self):
         cq = ComposedQuery('coreA')
@@ -142,8 +147,8 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(None, cq2.stop)
         self.assertEquals(['Q0', 'Q1', 'Q2'], cq2.queriesFor('coreA'))
         self.assertEquals(['F0', 'F1'], cq2.facetsFor('coreA'))
-        self.assertEquals('keyA', cq2.keyName('coreA'))
-        self.assertEquals('keyB', cq2.keyName('coreB'))
+        self.assertEquals('keyA', cq2.keyName('coreA', 'coreB'))
+        self.assertEquals('keyB', cq2.keyName('coreB', 'coreA'))
 
     def testAddFilterQueriesIncremental(self):
         cq = ComposedQuery('coreA')
@@ -255,7 +260,6 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals({
             'type': 'ComposedQuery',
             'query': {
-                "coreKeys": {"coreA": "keyA", "coreB": "keyB"},
                 "cores": ["coreB", "coreA"],
                 "drilldownQueries": {},
                 "facets": {"coreA": ["F0", "F1"]},

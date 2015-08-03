@@ -119,8 +119,8 @@ class MultiLucene(Observable):
     def _uniteFilter(self, query):
         keys = dict()
         for unite in query.unites:
-            for q, keyNameResult in unite.queries():
-                collectedKeys = self.call[q['core']].collectKeys(q['query'], q['keyName'])
+            for uniteSpec, keyNameResult in unite.queries():
+                collectedKeys = self.call[uniteSpec['core']].collectKeys(uniteSpec['query'], uniteSpec['keyName'])
                 if keyNameResult not in keys:
                     keys[keyNameResult] = collectedKeys.clone()
                 else:

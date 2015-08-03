@@ -90,19 +90,22 @@ class MultiLucene(Observable):
 
         resultCoreQuery = self._luceneQueryForCore(resultCoreName, query)
         aggregateScoreCollector = self._createAggregateScoreCollector(query, resultCoreKey)
-        keyCollector = KeySuperCollector(resultCoreKey)
+        keyCollectors = dict()
+        for keyName in query.keyNames(resultCoreName):
+            keyCollectors[keyName] = KeySuperCollector(keyName)
         result = yield self.any[resultCoreName].executeQuery(
                 luceneQuery=resultCoreQuery or MatchAllDocsQuery(),
                 filter=summaryFilter,
                 facets=query.facetsFor(resultCoreName),
                 scoreCollector=aggregateScoreCollector,
-                keyCollector=keyCollector,
+                keyCollectors=keyCollectors.values(),
                 **query.otherKwargs()
             )
 
         for otherCoreName in otherCoreNames:
             if query.facetsFor(otherCoreName):
-                keyFilter = KeyFilter(keyCollector.getCollectedKeys(), query.keyName(otherCoreName, resultCoreName))
+                coreKey = query.keyName(resultCoreName, otherCoreName)
+                keyFilter = KeyFilter(keyCollectors[coreKey].getCollectedKeys(), query.keyName(otherCoreName, resultCoreName))
                 result.drilldownData.extend((yield self.any[otherCoreName].facets(
                     facets=query.facetsFor(otherCoreName),
                     filterQueries=query.queriesFor(otherCoreName) + query.otherCoreFacetFiltersFor(otherCoreName),

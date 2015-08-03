@@ -159,7 +159,7 @@ class Lucene(Observable):
         generatorReturn(self._facetResult(facetCollector, facets))
         yield
 
-    def _createCollectors(self, start, stop, sortKeys=None, clusterFields=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollector=None, scoreCollector=None, **kwargs):
+    def _createCollectors(self, start, stop, sortKeys=None, clusterFields=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollectors=None, scoreCollector=None, **kwargs):
         collectors = []
         dedupCollector = None
         groupingCollector = None
@@ -181,8 +181,8 @@ class Lucene(Observable):
         facetCollector = self._facetCollector(facets)
         if facetCollector:
             collectors.append(facetCollector)
-        if keyCollector:
-            collectors.append(keyCollector)
+        if keyCollectors:
+            collectors.extend(keyCollectors)
 
         multiSubCollectors = ArrayList().of_(SuperCollector)
         for c in collectors:

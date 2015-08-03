@@ -84,17 +84,22 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertRaises(ValueError, lambda: composedQuery.addMatch(dict(core='coreB', key='keyB'), dict(core='coreC', key='keyC')))
 
     def testKeyName(self):
-        composedQuery = ComposedQuery('coreA')
-        composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
-        self.assertEquals('keyA', composedQuery.keyName('coreA', 'coreB'))
-        self.assertEquals('keyB', composedQuery.keyName('coreB', 'coreA'))
+        cq = ComposedQuery('coreA')
+        cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
+        cq.addFacet(core='coreB', facet='F0')
+        self.assertEquals('keyA', cq.keyName('coreA', 'coreB'))
+        self.assertEquals('keyB', cq.keyName('coreB', 'coreA'))
+        self.assertEquals(set(['keyA']), cq.keyNames('coreA'))
 
     def testKeyNamesDifferPerCore(self):
-        composedQuery = ComposedQuery('coreA')
-        composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
-        composedQuery.addMatch(dict(core='coreA', uniqueKey='keyAC'), dict(core='coreC', key='keyC'))
-        self.assertEquals('keyAC', composedQuery.keyName('coreA', 'coreC'))
-        self.assertEquals('keyC', composedQuery.keyName('coreC', 'coreA'))
+        cq = ComposedQuery('coreA')
+        cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
+        cq.addMatch(dict(core='coreA', uniqueKey='keyAC'), dict(core='coreC', key='keyC'))
+        cq.addFacet(core='coreB', facet='F0')
+        cq.addFacet(core='coreC', facet='F1')
+        self.assertEquals('keyAC', cq.keyName('coreA', 'coreC'))
+        self.assertEquals('keyC', cq.keyName('coreC', 'coreA'))
+        self.assertEquals(set(['keyA', 'keyAC']), cq.keyNames('coreA'))
 
     def testUnite(self):
         cq = ComposedQuery('coreA')

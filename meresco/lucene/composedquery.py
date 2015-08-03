@@ -122,8 +122,24 @@ class ComposedQuery(object):
         return [d['query'] for d in self._unites if d['core'] == core]
 
     def keyName(self, core, otherCore):
-        coreSpec, _ = self._matchCoreSpecs(core, otherCore)
+        if core == otherCore: #TODO: Needed for filters/rank's in same core as queried core
+            for matchCoreASpec, matchCoreBSpec in self._matches.values():
+                if matchCoreASpec['core'] == core:
+                    coreSpec = matchCoreASpec
+                    break
+                elif matchCoreBSpec['core'] == core:
+                    coreSpec = matchCoreBSpec
+                    break
+        else:
+            coreSpec, _ = self._matchCoreSpecs(core, otherCore)
         return coreSpec.get('uniqueKey', coreSpec.get('key'))
+
+    def keyNames(self, core):
+        keyNames = set()
+        for coreName in self.cores:
+            if coreName != core:
+                keyNames.add(self.keyName(core, coreName))
+        return keyNames
 
     def queriesFor(self, core):
         return [q for q in [self.queryFor(core)] + self.filterQueriesFor(core) if q]

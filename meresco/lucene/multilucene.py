@@ -78,7 +78,6 @@ class MultiLucene(Observable):
         t0 = time()
         resultCoreName = query.resultsFrom
         otherCoreNames = [coreName for coreName in query.cores if coreName != resultCoreName]
-        resultCoreKey = query.keyName(resultCoreName, otherCoreNames[0]) # TODO, now expect only one other core
 
         finalKeys = self._uniteFilter(query)
         for otherCoreName in otherCoreNames:
@@ -89,7 +88,7 @@ class MultiLucene(Observable):
             resultFilters[keyName] = KeyFilter(keys, keyName)
 
         resultCoreQuery = self._luceneQueryForCore(resultCoreName, query)
-        aggregateScoreCollector = self._createAggregateScoreCollector(query, resultCoreKey)
+        aggregateScoreCollectors = self._createAggregateScoreCollectors(query)
         keyCollectors = dict()
         for keyName in query.keyNames(resultCoreName):
             keyCollectors[keyName] = KeySuperCollector(keyName)
@@ -97,7 +96,7 @@ class MultiLucene(Observable):
                 luceneQuery=resultCoreQuery or MatchAllDocsQuery(),
                 filters=resultFilters.values(),
                 facets=query.facetsFor(resultCoreName),
-                scoreCollector=aggregateScoreCollector,
+                scoreCollectors=aggregateScoreCollectors,
                 keyCollectors=keyCollectors.values(),
                 **query.otherKwargs()
             )
@@ -154,15 +153,21 @@ class MultiLucene(Observable):
             luceneQuery = self.call[coreName].createDrilldownQuery(luceneQuery, ddQueries)
         return luceneQuery
 
-    def _createAggregateScoreCollector(self, query, keyName):
-        scoreCollectors = ArrayList().of_(ScoreSuperCollector)
+    def _createAggregateScoreCollectors(self, query):
+        scoreCollectors = dict()
         for coreName in query.cores:
+            resultsKeyName = query.keyName(query.resultsFrom, coreName)
             rankQuery = query.rankQueryFor(coreName)
             if rankQuery:
                 scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName, query.resultsFrom), query=rankQuery)
-                scoreCollectors.add(scoreCollector)
-        constructor = AggregateScoreSuperCollector
-        return constructor(keyName, scoreCollectors) if scoreCollectors.size() > 0 else None
+                if resultsKeyName not in scoreCollectors:
+                    scoreCollectors[resultsKeyName] = ArrayList().of_(ScoreSuperCollector)
+                scoreCollectors[resultsKeyName].add(scoreCollector)
+        aggregateScoreCollectors = []
+        for keyName, scoreCollectorList in scoreCollectors.items():
+            if scoreCollectorList.size() > 0:
+                aggregateScoreCollectors.append(AggregateScoreSuperCollector(keyName, scoreCollectorList))
+        return aggregateScoreCollectors
 
     def any_unknown(self, message, **kwargs):
         if message in ['prefixSearch', 'fieldnames', 'drilldownFieldnames']:

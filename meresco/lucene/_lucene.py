@@ -159,7 +159,7 @@ class Lucene(Observable):
         generatorReturn(self._facetResult(facetCollector, facets))
         yield
 
-    def _createCollectors(self, start, stop, sortKeys=None, clusterFields=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollectors=None, scoreCollector=None, **kwargs):
+    def _createCollectors(self, start, stop, sortKeys=None, clusterFields=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollectors=None, scoreCollectors=None, **kwargs):
         collectors = []
         dedupCollector = None
         groupingCollector = None
@@ -189,9 +189,10 @@ class Lucene(Observable):
             multiSubCollectors.add(c)
         collector = MultiSuperCollector(multiSubCollectors)
 
-        if scoreCollector:
-            scoreCollector.setDelegate(collector)
-            collector = scoreCollector
+        if scoreCollectors:
+            for scoreCollector in scoreCollectors:
+                scoreCollector.setDelegate(collector)
+                collector = scoreCollector
         return collector, topCollector, groupingCollector, dedupCollector, facetCollector
 
     def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, filterQueries=None, suggestionRequest=None, filters=None, drilldownQueries=None, clusterFields=None, **kwargs):

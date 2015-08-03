@@ -107,7 +107,10 @@ class ComposedQueryTest(SeecrTestCase):
         cq.setCoreQuery(core='coreB', query=None)
         cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         cq.addUnite(dict(core='coreA', query='AQuery'), dict(core='coreB', query='anotherQuery'))
-        self.assertEquals([('coreA', 'AQuery'), ('coreB', 'anotherQuery')], cq.unites)
+        self.assertEqual(1, len(cq.unites))
+        queries = list(cq.unites[0].queries())
+        self.assertEquals(({'query': 'AQuery', 'keyName': 'keyA', 'core': 'coreA'}, 'keyA'), queries[0])
+        self.assertEquals(({'query': 'anotherQuery', 'keyName': 'keyB', 'core': 'coreB'}, 'keyA'), queries[1])
 
     def testFilterQueries(self):
         cq = ComposedQuery('coreA')
@@ -154,6 +157,10 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(['F0', 'F1'], cq2.facetsFor('coreA'))
         self.assertEquals('keyA', cq2.keyName('coreA', 'coreB'))
         self.assertEquals('keyB', cq2.keyName('coreB', 'coreA'))
+        self.assertEqual(1, len(cq2.unites))
+        queries = list(cq2.unites[0].queries())
+        self.assertEquals(({'core': 'coreA', 'keyName': 'keyA', 'query': 'AQuery'}, 'keyA'), queries[0])
+        self.assertEquals(({'core': 'coreB', 'keyName': 'keyB', 'query': 'anotherQuery'}, 'keyA'), queries[1])
 
     def testAddFilterQueriesIncremental(self):
         cq = ComposedQuery('coreA')
@@ -186,7 +193,10 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(["Converted_A_Q1", "Converted_A_Q2"], cq.filterQueriesFor('coreA'))
         self.assertEquals("Converted_B_Q3", cq.queryFor('coreB'))
         self.assertEquals(["Converted_B_Q4"], cq.filterQueriesFor('coreB'))
-        self.assertEquals([('coreA', 'Converted_A_Q5'), ('coreB', 'Converted_B_Q6')], cq.unites)
+        self.assertEqual(1, len(cq.unites))
+        queries = list(cq.unites[0].queries())
+        self.assertEquals('Converted_A_Q5', queries[0][0]['query'])
+        self.assertEquals('Converted_B_Q6', queries[1][0]['query'])
 
     def testSingleCoreQuery(self):
         cq = ComposedQuery('coreA')
@@ -201,13 +211,6 @@ class ComposedQueryTest(SeecrTestCase):
         cq.addUnite(dict(core='coreA', query='Q5'), dict(core='coreB', query='Q6'))
         cq.validate()
         self.assertEquals(set(['coreA', 'coreB']), cq.cores)
-
-    def testUniteQueriesFor(self):
-        cq = ComposedQuery('coreA')
-        cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
-        cq.addUnite(dict(core='coreA', query='Q5'), dict(core='coreB', query='Q6'))
-        self.assertEquals(['Q5'], cq.uniteQueriesFor('coreA'))
-        self.assertEquals(['Q6'], cq.uniteQueriesFor('coreB'))
 
     def testIsSingleCoreQuery(self):
         cq = ComposedQuery('coreA')
@@ -276,7 +279,7 @@ class ComposedQueryTest(SeecrTestCase):
                 "resultsFrom": "coreA",
                 "sortKeys": [{"sortBy": "field", "sortDescending": True}],
                 "start": 0,
-                "unites": [{"core": "coreA", "query": "AQuery"}, {"core": "coreB", "query": "anotherQuery"}]
+                "unites": [{"A": ["coreA", "AQuery"], "B": ["coreB", "anotherQuery"]}]
             }
         }, cq.infoDict())
 

@@ -97,7 +97,7 @@ class ComposedQuery(object):
             raise ValueError("No more than 1 addUnite supported")
         for uniteCoreSpec in (uniteCoreASpec, uniteCoreBSpec):
             self.cores.add(uniteCoreSpec['core'])
-            self._unites.append(uniteCoreSpec)
+        self._unites.append(Unite(self, uniteCoreASpec, uniteCoreBSpec))
         return self
 
     def queryFor(self, core):
@@ -117,9 +117,6 @@ class ComposedQuery(object):
 
     def rankQueryFor(self, core):
         return self._rankQueries.get(core)
-
-    def uniteQueriesFor(self, core):
-        return [d['query'] for d in self._unites if d['core'] == core]
 
     def keyName(self, core, otherCore):
         if core == otherCore: #TODO: Needed for filters/rank's in same core as queried core
@@ -146,7 +143,7 @@ class ComposedQuery(object):
 
     @property
     def unites(self):
-        return [(u['core'], u['query']) for u in self._unites]
+        return self._unites[:]
 
     @property
     def filterQueries(self):
@@ -176,7 +173,8 @@ class ComposedQuery(object):
         self._queries = dict((core, convertQuery(core, v)) for core, v in self._queries.items())
         self._filterQueries = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._filterQueries.items())
         self._rankQueries = dict((core, convertQuery(core, v)) for core, v in self._rankQueries.items())
-        self._unites = [dict(d, query=convertQuery(d['core'], d['query'])) for d in self._unites]
+        for unite in self._unites:
+            unite.convertQuery(convertQuery)
         self._otherCoreFacetFilters = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._otherCoreFacetFilters.items())
 
     def otherKwargs(self):
@@ -200,6 +198,7 @@ class ComposedQuery(object):
     def asDict(self):
         result = dict(vars(self))
         result['_matches'] = dict(('->'.join(key), value) for key, value in result['_matches'].items())
+        result['_unites'] = [unite.asDict() for unite in self._unites]
         result['cores'] = list(self.cores)
         return result
 
@@ -208,6 +207,7 @@ class ComposedQuery(object):
         cq = cls(dct['resultsFrom'])
         matches = dct['_matches']
         dct['_matches'] = dict((tuple(key.split('->')), value) for key, value in matches.items())
+        dct['_unites'] = [Unite.fromDict(cq, uniteDict) for uniteDict in dct['_unites']]
         dct['cores'] = set(dct['cores'])
         for attr, value in dct.items():
             setattr(cq, attr, value)
@@ -228,5 +228,29 @@ class ComposedQuery(object):
             'type': self.__class__.__name__,
             'query':simplifiedDict(dict((k.replace('_',''),v) for k,v in self.asDict().items()))
         }
+
+class Unite(object):
+    def __init__(self, parent, coreASpec, coreBSpec):
+        self._parent = parent
+        self.coreASpec = coreASpec
+        self.coreBSpec = coreBSpec
+
+    def queries(self):
+        keyNameA = self._parent.keyName(self.coreASpec['core'], self.coreBSpec['core'])
+        keyNameB = self._parent.keyName(self.coreBSpec['core'], self.coreASpec['core'])
+        resultKeyName = keyNameA if self._parent.resultsFrom == self.coreASpec['core'] else keyNameB
+        yield dict(core=self.coreASpec['core'], query=self.coreASpec['query'], keyName=keyNameA), resultKeyName
+        yield dict(core=self.coreBSpec['core'], query=self.coreBSpec['query'], keyName=keyNameB), resultKeyName
+
+    def convertQuery(self, convertQueryFunction):
+        for spec in [self.coreASpec, self.coreBSpec]:
+            spec['query'] = convertQueryFunction(spec['core'], spec['query'])
+
+    def asDict(self):
+        return {'A': [self.coreASpec['core'], self.coreASpec['query']], 'B': [self.coreBSpec['core'], self.coreBSpec['query']]}
+
+    @classmethod
+    def fromDict(cls, parent, dct):
+        return cls(parent, dict(core=dct['A'][0], query=dct['A'][1]), dict(core=dct['B'][0], query=dct['B'][1]))
 
 del ComposedQuery._prop

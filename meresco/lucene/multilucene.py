@@ -118,17 +118,13 @@ class MultiLucene(Observable):
 
     def _uniteFilter(self, query):
         keys = dict()
-        first = True
-        for core, q in query.unites:
-            otherCore = query.unites[1][0] if first else query.unites[0][0]
-            keyName = query.keyName(core, otherCore)
-            keyNameResult = keyName if core == query.resultsFrom else query.keyName(otherCore, core)
-            first = False
-            collectedKeys = self.call[core].collectKeys(q, keyName)
-            if keyNameResult not in keys:
-                keys[keyNameResult] = collectedKeys.clone()
-            else:
-                keys[keyNameResult].union(collectedKeys)
+        for unite in query.unites:
+            for q, keyNameResult in unite.queries():
+                collectedKeys = self.call[q['core']].collectKeys(q['query'], q['keyName'])
+                if keyNameResult not in keys:
+                    keys[keyNameResult] = collectedKeys.clone()
+                else:
+                    keys[keyNameResult].union(collectedKeys)
         for core, qs in query.filterQueries:
             for q in qs:
                 keyNameResult = query.keyName(query.resultsFrom, core)

@@ -822,6 +822,17 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_R'
             }], result.drilldownData)
 
+    def testFilterQueryInTwoDifferentCores(self):
+        q = ComposedQuery('coreA')
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'C'), dict(core='coreC', key=KEY_PREFIX+'C2'))
+        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        q.setCoreQuery(core='coreB', query=MatchAllDocsQuery())
+        q.addFilterQuery(core='coreB', query=luceneQueryFromCql('N=true'))
+        q.addFilterQuery(core='coreC', query=MatchAllDocsQuery())
+        result = retval(self.dna.any.executeComposedQuery(q))
+        self.assertEquals(1, len(result.hits))
+
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(
             identifier=identifier,

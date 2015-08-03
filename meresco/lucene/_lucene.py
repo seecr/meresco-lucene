@@ -147,11 +147,11 @@ class Lucene(Observable):
             filter_ = QueryWrapperFilter(filterQuery)
         self._index.search(query, filter_, collector)
 
-    def facets(self, facets, filterQueries, drilldownQueries=None, filter=None):
+    def facets(self, facets, filterQueries, drilldownQueries=None, filters=None):
         facetCollector = self._facetCollector(facets)
         if facetCollector is None:
             raise StopIteration([])
-        filter_ = self._filterFor(filterQueries, filter=filter)
+        filter_ = self._filtersFor(filterQueries, filters=filters)
         query = MatchAllDocsQuery()
         if drilldownQueries:
             query = self.createDrilldownQuery(query, drilldownQueries)
@@ -194,7 +194,7 @@ class Lucene(Observable):
             collector = scoreCollector
         return collector, topCollector, groupingCollector, dedupCollector, facetCollector
 
-    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, filterQueries=None, suggestionRequest=None, filter=None, drilldownQueries=None, clusterFields=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, filterQueries=None, suggestionRequest=None, filters=None, drilldownQueries=None, clusterFields=None, **kwargs):
         times = {}
         t0 = time()
         stop = 10 if stop is None else stop
@@ -203,7 +203,7 @@ class Lucene(Observable):
         topCollectorStop = stop
         while True:
             collector, topCollector, groupingCollector, dedupCollector, facetCollector = self._createCollectors(start=start, stop=topCollectorStop, facets=facets, clusterFields=clusterFields, **kwargs)
-            filter_ = self._filterFor(filterQueries, filter)
+            filter_ = self._filtersFor(filterQueries, filters)
 
             if drilldownQueries:
                 luceneQuery = self.createDrilldownQuery(luceneQuery, drilldownQueries)
@@ -396,13 +396,11 @@ class Lucene(Observable):
             times['collectClusters'] = millis(time() - t0)
         return totalHits, hits
 
-    def _filterFor(self, filterQueries, filter=None):
-        if not filterQueries:
-            return filter
-        filters = [self._filterCache.get(f) for f in filterQueries]
-        if filter is not None:
-            filters.append(filter)
-        return chainFilters(filters, ChainedFilter.AND)
+    def _filtersFor(self, filterQueries, filters=None):
+        queryFilters = [self._filterCache.get(f) for f in filterQueries] if filterQueries else []
+        if filters is not None:
+            queryFilters.extend(filters)
+        return chainFilters(queryFilters, ChainedFilter.AND)
 
     def _facetResult(self, facetCollector, facets):
         facetResult = facetCollector

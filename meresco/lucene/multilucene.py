@@ -82,11 +82,11 @@ class MultiLucene(Observable):
 
         finalKeys = self._uniteFilter(query)
         for otherCoreName in otherCoreNames:
-            finalKeys = self._coreQueries(otherCoreName, query.resultsFrom, query, finalKeys)
+            finalKeys = self._coreQueries(otherCoreName, resultCoreName, query, finalKeys)
 
-        summaryFilter = None
-        if finalKeys is not None:
-            summaryFilter = KeyFilter(finalKeys, resultCoreKey)
+        resultFilters = dict()
+        for keyName, keys in finalKeys.items():
+            resultFilters[keyName] = KeyFilter(keys, keyName)
 
         resultCoreQuery = self._luceneQueryForCore(resultCoreName, query)
         aggregateScoreCollector = self._createAggregateScoreCollector(query, resultCoreKey)
@@ -95,7 +95,7 @@ class MultiLucene(Observable):
             keyCollectors[keyName] = KeySuperCollector(keyName)
         result = yield self.any[resultCoreName].executeQuery(
                 luceneQuery=resultCoreQuery or MatchAllDocsQuery(),
-                filter=summaryFilter,
+                filters=resultFilters.values(),
                 facets=query.facetsFor(resultCoreName),
                 scoreCollector=aggregateScoreCollector,
                 keyCollectors=keyCollectors.values(),
@@ -110,42 +110,46 @@ class MultiLucene(Observable):
                     facets=query.facetsFor(otherCoreName),
                     filterQueries=query.queriesFor(otherCoreName) + query.otherCoreFacetFiltersFor(otherCoreName),
                     drilldownQueries=query.drilldownQueriesFor(otherCoreName),
-                    filter=keyFilter
+                    filters=[keyFilter]
                 )))
 
         result.queryTime = millis(time() - t0)
         generatorReturn(result)
 
     def _uniteFilter(self, query):
-        keys = None
+        keys = dict()
         first = True
         for core, q in query.unites:
             otherCore = query.unites[1][0] if first else query.unites[0][0]
+            keyName = query.keyName(core, otherCore)
+            keyNameResult = keyName if core == query.resultsFrom else query.keyName(otherCore, core)
             first = False
-            collectedKeys = self.call[core].collectKeys(q, query.keyName(core, otherCore))
-            if keys is None:
-                keys = collectedKeys.clone()
+            collectedKeys = self.call[core].collectKeys(q, keyName)
+            if keyNameResult not in keys:
+                keys[keyNameResult] = collectedKeys.clone()
             else:
-                keys.union(collectedKeys)
+                keys[keyNameResult].union(collectedKeys)
         for core, qs in query.filterQueries:
             for q in qs:
-                keyName = query.keyName(core, query.resultsFrom)
-                collectedKeys = self.call[core].collectKeys(q, keyName)
-                if keys is None:
-                    keys = collectedKeys.clone()
+                keyNameResult = query.keyName(query.resultsFrom, core)
+                keyNameOther = query.keyName(core, query.resultsFrom)
+                collectedKeys = self.call[core].collectKeys(q, keyNameOther)
+                if keyNameResult not in keys:
+                    keys[keyNameResult] = collectedKeys.clone()
                 else:
-                    keys.intersect(collectedKeys)
+                    keys[keyNameResult].intersect(collectedKeys)
         return keys
 
-    def _coreQueries(self, coreName, otherCoreName, query, keys):
+    def _coreQueries(self, coreName, otherCoreName, query, keysForKeyName):
         luceneQuery = self._luceneQueryForCore(coreName, query)
         if luceneQuery:
             collectedKeys = self.call[coreName].collectKeys(filter=None, keyName=query.keyName(coreName, otherCoreName), query=luceneQuery, cacheCollectedKeys=False)
-            if keys:
-                keys.intersect(collectedKeys)
+            otherKeyName = query.keyName(otherCoreName, coreName)
+            if otherKeyName in keysForKeyName:
+                keysForKeyName[otherKeyName].intersect(collectedKeys)
             else:
-                keys = collectedKeys
-        return keys
+                keysForKeyName[otherKeyName] = collectedKeys
+        return keysForKeyName
 
     def _luceneQueryForCore(self, coreName, query):
         luceneQuery = query.queryFor(coreName)

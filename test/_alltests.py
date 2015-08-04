@@ -24,15 +24,8 @@
 #
 ## end license ##
 
-from os.path import abspath, dirname                              #DO_NOT_DISTRIBUTE
-from os import system                                             #DO_NOT_DISTRIBUTE
-from glob import glob                                             #DO_NOT_DISTRIBUTE
-from sys import path as systemPath                                #DO_NOT_DISTRIBUTE
-projectDir = dirname(dirname(abspath(__file__)))                  #DO_NOT_DISTRIBUTE
-system('find %s -name "*.pyc" | xargs rm -f' % projectDir)        #DO_NOT_DISTRIBUTE
-for path in glob(projectDir+'/deps.d/*'):                         #DO_NOT_DISTRIBUTE
-    systemPath.insert(0, path)                                    #DO_NOT_DISTRIBUTE
-systemPath.insert(0, projectDir)                                  #DO_NOT_DISTRIBUTE
+from seecrdeps import includeParentAndDeps       #DO_NOT_DISTRIBUTE
+includeParentAndDeps(__file__)                   #DO_NOT_DISTRIBUTE
 
 import unittest
 from sys import version
@@ -67,6 +60,7 @@ from superindexsearchertest import SuperIndexSearcherTest
 from termfrequencysimilaritytest import TermFrequencySimilarityTest
 from termnumeratortest import TermNumeratorTest
 from fieldslisttolucenedocumenttest import FieldsListToLuceneDocumentTest
+from lucenekeyvaluestoretest import LuceneKeyValueStoreTest
 
 if __name__ == '__main__':
     unittest.main()

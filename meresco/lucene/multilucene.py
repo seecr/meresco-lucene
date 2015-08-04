@@ -33,7 +33,7 @@ from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery
 from org.meresco.lucene.search.join import KeySuperCollector, AggregateScoreSuperCollector, ScoreSuperCollector
-from org.meresco.lucene.queries import KeyFilter, AggregatedFilter
+from org.meresco.lucene.queries import KeyFilter
 from java.util import ArrayList
 
 from _lucene import millis

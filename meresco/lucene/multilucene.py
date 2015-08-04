@@ -33,7 +33,7 @@ from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery
 from org.meresco.lucene.search.join import KeySuperCollector, AggregateScoreSuperCollector, ScoreSuperCollector
-from org.meresco.lucene.queries import KeyFilter
+from org.meresco.lucene.queries import KeyFilter, AggregatedFilter
 from java.util import ArrayList
 
 from _lucene import millis
@@ -83,9 +83,9 @@ class MultiLucene(Observable):
         for otherCoreName in otherCoreNames:
             finalKeys = self._coreQueries(otherCoreName, resultCoreName, query, finalKeys)
 
-        resultFilters = dict()
+        resultFilters = []
         for keyName, keys in finalKeys.items():
-            resultFilters[keyName] = KeyFilter(keys, keyName)
+            resultFilters.append(KeyFilter(keys, keyName))
 
         resultCoreQuery = self._luceneQueryForCore(resultCoreName, query)
         aggregateScoreCollectors = self._createAggregateScoreCollectors(query)
@@ -94,7 +94,7 @@ class MultiLucene(Observable):
             keyCollectors[keyName] = KeySuperCollector(keyName)
         result = yield self.any[resultCoreName].executeQuery(
                 luceneQuery=resultCoreQuery or MatchAllDocsQuery(),
-                filters=resultFilters.values(),
+                filters=resultFilters,
                 facets=query.facetsFor(resultCoreName),
                 scoreCollectors=aggregateScoreCollectors,
                 keyCollectors=keyCollectors.values(),

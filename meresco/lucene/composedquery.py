@@ -88,8 +88,8 @@ class ComposedQuery(object):
                     matchCoreSpec['uniqueKey']
                 except KeyError:
                     raise ValueError("Match for result core '%s' must have a uniqueKey specification." % self.resultsFrom)
-        if not resultsFromCoreSpecFound:
-            raise ValueError("Match that does not include resultsFromCore ('%s') not yet supported" % self.resultsFrom)
+        # if not resultsFromCoreSpecFound:
+        #     raise ValueError("Match that does not include resultsFromCore ('%s') not yet supported" % self.resultsFrom)
         return self
 
     def addUnite(self, uniteCoreASpec, uniteCoreBSpec):
@@ -178,7 +178,7 @@ class ComposedQuery(object):
         self._otherCoreFacetFilters = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._otherCoreFacetFilters.items())
 
     def otherKwargs(self):
-        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, groupingField=self.groupingField, clusterFields=self.clusterFields)
+        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, groupingField=self.groupingField, clusterFields=self.clusterFields, storedFields=self.storedFields)
 
     def _prop(name, defaultValue=None):
         def fget(self):
@@ -194,6 +194,7 @@ class ComposedQuery(object):
     dedupSortField = property(**_prop('dedupSortField'))
     groupingField = property(**_prop('groupingField'))
     clusterFields = property(**_prop('clusterFields'))
+    storedFields = property(**_prop('storedFields'))
 
     def asDict(self):
         result = dict(vars(self))

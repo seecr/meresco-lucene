@@ -264,6 +264,7 @@ class ComposedQueryTest(SeecrTestCase):
         cq.addUnite(dict(core='coreA', query=AQuery()), dict(core='coreB', query='anotherQuery'))
         cq.start = 0
         cq.sortKeys = [dict(sortBy='field', sortDescending=True)]
+        cq.storedFields = ['stored_field']
 
         self.assertEquals({
             'type': 'ComposedQuery',
@@ -279,6 +280,7 @@ class ComposedQueryTest(SeecrTestCase):
                 "resultsFrom": "coreA",
                 "sortKeys": [{"sortBy": "field", "sortDescending": True}],
                 "start": 0,
+                "storedFields": ['stored_field'],
                 "unites": [{"A": ["coreA", "AQuery"], "B": ["coreB", "anotherQuery"]}]
             }
         }, cq.infoDict())

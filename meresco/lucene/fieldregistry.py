@@ -219,6 +219,13 @@ INTFIELD = lambda name, **ignoreds: _FieldDefinition(
     create=lambda value: IntField(name, int(value), IntField.TYPE_NOT_STORED),
     update=lambda field, value: field.setIntValue(int(value)),
 )
+INTFIELDSTORED = lambda name, **ignoreds: _FieldDefinition(
+    type=IntField.TYPE_STORED,
+    pythonType=int,
+    field=IntField(name, int(0), IntField.TYPE_STORED),
+    create=lambda value: IntField(name, int(value), IntField.TYPE_STORED),
+    update=lambda field, value: field.setIntValue(int(value)),
+)
 LONGFIELD = lambda name, **ignored: _FieldDefinition(
     type=LongField.TYPE_NOT_STORED,
     pythonType=long,
@@ -231,6 +238,13 @@ DOUBLEFIELD = lambda name, **ignored: _FieldDefinition(
     pythonType=float,
     field=DoubleField(name, float(0), DoubleField.TYPE_NOT_STORED),
     create=lambda value: DoubleField(name, float(value), DoubleField.TYPE_NOT_STORED),
+    update=lambda field, value: field.setDoubleValue(float(value)),
+)
+DOUBLEFIELDSTORED = lambda name, **ignored: _FieldDefinition(
+    type=DoubleField.TYPE_STORED,
+    pythonType=float,
+    field=DoubleField(name, float(0), DoubleField.TYPE_STORED),
+    create=lambda value: DoubleField(name, float(value), DoubleField.TYPE_STORED),
     update=lambda field, value: field.setDoubleValue(float(value)),
 )
 

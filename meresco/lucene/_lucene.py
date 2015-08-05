@@ -147,6 +147,12 @@ class Lucene(Observable):
             filter_ = QueryWrapperFilter(filterQuery)
         self._index.search(query, filter_, collector)
 
+    def getDocument(self, identifier):
+        results = self._index.searchTopDocs(TermQuery(Term(IDFIELD, identifier)), 1)
+        if results.totalHits == 0:
+            return None
+        return self._index.getDocument(results.scoreDocs[0].doc)
+
     def facets(self, facets, filterQueries, drilldownQueries=None, filters=None):
         facetCollector = self._facetCollector(facets)
         if facetCollector is None:

@@ -86,6 +86,9 @@ class Index(object):
     def search(self, query, filter, collector):
         self._indexAndTaxonomy.searcher.search(query, filter, collector)
 
+    def searchTopDocs(self, query, numberOfHits):
+        return self._indexAndTaxonomy.searcher.search(query, numberOfHits)
+
     def suggest(self, query, count, field):
         suggestions = {}
         for token, startOffset, endOffset in self._analyzeToken(query):

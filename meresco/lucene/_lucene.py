@@ -201,7 +201,7 @@ class Lucene(Observable):
                 collector = scoreCollector
         return collector, topCollector, groupingCollector, dedupCollector, facetCollector
 
-    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, filterQueries=None, suggestionRequest=None, filters=None, drilldownQueries=None, clusterFields=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, filterQueries=None, suggestionRequest=None, filters=None, drilldownQueries=None, clusterFields=None, storedFields=None, **kwargs):
         times = {}
         t0 = time()
         stop = 10 if stop is None else stop
@@ -221,11 +221,11 @@ class Lucene(Observable):
 
             if clusterFields:
                 t1 = time()
-                total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterFields=clusterFields, times=times)
+                total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterFields=clusterFields, times=times, storedFields=storedFields)
                 times['totalClusterTime'] = millis(time() - t1)
             else:
                 t1 = time()
-                total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector)
+                total, hits = self._topDocsResponse(topCollector, start=start, stop=stop, groupingCollector=groupingCollector, dedupCollector=dedupCollector, storedFields=storedFields)
                 times['topDocsTime'] = millis(time() - t1)
             if len(hits) == stop - start or topCollectorStop >= total:
                 break
@@ -323,7 +323,7 @@ class Lucene(Observable):
         from sys import stdout; stdout.flush()
         self.close()
 
-    def _topDocsResponse(self, collector, start, stop, dedupCollector=None, groupingCollector=None):
+    def _topDocsResponse(self, collector, start, stop, dedupCollector=None, groupingCollector=None, storedFields=None):
         totalHits = collector.getTotalHits()
         hits = []
         dedupCollectorFieldName = dedupCollector.getKeyName() if dedupCollector else None
@@ -337,12 +337,12 @@ class Lucene(Observable):
                 if dedupCollector:
                     keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc)
                     newDocId = keyForDocId.getDocId() if keyForDocId else scoreDoc.doc
-                    hit = Hit(self._index.getDocument(newDocId).get(IDFIELD))
+                    hit = Hit(**self._storedFields(newDocId, storedFields))
                     hit.duplicateCount = {dedupCollectorFieldName: 1}
                     if keyForDocId:
                         hit.duplicateCount = {dedupCollectorFieldName: keyForDocId.getCount()}
                 elif groupingCollector:
-                    hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
+                    hit = Hit(**self._storedFields(scoreDoc.doc, storedFields))
                     if hit.id in seenIds:
                         continue
                     duplicateIds = [hit.id]
@@ -353,17 +353,24 @@ class Lucene(Observable):
                     seenIds.update(set(duplicateIds))
                     hit.duplicates = {groupingCollectorFieldName: [{"id": i} for i in duplicateIds]}
                 else:
-                    hit = Hit(self._index.getDocument(scoreDoc.doc).get(IDFIELD))
+                    hit = Hit(**self._storedFields(scoreDoc.doc, storedFields))
                 hit.score = scoreDoc.score
                 hits.append(hit)
                 count += 1
         return totalHits, hits
 
+    def _storedFields(self, docId, fields):
+        doc = self._index.getDocument(docId)
+        values = dict(id=doc.get(IDFIELD))
+        for f in fields or []:
+            values[f] = doc.get(f)
+        return values
+
     def _interpolateEpsilon(self, hits, slice):
         eps = self._clusteringEps * (hits - slice) / self._clusterMoreRecords
         return max(min(eps, self._clusteringEps), 0.0)
 
-    def _clusterTopDocsResponse(self, collector, start, stop, clusterFields, times):
+    def _clusterTopDocsResponse(self, collector, start, stop, clusterFields, times, storedFields):
         totalHits = collector.getTotalHits()
         epsilon = self._interpolateEpsilon(totalHits, stop - start)
         clusterer = MerescoClusterer(self._index.getIndexReader(), epsilon, self._clusteringMinPoints)
@@ -392,7 +399,7 @@ class Lucene(Observable):
                 clusteredDocIds = [t.id for t in topDocs] if cluster else [scoreDoc.doc]
                 seenDocIds.update(set(clusteredDocIds))
 
-                hit = Hit(self._index.getDocument(clusteredDocIds[0]).get(IDFIELD))
+                hit = Hit(**self._storedFields(clusteredDocIds[0], storedFields))
                 hit.duplicates = {
                         "topDocs": [{"id": self._index.getDocument(t.id).get(IDFIELD), "score": t.score} for t in topDocs],
                         "topTerms": [{"term": t.term, "score": t.score} for t in cluster.topTerms] if cluster else []

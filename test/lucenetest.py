@@ -924,6 +924,17 @@ class LuceneTest(LuceneTestCase):
         self.assertEqual(51, result.total)
         self.assertEqual(2, len(result.hits))
 
+    def testStoredFields(self):
+        doc = Document()
+        doc.add(FIELD_REGISTRY.createField("storedField", "this field is stored"))
+        consume(self.lucene.addDocument(identifier='id1', document=doc))
+
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), storedFields=['storedField']))
+        self.assertEqual(1, result.total)
+        self.assertEqual('id1', result.hits[0].id)
+        self.assertEqual('this field is stored', result.hits[0].storedField)
+
+
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]
 
@@ -940,6 +951,7 @@ FIELD_REGISTRY = FieldRegistry(
         ]
     )
 FIELD_REGISTRY.register(fieldname='intField', fieldDefinition=INTFIELD)
+FIELD_REGISTRY.register(fieldname='storedField', fieldType=StringField.TYPE_STORED)
 
 def createDocument(fields, facets=None):
     document = Document()

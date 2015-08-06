@@ -106,7 +106,7 @@ class Index(object):
         elif t == long:
             convert = lambda term: NumericUtils.prefixCodedToLong(term)
         elif t == float:
-            convert = lambda term: NumericUtils.prefixCodedToDouble(term)
+            convert = lambda term: NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term))
         terms = []
         termsEnum = MultiFields.getTerms(self.getIndexReader(), field)
         if termsEnum is None:

@@ -363,7 +363,7 @@ class Lucene(Observable):
         doc = self._index.getDocument(docId)
         values = dict(id=doc.get(IDFIELD))
         for f in fields or []:
-            values[f] = doc.get(f)
+            values[f] = list(doc.getValues(f))
         return values
 
     def _interpolateEpsilon(self, hits, slice):

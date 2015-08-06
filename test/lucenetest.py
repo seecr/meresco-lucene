@@ -932,7 +932,7 @@ class LuceneTest(LuceneTestCase):
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), storedFields=['storedField']))
         self.assertEqual(1, result.total)
         self.assertEqual('id1', result.hits[0].id)
-        self.assertEqual('this field is stored', result.hits[0].storedField)
+        self.assertEqual(['this field is stored'], result.hits[0].storedField)
 
 
 def facets(**fields):

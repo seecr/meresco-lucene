@@ -88,8 +88,8 @@ class ComposedQuery(object):
                     matchCoreSpec['uniqueKey']
                 except KeyError:
                     raise ValueError("Match for result core '%s' must have a uniqueKey specification." % self.resultsFrom)
-        # if not resultsFromCoreSpecFound:
-        #     raise ValueError("Match that does not include resultsFromCore ('%s') not yet supported" % self.resultsFrom)
+        if not resultsFromCoreSpecFound:
+            raise ValueError("Match that does not include resultsFromCore ('%s') not yet supported" % self.resultsFrom)
         return self
 
     def addUnite(self, uniteCoreASpec, uniteCoreBSpec):

@@ -30,7 +30,7 @@ from org.meresco.lucene.search.join import ScoreSuperCollector, KeySuperCollecto
 from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search import SortField
-from org.meresco.lucene.search import SuperCollector
+from org.meresco.lucene.search import SuperCollector, JoinSortField
 
 from java.lang import Integer
 from java.util import ArrayList
@@ -40,6 +40,7 @@ from time import time
 from os.path import basename
 
 from meresco.core import Observable
+from meresco.lucene import KEY_PREFIX
 from meresco.lucene.luceneresponse import LuceneResponse
 from meresco.lucene.index import Index
 from meresco.lucene.cache import LruCache
@@ -165,7 +166,7 @@ class Lucene(Observable):
         generatorReturn(self._facetResult(facetCollector, facets))
         yield
 
-    def _createCollectors(self, start, stop, sortKeys=None, clusterFields=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollectors=None, scoreCollectors=None, **kwargs):
+    def _createCollectors(self, start, stop, sortKeys=None, clusterFields=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollectors=None, scoreCollectors=None, joinSortCollectors=None, **kwargs):
         collectors = []
         dedupCollector = None
         groupingCollector = None
@@ -180,7 +181,7 @@ class Lucene(Observable):
             constructor = DeDupFilterSuperCollector
             resultsCollector = dedupCollector = constructor(dedupField, dedupSortField, topCollector)
         else:
-            resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
+            resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys, joinSortCollectors=joinSortCollectors)
 
         collectors.append(resultsCollector)
 
@@ -448,7 +449,7 @@ class Lucene(Observable):
             inner.name = self.coreName
             inner.numDocs = self._index.numDocs
 
-    def _topCollector(self, start, stop, sortKeys):
+    def _topCollector(self, start, stop, sortKeys, joinSortCollectors):
         if stop <= start:
             return TotalHitCountSuperCollector()
         # fillFields = False # always true for multi-threading/sharding
@@ -456,21 +457,24 @@ class Lucene(Observable):
         trackMaxScore = False
         docsScoredInOrder = True
         if sortKeys:
-            sortFields = [
-                self._sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending'])
-                for sortKey in sortKeys
-            ]
+            sortFields = []
+            for sortKey in sortKeys:
+                joinSortCollector = joinSortCollectors.get(sortKey.get('core')) if joinSortCollectors and 'core' in sortKey else None
+                sortFields.append(self._sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending'], joinSortCollector=joinSortCollector))
             sort = Sort(sortFields)
         else:
             return TopScoreDocSuperCollector(stop, docsScoredInOrder)
         return TopFieldSuperCollector(sort, stop, trackDocScores, trackMaxScore, docsScoredInOrder)
 
-    def _sortField(self, fieldname, sortDescending):
+    def _sortField(self, fieldname, sortDescending, joinSortCollector):
         if fieldname == self.SORT_ON_SCORE:
             return SortField(None, SortField.Type.SCORE, not sortDescending)
-        result = SortField(fieldname, SortField.Type.STRING, sortDescending)
-        result.setMissingValue(SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST)
-        return result
+        if joinSortCollector:
+            field = joinSortCollector.sortField(fieldname, SortField.Type.STRING, sortDescending)
+        else:
+            field = SortField(fieldname, SortField.Type.STRING, sortDescending)
+        field.setMissingValue(SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST)
+        return field
 
     def _logMessage(self, message):
         self.do.log(message=message)

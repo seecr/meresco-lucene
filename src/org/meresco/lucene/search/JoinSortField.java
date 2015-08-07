@@ -65,27 +65,22 @@ class JoinComparator extends FieldComparator<BytesRef> {
 
     @Override
     public int compare(int slot1, int slot2) {
-        System.out.println("Compare" + slot1 + "," + slot2);
         int result = this.joinSortCollector.comparator.compare(slot1, slot2);
-        System.out.println("Result: " + result);
        return result;
     }
 
     @Override
     public void setBottom(int slot) {
-        System.out.println("Set bottom" + slot);
         this.joinSortCollector.comparator.setBottom(slot);
     }
 
     @Override
     public void setTopValue(BytesRef value) {
-        System.out.println("Set top: " + value.utf8ToString());
         this.joinSortCollector.comparator.setTopValue(value);
     }
 
     @Override
     public int compareBottom(int doc) throws IOException {
-        System.out.println("Compare bottom" + doc);
         int key = this.keyValuesArray[doc];
         doc = this.joinSortCollector.setNextReaderForKey(key);
         return this.joinSortCollector.comparator.compareBottom(doc);
@@ -93,7 +88,6 @@ class JoinComparator extends FieldComparator<BytesRef> {
 
     @Override
     public int compareTop(int doc) throws IOException {
-        System.out.println("Compare top" + doc);
         int key = this.keyValuesArray[doc];
         doc = this.joinSortCollector.setNextReaderForKey(key);
         return this.joinSortCollector.comparator.compareTop(doc);
@@ -102,24 +96,19 @@ class JoinComparator extends FieldComparator<BytesRef> {
     @Override
     public void copy(int slot, int doc) throws IOException {
         int key = this.keyValuesArray[doc];
-        System.out.println("Copy: " + slot + " -> " + doc + "=" + key);
         doc = this.joinSortCollector.setNextReaderForKey(key);
         this.joinSortCollector.comparator.copy(slot, doc);
     }
 
     @Override
     public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
-        System.out.println("Set next reader" + context);
         this.keyValuesArray = KeyValuesCache.get(context, this.keyname);
         return this;
     }
 
     @Override
     public BytesRef value(int slot) {
-        BytesRef val = this.joinSortCollector.comparator.value(slot);
-
-        System.out.println("Value at slot " + slot + ": " + (val == null ? val : val.utf8ToString()));
-        return val;
+        return this.joinSortCollector.comparator.value(slot);
     }
 
 }

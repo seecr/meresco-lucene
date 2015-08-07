@@ -87,17 +87,17 @@ class MultiLuceneTest(SeecrTestCase):
         self.addDocument(self.luceneA, identifier='A-MQ',   keys=[('A', k7 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false'), ('S', '7')])
         self.addDocument(self.luceneA, identifier='A-MQU',  keys=[('A', k8 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' ), ('S', '8')])
 
-        self.addDocument(self.luceneB, identifier='B-N>A-M',   keys=[('B', k5 ), ('D', k5)], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MU',  keys=[('B', k6 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  keys=[('B', k7 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', k8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-N',       keys=[('B', k9 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B',         keys=[('B', k10)], fields=[('N', 'false'), ('O', 'false'), ('P', 'false')])
-        self.addDocument(self.luceneB, identifier='B-P>A-M',   keys=[('B', k5 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P>A-MU',  keys=[('B', k6 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  keys=[('B', k7 )], fields=[('N', 'false'), ('O', 'false' ), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQU', keys=[('B', k8 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' )])
-        self.addDocument(self.luceneB, identifier='B-P',       keys=[('B', k11)], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' )])
+        self.addDocument(self.luceneB, identifier='B-N>A-M',   keys=[('B', k5 ), ('D', k5)], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'A')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MU',  keys=[('B', k6 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false'), ('T', 'B')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  keys=[('B', k7 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'C')])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', k8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false'), ('T', 'D')])
+        self.addDocument(self.luceneB, identifier='B-N',       keys=[('B', k9 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'E')])
+        self.addDocument(self.luceneB, identifier='B',         keys=[('B', k10)], fields=[('N', 'false'), ('O', 'false'), ('P', 'false'), ('T', 'F')])
+        self.addDocument(self.luceneB, identifier='B-P>A-M',   keys=[('B', k5 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' ), ('T', 'G')])
+        self.addDocument(self.luceneB, identifier='B-P>A-MU',  keys=[('B', k6 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' ), ('T', 'H')])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  keys=[('B', k7 )], fields=[('N', 'false'), ('O', 'false' ), ('P', 'true' ), ('T', 'I')])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQU', keys=[('B', k8 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' ), ('T', 'J')])
+        self.addDocument(self.luceneB, identifier='B-P',       keys=[('B', k11)], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' ), ('T', 'K')])
 
         self.addDocument(self.luceneC, identifier='C-R', keys=[('C', k5), ('C2', k12)], fields=[('R', 'true')])
         self.addDocument(self.luceneC, identifier='C-S', keys=[('C', k8)], fields=[('S', 'true')])
@@ -844,6 +844,30 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEqual('A-MU', result.hits[0].id)
         self.assertTrue(result.hits[0].score > result.hits[1].score)
 
+    def testJoinSort(self):
+        from org.meresco.lucene.search import JoinSortCollector
+        joinSortCollector = JoinSortCollector(KEY_PREFIX + 'A', KEY_PREFIX+'B')
+        self.luceneB.search(query=MatchAllDocsQuery(), collector=joinSortCollector)
+
+        result = retval(self.luceneA.executeQuery(MatchAllDocsQuery(), sortKeys=[{'sortBy': 'T', 'sortDescending': False, 'core': 'coreB'}], joinSortCollectors={'coreB': joinSortCollector}))
+        self.assertEqual(['A-M', 'A-MU', 'A-MQ', 'A-MQU', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
+
+        result = retval(self.luceneA.executeQuery(MatchAllDocsQuery(), sortKeys=[{'sortBy': 'T', 'sortDescending': True, 'core': 'coreB'}], joinSortCollectors={'coreB': joinSortCollector}))
+        self.assertEqual(['A-MQU', 'A-MQ', 'A-MU', 'A-M', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
+
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        cq.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        cq.addSortKey({'sortBy': 'T', 'sortDescending': False, 'core': 'coreB'})
+        result = retval(self.dna.any.executeComposedQuery(cq))
+        self.assertEqual(['A-M', 'A-MU', 'A-MQ', 'A-MQU', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
+
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        cq.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        cq.addSortKey({'sortBy': 'T', 'sortDescending': True, 'core': 'coreB'})
+        result = retval(self.dna.any.executeComposedQuery(cq))
+        self.assertEqual(['A-MQU', 'A-MQ', 'A-MU', 'A-M', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
 
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(

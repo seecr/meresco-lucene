@@ -44,16 +44,20 @@ import org.meresco.lucene.search.join.KeyValuesCache;
 public class JoinSortCollector extends Collector {
 
     public FieldComparator<BytesRef> comparator;
-    private String keyname;
     private Map<AtomicReaderContext, int[]> contextToKeys = new HashMap<AtomicReaderContext, int[]>();
+    private String resultKeyname;
+    private String otherKeyname;
 
-    public JoinSortCollector(String keyname) {
-        this.keyname = keyname;
+    public JoinSortCollector(String resultKeyname, String otherKeyname) {
+        this.resultKeyname = resultKeyname;
+        this.otherKeyname = otherKeyname;
+    }
+
+    public SortField sortField(String field, Type type, boolean reverse) {
+        return new JoinSortField(field, type, reverse, this, this.resultKeyname);
     }
 
     public void setComparator(String field, Type type, boolean reverse, final int numHits, final int sortPos, Object missingValue) throws IOException {
-        System.out.println("Comparator for field: " + field);
-        // this.comparator = (FieldComparator<BytesRef>) new SortField(field, type, reverse).getComparator(numHits, sortPos);
         this.comparator = new FieldComparator.TermOrdValComparator(numHits, field, missingValue == SortField.STRING_LAST) {
             @Override
             protected SortedDocValues getSortedDocValues(AtomicReaderContext context, String field) throws IOException {
@@ -70,7 +74,7 @@ public class JoinSortCollector extends Collector {
                     public int lookupTerm(BytesRef key) {
                         return -1;
                     }
-                    
+
                     @Override
                     public BytesRef lookupOrd(int ord) {
                         return null;
@@ -112,7 +116,7 @@ public class JoinSortCollector extends Collector {
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.contextToKeys.put(context, KeyValuesCache.get(context, this.keyname));
+        this.contextToKeys.put(context, KeyValuesCache.get(context, this.otherKeyname));
     }
 
     @Override

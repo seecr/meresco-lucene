@@ -38,6 +38,7 @@ class ComposedQuery(object):
         self._rankQueries = {}
         self._matches = {}
         self._unites = []
+        self._sortKeys = []
         self.resultsFrom = resultsFromCore
         self.setCoreQuery(resultsFromCore, query=query)
 
@@ -99,6 +100,11 @@ class ComposedQuery(object):
             self.cores.add(uniteCoreSpec['core'])
         self._unites.append(Unite(self, uniteCoreASpec, uniteCoreBSpec))
         return self
+
+    def addSortKey(self, sortKey):
+        core = sortKey.get('core', self.resultsFrom)
+        self.cores.add(core)
+        self._sortKeys.append(sortKey)
 
     def queryFor(self, core):
         return self._queries.get(core)
@@ -178,7 +184,7 @@ class ComposedQuery(object):
         self._otherCoreFacetFilters = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._otherCoreFacetFilters.items())
 
     def otherKwargs(self):
-        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, groupingField=self.groupingField, clusterFields=self.clusterFields, storedFields=self.storedFields)
+        return dict(start=self.start, stop=self.stop, sortKeys=self._sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, groupingField=self.groupingField, clusterFields=self.clusterFields, storedFields=self.storedFields)
 
     def _prop(name, defaultValue=None):
         def fget(self):

@@ -860,6 +860,7 @@ class MultiLuceneTest(SeecrTestCase):
         cq.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
         cq.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         cq.addSortKey({'sortBy': 'T', 'sortDescending': False, 'core': 'coreB'})
+        cq.addSortKey({'sortBy': 'S', 'sortDescending': False, 'core': 'coreA'})
         result = retval(self.dna.any.executeComposedQuery(cq))
         self.assertEqual(['A-M', 'A-MU', 'A-MQ', 'A-MQU', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
 
@@ -867,6 +868,7 @@ class MultiLuceneTest(SeecrTestCase):
         cq.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
         cq.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         cq.addSortKey({'sortBy': 'T', 'sortDescending': True, 'core': 'coreB'})
+        cq.addSortKey({'sortBy': 'S', 'sortDescending': False, 'core': 'coreA'})
         result = retval(self.dna.any.executeComposedQuery(cq))
         self.assertEqual(['A-MQU', 'A-MQ', 'A-MU', 'A-M', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
 

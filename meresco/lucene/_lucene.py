@@ -477,7 +477,6 @@ class Lucene(Observable):
             missingValue = None
         else:
             raise ValueError('Unsupported sort type')
-        print fieldname, fieldType
         if fieldname in ['#tags', '#ratings', '#reviews']:
             fieldType = SortField.Type.INT
             missingValue = None

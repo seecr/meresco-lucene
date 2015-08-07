@@ -325,3 +325,15 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq = self.observer.calledMethods[0].kwargs['query']
         self.assertEqual([parseCQL('defaultCore.field=value')], cq.queriesFor('defaultCore'))
 
+    def testSortKeys(self):
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), sortKeys=[dict(sortBy='field', sortDescending=True), dict(sortBy='otherCore.field', sortDescending=False)]))
+        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
+        cq = self.observer.calledMethods[0].kwargs['query']
+        cq.validate()
+        self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
+        self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
+        self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
+        self.assertEquals([
+                dict(sortBy='field', sortDescending=True, core='defaultCore'),
+                dict(sortBy='field', sortDescending=False, core='otherCore')
+            ], cq.sortKeys)

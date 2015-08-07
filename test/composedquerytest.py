@@ -124,7 +124,7 @@ class ComposedQueryTest(SeecrTestCase):
         cq.addUnite(dict(core='coreA', query='AQuery'), dict(core='coreB', query='anotherQuery'))
         self.assertEquals(None, cq.stop)
         self.assertEquals(None, cq.start)
-        self.assertEquals(None, cq.sortKeys)
+        self.assertEquals([], cq.sortKeys)
         cq.stop = 10
         cq.start = 0
         cq.sortKeys = [dict(sortBy='field', sortDescending=True)]

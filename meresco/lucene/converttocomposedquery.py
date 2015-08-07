@@ -58,18 +58,23 @@ class ConvertToComposedQuery(Observable):
         self._clusterFields = clusterFields
         self._clusteringEnabled = bool(self._clusterFields) and 'clustering' not in config.get('features_disabled', [])
 
-    def executeQuery(self, cqlAbstractSyntaxTree, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, **kwargs):
+    def executeQuery(self, cqlAbstractSyntaxTree, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, sortKeys=None, **kwargs):
         extraArguments = extraArguments or {}
         cq = ComposedQuery(self._resultsFrom)
         for matchTuple in self._matches:
             cq.addMatch(*matchTuple)
 
-        for key in ['start', 'stop', 'suggestionRequest', 'sortKeys']:
+        for key in ['start', 'stop', 'suggestionRequest']:
             if key in kwargs:
                 setattr(cq, key, kwargs[key])
 
         core, mainQuery = self._coreQuery(query=cql2string(cqlAbstractSyntaxTree), cores=self._cores)
         cq.setCoreQuery(core=core, query=mainQuery)
+
+        for sortKey in sortKeys or []:
+            core, sortBy = self._parseCorePrefix(sortKey['sortBy'], self._cores)
+            print core, sortBy
+            cq.addSortKey(dict(core=core, sortBy=sortBy, sortDescending=sortKey['sortDescending']))
 
         filters = extraArguments.get('x-filter', [])
         for f in filters:

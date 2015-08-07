@@ -172,12 +172,12 @@ class Lucene(Observable):
         groupingCollector = None
         facetCollector = None
         if clusterFields:
-            resultsCollector = topCollector = self._topCollector(start=start, stop=stop + self._clusterMoreRecords, sortKeys=sortKeys)
+            resultsCollector = topCollector = self._topCollector(start=start, stop=stop + self._clusterMoreRecords, sortKeys=sortKeys, joinSortCollectors=joinSortCollectors)
         elif groupingField:
-            topCollector = self._topCollector(start=start, stop=stop * 10, sortKeys=sortKeys)
+            topCollector = self._topCollector(start=start, stop=stop * 10, sortKeys=sortKeys, joinSortCollectors=joinSortCollectors)
             resultsCollector = groupingCollector = GroupSuperCollector(groupingField, topCollector)
         elif dedupField:
-            topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
+            topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys, joinSortCollectors=joinSortCollectors)
             constructor = DeDupFilterSuperCollector
             resultsCollector = dedupCollector = constructor(dedupField, dedupSortField, topCollector)
         else:

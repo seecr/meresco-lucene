@@ -96,7 +96,7 @@ class MultiLucene(Observable):
 
         joinSortCollectors = dict()
         for sortKey in query.sortKeys:
-            coreName = sortKey['core']
+            coreName = sortKey.get('core', resultCoreName)
             if coreName != resultCoreName and coreName not in joinSortCollectors:
                 joinSortCollectors[coreName] = joinSortCollector = JoinSortCollector(query.keyName(resultCoreName, coreName), query.keyName(coreName, resultCoreName))
                 self.call[coreName].search(query=MatchAllDocsQuery(), collector=joinSortCollector)

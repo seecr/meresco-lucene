@@ -180,6 +180,7 @@ class MultiLuceneTest(SeecrTestCase):
                 'queries': {'coreA': None},
                 'rankQueries': {},
                 'resultsFrom': 'coreA',
+                'sortKeys': [],
                 'unites': []
             },
             'type': 'ComposedQuery'

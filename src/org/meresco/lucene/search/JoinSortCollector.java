@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldComparator;
@@ -47,18 +46,20 @@ public class JoinSortCollector extends Collector {
     private Map<AtomicReaderContext, int[]> contextToKeys = new HashMap<AtomicReaderContext, int[]>();
     private String resultKeyname;
     private String otherKeyname;
-
+    private int[] keyValuesArray;
+    
     public JoinSortCollector(String resultKeyname, String otherKeyname) {
         this.resultKeyname = resultKeyname;
         this.otherKeyname = otherKeyname;
     }
 
     public SortField sortField(String field, Type type, boolean reverse) {
-        return new JoinSortField(field, type, reverse, this, this.resultKeyname);
+        return new JoinSortField(field, type, reverse, this);
     }
 
-    public void setComparator(String field, Type type, boolean reverse, final int numHits, final int sortPos, Object missingValue) throws IOException {
-        this.comparator = new FieldComparator.TermOrdValComparator(numHits, field, missingValue == SortField.STRING_LAST) {
+    public FieldComparator<?> setComparator(String field, Type type, boolean reverse, final int numHits, final int sortPos, Object missingValue) throws IOException {
+        return new FieldComparator.TermOrdValComparator(numHits, field, missingValue == SortField.STRING_LAST) {
+            
             @Override
             protected SortedDocValues getSortedDocValues(AtomicReaderContext context, String field) throws IOException {
                 if (context != null)
@@ -86,24 +87,51 @@ public class JoinSortCollector extends Collector {
                     }
                 };
             }
+            
+            @Override
+            public int compareBottom(int doc) {
+                return super.compareBottom(otherDocIdForDocId(doc));
+            }
+
+            @Override
+            public int compareTop(int doc) {
+                return super.compareTop(otherDocIdForDocId(doc));
+            }
+
+            @Override
+            public void copy(int slot, int doc) {
+                super.copy(slot, otherDocIdForDocId(doc));
+            }
+
+            @Override
+            public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
+                keyValuesArray = KeyValuesCache.get(context, resultKeyname);
+                return this;
+            }
+            
+            public int otherDocIdForDocId(int doc) {
+                int key = keyValuesArray[doc];
+                try {
+                    for (Entry<AtomicReaderContext, int[]> set : contextToKeys.entrySet()) {
+                        AtomicReaderContext context = set.getKey();
+                        int[] docValues = set.getValue();
+                        for (int i = 0; i < docValues.length; i++) {
+                            if (docValues[i] == key) {
+                                super.setNextReader(context);
+                                return i;
+                            }
+                        }
+                    }
+                    super.setNextReader(null);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                return -1;
+            }
+
         };
     }
-
-    public int setNextReaderForKey(int key) throws IOException {
-        for (Entry<AtomicReaderContext, int[]> set : contextToKeys.entrySet()) {
-            AtomicReaderContext context = set.getKey();
-            int[] docValues = set.getValue();
-            for (int i = 0; i < docValues.length; i++) {
-                if (docValues[i] == key) {
-                    this.comparator.setNextReader(context);
-                    return i;
-                }
-            }
-        }
-        this.comparator.setNextReader(null);
-        return -1;
-    }
-
+    
     @Override
     public void setScorer(Scorer scorer) throws IOException {
 

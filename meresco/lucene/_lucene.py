@@ -469,11 +469,23 @@ class Lucene(Observable):
     def _sortField(self, fieldname, sortDescending, joinSortCollector):
         if fieldname == self.SORT_ON_SCORE:
             return SortField(None, SortField.Type.SCORE, not sortDescending)
-        if joinSortCollector:
-            field = joinSortCollector.sortField(fieldname, SortField.Type.STRING, sortDescending)
+        if self._fieldRegistry.pythonType(fieldname) == str:
+            fieldType = SortField.Type.STRING
+            missingValue = SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST
+        elif self._fieldRegistry.pythonType(fieldname) == int:
+            fieldType = SortField.Type.INT
+            missingValue = None
         else:
-            field = SortField(fieldname, SortField.Type.STRING, sortDescending)
-        field.setMissingValue(SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST)
+            raise ValueError('Unsupported sort type')
+        print fieldname, fieldType
+        if fieldname in ['#tags', '#ratings', '#reviews']:
+            fieldType = SortField.Type.INT
+            missingValue = None
+        if joinSortCollector:
+            field = joinSortCollector.sortField(fieldname, fieldType, sortDescending)
+        else:
+            field = SortField(fieldname, fieldType, sortDescending)
+        field.setMissingValue(missingValue)
         return field
 
     def _logMessage(self, message):

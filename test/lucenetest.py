@@ -953,10 +953,10 @@ FIELD_REGISTRY = FieldRegistry(
 FIELD_REGISTRY.register(fieldname='intField', fieldDefinition=INTFIELD)
 FIELD_REGISTRY.register(fieldname='storedField', fieldType=StringField.TYPE_STORED)
 
-def createDocument(fields, facets=None):
+def createDocument(fields, facets=None, registry=FIELD_REGISTRY):
     document = Document()
     for name, value in fields:
-        document.add(FIELD_REGISTRY.createField(name, value))
+        document.add(registry.createField(name, value))
     for facet, value in facets or []:
         if hasattr(value, 'extend'):
             path = [str(category) for category in value]

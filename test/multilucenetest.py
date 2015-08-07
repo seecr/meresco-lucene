@@ -28,7 +28,7 @@ from cqlparser import parseString as parseCql
 from meresco.core import Observable
 from meresco.lucene import Lucene, TermFrequencySimilarity, LuceneSettings, DrilldownField
 from meresco.lucene.composedquery import ComposedQuery
-from meresco.lucene.fieldregistry import KEY_PREFIX, FieldRegistry
+from meresco.lucene.fieldregistry import KEY_PREFIX, FieldRegistry, INTFIELD
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from meresco.lucene.multilucene import MultiLucene
 from org.apache.lucene.search import MatchAllDocsQuery, BooleanQuery, BooleanClause
@@ -43,9 +43,10 @@ class MultiLuceneTest(SeecrTestCase):
 
     def setUp(self):
         SeecrTestCase.setUp(self)
-        registry = FieldRegistry(drilldownFields=[DrilldownField('cat_%s' % vowel) for vowel in ['M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U']])
-        settings = LuceneSettings(verbose=False, fieldRegistry=registry)
-        settingsLuceneC = LuceneSettings(verbose=False, similarity=TermFrequencySimilarity(), fieldRegistry=registry)
+        self.registry = FieldRegistry(drilldownFields=[DrilldownField('cat_%s' % vowel) for vowel in ['M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U']])
+        self.registry.register('intField', fieldDefinition=INTFIELD)
+        settings = LuceneSettings(verbose=False, fieldRegistry=self.registry)
+        settingsLuceneC = LuceneSettings(verbose=False, similarity=TermFrequencySimilarity(), fieldRegistry=self.registry)
 
         self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), settings=settings)
         self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), settings=settings)
@@ -87,17 +88,17 @@ class MultiLuceneTest(SeecrTestCase):
         self.addDocument(self.luceneA, identifier='A-MQ',   keys=[('A', k7 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false'), ('S', '7')])
         self.addDocument(self.luceneA, identifier='A-MQU',  keys=[('A', k8 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' ), ('S', '8')])
 
-        self.addDocument(self.luceneB, identifier='B-N>A-M',   keys=[('B', k5 ), ('D', k5)], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'A')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MU',  keys=[('B', k6 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false'), ('T', 'B')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  keys=[('B', k7 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'C')])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', k8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false'), ('T', 'D')])
-        self.addDocument(self.luceneB, identifier='B-N',       keys=[('B', k9 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'E')])
-        self.addDocument(self.luceneB, identifier='B',         keys=[('B', k10)], fields=[('N', 'false'), ('O', 'false'), ('P', 'false'), ('T', 'F')])
-        self.addDocument(self.luceneB, identifier='B-P>A-M',   keys=[('B', k5 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' ), ('T', 'G')])
-        self.addDocument(self.luceneB, identifier='B-P>A-MU',  keys=[('B', k6 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' ), ('T', 'H')])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  keys=[('B', k7 )], fields=[('N', 'false'), ('O', 'false' ), ('P', 'true' ), ('T', 'I')])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQU', keys=[('B', k8 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' ), ('T', 'J')])
-        self.addDocument(self.luceneB, identifier='B-P',       keys=[('B', k11)], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' ), ('T', 'K')])
+        self.addDocument(self.luceneB, identifier='B-N>A-M',   keys=[('B', k5 ), ('D', k5)], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'A'), ('intField', 1)])
+        self.addDocument(self.luceneB, identifier='B-N>A-MU',  keys=[('B', k6 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false'), ('T', 'B'), ('intField', 2)])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  keys=[('B', k7 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'C'), ('intField', 3)])
+        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', k8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false'), ('T', 'D'), ('intField', 4)])
+        self.addDocument(self.luceneB, identifier='B-N',       keys=[('B', k9 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'E'), ('intField', 5)])
+        self.addDocument(self.luceneB, identifier='B',         keys=[('B', k10)], fields=[('N', 'false'), ('O', 'false'), ('P', 'false'), ('T', 'F'), ('intField', 6)])
+        self.addDocument(self.luceneB, identifier='B-P>A-M',   keys=[('B', k5 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' ), ('T', 'G'), ('intField', 7)])
+        self.addDocument(self.luceneB, identifier='B-P>A-MU',  keys=[('B', k6 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' ), ('T', 'H'), ('intField', 8)])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  keys=[('B', k7 )], fields=[('N', 'false'), ('O', 'false' ), ('P', 'true' ), ('T', 'I'), ('intField', 9)])
+        self.addDocument(self.luceneB, identifier='B-P>A-MQU', keys=[('B', k8 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' ), ('T', 'J'), ('intField', 10)])
+        self.addDocument(self.luceneB, identifier='B-P',       keys=[('B', k11)], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' ), ('T', 'K'), ('intField', 11)])
 
         self.addDocument(self.luceneC, identifier='C-R', keys=[('C', k5), ('C2', k12)], fields=[('R', 'true')])
         self.addDocument(self.luceneC, identifier='C-S', keys=[('C', k8)], fields=[('S', 'true')])
@@ -872,11 +873,19 @@ class MultiLuceneTest(SeecrTestCase):
         result = retval(self.dna.any.executeComposedQuery(cq))
         self.assertEqual(['A-MQU', 'A-MQ', 'A-MU', 'A-M', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
 
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        cq.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        cq.addSortKey({'sortBy': 'intField', 'sortDescending': True, 'core': 'coreB'})
+        cq.addSortKey({'sortBy': 'S', 'sortDescending': False, 'core': 'coreA'})
+        result = retval(self.dna.any.executeComposedQuery(cq))
+        self.assertEqual(['A-MQU', 'A-MQ', 'A-MU', 'A-M', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
+
     def addDocument(self, lucene, identifier, keys, fields):
         consume(lucene.addDocument(
             identifier=identifier,
-            document=createDocument([(KEY_PREFIX + keyField, keyValue) for (keyField, keyValue) in keys]+fields, facets=[('cat_'+field, value) for field, value in fields]),
-            ))
+            document=createDocument([(KEY_PREFIX + keyField, keyValue) for (keyField, keyValue) in keys]+fields, facets=[('cat_'+field, value) for field, value in fields], registry=self.registry),
+        ))
 
 def luceneQueryFromCql(cqlString):
     return LuceneQueryComposer([], luceneSettings=LuceneSettings()).compose(parseCql(cqlString))

@@ -26,11 +26,11 @@
 package org.meresco.lucene.search;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FieldCache;
@@ -44,9 +44,12 @@ import org.meresco.lucene.search.join.KeyValuesCache;
 public class JoinSortCollector extends Collector {
 
     public FieldComparator<BytesRef> comparator;
-    protected Map<AtomicReaderContext, int[]> contextToKeys = new HashMap<AtomicReaderContext, int[]>();
     private String resultKeyname;
     private String otherKeyname;
+    protected int[] keys;
+    private int[] keyValues;
+    private int docBase;
+    private IndexReaderContext topLevelReaderContext;
     
     public JoinSortCollector(String resultKeyname, String otherKeyname) {
         this.resultKeyname = resultKeyname;
@@ -69,20 +72,28 @@ public class JoinSortCollector extends Collector {
     }
     
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
-
-    }
+    public void setScorer(Scorer scorer) throws IOException {}
 
     @Override
     public void collect(int doc) throws IOException {
-
+        keys[doc + docBase] = this.keyValues[doc];
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.contextToKeys.put(context, KeyValuesCache.get(context, this.otherKeyname));
+        if (this.topLevelReaderContext == null) {
+            this.topLevelReaderContext = ReaderUtil.getTopLevelContext(context);
+            this.keys = new int[this.topLevelReaderContext.reader().maxDoc()];
+        }
+        keyValues = KeyValuesCache.get(context, this.otherKeyname);
+        docBase = context.docBase;
     }
-
+    
+    public AtomicReaderContext contextForDocId(int docId) {
+        List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
+        return leaves.get(ReaderUtil.subIndex(docId, leaves));
+    }
+    
     @Override
     public boolean acceptsDocsOutOfOrder() {
         return false;
@@ -153,14 +164,11 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator {
     public int otherDocIdForDocId(int doc) {
         int key = keyValuesArray[doc];
         try {
-            for (Entry<AtomicReaderContext, int[]> set : parent.contextToKeys.entrySet()) {
-                AtomicReaderContext context = set.getKey();
-                int[] docValues = set.getValue();
-                for (int i = 0; i < docValues.length; i++) {
-                    if (docValues[i] == key) {
-                        super.setNextReader(context);
-                        return i;
-                    }
+            for (int i = 0; i<parent.keys.length; i++) {
+                if (key == parent.keys[i]) {
+                    AtomicReaderContext context = parent.contextForDocId(i);
+                    super.setNextReader(context);
+                    return i - context.docBase;
                 }
             }
             super.setNextReader(null);
@@ -220,14 +228,10 @@ class JoinIntComparator extends FieldComparator.IntComparator {
     public int otherDocIdForDocId(int doc) {
         int key = keyValuesArray[doc];
         try {
-            for (Entry<AtomicReaderContext, int[]> set : parent.contextToKeys.entrySet()) {
-                AtomicReaderContext context = set.getKey();
-                int[] docValues = set.getValue();
-                for (int i = 0; i < docValues.length; i++) {
-                    if (docValues[i] == key) {
-                        super.setNextReader(context);
-                        return i;
-                    }
+            for (int i = 0; i<parent.keys.length; i++) {
+                if (key == parent.keys[i]) {
+                    super.setNextReader(parent.contextForDocId(i));
+                    return i;
                 }
             }
             super.setNextReader(null);

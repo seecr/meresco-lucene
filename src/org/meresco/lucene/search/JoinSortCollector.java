@@ -46,7 +46,7 @@ public class JoinSortCollector extends Collector {
     public FieldComparator<BytesRef> comparator;
     private String resultKeyname;
     private String otherKeyname;
-    protected int[] keys;
+    protected int[] keys = new int[0];
     private int[] keyValues;
     private int docBase;
     private IndexReaderContext topLevelReaderContext;
@@ -76,7 +76,19 @@ public class JoinSortCollector extends Collector {
 
     @Override
     public void collect(int doc) throws IOException {
-        keys[doc + docBase] = this.keyValues[doc];
+        int key = this.keyValues[doc];
+        if (key >= keys.length)
+            resizeKeys((int) ((key + 1) * 1.25));
+        keys[key] = doc + docBase;
+    }
+    
+    void resizeKeys(int newSize) {
+        if (newSize <= keys.length) {
+            return;
+        }
+        int[] dest = new int[newSize];
+        System.arraycopy(keys, 0, dest, 0, keys.length);
+        this.keys = dest;
     }
 
     @Override
@@ -164,11 +176,12 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator {
     public int otherDocIdForDocId(int doc) {
         int key = keyValuesArray[doc];
         try {
-            for (int i = 0; i<parent.keys.length; i++) {
-                if (key == parent.keys[i]) {
-                    AtomicReaderContext context = parent.contextForDocId(i);
+            if (key < parent.keys.length) { 
+                int otherDoc = parent.keys[key];
+                if (otherDoc > 0) {
+                    AtomicReaderContext context = parent.contextForDocId(otherDoc);
                     super.setNextReader(context);
-                    return i - context.docBase;
+                    return otherDoc - context.docBase;
                 }
             }
             super.setNextReader(null);
@@ -228,10 +241,12 @@ class JoinIntComparator extends FieldComparator.IntComparator {
     public int otherDocIdForDocId(int doc) {
         int key = keyValuesArray[doc];
         try {
-            for (int i = 0; i<parent.keys.length; i++) {
-                if (key == parent.keys[i]) {
-                    super.setNextReader(parent.contextForDocId(i));
-                    return i;
+            if (key < parent.keys.length) { 
+                int otherDoc = parent.keys[key];
+                if (otherDoc > 0) {
+                    AtomicReaderContext context = parent.contextForDocId(otherDoc);
+                    super.setNextReader(context);
+                    return otherDoc - context.docBase;
                 }
             }
             super.setNextReader(null);

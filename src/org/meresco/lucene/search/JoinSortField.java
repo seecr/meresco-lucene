@@ -40,6 +40,6 @@ public class JoinSortField extends SortField {
     }
 
     public FieldComparator<?> getComparator(final int numHits, final int sortPos) throws IOException {
-        return this.joinSortCollector.setComparator(this.getField(), this.getType(), this.getReverse(), numHits, sortPos, this.missingValue);
+        return this.joinSortCollector.getComparator(this.getField(), this.getType(), this.getReverse(), numHits, sortPos, this.missingValue);
     }
 }

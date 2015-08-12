@@ -25,7 +25,7 @@
 ## end license ##
 
 from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType, IntField, LongField, DoubleField
-from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery
+from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery, SortField
 from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.facet import FacetsConfig, DrillDownQuery, FacetField
 from warnings import warn
@@ -134,6 +134,23 @@ class FieldRegistry(object):
         elif numericType == FieldType.NumericType.FLOAT:
             query = NumericRangeQuery.newFloatRange
         return query, definition.pythonType
+
+    def sortFieldType(self, fieldname):
+        if not self.isNumeric(fieldname):
+            return SortField.Type.STRING
+        definition = self._getFieldDefinition(fieldname)
+        numericType = definition.type.numericType()
+        if numericType == FieldType.NumericType.INT:
+            return SortField.Type.INT
+        elif numericType == FieldType.NumericType.DOUBLE:
+            return SortField.Type.DOUBLE
+        elif numericType == FieldType.NumericType.LONG:
+            return SortField.Type.LONG
+
+    def missingValueForSort(self, fieldname, sortDescending):
+        if not self.isNumeric(fieldname):
+            return SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST
+        return None
 
     def _getFieldDefinition(self, fieldname):
         fieldDefinition = self._fieldDefinitions.get(fieldname)

@@ -27,7 +27,7 @@
 from seecr.test import SeecrTestCase
 from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE, STRINGFIELD, INTFIELD, LONGFIELD
 from org.apache.lucene.index import FieldInfo
-from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery
+from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery, SortField
 from org.apache.lucene.document import StringField, TextField
 from meresco.lucene import DrilldownField
 import warnings
@@ -194,4 +194,18 @@ class FieldRegistryTest(SeecrTestCase):
         registry = FieldRegistry(drilldownFields=[DrilldownField(name='aap', indexFieldName='aapjes')])
         self.assertEquals(set(['aapjes']), registry.indexFieldNames(['aap', 'vis', 'vuur']))
 
+    def testSortField(self):
+        registry = FieldRegistry()
+        registry.register("longfield", fieldDefinition=LONGFIELD)
+        registry.register("intfield", fieldDefinition=INTFIELD)
+        registry.register("stringfield", fieldDefinition=STRINGFIELD)
 
+        self.assertEqual(SortField.Type.LONG, registry.sortFieldType("longfield"))
+        self.assertEqual(None, registry.missingValueForSort("longfield", True))
+
+        self.assertEqual(SortField.Type.INT, registry.sortFieldType("intfield"))
+        self.assertEqual(None, registry.missingValueForSort("intfield", True))
+
+        self.assertEqual(SortField.Type.STRING, registry.sortFieldType("stringfield"))
+        self.assertEqual(SortField.STRING_FIRST, registry.missingValueForSort("stringfield", True))
+        self.assertEqual(SortField.STRING_LAST, registry.missingValueForSort("stringfield", False))

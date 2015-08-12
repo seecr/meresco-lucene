@@ -71,6 +71,10 @@ public class JoinSortCollector extends Collector {
                 return new JoinTermOrdValComparator(numHits, field, missingValue == SortField.STRING_LAST, this);
             case INT:
                 return new JoinIntComparator(numHits, field, (Integer) missingValue, this);
+            case LONG:
+                return new JoinLongComparator(numHits, field, (Long) missingValue, this);
+            case DOUBLE:
+                return new JoinDoubleComparator(numHits, field, (Double) missingValue, this);
             default:
                 throw new IllegalStateException("Illegal join sort type: " + type);
         }
@@ -246,3 +250,94 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
     }
 }
 
+class JoinLongComparator extends FieldComparator.LongComparator implements JoinFieldComparator {
+    private JoinSortCollector collector;
+    private int[] resultKeys;
+
+    public JoinLongComparator(int numHits, String field, Long missingValue, JoinSortCollector collector) {
+        super(numHits, field, null, missingValue);
+        this.collector = collector;
+    }
+
+    @Override
+    protected FieldCache.Longs getLongValues(AtomicReaderContext context, String field) throws IOException {
+        if (context != null)
+            return super.getLongValues(context, field);
+        return FieldCache.Longs.EMPTY;
+    }
+
+    @Override
+    public JoinLongComparator setNextReader(AtomicReaderContext context) throws IOException {
+        this.resultKeys = KeyValuesCache.get(context, this.collector.resultKeyName);
+        return this;
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+        return super.compareBottom(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+    }
+
+    @Override
+    public int compareTop(int doc) {
+        return super.compareTop(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+        super.copy(slot, this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+    }
+
+    public void setOtherCoreContext(AtomicReaderContext context) {
+        try {
+            super.setNextReader(context);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+
+class JoinDoubleComparator extends FieldComparator.DoubleComparator implements JoinFieldComparator {
+    private JoinSortCollector collector;
+    private int[] resultKeys;
+
+    public JoinDoubleComparator(int numHits, String field, Double missingValue, JoinSortCollector collector) {
+        super(numHits, field, null, missingValue);
+        this.collector = collector;
+    }
+
+    @Override
+    protected FieldCache.Doubles getDoubleValues(AtomicReaderContext context, String field) throws IOException {
+        if (context != null)
+            return super.getDoubleValues(context, field);
+        return FieldCache.Doubles.EMPTY;
+    }
+
+    @Override
+    public JoinDoubleComparator setNextReader(AtomicReaderContext context) throws IOException {
+        this.resultKeys = KeyValuesCache.get(context, this.collector.resultKeyName);
+        return this;
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+        return super.compareBottom(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+    }
+
+    @Override
+    public int compareTop(int doc) {
+        return super.compareTop(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+        super.copy(slot, this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+    }
+
+    public void setOtherCoreContext(AtomicReaderContext context) {
+        try {
+            super.setNextReader(context);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+}

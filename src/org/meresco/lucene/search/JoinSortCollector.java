@@ -51,7 +51,6 @@ public class JoinSortCollector extends Collector {
     protected String resultKeyName;
     private String otherKeyName;
     private int[] keys;
-    private int[] resultKeys;
     private int docBase;
     private IndexReaderContext topLevelReaderContext;
     private static int docIdsByKeyInitialSize = 0;
@@ -112,11 +111,11 @@ public class JoinSortCollector extends Collector {
         return false;
     }
 
-    int otherDocIdForDocId(int doc, JoinFieldComparator comparator) {
-        int key = this.resultKeys[doc];
+    int otherDocIdForKey(int key, JoinFieldComparator comparator) {
         if (key < this.docIdsByKey.length) {
-            int otherDoc = this.docIdsByKey[key] - 1;
+            int otherDoc = this.docIdsByKey[key];
             if (otherDoc > 0) {
+                otherDoc -= 1;
                 AtomicReaderContext context = this.contextForDocId(otherDoc);
                 comparator.setOtherCoreContext(context);
                 return otherDoc - context.docBase;
@@ -130,15 +129,12 @@ public class JoinSortCollector extends Collector {
         List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
         return leaves.get(ReaderUtil.subIndex(docId, leaves));
     }
-
-    public void setResultCoreContext(AtomicReaderContext context) throws IOException {
-        this.resultKeys = KeyValuesCache.get(context, this.resultKeyName);
-    }
 }
 
 
 class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator implements JoinFieldComparator {
     final private JoinSortCollector collector;
+    private int[] resultKeys;
 
     public JoinTermOrdValComparator(int numHits, String field, boolean reverse, JoinSortCollector collector) {
         super(numHits, field, reverse);
@@ -175,23 +171,23 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator impl
 
     @Override
     public JoinTermOrdValComparator setNextReader(AtomicReaderContext context) throws IOException {
-        this.collector.setResultCoreContext(context);
+        this.resultKeys = KeyValuesCache.get(context, this.collector.resultKeyName);
         return this;
     }
 
     @Override
     public int compareBottom(int doc) {
-        return super.compareBottom(this.collector.otherDocIdForDocId(doc, this));
+        return super.compareBottom(this.collector.otherDocIdForKey(resultKeys[doc], this));
     }
 
     @Override
     public int compareTop(int doc) {
-        return super.compareTop(this.collector.otherDocIdForDocId(doc, this));
+        return super.compareTop(this.collector.otherDocIdForKey(resultKeys[doc], this));
     }
 
     @Override
     public void copy(int slot, int doc) {
-        super.copy(slot, this.collector.otherDocIdForDocId(doc, this));
+        super.copy(slot, this.collector.otherDocIdForKey(resultKeys[doc], this));
     }
 
     public void setOtherCoreContext(AtomicReaderContext context) {
@@ -206,6 +202,7 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator impl
 
 class JoinIntComparator extends FieldComparator.IntComparator implements JoinFieldComparator {
     private JoinSortCollector collector;
+    private int[] resultKeys;
 
     public JoinIntComparator(int numHits, String field, Integer missingValue, JoinSortCollector collector) {
         super(numHits, field, null, missingValue);
@@ -216,34 +213,28 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
     protected FieldCache.Ints getIntValues(AtomicReaderContext context, String field) throws IOException {
         if (context != null)
             return super.getIntValues(context, field);
-
-        return new FieldCache.Ints() {
-            @Override
-            public int get(int docID) {
-                return 0;
-            }
-        };
+        return FieldCache.Ints.EMPTY;
     }
 
     @Override
     public JoinIntComparator setNextReader(AtomicReaderContext context) throws IOException {
-        this.collector.setResultCoreContext(context);
+        this.resultKeys = KeyValuesCache.get(context, this.collector.resultKeyName);
         return this;
     }
 
     @Override
     public int compareBottom(int doc) {
-        return super.compareBottom(this.collector.otherDocIdForDocId(doc, this));
+        return super.compareBottom(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
     }
 
     @Override
     public int compareTop(int doc) {
-        return super.compareTop(this.collector.otherDocIdForDocId(doc, this));
+        return super.compareTop(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
     }
 
     @Override
     public void copy(int slot, int doc) {
-        super.copy(slot, this.collector.otherDocIdForDocId(doc, this));
+        super.copy(slot, this.collector.otherDocIdForKey(this.resultKeys[doc], this));
     }
 
     public void setOtherCoreContext(AtomicReaderContext context) {

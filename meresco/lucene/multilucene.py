@@ -34,7 +34,7 @@ from seecr.utils.generatorutils import generatorReturn
 from org.apache.lucene.search import MatchAllDocsQuery
 from org.meresco.lucene.search.join import KeySuperCollector, AggregateScoreSuperCollector, ScoreSuperCollector
 from org.meresco.lucene.queries import KeyFilter
-from org.meresco.lucene.search import JoinSortCollector
+from org.meresco.lucene.search import JoinSortCollector, JoinSortField
 from java.util import ArrayList
 
 from _lucene import millis
@@ -95,11 +95,16 @@ class MultiLucene(Observable):
             keyCollectors[keyName] = KeySuperCollector(keyName)
 
         joinSortCollectors = dict()
-        for sortKey in query.sortKeys:
+        for i, sortKey in enumerate(query.sortKeys):
             coreName = sortKey.get('core', resultCoreName)
-            if coreName != resultCoreName and coreName not in joinSortCollectors:
-                joinSortCollectors[coreName] = joinSortCollector = JoinSortCollector(query.keyName(resultCoreName, coreName), query.keyName(coreName, resultCoreName))
-                self.call[coreName].search(query=MatchAllDocsQuery(), collector=joinSortCollector)
+            if coreName != resultCoreName:
+                if coreName not in joinSortCollectors:
+                    joinSortCollectors[coreName] = joinSortCollector = JoinSortCollector(query.keyName(resultCoreName, coreName), query.keyName(coreName, resultCoreName))
+                    self.call[coreName].search(query=MatchAllDocsQuery(), collector=joinSortCollector)
+                fieldRegistry = self.call[coreName].getFieldRegistry()
+                sortField = JoinSortField(sortKey['sortBy'], fieldRegistry.sortFieldType(sortKey['sortBy']), sortKey['sortDescending'], joinSortCollectors[sortKey['core']])
+                sortField.setMissingValue(fieldRegistry.missingValueForSort(sortKey['sortBy'], sortKey['sortDescending']))
+                query.sortKeys[i] = sortField
 
         result = yield self.any[resultCoreName].executeQuery(
                 luceneQuery=resultCoreQuery or MatchAllDocsQuery(),
@@ -107,7 +112,6 @@ class MultiLucene(Observable):
                 facets=query.facetsFor(resultCoreName),
                 scoreCollectors=aggregateScoreCollectors,
                 keyCollectors=keyCollectors.values(),
-                joinSortCollectors=joinSortCollectors,
                 **query.otherKwargs()
             )
 

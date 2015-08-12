@@ -100,6 +100,9 @@ class Lucene(Observable):
         settings['clusteringMinPoints'] = self._clusteringMinPoints
         return settings
 
+    def getFieldRegistry(self):
+        return self._fieldRegistry
+
     def addDocument(self, document, identifier=None):
         term = None
         if identifier:
@@ -166,22 +169,22 @@ class Lucene(Observable):
         generatorReturn(self._facetResult(facetCollector, facets))
         yield
 
-    def _createCollectors(self, start, stop, sortKeys=None, clusterFields=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollectors=None, scoreCollectors=None, joinSortCollectors=None, **kwargs):
+    def _createCollectors(self, start, stop, sortKeys=None, clusterFields=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollectors=None, scoreCollectors=None, **kwargs):
         collectors = []
         dedupCollector = None
         groupingCollector = None
         facetCollector = None
         if clusterFields:
-            resultsCollector = topCollector = self._topCollector(start=start, stop=stop + self._clusterMoreRecords, sortKeys=sortKeys, joinSortCollectors=joinSortCollectors)
+            resultsCollector = topCollector = self._topCollector(start=start, stop=stop + self._clusterMoreRecords, sortKeys=sortKeys)
         elif groupingField:
-            topCollector = self._topCollector(start=start, stop=stop * 10, sortKeys=sortKeys, joinSortCollectors=joinSortCollectors)
+            topCollector = self._topCollector(start=start, stop=stop * 10, sortKeys=sortKeys)
             resultsCollector = groupingCollector = GroupSuperCollector(groupingField, topCollector)
         elif dedupField:
-            topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys, joinSortCollectors=joinSortCollectors)
+            topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
             constructor = DeDupFilterSuperCollector
             resultsCollector = dedupCollector = constructor(dedupField, dedupSortField, topCollector)
         else:
-            resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys, joinSortCollectors=joinSortCollectors)
+            resultsCollector = topCollector = self._topCollector(start=start, stop=stop, sortKeys=sortKeys)
 
         collectors.append(resultsCollector)
 
@@ -449,7 +452,7 @@ class Lucene(Observable):
             inner.name = self.coreName
             inner.numDocs = self._index.numDocs
 
-    def _topCollector(self, start, stop, sortKeys, joinSortCollectors):
+    def _topCollector(self, start, stop, sortKeys):
         if stop <= start:
             return TotalHitCountSuperCollector()
         # fillFields = False # always true for multi-threading/sharding
@@ -459,32 +462,20 @@ class Lucene(Observable):
         if sortKeys:
             sortFields = []
             for sortKey in sortKeys:
-                joinSortCollector = joinSortCollectors.get(sortKey.get('core')) if joinSortCollectors and 'core' in sortKey else None
-                sortFields.append(self._sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending'], joinSortCollector=joinSortCollector))
+                if isinstance(sortKey, dict):
+                    sortFields.append(self._sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending']))
+                else:
+                    sortFields.append(sortKey)
             sort = Sort(sortFields)
         else:
             return TopScoreDocSuperCollector(stop, docsScoredInOrder)
         return TopFieldSuperCollector(sort, stop, trackDocScores, trackMaxScore, docsScoredInOrder)
 
-    def _sortField(self, fieldname, sortDescending, joinSortCollector):
+    def _sortField(self, fieldname, sortDescending):
         if fieldname == self.SORT_ON_SCORE:
             return SortField(None, SortField.Type.SCORE, not sortDescending)
-        if self._fieldRegistry.pythonType(fieldname) == str:
-            fieldType = SortField.Type.STRING
-            missingValue = SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST
-        elif self._fieldRegistry.pythonType(fieldname) == int:
-            fieldType = SortField.Type.INT
-            missingValue = None
-        else:
-            raise ValueError('Unsupported sort type')
-        if fieldname in ['#tags', '#ratings', '#reviews']:
-            fieldType = SortField.Type.INT
-            missingValue = None
-        if joinSortCollector:
-            field = joinSortCollector.sortField(fieldname, fieldType, sortDescending)
-        else:
-            field = SortField(fieldname, fieldType, sortDescending)
-        field.setMissingValue(missingValue)
+        field = SortField(fieldname, self._fieldRegistry.sortFieldType(fieldname), sortDescending)
+        field.setMissingValue(self._fieldRegistry.missingValueForSort(fieldname, sortDescending))
         return field
 
     def _logMessage(self, message):

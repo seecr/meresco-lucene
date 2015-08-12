@@ -31,7 +31,8 @@ from meresco.lucene.composedquery import ComposedQuery
 from meresco.lucene.fieldregistry import KEY_PREFIX, FieldRegistry, INTFIELD
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 from meresco.lucene.multilucene import MultiLucene
-from org.apache.lucene.search import MatchAllDocsQuery, BooleanQuery, BooleanClause
+from org.apache.lucene.search import MatchAllDocsQuery, BooleanQuery, BooleanClause, SortField
+from org.meresco.lucene.search import JoinSortCollector, JoinSortField
 from os.path import join
 from seecr.test import SeecrTestCase, CallTrace
 from weightless.core import be, compose, retval, consume
@@ -847,16 +848,6 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertTrue(result.hits[0].score > result.hits[1].score)
 
     def testJoinSort(self):
-        from org.meresco.lucene.search import JoinSortCollector
-        joinSortCollector = JoinSortCollector(KEY_PREFIX + 'A', KEY_PREFIX+'B')
-        self.luceneB.search(query=MatchAllDocsQuery(), collector=joinSortCollector)
-
-        result = retval(self.luceneA.executeQuery(MatchAllDocsQuery(), sortKeys=[{'sortBy': 'T', 'sortDescending': False, 'core': 'coreB'}], joinSortCollectors={'coreB': joinSortCollector}))
-        self.assertEqual(['A-M', 'A-MU', 'A-MQ', 'A-MQU', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
-
-        result = retval(self.luceneA.executeQuery(MatchAllDocsQuery(), sortKeys=[{'sortBy': 'T', 'sortDescending': True, 'core': 'coreB'}], joinSortCollectors={'coreB': joinSortCollector}))
-        self.assertEqual(['A-MQU', 'A-MQ', 'A-MU', 'A-M', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
-
         cq = ComposedQuery('coreA')
         cq.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
         cq.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
@@ -879,6 +870,22 @@ class MultiLuceneTest(SeecrTestCase):
         cq.addSortKey({'sortBy': 'intField', 'sortDescending': True, 'core': 'coreB'})
         cq.addSortKey({'sortBy': 'S', 'sortDescending': False, 'core': 'coreA'})
         result = retval(self.dna.any.executeComposedQuery(cq))
+        self.assertEqual(['A-MQU', 'A-MQ', 'A-MU', 'A-M', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
+
+    def testSortWithJoinField(self):
+        joinSortCollector = JoinSortCollector(KEY_PREFIX + 'A', KEY_PREFIX+'B')
+        self.luceneB.search(query=MatchAllDocsQuery(), collector=joinSortCollector)
+
+        sortField = JoinSortField('T', self.registry.sortFieldType('T'), False, joinSortCollector)
+        sortField.setMissingValue(self.registry.missingValueForSort('T', False))
+
+        result = retval(self.luceneA.executeQuery(MatchAllDocsQuery(), sortKeys=[sortField]))
+        self.assertEqual(['A-M', 'A-MU', 'A-MQ', 'A-MQU', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
+
+        sortField = JoinSortField('T', self.registry.sortFieldType('T'), True, joinSortCollector)
+        sortField.setMissingValue(self.registry.missingValueForSort('T', True))
+
+        result = retval(self.luceneA.executeQuery(MatchAllDocsQuery(), sortKeys=[sortField]))
         self.assertEqual(['A-MQU', 'A-MQ', 'A-MU', 'A-M', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
 
     def addDocument(self, lucene, identifier, keys, fields):

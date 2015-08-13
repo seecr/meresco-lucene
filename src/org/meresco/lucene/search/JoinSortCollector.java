@@ -343,7 +343,6 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
     public void copy(int slot, int doc) {
         int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
         if (otherDoc == -1) {
-            System.out.println("" + slot + ", " + values[slot] + ", " + this.missingValue);
             values[slot] = this.missingValue;
         }
         else {

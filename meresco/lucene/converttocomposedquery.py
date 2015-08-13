@@ -73,7 +73,7 @@ class ConvertToComposedQuery(Observable):
 
         for sortKey in sortKeys or []:
             core, sortBy = self._parseCorePrefix(sortKey['sortBy'], self._cores)
-            cq.addSortKey(dict(core=core, sortBy=sortBy, sortDescending=sortKey['sortDescending']))
+            cq.addSortKey(dict(sortKey, core=core, sortBy=sortBy))
 
         filters = extraArguments.get('x-filter', [])
         for f in filters:

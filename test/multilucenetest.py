@@ -872,18 +872,26 @@ class MultiLuceneTest(SeecrTestCase):
         result = retval(self.dna.any.executeComposedQuery(cq))
         self.assertEqual(['A-MQU', 'A-MQ', 'A-MU', 'A-M', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
 
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
+        cq.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
+        cq.addSortKey({'sortBy': 'intField', 'sortDescending': True, 'core': 'coreB', 'missingValue': 20})
+        cq.addSortKey({'sortBy': 'S', 'sortDescending': False, 'core': 'coreA'})
+        result = retval(self.dna.any.executeComposedQuery(cq))
+        self.assertEqual(['A', 'A-U', 'A-Q', 'A-QU', 'A-MQU', 'A-MQ', 'A-MU', 'A-M'], [hit.id for hit in result.hits])
+
     def testSortWithJoinField(self):
         joinSortCollector = JoinSortCollector(KEY_PREFIX + 'A', KEY_PREFIX+'B')
         self.luceneB.search(query=MatchAllDocsQuery(), collector=joinSortCollector)
 
         sortField = JoinSortField('T', self.registry.sortFieldType('T'), False, joinSortCollector)
-        sortField.setMissingValue(self.registry.missingValueForSort('T', False))
+        sortField.setMissingValue(self.registry.defaultMissingValueForSort('T', False))
 
         result = retval(self.luceneA.executeQuery(MatchAllDocsQuery(), sortKeys=[sortField]))
         self.assertEqual(['A-M', 'A-MU', 'A-MQ', 'A-MQU', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])
 
         sortField = JoinSortField('T', self.registry.sortFieldType('T'), True, joinSortCollector)
-        sortField.setMissingValue(self.registry.missingValueForSort('T', True))
+        sortField.setMissingValue(self.registry.defaultMissingValueForSort('T', True))
 
         result = retval(self.luceneA.executeQuery(MatchAllDocsQuery(), sortKeys=[sortField]))
         self.assertEqual(['A-MQU', 'A-MQ', 'A-MU', 'A-M', 'A', 'A-U', 'A-Q', 'A-QU'], [hit.id for hit in result.hits])

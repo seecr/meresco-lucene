@@ -147,7 +147,7 @@ class FieldRegistry(object):
         elif numericType == FieldType.NumericType.LONG:
             return SortField.Type.LONG
 
-    def missingValueForSort(self, fieldname, sortDescending):
+    def defaultMissingValueForSort(self, fieldname, sortDescending):
         if not self.isNumeric(fieldname):
             return SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST
         return None

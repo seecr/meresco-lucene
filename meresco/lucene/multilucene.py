@@ -103,7 +103,8 @@ class MultiLucene(Observable):
                     self.call[coreName].search(query=MatchAllDocsQuery(), collector=joinSortCollector)
                 fieldRegistry = self.call[coreName].getFieldRegistry()
                 sortField = JoinSortField(sortKey['sortBy'], fieldRegistry.sortFieldType(sortKey['sortBy']), sortKey['sortDescending'], joinSortCollectors[sortKey['core']])
-                sortField.setMissingValue(fieldRegistry.missingValueForSort(sortKey['sortBy'], sortKey['sortDescending']))
+                sortField.setMissingValue(sortKey.get('missingValue', fieldRegistry.defaultMissingValueForSort(sortKey['sortBy'], sortKey['sortDescending'])))
+                # sortField.setMissingValue(2.5)
                 query.sortKeys[i] = sortField
 
         result = yield self.any[resultCoreName].executeQuery(

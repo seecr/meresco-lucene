@@ -201,11 +201,11 @@ class FieldRegistryTest(SeecrTestCase):
         registry.register("stringfield", fieldDefinition=STRINGFIELD)
 
         self.assertEqual(SortField.Type.LONG, registry.sortFieldType("longfield"))
-        self.assertEqual(None, registry.missingValueForSort("longfield", True))
+        self.assertEqual(None, registry.defaultMissingValueForSort("longfield", True))
 
         self.assertEqual(SortField.Type.INT, registry.sortFieldType("intfield"))
-        self.assertEqual(None, registry.missingValueForSort("intfield", True))
+        self.assertEqual(None, registry.defaultMissingValueForSort("intfield", True))
 
         self.assertEqual(SortField.Type.STRING, registry.sortFieldType("stringfield"))
-        self.assertEqual(SortField.STRING_FIRST, registry.missingValueForSort("stringfield", True))
-        self.assertEqual(SortField.STRING_LAST, registry.missingValueForSort("stringfield", False))
+        self.assertEqual(SortField.STRING_FIRST, registry.defaultMissingValueForSort("stringfield", True))
+        self.assertEqual(SortField.STRING_LAST, registry.defaultMissingValueForSort("stringfield", False))

@@ -463,7 +463,7 @@ class Lucene(Observable):
             sortFields = []
             for sortKey in sortKeys:
                 if isinstance(sortKey, dict):
-                    sortFields.append(self._sortField(fieldname=sortKey['sortBy'], sortDescending=sortKey['sortDescending']))
+                    sortFields.append(self._sortField(sortKey))
                 else:
                     sortFields.append(sortKey)
             sort = Sort(sortFields)
@@ -471,11 +471,13 @@ class Lucene(Observable):
             return TopScoreDocSuperCollector(stop, docsScoredInOrder)
         return TopFieldSuperCollector(sort, stop, trackDocScores, trackMaxScore, docsScoredInOrder)
 
-    def _sortField(self, fieldname, sortDescending):
+    def _sortField(self, sortKey):
+        fieldname=sortKey['sortBy']
+        sortDescending=sortKey['sortDescending']
         if fieldname == self.SORT_ON_SCORE:
             return SortField(None, SortField.Type.SCORE, not sortDescending)
         field = SortField(fieldname, self._fieldRegistry.sortFieldType(fieldname), sortDescending)
-        field.setMissingValue(self._fieldRegistry.missingValueForSort(fieldname, sortDescending))
+        field.setMissingValue(sortKey.get('missingValue', self._fieldRegistry.defaultMissingValueForSort(fieldname, sortDescending)))
         return field
 
     def _logMessage(self, message):

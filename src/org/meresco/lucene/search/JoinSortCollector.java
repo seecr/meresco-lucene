@@ -26,6 +26,7 @@
 package org.meresco.lucene.search;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
 
 import org.apache.lucene.index.AtomicReaderContext;
@@ -33,7 +34,6 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SortField;
@@ -43,6 +43,9 @@ import org.meresco.lucene.search.join.KeyValuesCache;
 
 
 interface JoinFieldComparator {
+    public int compareBottom(int doc);
+    public int compareTop(int doc);
+    public void copy(int slot, int doc);
     void setOtherCoreContext(AtomicReaderContext context);
 }
 
@@ -71,8 +74,6 @@ public class JoinSortCollector extends Collector {
                 return new JoinTermOrdValComparator(numHits, field, missingValue == SortField.STRING_LAST, this);
             case INT:
                 return new JoinIntComparator(numHits, field, (Integer) missingValue, this);
-            case LONG:
-                return new JoinLongComparator(numHits, field, (Long) missingValue, this);
             case DOUBLE:
                 return new JoinDoubleComparator(numHits, field, (Double) missingValue, this);
             default:
@@ -207,17 +208,24 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator impl
 class JoinIntComparator extends FieldComparator.IntComparator implements JoinFieldComparator {
     private JoinSortCollector collector;
     private int[] resultKeys;
+    private Integer topValue;
+    private Integer bottomValue;
+    private int[] values;
 
     public JoinIntComparator(int numHits, String field, Integer missingValue, JoinSortCollector collector) {
-        super(numHits, field, null, missingValue);
+        super(numHits, field, null, missingValue == null ? 0 : missingValue);
         this.collector = collector;
+        this.values = accessValuesFromSuper();
     }
 
-    @Override
-    protected FieldCache.Ints getIntValues(AtomicReaderContext context, String field) throws IOException {
-        if (context != null)
-            return super.getIntValues(context, field);
-        return FieldCache.Ints.EMPTY;
+    private int[] accessValuesFromSuper() {
+        try {
+            Field valuesField = FieldComparator.IntComparator.class.getDeclaredField("values");
+            valuesField.setAccessible(true);
+            return (int[]) valuesField.get(this);
+        } catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -226,22 +234,47 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
         return this;
     }
 
+    public void setTopValue(Integer value) {
+        this.topValue = value;
+        super.setTopValue(value);
+    }
+
+    public void setBottomValue(Integer value) {
+        this.bottomValue = value;
+        super.setTopValue(value);
+    }
+
     @Override
     public int compareBottom(int doc) {
-        return super.compareBottom(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        if (otherDoc == -1)
+            return Integer.compare(this.bottomValue, this.missingValue);
+        return super.compareBottom(otherDoc);
     }
 
     @Override
     public int compareTop(int doc) {
-        return super.compareTop(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        if (otherDoc == -1)
+            return Integer.compare(this.topValue, this.missingValue);
+        return super.compareTop(otherDoc);
     }
 
     @Override
     public void copy(int slot, int doc) {
-        super.copy(slot, this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        if (otherDoc == -1) {
+            values[slot] = this.missingValue;
+        }
+        else {
+            super.copy(slot, otherDoc);
+        }
     }
 
     public void setOtherCoreContext(AtomicReaderContext context) {
+        if (context == null) {
+            return;
+        }
         try {
             super.setNextReader(context);
         } catch (IOException e) {
@@ -250,66 +283,28 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
     }
 }
 
-class JoinLongComparator extends FieldComparator.LongComparator implements JoinFieldComparator {
-    private JoinSortCollector collector;
-    private int[] resultKeys;
-
-    public JoinLongComparator(int numHits, String field, Long missingValue, JoinSortCollector collector) {
-        super(numHits, field, null, missingValue);
-        this.collector = collector;
-    }
-
-    @Override
-    protected FieldCache.Longs getLongValues(AtomicReaderContext context, String field) throws IOException {
-        if (context != null)
-            return super.getLongValues(context, field);
-        return FieldCache.Longs.EMPTY;
-    }
-
-    @Override
-    public JoinLongComparator setNextReader(AtomicReaderContext context) throws IOException {
-        this.resultKeys = KeyValuesCache.get(context, this.collector.resultKeyName);
-        return this;
-    }
-
-    @Override
-    public int compareBottom(int doc) {
-        return super.compareBottom(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
-    }
-
-    @Override
-    public int compareTop(int doc) {
-        return super.compareTop(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
-    }
-
-    @Override
-    public void copy(int slot, int doc) {
-        super.copy(slot, this.collector.otherDocIdForKey(this.resultKeys[doc], this));
-    }
-
-    public void setOtherCoreContext(AtomicReaderContext context) {
-        try {
-            super.setNextReader(context);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-}
 
 class JoinDoubleComparator extends FieldComparator.DoubleComparator implements JoinFieldComparator {
     private JoinSortCollector collector;
     private int[] resultKeys;
+    private Double topValue;
+    private Double bottomValue;
+    private double[] values;
 
     public JoinDoubleComparator(int numHits, String field, Double missingValue, JoinSortCollector collector) {
-        super(numHits, field, null, missingValue);
+        super(numHits, field, null, missingValue == null ? 0 : missingValue);
         this.collector = collector;
+        this.values = accessValuesFromSuper();
     }
 
-    @Override
-    protected FieldCache.Doubles getDoubleValues(AtomicReaderContext context, String field) throws IOException {
-        if (context != null)
-            return super.getDoubleValues(context, field);
-        return FieldCache.Doubles.EMPTY;
+    private double[] accessValuesFromSuper() {
+        try {
+            Field valuesField = FieldComparator.DoubleComparator.class.getDeclaredField("values");
+            valuesField.setAccessible(true);
+            return (double[]) valuesField.get(this);
+        } catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -318,22 +313,48 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
         return this;
     }
 
+    public void setTopValue(Double value) {
+        this.topValue = value;
+        super.setTopValue(value);
+    }
+
+    public void setBottomValue(Double value) {
+        this.bottomValue = value;
+        super.setTopValue(value);
+    }
+
     @Override
     public int compareBottom(int doc) {
-        return super.compareBottom(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        if (otherDoc == -1)
+            return Double.compare(this.bottomValue, this.missingValue);
+        return super.compareBottom(otherDoc);
     }
 
     @Override
     public int compareTop(int doc) {
-        return super.compareTop(this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        if (otherDoc == -1)
+            return Double.compare(this.topValue, this.missingValue);
+        return super.compareTop(otherDoc);
     }
 
     @Override
     public void copy(int slot, int doc) {
-        super.copy(slot, this.collector.otherDocIdForKey(this.resultKeys[doc], this));
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        if (otherDoc == -1) {
+            System.out.println("" + slot + ", " + values[slot] + ", " + this.missingValue);
+            values[slot] = this.missingValue;
+        }
+        else {
+            super.copy(slot, otherDoc);
+        }
     }
 
     public void setOtherCoreContext(AtomicReaderContext context) {
+        if (context == null) {
+            return;
+        }
         try {
             super.setNextReader(context);
         } catch (IOException e) {

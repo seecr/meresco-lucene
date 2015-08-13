@@ -239,9 +239,9 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
         super.setTopValue(value);
     }
 
-    public void setBottomValue(Integer value) {
-        this.bottomValue = value;
-        super.setTopValue(value);
+    public void setBottom(final int bottom) {
+        this.bottomValue = this.value(bottom);
+        super.setBottom(bottom);
     }
 
     @Override
@@ -318,9 +318,9 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
         super.setTopValue(value);
     }
 
-    public void setBottomValue(Double value) {
-        this.bottomValue = value;
-        super.setTopValue(value);
+    public void setBottom(final int bottom) {
+        this.bottomValue = this.value(bottom);
+        super.setBottom(bottom);
     }
 
     @Override

@@ -30,7 +30,7 @@ from unittest import TestCase
 from cqlparser import parseString as parseCql, UnsupportedCQL
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
+from org.apache.lucene.search import TermQuery, WildcardQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
 from org.apache.lucene.index import Term
 
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
@@ -309,6 +309,12 @@ class LuceneQueryComposerTest(TestCase):
         self.assertConversion(expected, 'dd-field exact VALUE')
         self.assertConversion(expected, 'dd-field=VALUE')
 
+    def testWildcardQuery(self):
+        fieldRegistry = FieldRegistry()
+        self.composer = LuceneQueryComposer(unqualifiedTermFields=[], luceneSettings=LuceneSettings(fieldRegistry=fieldRegistry))
+        expected = WildcardQuery(Term("field", "???*"))
+        self.assertConversion(expected, 'field=???*')
+
     def assertConversion(self, expected, input):
         result = self.composer.compose(parseCql(input))
         self.assertEquals(type(expected), type(result), "expected %s, but got %s" % (repr(expected), repr(result)))
@@ -322,3 +328,4 @@ class LuceneQueryComposerTest(TestCase):
                 self.fail()
             except UnsupportedCQL:
                 pass
+

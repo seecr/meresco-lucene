@@ -24,7 +24,7 @@
 #
 ## end license ##
 
-from org.apache.lucene.search import TermQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
+from org.apache.lucene.search import TermQuery, WildcardQuery, BooleanClause, BooleanQuery, PrefixQuery, PhraseQuery, MatchAllDocsQuery, TermRangeQuery, NumericRangeQuery
 from org.apache.lucene.index import Term
 from java.io import StringReader
 
@@ -133,6 +133,8 @@ class _Cql2LuceneQueryVisitor(CqlVisitor):
                     query.add(self._createQuery(index, term), BooleanClause.Occur.SHOULD)
                 return query
         else:
+            if '???*' == termString:
+                return WildcardQuery(self._createStringTerm(index, termString))
             query = PhraseQuery()
             for term in terms:
                 query.add(self._createStringTerm(index, term))

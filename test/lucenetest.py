@@ -634,6 +634,17 @@ class LuceneTest(SeecrTestCase):
         settings = self.lucene.readerSettingsWrapper.get()
         self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)'}, settings)
 
+    def testDontClearCachesIfNothingChanged(self):
+        consume(self.lucene.addDocument(identifier='id1', document=Document()))
+        self.lucene.scoreCollector('keyfield', MatchAllDocsQuery())
+        self.assertEqual(1, self.lucene._scoreCollectorCache.length())
+        self.lucene.commit()
+        self.lucene.commit()
+        self.assertEqual(1, self.lucene._scoreCollectorCache.length())
+        consume(self.lucene.addDocument(identifier='id1', document=Document()))
+        self.lucene.commit()
+        self.assertEqual(0, self.lucene._scoreCollectorCache.length())
+
 class LuceneSingleThreadedTest(LuceneTest):
     def __init__(self, *args):
         super(LuceneTest, self).__init__(*args)

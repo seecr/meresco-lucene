@@ -927,6 +927,17 @@ class LuceneTest(LuceneTestCase):
         self.assertEqual(51, result.total)
         self.assertEqual(2, len(result.hits))
 
+    def testDontClearCachesIfNothingChanged(self):
+        consume(self.lucene.addDocument(identifier='id1', document=Document()))
+        self.lucene.scoreCollector('keyfield', MatchAllDocsQuery())
+        self.assertEqual(1, self.lucene._scoreCollectorCache.length())
+        self.lucene.commit()
+        self.lucene.commit()
+        self.assertEqual(1, self.lucene._scoreCollectorCache.length())
+        consume(self.lucene.addDocument(identifier='id1', document=Document()))
+        self.lucene.commit()
+        self.assertEqual(0, self.lucene._scoreCollectorCache.length())
+
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]
 

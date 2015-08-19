@@ -111,9 +111,10 @@ class Lucene(object):
         self._commitTimerToken, token = None, self._commitTimerToken
         if removeTimer:
             self._reactor.removeTimer(token=token)
-        self._index.commit()
-        self._scoreCollectorCache.clear()
-        self._collectedKeysCache.clear()
+        reopened = self._index.commit()
+        if reopened:
+            self._scoreCollectorCache.clear()
+            self._collectedKeysCache.clear()
         if self.settings.readonly:
             self._startCommitTimer()
         self.log("Lucene {0}: commit took: {1:.2f} seconds".format(self.coreName, time() - t0))

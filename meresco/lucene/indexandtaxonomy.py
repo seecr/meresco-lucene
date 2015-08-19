@@ -50,15 +50,16 @@ class IndexAndTaxonomy(object):
     def reopen(self):
         reader = DirectoryReader.openIfChanged(self._reader)
         if reader is None:
-            return
+            return False
         self._reader.close()
         self._reader = reader
         self._reopenSearcher = True
         taxoReader = DirectoryTaxonomyReader.openIfChanged(self.taxoReader)
         if taxoReader is None:
-            return
+            return True
         self.taxoReader.close()
         self.taxoReader = taxoReader
+        return True
 
     @property
     def searcher(self):

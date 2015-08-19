@@ -637,13 +637,17 @@ class LuceneTest(SeecrTestCase):
     def testDontClearCachesIfNothingChanged(self):
         consume(self.lucene.addDocument(identifier='id1', document=Document()))
         self.lucene.scoreCollector('keyfield', MatchAllDocsQuery())
+        self.lucene.collectKeys(MatchAllDocsQuery(), 'keyfield')
         self.assertEqual(1, self.lucene._scoreCollectorCache.length())
+        self.assertEqual(1, self.lucene._collectedKeysCache.length())
         self.lucene.commit()
         self.lucene.commit()
         self.assertEqual(1, self.lucene._scoreCollectorCache.length())
+        self.assertEqual(1, self.lucene._collectedKeysCache.length())
         consume(self.lucene.addDocument(identifier='id1', document=Document()))
         self.lucene.commit()
         self.assertEqual(0, self.lucene._scoreCollectorCache.length())
+        self.assertEqual(0, self.lucene._collectedKeysCache.length())
 
 class LuceneSingleThreadedTest(LuceneTest):
     def __init__(self, *args):

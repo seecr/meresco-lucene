@@ -138,9 +138,10 @@ class Lucene(Observable):
         self._commitTimerToken, token = None, self._commitTimerToken
         if removeTimer:
             self._reactor.removeTimer(token=token)
-        self._index.commit()
-        self._scoreCollectorCache.clear()
-        self._collectedKeysCache.clear()
+        reopened = self._index.commit()
+        if reopened:
+            self._scoreCollectorCache.clear()
+            self._collectedKeysCache.clear()
         if self.settings.readonly:
             self._startCommitTimer()
         self.log("[Lucene] {0}(readonly={2}): commit took: {1:.2f} seconds\n".format(self.coreName, time() - t0, self.settings.readonly))

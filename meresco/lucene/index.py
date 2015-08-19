@@ -158,7 +158,7 @@ class Index(object):
         if not self._settings.readonly:
             self._taxoWriter.commit()
             self._indexWriter.commit()
-        self._indexAndTaxonomy.reopen()
+        return self._indexAndTaxonomy.reopen()
 
     def getDocument(self, docId):
         return self._indexAndTaxonomy.searcher.doc(docId)

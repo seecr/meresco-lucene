@@ -47,6 +47,8 @@ import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;
 
 public class SuggestionIndex {
 
+    public static final String CONCAT_MARKER = "$$--$$";
+
     private static final String RECORD_VALUE_FIELDNAME = "__record_value__";
 
     public static final FieldType SIMPLE_NOT_STORED_STRING_FIELD = new FieldType();
@@ -103,12 +105,12 @@ public class SuggestionIndex {
         this.suggestionNGramIndex = new SuggestionNGramIndex(this.suggestionNGramIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
     }
 
-    public void add(String identifier, String[] values, String[] types) throws IOException {
+    public void add(String identifier, String[] values, String[] types, String[] creators) throws IOException {
         Document recordDoc = new Document();
         this.recordIdField.setStringValue(identifier);
         recordDoc.add(this.recordIdField);
         for (int i = 0; i < values.length; i++) {
-            String value = (types[i] != null ? types[i] : "") + "|" + values[i];
+            String value = (types[i] != null ? types[i] : "") + CONCAT_MARKER + (creators[i] != null ? creators[i] : "") + CONCAT_MARKER + values[i];
             recordDoc.add(new Field(RECORD_VALUE_FIELDNAME, value, SIMPLE_NOT_STORED_STRING_FIELD));
         }
         this.writer.updateDocument(new Term(this.recordIdField.name(), identifier), recordDoc);
@@ -142,7 +144,7 @@ public class SuggestionIndex {
 
 		        	suggestionNGramIndex = new SuggestionNGramIndex(suggestionNGramIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
 		        	deleteIndexDirectory(tempTempDir);
-		        	
+
 		        	if (currentReader != null)
 		        	    currentReader.reopen();
 		        } catch (IOException e) {

@@ -26,6 +26,9 @@
 #
 ## end license ##
 
+from org.apache.lucene.index import Term
+from org.apache.lucene.queries import ChainedFilter
+from org.apache.lucene.search import QueryWrapperFilter, TermQuery
 from org.meresco.lucene.suggestion import SuggestionIndex
 from os.path import isdir, join
 from os import makedirs
@@ -50,7 +53,8 @@ class SuggestionIndexComponent(Observable):
     def addSuggestions(self, identifier, values):
         titles = [v[0] for v in values]
         types = [v[1] for v in values]
-        self._index.add(identifier, titles, types)
+        creators = [None for v in values]
+        self._index.add(identifier, titles, types, creators)
 
     def deleteSuggestions(self, identifier):
         self._index.delete(identifier)
@@ -58,10 +62,12 @@ class SuggestionIndexComponent(Observable):
     def createSuggestionNGramIndex(self, wait=False, verbose=True):
         self._index.createSuggestionNGramIndex(wait, verbose)
 
-    def suggest(self, value, trigram=False):
+    def suggest(self, value, trigram=False, filters=None):
         if not self._reader:
             return []
-        return list(self._reader.suggest(value, trigram))
+        if filters:
+            filters = ChainedFilter([QueryWrapperFilter(TermQuery(Term(*f.split('=', 1)))) for f in filters])
+        return list(self._reader.suggest(value, trigram, filters))
 
     def indexingState(self):
         indexingState = self._index.indexingState()
@@ -80,6 +86,7 @@ class SuggestionIndexComponent(Observable):
         debug = arguments.get("x-debug", ["False"])[0] != 'False'
         trigram = arguments.get("trigram", ["False"])[0] != 'False'
         showConcepts = arguments.get("concepts", ["False"])[0] != 'False'
+        filters = arguments.get("filter", None)
         minScore = float(arguments.get("minScore", ["0"])[0])
         yield Ok
         yield ContentTypeHeader + "application/x-suggestions+json" + CRLF
@@ -90,7 +97,7 @@ class SuggestionIndexComponent(Observable):
         if value:
             suggestions = []
             t0 = time()
-            suggest = self.suggest(value, trigram=trigram)
+            suggest = self.suggest(value, trigram=trigram, filters=filters)
             tTotal = time() - t0
             for s in suggest:
                 suggestion = str(s.suggestion)

@@ -62,6 +62,16 @@ class SuggestionIndexComponentTest(SeecrTestCase):
         self.assertEquals([u"hallo", u"harry potter"], [s.suggestion for s in suggestions])
         self.assertEquals([u"uri:book", u"uri:book"], [s.type for s in suggestions])
 
+    def testSuggestWithCreators(self):
+        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
+        sic.addSuggestions("id:1", [("harry potter", "uri:book", "rowling"), ("hallo", "uri:book", "by:me")])
+        sic.createSuggestionNGramIndex(wait=True, verbose=False)
+
+        suggestions = sic.suggest("ha")
+        self.assertEquals([u"hallo", u"harry potter"], [s.suggestion for s in suggestions])
+        self.assertEquals([u"uri:book", u"uri:book"], [s.type for s in suggestions])
+        self.assertEquals([u"uri:book", u"uri:book"], [s.creator for s in suggestions])
+
     def testHandleRequest(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
         sic.addSuggestions("id:1", [("harry", "uri:book"), ("potter", "uri:book"), ("hallo", "uri:book"), ("fiets", "uri:book"), ("fiets mobiel", "uri:book")])
@@ -132,3 +142,10 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"]})).split(CRLF*2)
         self.assertEqual('["ha", ["harry", "harry potter"], [["harry", "uri:book"], ["harry", "uri:e-book"], ["harry", "uri:track"], ["harry potter", "uri:person"]]]', body)
+
+    def testFilters(self):
+        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
+        sic.addSuggestions("id:1", [("harry", "uri:book"), ("harry", "uri:e-book"), ("harry", "uri:track"), ("harry potter", "uri:person")])
+        sic.createSuggestionNGramIndex(wait=True, verbose=False)
+        header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"], "filter": ["type=uri:person"]})).split(CRLF*2)
+        self.assertEqual('["ha", ["harry potter"], [["harry potter", "uri:person"]]]', body)

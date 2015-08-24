@@ -47,6 +47,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -59,12 +60,14 @@ import org.meresco.lucene.suggestion.SuggestionIndex.IndexingState;
 public class SuggestionNGramIndex {
 
 	private static final String SUGGESTION_FIELDNAME = "__suggestion__";
-	private static final String CONCEPT_URI_FIELDNAME = "__uri__";
+    private static final String CONCEPT_URI_FIELDNAME = "type";
     private static final String BIGRAM_FIELDNAME = "__bigram__";
     private static final String TRIGRAM_FIELDNAME = "__trigram__";
+    private static final String CREATOR_FIELDNAME = "type";
 
     private Field suggestionField = new Field(SUGGESTION_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
+    private Field creatorField = new Field(CREATOR_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
 
     private final NGramAnalyzer bigram;
     private final NGramAnalyzer trigram;
@@ -99,8 +102,8 @@ public class SuggestionNGramIndex {
 		TermsEnum iterator = terms.iterator(null);
     	BytesRef term;
     	while ((term = iterator.next()) != null) {
-            String[] values = term.utf8ToString().split("\\|");
-            indexNGram(values[0], values[1]);
+            String[] values = term.utf8ToString().split(SuggestionIndex.CONCAT_MARKER.replace("$", "\\$"));
+            indexNGram(values[0], values[1], values[2]);
             indexingState.count++;
     	}
     	this.commit();
@@ -122,13 +125,17 @@ public class SuggestionNGramIndex {
         this.writer.close();
     }
 
-    private void indexNGram(String type, String term) throws IOException {
+    private void indexNGram(String type, String creator, String term) throws IOException {
         Document doc = new Document();
         this.suggestionField.setStringValue(term);
         doc.add(this.suggestionField);
         if (!type.equals("")) {
             this.conceptUriField.setStringValue(type);
             doc.add(this.conceptUriField);
+        }
+        if (!creator.equals("")) {
+            this.creatorField.setStringValue(creator);
+            doc.add(this.creatorField);
         }
         for (String n : ngrams(term, false)) {
             doc.add(new Field(BIGRAM_FIELDNAME, n, SuggestionIndex.SIMPLE_NOT_STORED_STRING_FIELD));
@@ -169,7 +176,7 @@ public class SuggestionNGramIndex {
             return this.reader.numDocs();
         }
 
-    	public Suggestion[] suggest(String value, Boolean trigram) throws IOException {
+    	public Suggestion[] suggest(String value, Boolean trigram, Filter filter) throws IOException {
             String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
             BooleanQuery query = new BooleanQuery();
             List<String> ngrams = ngrams(value, trigram);
@@ -178,12 +185,12 @@ public class SuggestionNGramIndex {
             for (int i = 0; i < ngramSize; i++) {
                 query.add(new TermQuery(new Term(ngramFieldName, ngrams.get(i))), BooleanClause.Occur.MUST);
             }
-            TopDocs t = searcher.search(query, 25);
+            TopDocs t = searcher.search(query, filter, 25);
             Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
             int i = 0;
             for (ScoreDoc d : t.scoreDocs) {
                 Document doc = searcher.doc(d.doc);
-                suggestions[i++] = new Suggestion(doc.get(SUGGESTION_FIELDNAME), doc.get(CONCEPT_URI_FIELDNAME), d.score);
+                suggestions[i++] = new Suggestion(doc.get(SUGGESTION_FIELDNAME), doc.get(CONCEPT_URI_FIELDNAME), doc.get(CREATOR_FIELDNAME), d.score);
             }
             return suggestions;
         }
@@ -200,12 +207,14 @@ public class SuggestionNGramIndex {
 
     public class Suggestion {
     	public String suggestion;
-    	public String type;
+        public String type;
+    	public String creator;
     	public float score;
 
-    	public Suggestion(String suggestion, String type, float score) {
+    	public Suggestion(String suggestion, String type, String creator, float score) {
     		this.suggestion = suggestion;
     		this.type = type;
+            this.creator = creator;
     		this.score = score;
     	}
     }

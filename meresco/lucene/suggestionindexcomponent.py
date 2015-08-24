@@ -51,9 +51,9 @@ class SuggestionIndexComponent(Observable):
         self._reader = self._index.getSuggestionsReader()
 
     def addSuggestions(self, identifier, values):
-        titles = [v[0] for v in values]
-        types = [v[1] for v in values]
-        creators = [None for v in values]
+        titles = [v.get('title') for v in values]
+        types = [v.get('type') for v in values]
+        creators = [v.get('creator') for v in values]
         self._index.add(identifier, titles, types, creators)
 
     def deleteSuggestions(self, identifier):
@@ -102,19 +102,20 @@ class SuggestionIndexComponent(Observable):
             for s in suggest:
                 suggestion = str(s.suggestion)
                 recordType = str(s.type) if s.type else None
+                creator = str(s.creator) if s.creator else None
                 distanceScore = max(0, -log(distance(value.lower(), suggestion.lower()) + 1) / 4 + 1)
                 matchScore = match(value.lower(), suggestion.lower())
                 score = float(s.score)
                 sortScore = distanceScore * score**2 * (matchScore * 2)
                 scores = dict(distanceScore=distanceScore, score=score, sortScore=sortScore, matchScore=matchScore)
                 if sortScore > minScore:
-                    suggestions.append((suggestion, recordType, scores))
-            suggestions = sorted(suggestions, reverse=True, key=lambda (suggestion, recordType, scores): scores['sortScore'])
+                    suggestions.append((suggestion, recordType, creator, scores))
+            suggestions = sorted(suggestions, reverse=True, key=lambda (suggestion, recordType, creator, scores): scores['sortScore'])
             if debug:
-                concepts = [(s, t) for s, t, _ in suggestions if t]
+                concepts = [(s, t, c) for s, t, c, _ in suggestions if t]
                 yield JsonDict(dict(value=value, suggestions=suggestions, concepts=concepts, time=tTotal)).dumps()
                 return
-            concepts = [(s, t) for s, t, _ in suggestions if t][:10]
+            concepts = [(s, t, c) for s, t, c, _ in suggestions if t][:10]
             dedupSuggestions = []
             for s in suggestions:
                 if s[0] not in dedupSuggestions:

@@ -63,7 +63,7 @@ public class SuggestionNGramIndex {
     private static final String CONCEPT_URI_FIELDNAME = "type";
     private static final String BIGRAM_FIELDNAME = "__bigram__";
     private static final String TRIGRAM_FIELDNAME = "__trigram__";
-    private static final String CREATOR_FIELDNAME = "type";
+    private static final String CREATOR_FIELDNAME = "creator";
 
     private Field suggestionField = new Field(SUGGESTION_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);

@@ -25,6 +25,8 @@
 
 from seecr.test import SeecrTestCase
 
+from org.apache.lucene.index import Term
+from org.apache.lucene.search import QueryWrapperFilter, TermQuery
 from org.meresco.lucene.suggestion import SuggestionIndex, SuggestionNGramIndex
 from os.path import join
 from time import sleep
@@ -39,7 +41,7 @@ class SuggestionIndexTest(SeecrTestCase):
 
     def assertSuggestion(self, input, expected, trigram=False):
         reader = self._suggestionIndex.getSuggestionsReader()
-        suggestions = [s.suggestion for s in reader.suggest(input, trigram)]
+        suggestions = [s.suggestion for s in reader.suggest(input, trigram, None)]
         self.assertEquals(set(expected), set(suggestions))
 
     def testFindShingles(self):
@@ -58,7 +60,7 @@ class SuggestionIndexTest(SeecrTestCase):
         self.assertEquals(["$lo", "lor", "ord", "rd$", "$of", "of$"], list(ngrams))
 
     def testSuggestionIndex(self):
-        self._suggestionIndex.add("identifier", ["Lord of the rings", "Fellowship of the ring"], [None, None])
+        self._suggestionIndex.add("identifier", ["Lord of the rings", "Fellowship of the ring"], [None, None], [None, None])
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
 
         self.assertSuggestion("l", ["Lord of the rings"])
@@ -69,14 +71,14 @@ class SuggestionIndexTest(SeecrTestCase):
         self.assertSuggestion("fel", ['Fellowship of the ring'])
 
     def testRanking(self):
-        self._suggestionIndex.add("identifier", ["Lord of the rings", "Lord magic"], [None]*2)
-        self._suggestionIndex.add("identifier2", ["Lord of the rings"], [None])
-        self._suggestionIndex.add("identifier3", ["Lord magic"], [None])
-        self._suggestionIndex.add("identifier4", ["Lord magic"], [None])
+        self._suggestionIndex.add("identifier", ["Lord of the rings", "Lord magic"], [None]*2, [None]*2)
+        self._suggestionIndex.add("identifier2", ["Lord of the rings"], [None], [None])
+        self._suggestionIndex.add("identifier3", ["Lord magic"], [None], [None])
+        self._suggestionIndex.add("identifier4", ["Lord magic"], [None], [None])
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
 
         reader = self._suggestionIndex.getSuggestionsReader()
-        suggestions = list(reader.suggest("lo", False))
+        suggestions = list(reader.suggest("lo", False, None))
         self.assertEquals(2, len(suggestions))
         self.assertEquals([u'Lord magic', u'Lord of the rings'], [s.suggestion for s in suggestions])
         self.assertEquals([0.21019981801509857, 0.1839248389005661], [s.score for s in suggestions])
@@ -84,7 +86,7 @@ class SuggestionIndexTest(SeecrTestCase):
     def testCreatingIndexState(self):
         self.assertEquals(None, self._suggestionIndex.indexingState())
         for i in range(100):
-            self._suggestionIndex.add("identifier%s", ["Lord rings", "Lord magic"], [None]*2)
+            self._suggestionIndex.add("identifier%s", ["Lord rings", "Lord magic"], [None]*2, [None]*2)
         try:
             self._suggestionIndex.createSuggestionNGramIndex(False, False)
             sleep(0.005) # Wait for thread
@@ -98,12 +100,22 @@ class SuggestionIndexTest(SeecrTestCase):
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
         self.assertTrue("Nothing bad happened, no NullPointerException")
 
-    def testSuggestionWithConceptTypes(self):
-        self._suggestionIndex.add("identifier", ["Lord of the rings", "Lord magic"], ["uri:book", None])
+    def testSuggestionWithConceptTypesAndCreators(self):
+        self._suggestionIndex.add("identifier", ["Lord of the rings", "Lord magic"], ["uri:book", None], ["uri:author", None])
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
 
         reader = self._suggestionIndex.getSuggestionsReader()
-        suggestions = list(reader.suggest("lo", False))
+        suggestions = list(reader.suggest("lo", False, None))
         self.assertEquals(2, len(suggestions))
         self.assertEquals([u'Lord magic', u'Lord of the rings'], [s.suggestion for s in suggestions])
         self.assertEquals([None, u'uri:book'], [s.type for s in suggestions])
+        self.assertEquals([None, u'uri:author'], [s.creator for s in suggestions])
+
+    def testSuggestWithFilter(self):
+        self._suggestionIndex.add("identifier", ["Lord of the rings", "Lord magic"], ["uri:book", None], [None]*2)
+        self._suggestionIndex.createSuggestionNGramIndex(True, False)
+
+        reader = self._suggestionIndex.getSuggestionsReader()
+        suggestions = list(reader.suggest("lo", False, QueryWrapperFilter(TermQuery(Term("type", "uri:book")))))
+        self.assertEquals(1, len(suggestions))
+        self.assertEquals([u'Lord of the rings'], [s.suggestion for s in suggestions])

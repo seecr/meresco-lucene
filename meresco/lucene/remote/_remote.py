@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -30,16 +31,17 @@ from weightless.core import DeclineMessage
 
 from meresco.lucene import LuceneResponse
 
-from _conversion import jsonDumpMessage
+from _conversion import Conversion
 
 
 class LuceneRemote(Observable):
-    def __init__(self, host=None, port=None, path=None, name=None):
+    def __init__(self, host=None, port=None, path=None, name=None, conversion=None):
         Observable.__init__(self, name=name)
         self._host = host
         self._port = port
         self._path = '' if path is None else path
         self._path += '/__lucene_remote__'
+        self._conversion = Conversion() if conversion is None else conversion
 
     def any_unknown(self, message, **kwargs):
         if message in self._ALLOWED_METHODS:
@@ -51,7 +53,7 @@ class LuceneRemote(Observable):
         return (self._host, self._port) if self._host else self.call.luceneRemoteServer()
 
     def _send(self, message, **kwargs):
-        body = jsonDumpMessage(message, **kwargs)
+        body = self._conversion.jsonDumpMessage(message, **kwargs)
         headers={'Content-Type': 'application/json', 'Content-Length': len(body)}
         host, port = self._luceneRemoteServer() # WARNING: can return a different server each time.
         response = yield self._httppost(host=host, port=port, request=self._path, body=body, headers=headers)

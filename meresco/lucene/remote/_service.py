@@ -4,6 +4,7 @@
 #
 # Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013, 2015 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -36,7 +37,7 @@ from meresco.components.http import PathFilter, PathRename, FileServer, StringSe
 from cqlparser import parseString, cql2string
 from meresco.html import DynamicHtml
 
-from _conversion import jsonLoadMessage
+from _conversion import Conversion
 
 
 myPath = dirname(abspath(__file__))
@@ -47,8 +48,9 @@ dynamicPath = join(myPath, 'dynamic')
 
 
 class LuceneRemoteService(Observable):
-    def __init__(self, reactor, **kwargs):
+    def __init__(self, reactor, conversion=None, **kwargs):
         Observable.__init__(self, **kwargs)
+        self._conversion = Conversion() if conversion is None else conversion
         self._dynamicHtml = DynamicHtml([dynamicPath],
                 reactor=reactor,
                 notFoundPage='notFound',
@@ -92,7 +94,7 @@ class LuceneRemoteService(Observable):
 
     def _handleQuery(self, Body):
         try:
-            message, kwargs = jsonLoadMessage(Body)
+            message, kwargs = self._conversion.jsonLoadMessage(Body)
             if message not in _ALLOWED_METHODS:
                 raise ValueError('Expected %s' % (' or '.join('"%s"' % m for m in _ALLOWED_METHODS)))
             response = yield self.any.unknown(message=message, **kwargs)

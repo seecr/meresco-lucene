@@ -62,6 +62,7 @@ from termfrequencysimilaritytest import TermFrequencySimilarityTest
 from termnumeratortest import TermNumeratorTest
 from fieldslisttolucenedocumenttest import FieldsListToLuceneDocumentTest
 from lucenekeyvaluestoretest import LuceneKeyValueStoreTest
+from queryexpressiontolucenequerytest import QueryExpressionToLuceneQueryTest
 
 if __name__ == '__main__':
     unittest.main()

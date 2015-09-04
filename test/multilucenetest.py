@@ -903,4 +903,4 @@ class MultiLuceneTest(SeecrTestCase):
         ))
 
 def luceneQueryFromCql(cqlString):
-    return LuceneQueryComposer([], luceneSettings=LuceneSettings()).compose(parseCql(cqlString))
+    return LuceneQueryComposer(unqualifiedTermFields=[], luceneSettings=LuceneSettings()).compose(parseCql(cqlString))

@@ -448,7 +448,7 @@ class LuceneTest(LuceneTestCase):
         luceneQuery = TermRangeQuery.newStringRange('field', 'mies', None, False, True) # >
         response = retval(self.lucene.executeQuery(luceneQuery=luceneQuery))
         self.assertEquals(set(['id:noot', 'id:vis', 'id:vuur']), set(self.hitIds(response.hits)))
-        luceneQuery = LuceneQueryComposer([], luceneSettings=LuceneSettings()).compose(parseCql('field >= mies'))
+        luceneQuery = LuceneQueryComposer(unqualifiedTermFields=[], luceneSettings=LuceneSettings()).compose(parseCql('field >= mies'))
         response = retval(self.lucene.executeQuery(luceneQuery=luceneQuery))
         self.assertEquals(set(['id:mies', 'id:noot', 'id:vis', 'id:vuur']), set(self.hitIds(response.hits)))
 

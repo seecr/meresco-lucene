@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -27,23 +28,36 @@ from cqlparser import cql2string, parseString, CQL_QUERY
 from simplejson import dumps, loads
 from meresco.lucene.composedquery import ComposedQuery
 
-def _dumps_default(anObject):
-    if isinstance(anObject, CQL_QUERY):
-        return {'__CQL_QUERY__': cql2string(anObject)}
-    elif isinstance(anObject, ComposedQuery):
-        return {'__COMPOSED_QUERY__': dumps(anObject.asDict(), default=_dumps_default)}
-    raise TypeError(repr(anObject) + 'is not JSON serializable')
+class Conversion(object):
+    def __init__(self):
+        self._converters = []
 
-def _loads_object_hook(dct):
-    if '__CQL_QUERY__' in dct:
-        return parseString(dct['__CQL_QUERY__'])
-    elif '__COMPOSED_QUERY__' in dct:
-        return ComposedQuery.fromDict(loads(dct['__COMPOSED_QUERY__'], object_hook=_loads_object_hook))
-    return dct
+    def _dumps_default(self, anObject):
+        if isinstance(anObject, CQL_QUERY):
+            return {'__CQL_QUERY__': cql2string(anObject)}
+        elif isinstance(anObject, ComposedQuery):
+            return {'__COMPOSED_QUERY__': dumps(anObject.asDict(), default=self._dumps_default)}
+        for converter in self._converters:
+            if isinstance(anObject, converter['type']):
+                return {converter['name']: dumps(converter['asDict'](anObject), default=self._dumps_default)}
+        raise TypeError(repr(anObject) + 'is not JSON serializable')
 
-def jsonDumpMessage(message, **kwargs):
-    return dumps(dict(message=message, kwargs=kwargs), default=_dumps_default)
+    def _loads_object_hook(self, dct):
+        if '__CQL_QUERY__' in dct:
+            return parseString(dct['__CQL_QUERY__'])
+        elif '__COMPOSED_QUERY__' in dct:
+            return ComposedQuery.fromDict(loads(dct['__COMPOSED_QUERY__'], object_hook=self._loads_object_hook))
+        for converter in self._converters:
+            if converter['name'] in dct:
+                return converter['type'].fromDict(loads(dct[converter['name']]))
+        return dct
 
-def jsonLoadMessage(aString):
-    result = loads(aString, object_hook=_loads_object_hook)
-    return result['message'], result['kwargs']
+    def jsonDumpMessage(self, message, **kwargs):
+        return dumps(dict(message=message, kwargs=kwargs), default=self._dumps_default)
+
+    def jsonLoadMessage(self, aString):
+        result = loads(aString, object_hook=self._loads_object_hook)
+        return result['message'], result['kwargs']
+
+    def addObject(self, objectString, objectType, objectAsDict, objectFromDict):
+        self._converters.append(dict(name=objectString, type=objectType, asDict=objectAsDict, fromDict=objectFromDict))

@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -33,7 +34,7 @@ from cqlparser import parseString
 from weightless.core import compose
 from seecr.utils.generatorutils import returnValueFromGenerator
 from simplejson import loads, dumps
-from meresco.lucene.remote._conversion import jsonDumpMessage, jsonLoadMessage
+from meresco.lucene.remote._conversion import Conversion
 
 
 class LuceneRemoteTest(SeecrTestCase):
@@ -67,7 +68,7 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(1234, m.kwargs['port'])
         self.assertEquals('/path/__lucene_remote__', m.kwargs['request'])
         self.assertEquals('application/json', m.kwargs['headers']['Content-Type'])
-        message, kwargs = jsonLoadMessage(m.kwargs['body'])
+        message, kwargs = Conversion().jsonLoadMessage(m.kwargs['body'])
         query = kwargs['query']
         self.assertEquals('executeComposedQuery', message)
         self.assertEquals('coreA', query.resultsFrom)
@@ -256,29 +257,3 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEquals(2, response.total)
         self.assertEquals(['aap', 'noot'], response.hits)
         self.assertEquals(['fieldnames'], observer.calledMethodNames())
-
-    def testConversion(self):
-        kwargs = {'q': parseString('CQL'), 'attr': {'qs':[parseString('qs')]}}
-        dump = jsonDumpMessage(message='aMessage', **kwargs)
-        self.assertEquals(str, type(dump))
-        message, kwargs = jsonLoadMessage(dump)
-        self.assertEquals('aMessage', message)
-        self.assertEquals(parseString('CQL'), kwargs['q'])
-        self.assertEquals([parseString('qs')], kwargs['attr']['qs'])
-
-    def testConversionOfComposedQuery(self):
-        cq = ComposedQuery('coreA')
-        cq.setCoreQuery(core='coreA', query=parseString('Q0'), filterQueries=['Q1', 'Q2'], facets=['F0', 'F1'])
-        cq.setCoreQuery(core='coreB', query='Q3', filterQueries=['Q4'])
-        cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
-        cq.addUnite(dict(core='coreA', query='AQuery'), dict(core='coreB', query='anotherQuery'))
-        cq.start = 0
-        cq.sortKeys = [dict(sortBy='field', sortDescending=True)]
-
-        kwargs = {'q': cq}
-        dump = jsonDumpMessage(message='aMessage', **kwargs)
-        self.assertEquals(str, type(dump))
-        message, kwargs = jsonLoadMessage(dump)
-        self.assertEquals('aMessage', message)
-        cq2 = kwargs['q']
-        self.assertEquals(parseString('Q0'), cq2.queryFor('coreA'))

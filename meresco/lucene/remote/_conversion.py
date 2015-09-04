@@ -25,18 +25,19 @@
 ## end license ##
 
 from cqlparser import cql2string, parseString, CQL_QUERY
+from cqlparser.cqltoexpression import QueryExpression
 from simplejson import dumps, loads
 from meresco.lucene.composedquery import ComposedQuery
 
 class Conversion(object):
     def __init__(self):
         self._converters = []
+        self.addObject('__COMPOSED_QUERY__', ComposedQuery)
+        self.addObject('__QUERY_EXPRESSION__', QueryExpression)
 
     def _dumps_default(self, anObject):
         if isinstance(anObject, CQL_QUERY):
             return {'__CQL_QUERY__': cql2string(anObject)}
-        elif isinstance(anObject, ComposedQuery):
-            return {'__COMPOSED_QUERY__': dumps(anObject.asDict(), default=self._dumps_default)}
         for converter in self._converters:
             if isinstance(anObject, converter['type']):
                 return {converter['name']: dumps(converter['asDict'](anObject), default=self._dumps_default)}
@@ -45,11 +46,9 @@ class Conversion(object):
     def _loads_object_hook(self, dct):
         if '__CQL_QUERY__' in dct:
             return parseString(dct['__CQL_QUERY__'])
-        elif '__COMPOSED_QUERY__' in dct:
-            return ComposedQuery.fromDict(loads(dct['__COMPOSED_QUERY__'], object_hook=self._loads_object_hook))
         for converter in self._converters:
             if converter['name'] in dct:
-                return converter['type'].fromDict(loads(dct[converter['name']]))
+                return converter['type'].fromDict(loads(dct[converter['name']], object_hook=self._loads_object_hook))
         return dct
 
     def jsonDumpMessage(self, message, **kwargs):
@@ -59,5 +58,11 @@ class Conversion(object):
         result = loads(aString, object_hook=self._loads_object_hook)
         return result['message'], result['kwargs']
 
-    def addObject(self, objectString, objectType, objectAsDict, objectFromDict):
-        self._converters.append(dict(name=objectString, type=objectType, asDict=objectAsDict, fromDict=objectFromDict))
+    def addObject(self, objectString, objectType, objectAsDict=None, objectFromDict=None):
+        self._converters.append(dict(
+                name=objectString,
+                type=objectType,
+                asDict=objectType.asDict if objectAsDict is None else objectAsDict,
+                fromDict=objectType.fromDict if objectFromDict is None else objectFromDict,
+            ))
+        return self

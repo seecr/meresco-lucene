@@ -25,6 +25,7 @@
 
 from seecr.test import SeecrTestCase
 from cqlparser import parseString
+from cqlparser.cqltoexpression import QueryExpression
 from meresco.lucene import ComposedQuery
 from meresco.lucene.remote import Conversion
 from simplejson import loads
@@ -57,6 +58,14 @@ class ConversionTest(SeecrTestCase):
         self.assertEquals('aMessage', message)
         cq2 = kwargs['q']
         self.assertEquals(parseString('Q0'), cq2.queryFor('coreA'))
+
+    def testQueryExpression(self):
+        conversion = Conversion()
+        kwargs = {'q': QueryExpression.searchterm(term='term')}
+        dump = conversion.jsonDumpMessage(message='aMessage', **kwargs)
+        loadedMessage, loadedKwargs = conversion.jsonLoadMessage(dump)
+        self.assertEquals('aMessage', loadedMessage)
+        self.assertEquals({'q': QueryExpression.searchterm(term='term')}, loadedKwargs)
 
     def testSpecialObject(self):
         class MyObject():

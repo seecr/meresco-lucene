@@ -45,7 +45,7 @@ class ConversionTest(SeecrTestCase):
         conversion = Conversion()
         cq = ComposedQuery('coreA')
         cq.setCoreQuery(core='coreA', query=parseString('Q0'), filterQueries=['Q1', 'Q2'], facets=['F0', 'F1'])
-        cq.setCoreQuery(core='coreB', query='Q3', filterQueries=['Q4'])
+        cq.setCoreQuery(core='coreB', query=QueryExpression.searchterm(term='Q3'), filterQueries=['Q4'])
         cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         cq.addUnite(dict(core='coreA', query='AQuery'), dict(core='coreB', query='anotherQuery'))
         cq.start = 0
@@ -66,6 +66,16 @@ class ConversionTest(SeecrTestCase):
         loadedMessage, loadedKwargs = conversion.jsonLoadMessage(dump)
         self.assertEquals('aMessage', loadedMessage)
         self.assertEquals({'q': QueryExpression.searchterm(term='term')}, loadedKwargs)
+
+    def testQueryExpressionWithOperands(self):
+        conversion = Conversion()
+        qe = QueryExpression.nested(operator='AND')
+        qe.operands = [QueryExpression.searchterm(term='term'), QueryExpression.searchterm(term='term1')]
+        kwargs = {'q': qe}
+        dump = conversion.jsonDumpMessage(message='aMessage', **kwargs)
+        loadedMessage, loadedKwargs = conversion.jsonLoadMessage(dump)
+        self.assertEquals('aMessage', loadedMessage)
+        self.assertEquals({'q': qe}, loadedKwargs)
 
     def testSpecialObject(self):
         class MyObject():

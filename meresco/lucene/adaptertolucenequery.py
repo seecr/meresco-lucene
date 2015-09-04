@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -25,23 +26,24 @@
 
 from meresco.core import Transparent
 from seecr.utils.generatorutils import generatorReturn
+from cqlparser.cqltoexpression import cqlToExpression
 
-class MultiCqlToLuceneQuery(Transparent):
-
-    def __init__(self, defaultCore, coreToCqlLuceneQueries, **kwargs):
-        super(MultiCqlToLuceneQuery, self).__init__(**kwargs)
+class AdapterToLuceneQuery(Transparent):
+    def __init__(self, defaultCore, coreConverters, **kwargs):
+        Transparent.__init__(self, **kwargs)
         self._defaultCore = defaultCore
         self._converts = {}
-        for core, cqlToLuceneQuery in coreToCqlLuceneQueries.items():
-            self._converts[core] = cqlToLuceneQuery._convert
+        for core, convert in coreConverters.items():
+            self._converts[core] = convert
 
     def executeQuery(self, cqlAbstractSyntaxTree, core=None, filterQueries=None, **kwargs):
+        expression = cqlToExpression(cqlAbstractSyntaxTree)
         if core is None:
             core = self._defaultCore
         convertMethod = self._converts[core]
         if filterQueries:
-            filterQueries = [convertMethod(ast) for ast in filterQueries]
-        response = yield self.any.executeQuery(core=core, luceneQuery=convertMethod(cqlAbstractSyntaxTree), filterQueries=filterQueries, **kwargs)
+            filterQueries = [convertMethod(cqlToExpression(ast)) for ast in filterQueries]
+        response = yield self.any.executeQuery(core=core, luceneQuery=convertMethod(expression), filterQueries=filterQueries, **kwargs)
         generatorReturn(response)
 
     def executeComposedQuery(self, query):

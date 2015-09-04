@@ -31,7 +31,7 @@ from java.io import StringReader
 from re import compile
 from cqlparser import UnsupportedCQL
 
-class QueryExpressionToLuceneQuery(Observable):
+class QueryExpressionToLuceneQuery(object):
 
     def __init__(self, unqualifiedTermFields, luceneSettings, ignoreStemmingForWords=None):
         self._unqualifiedTermFields = unqualifiedTermFields
@@ -41,6 +41,9 @@ class QueryExpressionToLuceneQuery(Observable):
 
     def convert(self, expression):
         return self._expression(expression)
+
+    def __call__(self, expression):
+        return self.convert(expression)
 
     def _expression(self, expr):
         if expr.operator:

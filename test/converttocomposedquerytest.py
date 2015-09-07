@@ -195,16 +195,6 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals(None, cq.otherKwargs().get("dedupField", "not there"))
         self.assertEquals(None, cq.otherKwargs().get("dedupSortField", "not there"))
 
-    def testDetectQueryIsJoinQuery(self):
-        ast = parseCQL("otherCore.prefix:field=value")
-        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=ast, extraArguments={}))
-        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
-        cq = self.observer.calledMethods[0].kwargs['query']
-        cq.validate()
-        self.assertEquals('defaultCore', cq.resultsFrom)
-        self.assertEquals([parseCQL("prefix:field=value")], cq.queriesFor('otherCore'))
-        self.assertEquals([], cq.queriesFor('defaultCore'))
-
     def testNormalQueryWithPossibleJoin(self):
         ast = parseCQL("prefix.field=value")
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=ast, extraArguments={}))

@@ -24,17 +24,16 @@
 #
 ## end license ##
 
-from collections import defaultdict
 from .utils import simplifiedDict
 
 class ComposedQuery(object):
     def __init__(self, resultsFromCore, query=None):
         self.cores = set()
         self._queries = {}
-        self._filterQueries = defaultdict(list)
-        self._facets = defaultdict(list)
-        self._drilldownQueries = defaultdict(list)
-        self._otherCoreFacetFilters = defaultdict(list)
+        self._filterQueries = {}
+        self._facets = {}
+        self._drilldownQueries = {}
+        self._otherCoreFacetFilters = {}
         self._rankQueries = {}
         self._matches = {}
         self._unites = []
@@ -55,22 +54,22 @@ class ComposedQuery(object):
 
     def addFilterQuery(self, core, query):
         self.cores.add(core)
-        self._filterQueries[core].append(query)
+        self._filterQueries.setdefault(core, []).append(query)
         return self
 
     def addFacet(self, core, facet):
         self.cores.add(core)
-        self._facets[core].append(facet)
+        self._facets.setdefault(core, []).append(facet)
         return self
 
     def addDrilldownQuery(self, core, drilldownQuery):
         self.cores.add(core)
-        self._drilldownQueries[core].append(drilldownQuery)
+        self._drilldownQueries.setdefault(core, []).append(drilldownQuery)
         return self
 
     def addOtherCoreFacetFilter(self, core, query):
         self.cores.add(core)
-        self._otherCoreFacetFilters[core].append(query)
+        self._otherCoreFacetFilters.setdefault(core, []).append(query)
         return self
 
     def setRankQuery(self, core, query):

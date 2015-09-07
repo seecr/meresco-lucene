@@ -247,6 +247,17 @@ class ComposedQueryTest(SeecrTestCase):
         cq.convertWith(coreB=lambda q: "converted_" + q)
         self.assertEquals(['converted_field=value'], cq.otherCoreFacetFiltersFor('coreB'))
 
+    def testAddFilterQueryAfterConversion(self):
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery('coreA', query='A')
+        cq.convertWith(coreA=lambda q: "converted_" + q)
+        self.assertEquals('converted_A', cq.queryFor('coreA'))
+        # Assert the following does not raise KeyError
+        cq.addFilterQuery('coreA', 'field=value')
+        cq.addFacet('coreA', 'F0')
+        cq.addDrilldownQuery('coreA', 'drilldownQuery')
+        cq.addOtherCoreFacetFilter('coreA', 'q')
+
     def testRepr(self):
         class AQuery(object):
             def __repr__(self):

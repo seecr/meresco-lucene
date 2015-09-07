@@ -68,8 +68,7 @@ class ConvertToComposedQuery(Observable):
             if key in kwargs:
                 setattr(cq, key, kwargs[key])
 
-        core, mainQuery = self._coreQuery(query=cql2string(cqlAbstractSyntaxTree), cores=self._cores)
-        cq.setCoreQuery(core=core, query=mainQuery)
+        cq.setCoreQuery(core=self._resultsFrom, query=cqlAbstractSyntaxTree)
 
         for sortKey in sortKeys or []:
             core, sortBy = self._parseCorePrefix(sortKey['sortBy'], self._cores)

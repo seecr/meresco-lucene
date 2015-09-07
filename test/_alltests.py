@@ -34,35 +34,36 @@ if version >= '2.7':
     simplefilter('default')
 
 
+from composedquerycqltoexpressiontest import ComposedQueryCqlToExpressionTest
 from composedquerytest import ComposedQueryTest
-from converttocomposedquerytest import ConvertToComposedQueryTest
 from conversiontest import ConversionTest
+from converttocomposedquerytest import ConvertToComposedQueryTest
 from cqltolucenequerytest import CqlToLuceneQueryTest
 from dedupfiltercollectortest import DeDupFilterCollectorTest
 from facetsupercollectortest import FacetSuperCollectorTest
 from fieldregistrytest import FieldRegistryTest
 from fields2lucenedoctest import Fields2LuceneDocTest
+from fieldslisttolucenedocumenttest import FieldsListToLuceneDocumentTest
 from generalizedjaccarddistancetest import GeneralizedJaccardDistanceTest
 from groupcollectortest import GroupCollectorTest
 from lrucachetest import LruCacheTest
+from lucenekeyvaluestoretest import LuceneKeyValueStoreTest
 from lucenequerycomposertest import LuceneQueryComposerTest
 from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
 from lucenesettingstest import LuceneSettingsTest
 from lucenetest import LuceneTest
-from multicqltolucenequerytest import MultiCqlToLuceneQueryTest
-from multilucenetest import MultiLuceneTest
 from merescoclusterertest import MerescoClustererTest
+from adaptertolucenequerytest import AdapterToLuceneQueryTest
+from multilucenetest import MultiLuceneTest
 from pageranktest import PageRankTest
+from queryexpressiontolucenequerytest import QueryExpressionToLuceneQueryTest
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
 from suggestionindextest import SuggestionIndexTest
 from supercollectortest import SuperCollectorTest
 from superindexsearchertest import SuperIndexSearcherTest
 from termfrequencysimilaritytest import TermFrequencySimilarityTest
 from termnumeratortest import TermNumeratorTest
-from fieldslisttolucenedocumenttest import FieldsListToLuceneDocumentTest
-from lucenekeyvaluestoretest import LuceneKeyValueStoreTest
-from queryexpressiontolucenequerytest import QueryExpressionToLuceneQueryTest
 
 if __name__ == '__main__':
     unittest.main()

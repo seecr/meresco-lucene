@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -27,7 +28,7 @@ from unittest import TestCase
 from seecr.test import CallTrace
 from cqlparser import parseString
 from meresco.lucene.cqltolucenequery import CqlToLuceneQuery
-from meresco.lucene.multicqltolucenequery import MultiCqlToLuceneQuery
+from meresco.lucene.adaptertolucenequery import AdapterToLuceneQuery
 from meresco.core import Observable
 from weightless.core import be
 from seecr.utils.generatorutils import consume
@@ -38,11 +39,11 @@ from org.apache.lucene.index import Term
 from meresco.lucene import LuceneSettings
 
 
-class MultiCqlToLuceneQueryTest(TestCase):
+class AdapterToLuceneQueryTest(TestCase):
     def setUp(self):
-        coreAConverter = CqlToLuceneQuery([('fieldA', 1.0)], luceneSettings=LuceneSettings())
-        coreBConverter = CqlToLuceneQuery([('fieldB', 1.0)], luceneSettings=LuceneSettings())
-        self.converter = MultiCqlToLuceneQuery(defaultCore='A', coreToCqlLuceneQueries=dict(A=coreAConverter, B=coreBConverter))
+        coreAConverter = CqlToLuceneQuery([('fieldA', 1.0)], luceneSettings=LuceneSettings())._convert
+        coreBConverter = CqlToLuceneQuery([('fieldB', 1.0)], luceneSettings=LuceneSettings())._convert
+        self.converter = AdapterToLuceneQuery(defaultCore='A', coreConverters=dict(A=coreAConverter, B=coreBConverter))
         self.observer = CallTrace('Query responder', methods={'executeQuery': executeQueryMock})
         self.dna = be((Observable(),
             (self.converter,

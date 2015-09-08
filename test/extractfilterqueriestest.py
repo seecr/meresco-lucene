@@ -94,3 +94,8 @@ class ExtractFilterQueriesTest(SeecrTestCase):
         query, filters = self.convert(cqlToExpression('core2.a=b AND core2.x=y'), 'core1')
         self.assertEqual(None, query)
         self.assertEqual({'core2': [cqlToExpression('a=b'), cqlToExpression('x=y')]}, filters)
+
+    def testCoreAndQueryInOtherCoreOr(self):
+        query, filters = self.convert(cqlToExpression('core2.a=b OR core2.x=y'), 'core1')
+        self.assertEqual(None, query)
+        self.assertEqual({'core2': [cqlToExpression('a=b OR x=y')]}, filters)

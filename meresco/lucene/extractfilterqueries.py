@@ -33,7 +33,7 @@ class ExtractFilterQueries(object):
 
     def convert(self, expression, core):
         filterQueries = {}
-        if expression.operator is None:
+        if expression.operator is None or expression.operator == 'OR':
             e = QueryExpression.nested('AND')
             e.operands.append(expression)
             expression = e

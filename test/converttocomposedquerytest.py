@@ -31,6 +31,7 @@ from seecr.test import SeecrTestCase, CallTrace
 from weightless.core import be
 from meresco.core import Observable
 from cqlparser import parseString as parseCQL, cqlToExpression
+from cqlparser.cqltoexpression import QueryExpression
 from meresco.lucene import LuceneResponse
 from seecr.utils.generatorutils import generatorReturn, returnValueFromGenerator, consume
 from meresco.lucene.converttocomposedquery import ConvertToComposedQuery
@@ -327,3 +328,10 @@ class ConvertToComposedQueryTest(SeecrTestCase):
                 dict(sortBy='field', sortDescending=True, core='defaultCore'),
                 dict(sortBy='field', sortDescending=False, core='otherCore')
             ], cq.sortKeys)
+
+    def testConvertJoinQueryToFilters(self):
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('field=value AND otherCore.field=value2')))
+        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
+        cq = self.observer.calledMethods[0].kwargs['query']
+        self.assertEqual(QueryExpression.searchterm('field', '=', 'value'), cq.queryFor('defaultCore'))
+        self.assertEqual([QueryExpression.searchterm('field', '=', 'value2')], cq.filterQueriesFor('otherCore'))

@@ -37,6 +37,7 @@ if version >= '2.7':
 from composedquerytest import ComposedQueryTest
 from conversiontest import ConversionTest
 from converttocomposedquerytest import ConvertToComposedQueryTest
+from converttofilterquerytest import ConvertToFilterQueryTest
 from cqltolucenequerytest import CqlToLuceneQueryTest
 from dedupfiltercollectortest import DeDupFilterCollectorTest
 from facetsupercollectortest import FacetSuperCollectorTest

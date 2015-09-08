@@ -59,9 +59,12 @@ class ConvertToComposedQuery(Observable):
         self._clusterFields = clusterFields
         self._clusteringEnabled = bool(self._clusterFields) and 'clustering' not in config.get('features_disabled', [])
 
-    def executeQuery(self, cqlAbstractSyntaxTree, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, sortKeys=None, **kwargs):
+    def executeQuery(self, query=None, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, sortKeys=None, **kwargs):
+        if 'cqlAbstractSyntaxTree' in kwargs:
+            query = kwargs.pop('cqlAbstractSyntaxTree')
+        query = cqlToExpression(query)
+
         extraArguments = extraArguments or {}
-        query = cqlToExpression(cqlAbstractSyntaxTree)
         cq = ComposedQuery(self._resultsFrom)
         for matchTuple in self._matches:
             cq.addMatch(*matchTuple)

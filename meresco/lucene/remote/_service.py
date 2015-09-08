@@ -34,7 +34,7 @@ from meresco.lucene import version
 from meresco.core import Observable
 from meresco.components.http.utils import Ok, CRLF, ContentTypeHeader, ContentTypePlainText, serverErrorPlainText
 from meresco.components.http import PathFilter, PathRename, FileServer, StringServer
-from cqlparser import parseString, cql2string
+from cqlparser import parseString, cql2string, cqlToExpression
 from meresco.html import DynamicHtml
 
 from _conversion import Conversion
@@ -58,6 +58,7 @@ class LuceneRemoteService(Observable):
                     'VERSION': version,
                     'allCoreInfo': self._allCoreInfo,
                     'parseCql': parseString,
+                    'cqlToExpression': cqlToExpression,
                     'cql2string': cql2string,
                     'dumps': dumps,
                 }

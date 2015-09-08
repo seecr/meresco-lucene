@@ -38,7 +38,6 @@ from composedquerytest import ComposedQueryTest
 from conversiontest import ConversionTest
 from converttocomposedquerytest import ConvertToComposedQueryTest
 from extractfilterqueriestest import ExtractFilterQueriesTest
-from cqltolucenequerytest import CqlToLuceneQueryTest
 from dedupfiltercollectortest import DeDupFilterCollectorTest
 from facetsupercollectortest import FacetSuperCollectorTest
 from fieldregistrytest import FieldRegistryTest

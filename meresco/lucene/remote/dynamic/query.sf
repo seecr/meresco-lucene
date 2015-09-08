@@ -41,7 +41,11 @@ def jsonFormat(response, qKwargs):
     yield '<h3>Query</h3>\n'
     yield '<pre>'
     q = dict(qKwargs)
-    q['cqlQuery'] = cql2string(q.pop('cqlAbstractSyntaxTree'))
+    query = q.pop('query')
+    yield query.toString()
+    yield '</pre>'
+    yield '<h3>**kwargs</h3>\n'
+    yield '<pre>'
     yield dumps(q, indent=4)
     yield '</pre>'
 
@@ -72,7 +76,7 @@ def main(arguments, Body=None, **kwargs):
     yield '<p></p>'
 
     if queryArgs:
-        qKwargs = dict(cqlAbstractSyntaxTree=parseCql(query))
+        qKwargs = dict(query=cqlToExpression(query))
         if start:
             qKwargs['start'] = int(start)
         if stop:

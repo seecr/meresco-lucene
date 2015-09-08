@@ -26,8 +26,7 @@
 
 from unittest import TestCase
 from seecr.test import CallTrace
-from cqlparser import parseString
-from meresco.lucene.cqltolucenequery import CqlToLuceneQuery
+from cqlparser import cqlToExpression
 from meresco.lucene.adaptertolucenequery import AdapterToLuceneQuery
 from meresco.core import Observable
 from weightless.core import be
@@ -37,12 +36,13 @@ from meresco.lucene.composedquery import ComposedQuery
 from org.apache.lucene.search import TermQuery
 from org.apache.lucene.index import Term
 from meresco.lucene import LuceneSettings
+from meresco.lucene.queryexpressiontolucenequery import QueryExpressionToLuceneQuery
 
 
 class AdapterToLuceneQueryTest(TestCase):
     def setUp(self):
-        coreAConverter = CqlToLuceneQuery([('fieldA', 1.0)], luceneSettings=LuceneSettings())._convert
-        coreBConverter = CqlToLuceneQuery([('fieldB', 1.0)], luceneSettings=LuceneSettings())._convert
+        coreAConverter = QueryExpressionToLuceneQuery([('fieldA', 1.0)], luceneSettings=LuceneSettings())
+        coreBConverter = QueryExpressionToLuceneQuery([('fieldB', 1.0)], luceneSettings=LuceneSettings())
         self.converter = AdapterToLuceneQuery(defaultCore='A', coreConverters=dict(A=coreAConverter, B=coreBConverter))
         self.observer = CallTrace('Query responder', methods={'executeQuery': executeQueryMock})
         self.dna = be((Observable(),
@@ -53,10 +53,10 @@ class AdapterToLuceneQueryTest(TestCase):
 
     def testConvertComposedQuery(self):
         q = ComposedQuery('A')
-        q.setCoreQuery(core='A', query=parseString('valueAQ'))
-        q.setCoreQuery(core='B', query=parseString('valueBQ'))
+        q.setCoreQuery(core='A', query=cqlToExpression('valueAQ'))
+        q.setCoreQuery(core='B', query=cqlToExpression('valueBQ'))
         q.addMatch(dict(core='A', uniqueKey='keyA'), dict(core='B', key='keyB'))
-        q.addUnite(dict(core='A', query=parseString('fieldUA exact valueUA')), dict(core='B', query=parseString('fieldUB exact valueUB')))
+        q.addUnite(dict(core='A', query=cqlToExpression('fieldUA exact valueUA')), dict(core='B', query=cqlToExpression('fieldUB exact valueUB')))
         q.validate()
         consume(self.dna.any.executeComposedQuery(query=q))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())

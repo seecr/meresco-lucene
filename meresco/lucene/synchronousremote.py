@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -48,7 +49,9 @@ class SynchronousRemote(object):
 
     def executeQuery(self, *args, **kwargs):
         if len(args) == 1:
-            kwargs['cqlAbstractSyntaxTree'] = args[0]
+            kwargs['query'] = args[0]
+        if 'cqlAbstractSyntaxTree' in kwargs:
+            kwargs['query'] = kwargs.pop('cqlAbstractSyntaxTree')
         return returnValueFromGenerator(self._observable.any.unknown(message='executeQuery', **kwargs))
 
     def executeComposedQuery(self, *args, **kwargs):

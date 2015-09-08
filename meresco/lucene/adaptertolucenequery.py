@@ -36,8 +36,10 @@ class AdapterToLuceneQuery(Transparent):
         for core, convert in coreConverters.items():
             self._converts[core] = convert
 
-    def executeQuery(self, cqlAbstractSyntaxTree, core=None, filterQueries=None, **kwargs):
-        expression = cqlToExpression(cqlAbstractSyntaxTree)
+    def executeQuery(self, query=None, core=None, filterQueries=None, **kwargs):
+        if 'cqlAbstractSyntaxTree' in kwargs:
+            query = kwargs.pop('cqlAbstractSyntaxTree')
+        expression = cqlToExpression(query)
         if core is None:
             core = self._defaultCore
         convertMethod = self._converts[core]

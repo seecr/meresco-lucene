@@ -25,8 +25,8 @@
 ## end license ##
 
 from meresco.core import Observable, asyncnoreturnvalue
-from cqlparser import parseString as parseCQL
-from cqlparser import cql2string
+from cqlparser import cqlToExpression
+from cqlparser.cqltoexpression import QueryExpression
 
 from seecr.utils.generatorutils import generatorReturn
 from meresco.lucene import ComposedQuery
@@ -60,6 +60,7 @@ class ConvertToComposedQuery(Observable):
 
     def executeQuery(self, cqlAbstractSyntaxTree, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, sortKeys=None, **kwargs):
         extraArguments = extraArguments or {}
+        coreQuery = cqlToExpression(cqlAbstractSyntaxTree)
         cq = ComposedQuery(self._resultsFrom)
         for matchTuple in self._matches:
             cq.addMatch(*matchTuple)
@@ -68,7 +69,7 @@ class ConvertToComposedQuery(Observable):
             if key in kwargs:
                 setattr(cq, key, kwargs[key])
 
-        cq.setCoreQuery(core=self._resultsFrom, query=cqlAbstractSyntaxTree)
+        cq.setCoreQuery(core=self._resultsFrom, query=coreQuery)
 
         for sortKey in sortKeys or []:
             core, sortBy = self._parseCorePrefix(sortKey['sortBy'], self._cores)
@@ -79,7 +80,7 @@ class ConvertToComposedQuery(Observable):
             core, filterQuery = self._coreQuery(query=f, cores=self._cores)
             cq.addFilterQuery(core=core, query=filterQuery)
         for core, filterQuery in filterQueries or []:
-            cq.addFilterQuery(core=core, query=parseCQL(filterQuery))
+            cq.addFilterQuery(core=core, query=cqlToExpression(filterQuery))
 
         rankQueries = extraArguments.get('x-rank-query', [])
         if rankQueries:
@@ -88,7 +89,7 @@ class ConvertToComposedQuery(Observable):
                 core, rankQuery = self._parseCorePrefix(rankQuery, self._cores)
                 queries[core].append(rankQuery)
             for core, q in queries.items():
-                cq.setRankQuery(core=core, query=parseCQL(' OR '.join(q)))
+                cq.setRankQuery(core=core, query=cqlToExpression(' OR '.join(q)))
 
         if self._dedupFieldName:
             if 'true' == extraArguments.get('x-filter-common-keys', ['true'])[0]:
@@ -96,7 +97,7 @@ class ConvertToComposedQuery(Observable):
                 setattr(cq, "dedupSortField", self._dedupSortFieldName)
 
         if self._groupingEnabled and 'true' == extraArguments.get('x-grouping', [None])[0]:
-            if cqlAbstractSyntaxTree != parseCQL('*'):
+            if coreQuery != QueryExpression.searchterm(term='*'):
                 setattr(cq, "groupingField", self._groupingFieldName)
 
         if self._clusteringEnabled and 'true' == extraArguments.get('x-clustering', [None])[0]:
@@ -125,7 +126,7 @@ class ConvertToComposedQuery(Observable):
 
     def _coreQuery(self, query, cores):
         core, query = self._parseCorePrefix(query, cores)
-        return core, parseCQL(query)
+        return core, cqlToExpression(query)
 
     def _coreFacet(self, fieldname, cores):
         return self._parseCorePrefix(fieldname, cores)

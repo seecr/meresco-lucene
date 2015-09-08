@@ -34,7 +34,6 @@ if version >= '2.7':
     simplefilter('default')
 
 
-from composedquerycqltoexpressiontest import ComposedQueryCqlToExpressionTest
 from composedquerytest import ComposedQueryTest
 from conversiontest import ConversionTest
 from converttocomposedquerytest import ConvertToComposedQueryTest

@@ -30,7 +30,7 @@
 from seecr.test import SeecrTestCase, CallTrace
 from weightless.core import be
 from meresco.core import Observable
-from cqlparser import parseString as parseCQL
+from cqlparser import parseString as parseCQL, cqlToExpression
 from meresco.lucene import LuceneResponse
 from seecr.utils.generatorutils import generatorReturn, returnValueFromGenerator, consume
 from meresco.lucene.converttocomposedquery import ConvertToComposedQuery
@@ -81,8 +81,8 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
         self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
         self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
-        self.assertEquals([parseCQL("prefix:field=value")], cq.queriesFor('otherCore'))
-        self.assertEquals([parseCQL('*')], cq.queriesFor('defaultCore'))
+        self.assertEquals([cqlToExpression("prefix:field=value")], cq.queriesFor('otherCore'))
+        self.assertEquals([cqlToExpression('*')], cq.queriesFor('defaultCore'))
 
     def testFilterQuery(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), filterQueries=[('otherCore', 'prefix:field=value')], facets=[], start=1))
@@ -93,8 +93,8 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
         self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
         self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
-        self.assertEquals([parseCQL("prefix:field=value")], cq.queriesFor('otherCore'))
-        self.assertEquals([parseCQL('*')], cq.queriesFor('defaultCore'))
+        self.assertEquals([cqlToExpression("prefix:field=value")], cq.queriesFor('otherCore'))
+        self.assertEquals([cqlToExpression('*')], cq.queriesFor('defaultCore'))
 
     def testMatchesOptional(self):
         self.tree = be(
@@ -111,7 +111,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals(1, cq.start)
         self.assertEquals(set(['defaultCore']), cq.cores)
         self.assertRaises(KeyError, lambda: cq.keyName('defaultCore', 'otherCore'))
-        self.assertEquals([parseCQL("*"), parseCQL("prefix:field=value")], cq.queriesFor('defaultCore'))
+        self.assertEquals([cqlToExpression("*"), cqlToExpression("prefix:field=value")], cq.queriesFor('defaultCore'))
 
     def testTwoXFiltersForSameCore(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-filter': ['otherCore.prefix:field=value', 'otherCore.field2=value2']}, facets=[]))
@@ -122,7 +122,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
         self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
         self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
-        self.assertEquals([parseCQL("prefix:field=value"), parseCQL('field2=value2')], cq.queriesFor('otherCore'))
+        self.assertEquals([cqlToExpression("prefix:field=value"), cqlToExpression('field2=value2')], cq.queriesFor('otherCore'))
 
     def testXFilterWhichIsNoJoinQuery(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-filter': ['prefix:field=value']}, facets=[], someKwarg='someValue'))
@@ -130,7 +130,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq = self.observer.calledMethods[0].kwargs['query']
         cq.validate()
         self.assertEquals('defaultCore', cq.resultsFrom)
-        self.assertEquals([parseCQL("*"), parseCQL("prefix:field=value")], cq.queriesFor('defaultCore'))
+        self.assertEquals([cqlToExpression("*"), cqlToExpression("prefix:field=value")], cq.queriesFor('defaultCore'))
         self.assertEquals(1, cq.numberOfUsedCores)
 
     def testDedup(self):
@@ -202,7 +202,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq = self.observer.calledMethods[0].kwargs['query']
         cq.validate()
         self.assertEquals('defaultCore', cq.resultsFrom)
-        self.assertEquals([parseCQL("prefix.field=value")], cq.queriesFor('defaultCore'))
+        self.assertEquals([cqlToExpression("prefix.field=value")], cq.queriesFor('defaultCore'))
 
     def testNormalQueryWithoutAnyJoin(self):
         ast = parseCQL("prefixfield=value")
@@ -211,7 +211,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq = self.observer.calledMethods[0].kwargs['query']
         cq.validate()
         self.assertEquals('defaultCore', cq.resultsFrom)
-        self.assertEquals([parseCQL("prefixfield=value")], cq.queriesFor('defaultCore'))
+        self.assertEquals([cqlToExpression("prefixfield=value")], cq.queriesFor('defaultCore'))
 
     def testXTermDrilldown(self):
         self.response = LuceneResponse(drilldownData=[
@@ -273,10 +273,10 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
         self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
         self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
-        self.assertEquals(parseCQL("prefix:field=value OR otherprefix:otherfield=othervalue"), cq.rankQueryFor('otherCore'))
-        self.assertEquals(parseCQL("field=value"), cq.rankQueryFor('defaultCore'))
+        self.assertEquals(cqlToExpression("prefix:field=value OR otherprefix:otherfield=othervalue"), cq.rankQueryFor('otherCore'))
+        self.assertEquals(cqlToExpression("field=value"), cq.rankQueryFor('defaultCore'))
         self.assertEquals([], cq.queriesFor('otherCore'))
-        self.assertEquals([parseCQL('*')], cq.queriesFor('defaultCore'))
+        self.assertEquals([cqlToExpression('*')], cq.queriesFor('defaultCore'))
 
     def testDrilldownQueries(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={}, drilldownQueries=[('field', ['path1', 'path2'])]))
@@ -313,7 +313,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
     def testIgnoreCorePrefixForResultCore(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('defaultCore.field=value')))
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEqual([parseCQL('defaultCore.field=value')], cq.queriesFor('defaultCore'))
+        self.assertEqual([cqlToExpression('defaultCore.field=value')], cq.queriesFor('defaultCore'))
 
     def testSortKeys(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), sortKeys=[dict(sortBy='field', sortDescending=True), dict(sortBy='otherCore.field', sortDescending=False)]))

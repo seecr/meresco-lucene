@@ -31,13 +31,18 @@ from java.io import StringReader
 from re import compile
 from cqlparser import UnsupportedCQL
 
-class QueryExpressionToLuceneQuery(object):
+class QueryExpressionToLuceneQuery(Observable):
 
     def __init__(self, unqualifiedTermFields, luceneSettings, ignoreStemmingForWords=None):
+        Observable.__init__(self)
         self._unqualifiedTermFields = unqualifiedTermFields
         self._analyzer = luceneSettings.analyzer
         self._fieldRegistry = luceneSettings.fieldRegistry
         self._ignoreStemmingForWords = set(ignoreStemmingForWords or [])
+
+    def executeQuery(self, query, **kwargs):
+        response = yield self.any.executeQuery(luceneQuery=self.convert(query), **kwargs)
+        raise StopIteration(response)
 
     def convert(self, expression):
         return self._expression(expression)

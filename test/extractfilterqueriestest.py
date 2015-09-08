@@ -28,10 +28,10 @@ from seecr.test import SeecrTestCase
 from meresco.lucene.converttofilterquery import ConvertToFilterQuery
 from cqlparser import cqlToExpression
 
-class ConvertToFilterQueryTest(SeecrTestCase):
+class ExtractFilterQueriesTest(SeecrTestCase):
 
     def setUp(self):
-        super(ConvertToFilterQueryTest, self).setUp()
+        super(ExtractFilterQueriesTest, self).setUp()
         self.convertToFilterQuery = ConvertToFilterQuery(['core1', 'core2'])
         self.convert = self.convertToFilterQuery.convert
 

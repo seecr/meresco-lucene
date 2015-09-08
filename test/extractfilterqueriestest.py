@@ -25,15 +25,15 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.converttofilterquery import ConvertToFilterQuery
+from meresco.lucene.extractfilterqueries import ExtractFilterQueries
 from cqlparser import cqlToExpression
 
 class ExtractFilterQueriesTest(SeecrTestCase):
 
     def setUp(self):
         super(ExtractFilterQueriesTest, self).setUp()
-        self.convertToFilterQuery = ConvertToFilterQuery(['core1', 'core2'])
-        self.convert = self.convertToFilterQuery.convert
+        self.extractFilterQueries = ExtractFilterQueries(['core1', 'core2'])
+        self.convert = self.extractFilterQueries.convert
 
     def testDoNothingForStandardQuery(self):
         query, filters = self.convert(cqlToExpression('field=value AND aap=noot'), 'core1')

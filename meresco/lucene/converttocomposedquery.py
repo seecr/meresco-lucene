@@ -31,7 +31,7 @@ from cqlparser.cqltoexpression import QueryExpression
 from seecr.utils.generatorutils import generatorReturn
 from meresco.lucene import ComposedQuery
 from collections import defaultdict
-from meresco.lucene.converttofilterquery import ConvertToFilterQuery
+from meresco.lucene.extractfilterqueries import ExtractFilterQueries
 
 class ConvertToComposedQuery(Observable):
     def __init__(self, resultsFrom, matches=None, dedupFieldName=None, dedupSortFieldName=None, groupingFieldName=None,  clusterFieldNames=None, drilldownFieldnamesTranslate=lambda s: s):
@@ -47,7 +47,7 @@ class ConvertToComposedQuery(Observable):
         self._clusterFieldNames = clusterFieldNames or []
         self._groupingEnabled = bool(self._groupingFieldName)
         self._clusteringEnabled = bool(self._clusterFields)
-        self._convertToFilterQuery = ConvertToFilterQuery(self._cores)
+        self._extraFilterQueries = ExtractFilterQueries(self._cores)
 
     @asyncnoreturnvalue
     def updateConfig(self, config, indexConfig, **kwargs):
@@ -70,7 +70,7 @@ class ConvertToComposedQuery(Observable):
             if key in kwargs:
                 setattr(cq, key, kwargs[key])
 
-        coreQuery, filters = self._convertToFilterQuery.convert(query, self._resultsFrom)
+        coreQuery, filters = self._extraFilterQueries.convert(query, self._resultsFrom)
         cq.setCoreQuery(core=self._resultsFrom, query=coreQuery)
         for core, aFilter in ((core, aFilter) for core, filters in filters.items() for aFilter in filters):
             cq.addFilterQuery(core, aFilter)

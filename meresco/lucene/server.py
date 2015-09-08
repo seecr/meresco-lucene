@@ -38,7 +38,8 @@ from meresco.components.autocomplete import Autocomplete
 from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
-from meresco.lucene import Lucene, Fields2LuceneDoc, CqlToLuceneQuery, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator, DrilldownField, LuceneSettings
+from meresco.lucene import Lucene, Fields2LuceneDoc, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator, DrilldownField, LuceneSettings
+from meresco.lucene.queryexpressiontolucenequery import QueryExpressionToLuceneQuery
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 from meresco.lucene.fieldregistry import FieldRegistry
 
@@ -46,7 +47,7 @@ from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 
 from weightless.io import Reactor
 from weightless.core import compose, be
-from meresco.lucene.multicqltolucenequery import MultiCqlToLuceneQuery
+from meresco.lucene.adaptertolucenequery import AdapterToLuceneQuery
 from meresco.xml import namespaces
 from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
 
@@ -170,12 +171,12 @@ def main(reactor, port, databasePath):
                     (PathFilter('/sru'),
                         (SruParser(defaultRecordSchema='record'),
                             (SruHandler(),
-                                (MultiCqlToLuceneQuery(
+                                (AdapterToLuceneQuery(
                                     defaultCore='main',
-                                    coreToCqlLuceneQueries={
-                                        "main": CqlToLuceneQuery([], luceneSettings=luceneSettings),
-                                        "main2": CqlToLuceneQuery([], luceneSettings=lucene2Settings),
-                                        "empty-core": CqlToLuceneQuery([], luceneSettings=emptyLuceneSettings),
+                                    coreConverters={
+                                        "main": QueryExpressionToLuceneQuery([], luceneSettings=luceneSettings),
+                                        "main2": QueryExpressionToLuceneQuery([], luceneSettings=lucene2Settings),
+                                        "empty-core": QueryExpressionToLuceneQuery([], luceneSettings=emptyLuceneSettings),
                                     }),
                                     multiLuceneHelix,
                                 ),
@@ -197,12 +198,12 @@ def main(reactor, port, databasePath):
                     ),
                     (PathFilter('/remote'),
                         (LuceneRemoteService(reactor=reactor),
-                            (MultiCqlToLuceneQuery(
+                            (AdapterToLuceneQuery(
                                     defaultCore='main',
-                                    coreToCqlLuceneQueries={
-                                        "main": CqlToLuceneQuery([], luceneSettings=luceneSettings),
-                                        "main2": CqlToLuceneQuery([], luceneSettings=lucene2Settings),
-                                        "empty-core": CqlToLuceneQuery([], luceneSettings=emptyLuceneSettings),
+                                    coreConverters={
+                                        "main": QueryExpressionToLuceneQuery([], luceneSettings=luceneSettings),
+                                        "main2": QueryExpressionToLuceneQuery([], luceneSettings=lucene2Settings),
+                                        "empty-core": QueryExpressionToLuceneQuery([], luceneSettings=emptyLuceneSettings),
                                     }),
                                 multiLuceneHelix,
                             )

@@ -49,6 +49,7 @@ class CqlToLuceneQuery(Transparent, Logger):
     def _convert(self, ast):
         ClauseCollector(ast, self.log).visit()
         return self._cqlComposer.compose(ast)
+    __call__ = _convert
 
     def updateUnqualifiedFields(self, unqualifiedFields):
         self.updateQueryComposerArguments('unqualifiedTermFields', unqualifiedFields)

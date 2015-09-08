@@ -30,22 +30,22 @@ from seecr.test import IntegrationTestCase
 from seecr.test.utils import getRequest
 
 from meresco.lucene.synchronousremote import SynchronousRemote
-from cqlparser import parseString as parseCql
+from cqlparser.cqltoexpression import cqlToExpression
 
 
 class LuceneRemoteServiceTest(IntegrationTestCase):
     def testRemoteService(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        response = remote.executeQuery(parseCql('*'))
+        response = remote.executeQuery(cqlToExpression('*'))
         self.assertEquals(100, response.total)
 
     def testRemoteServiceOnBadPath(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/does/not/exist')
-        self.assertRaises(IOError, lambda: remote.executeQuery(parseCql('*')))
+        self.assertRaises(IOError, lambda: remote.executeQuery(cqlToExpression('*')))
 
     def testRemoteServiceWithBadCore(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        self.assertRaises(IOError, lambda: remote.executeQuery(parseCql('*'), core='doesnotexist'))
+        self.assertRaises(IOError, lambda: remote.executeQuery(cqlToExpression('*'), core='doesnotexist'))
 
     def testRemoteInfo(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/index', parse=False)

@@ -33,6 +33,7 @@ from meresco.lucene.fieldregistry import KEY_PREFIX
 from meresco.lucene import ComposedQuery
 from meresco.lucene.synchronousremote import SynchronousRemote
 from cqlparser import parseString
+from cqlparser.cqltoexpression import cqlToExpression
 
 
 class LuceneTest(IntegrationTestCase):
@@ -110,11 +111,11 @@ class LuceneTest(IntegrationTestCase):
 
     def testJoin(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        q = ComposedQuery('main', query=parseString('*'))
+        q = ComposedQuery('main', query=cqlToExpression('*'))
         q.addMatch(dict(core='main', uniqueKey=KEY_PREFIX+'field'), dict(core='main2', key=KEY_PREFIX+'field'))
         q.start=0
         q.stop=100
-        q.addFilterQuery(core='main', query=parseString('field2=value0 OR field2=value1'))
+        q.addFilterQuery(core='main', query=cqlToExpression('field2=value0 OR field2=value1'))
         q.addFacet(core='main2', facet=dict(fieldname='untokenized.field2', maxTerms=5))
         response = remote.executeComposedQuery(query=q)
         self.assertEquals(19, response.total)

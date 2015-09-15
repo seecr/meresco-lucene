@@ -40,6 +40,12 @@ class QueryExpressionToLuceneQuery(Observable):
         self._fieldRegistry = luceneSettings.fieldRegistry
         self._ignoreStemmingForWords = set(ignoreStemmingForWords or [])
 
+    def updateUnqualifiedTermFields(self, unqualifiedTermFields):
+        self._unqualifiedTermFields = unqualifiedTermFields
+
+    def updateIgnoreStemmingForWords(self, ignoreStemmingForWords):
+        self._ignoreStemmingForWords = ignoreStemmingForWords
+
     def executeQuery(self, query, **kwargs):
         response = yield self.any.executeQuery(luceneQuery=self.convert(query), **kwargs)
         raise StopIteration(response)

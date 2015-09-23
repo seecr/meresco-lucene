@@ -24,23 +24,25 @@
 #
 ## end license ##
 
-from meresco.core import Observable, asyncnoreturnvalue
+from collections import defaultdict
+
 from cqlparser import cqlToExpression
 from cqlparser.cqltoexpression import QueryExpression
 
-from seecr.utils.generatorutils import generatorReturn
+from meresco.core import Observable, asyncnoreturnvalue
 from meresco.lucene import ComposedQuery
-from collections import defaultdict
 from meresco.lucene.extractfilterqueries import ExtractFilterQueries
 
+
 class ConvertToComposedQuery(Observable):
-    def __init__(self, resultsFrom, matches=None, dedupFieldName=None, dedupSortFieldName=None, groupingFieldName=None,  clusterFieldNames=None, drilldownFieldnamesTranslate=lambda s: s):
+    def __init__(self, resultsFrom, matches=None, dedupFieldName=None, dedupSortFieldName=None, dedupByDefault=True, groupingFieldName=None, clusterFieldNames=None, drilldownFieldnamesTranslate=lambda s: s):
         Observable.__init__(self)
         self._resultsFrom = resultsFrom
         self._matches = matches or []
         self._cores = set(cSpec['core'] for match in self._matches for cSpec in match)
         self._dedupFieldName = dedupFieldName
         self._dedupSortFieldName = dedupSortFieldName
+        self._dedupByDefault = dedupByDefault
         self._groupingFieldName = groupingFieldName
         self._clusterFields = []
         self._drilldownFieldnamesTranslate = drilldownFieldnamesTranslate
@@ -99,7 +101,7 @@ class ConvertToComposedQuery(Observable):
                 cq.setRankQuery(core=core, query=cqlToExpression(' OR '.join(q)))
 
         if self._dedupFieldName:
-            if 'true' == extraArguments.get('x-filter-common-keys', ['true'])[0]:
+            if 'true' == extraArguments.get('x-filter-common-keys', ['true' if self._dedupByDefault else 'false'])[0]:
                 setattr(cq, "dedupField", self._dedupFieldName)
                 setattr(cq, "dedupSortField", self._dedupSortFieldName)
 
@@ -129,7 +131,8 @@ class ConvertToComposedQuery(Observable):
         for facet in getattr(result, "drilldownData", []):
             fieldname = facet['fieldname']
             facet['fieldname'] = fieldTranslations.get(fieldname, fieldname)
-        generatorReturn(result)
+
+        raise StopIteration(result)
 
     def _coreQuery(self, query, cores):
         core, query = self._parseCorePrefix(query, cores)

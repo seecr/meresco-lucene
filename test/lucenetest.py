@@ -48,6 +48,7 @@ from seecr.test.io import stdout_replaced
 
 from lucenetestcase import LuceneTestCase
 
+
 class LuceneTest(LuceneTestCase):
     def setUp(self):
         super(LuceneTest, self).setUp(FIELD_REGISTRY)
@@ -159,6 +160,22 @@ class LuceneTest(LuceneTestCase):
         self.assertEquals(3, result.total)
         self.assertEquals(['addTimer', 'removeTimer'], self._reactor.calledMethodNames())
         self.assertEquals(token, self._reactor.calledMethods[1].kwargs['token'])
+
+    def testForceCommit(self):
+        self.lucene.close()
+        self._defaultSettings.commitTimeout = 42
+        self._defaultSettings.commitCount = 3
+        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, settings=self._defaultSettings)
+        retval(self.lucene.addDocument(identifier="id:0", document=Document()))
+        self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
+        self.assertEquals(42, self._reactor.calledMethods[0].kwargs['seconds'])
+        self._reactor.calledMethods.reset()
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(0, result.total)
+        self.lucene.forceCommit()
+        self.assertEquals(['removeTimer'], self._reactor.calledMethodNames())
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
+        self.assertEquals(1, result.total)
 
     def testAddTwiceUpdatesDocument(self):
         retval(self.lucene.addDocument(identifier="id:0", document=createDocument([

@@ -121,9 +121,9 @@ class Lucene(Observable):
 
     def _startCommitTimer(self):
         self._commitTimerToken = self._reactor.addTimer(
-                seconds=self.settings.commitTimeout,
-                callback=lambda: self._realCommit(removeTimer=False)
-            )
+            seconds=self.settings.commitTimeout,
+            callback=lambda: self._realCommit(removeTimer=False)
+        )
 
     def commit(self):
         self._commitCount += 1
@@ -131,7 +131,9 @@ class Lucene(Observable):
             self._startCommitTimer()
         if self._commitCount >= self.settings.commitCount:
             self._realCommit()
-            self._commitCount = 0
+
+    def forceCommit(self):
+        self._realCommit(removeTimer=True)
 
     def _realCommit(self, removeTimer=True):
         t0 = time()
@@ -142,6 +144,7 @@ class Lucene(Observable):
         if reopened:
             self._scoreCollectorCache.clear()
             self._collectedKeysCache.clear()
+        self._commitCount = 0
         if self.settings.readonly:
             self._startCommitTimer()
         self.log("[Lucene] {0}(readonly={2}): commit took: {1:.2f} seconds\n".format(self.coreName, time() - t0, self.settings.readonly))

@@ -35,7 +35,7 @@ class LuceneTestCase(SeecrTestCase):
     def setUp(self, fieldRegistry=FieldRegistry()):
         super(LuceneTestCase, self).setUp()
         self._javaObjects = self._getJavaObjects()
-        self._reactor = CallTrace('reactor')
+        self._reactor = CallTrace('reactor', methods={'addTimer': lambda seconds, callback: CallTrace('timer')})
         self._defaultSettings = LuceneSettings(commitCount=1, commitTimeout=1, fieldRegistry=fieldRegistry)
         self.lucene = Lucene(
             join(self.tempdir, 'lucene'),

@@ -30,7 +30,7 @@ from org.meresco.lucene.search.join import ScoreSuperCollector, KeySuperCollecto
 from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search import SortField
-from org.meresco.lucene.search import SuperCollector, JoinSortField
+from org.meresco.lucene.search import SuperCollector
 
 from java.lang import Integer
 from java.util import ArrayList
@@ -40,7 +40,6 @@ from time import time
 from os.path import basename
 
 from meresco.core import Observable
-from meresco.lucene import KEY_PREFIX
 from meresco.lucene.luceneresponse import LuceneResponse
 from meresco.lucene.index import Index
 from meresco.lucene.cache import LruCache
@@ -138,7 +137,7 @@ class Lucene(Observable):
     def _realCommit(self, removeTimer=True):
         t0 = time()
         self._commitTimerToken, token = None, self._commitTimerToken
-        if removeTimer:
+        if removeTimer and not token is None:
             self._reactor.removeTimer(token=token)
         reopened = self._index.commit()
         if reopened:

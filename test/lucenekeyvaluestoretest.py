@@ -67,3 +67,9 @@ class LuceneKeyValueStoreTest(SeecrTestCase):
         self.assertRaises(NotImplementedError, lambda: store.items())
         self.assertRaises(NotImplementedError, lambda: store.keys())
         self.assertRaises(NotImplementedError, lambda: store.values())
+
+    def testCommit(self):
+        store = LuceneKeyValueStore(join(self.tempdir, 'kv'))
+        store['1'] = 'aap'
+        store.commit()
+        self.assertEqual('aap', store['1'])

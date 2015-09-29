@@ -131,6 +131,9 @@ class LuceneKeyValueStore(object):
                 self._searcher = IndexSearcher(self._reader)
                 self._latestModifications.clear()
 
+    def commit(self):
+        self._writer.commit()
+
     def close(self):
         self._writer.close()
 

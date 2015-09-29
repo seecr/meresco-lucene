@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -36,13 +37,22 @@ class TermNumeratorTest(SeecrTestCase):
         self.assertEquals(1, numerator.numerateTerm('string1'))
 
     @stdout_replaced
-    def testCommit(self):
+    def testShutdown(self):
         numerator = TermNumerator(self.tempdir)
         self.assertEquals(1, numerator.numerateTerm('string1'))
+        self.assertEquals(2, numerator.numerateTerm('string2'))
         numerator.handleShutdown()
         numerator.close()
         numerator = TermNumerator(self.tempdir)
+        self.assertEquals(2, numerator.numerateTerm('string2'))
+
+    def testCommit(self):
+        numerator = TermNumerator(self.tempdir)
         self.assertEquals(1, numerator.numerateTerm('string1'))
+        self.assertEquals(u'string1', numerator.getTerm(1))
+        self.assertEquals(2, numerator.numerateTerm('string2'))
+        numerator.commit()
+        self.assertEquals('string2', numerator.getTerm(2))
 
     def testGetTerm(self):
         numerator = TermNumerator(self.tempdir)

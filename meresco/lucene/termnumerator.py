@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -54,10 +55,13 @@ class TermNumerator(Observable):
             self._taxoReader = tr
         return self._taxoReader.getPath(nr).components[0]
 
+    def commit(self):
+        self._taxoWriter.commit()
+
     def handleShutdown(self):
         print 'handle shutdown: saving TermNumerator'
         from sys import stdout; stdout.flush()
-        self._taxoWriter.commit()
+        self.commit()
 
     def close(self):
         self._taxoWriter.close()

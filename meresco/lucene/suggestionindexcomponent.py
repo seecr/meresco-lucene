@@ -26,21 +26,24 @@
 #
 ## end license ##
 
+from os import makedirs
+from os.path import isdir, join
+from math import log
+from time import time
+
+from Levenshtein import distance
+
+from meresco.core import Observable
+from meresco.components.http.utils import CRLF, ContentTypeHeader, Ok
+from meresco.components.json import JsonList, JsonDict
+
 from org.apache.lucene.index import Term
 from org.apache.lucene.queries import ChainedFilter
 from org.apache.lucene.search import QueryWrapperFilter, TermQuery
 from org.meresco.lucene.suggestion import SuggestionIndex
-from os.path import isdir, join
-from os import makedirs
-from meresco.core import Observable
-from meresco.components.http.utils import CRLF, ContentTypeHeader, Ok
-from meresco.components.json import JsonList, JsonDict
-from Levenshtein import distance
-from math import log
-from time import time
+
 
 class SuggestionIndexComponent(Observable):
-
     def __init__(self, stateDir, minShingles=2, maxShingles=6, commitCount=10000, **kwargs):
         super(SuggestionIndexComponent, self).__init__(**kwargs)
         self._suggestionIndexDir = join(stateDir, 'suggestions')
@@ -126,11 +129,15 @@ class SuggestionIndexComponent(Observable):
                 result.append(concepts)
         yield JsonList(result).dumps()
 
+    def commit(self):
+        self._index.commit()
+
     def handleShutdown(self):
         print 'handle shutdown: saving ShingleIndexComponent'
         from sys import stdout; stdout.flush()
         self._index.close()
         self._reader.close()
+
 
 def match(value, suggestion):
     matches = 0

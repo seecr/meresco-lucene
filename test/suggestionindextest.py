@@ -23,16 +23,18 @@
 #
 ## end license ##
 
+from os import remove
+from os.path import join, isfile
+from time import sleep
+
 from seecr.test import SeecrTestCase
 
 from org.apache.lucene.index import Term
 from org.apache.lucene.search import QueryWrapperFilter, TermQuery
 from org.meresco.lucene.suggestion import SuggestionIndex, SuggestionNGramIndex
-from os.path import join
-from time import sleep
+
 
 class SuggestionIndexTest(SeecrTestCase):
-
     def setUp(self):
         super(SuggestionIndexTest, self).setUp()
         suggestionIndexDir = join(self.tempdir, "shingles")
@@ -119,3 +121,9 @@ class SuggestionIndexTest(SeecrTestCase):
         suggestions = list(reader.suggest("lo", False, QueryWrapperFilter(TermQuery(Term("type", "uri:book")))))
         self.assertEquals(1, len(suggestions))
         self.assertEquals([u'Lord of the rings'], [s.suggestion for s in suggestions])
+
+    def testCommit(self):
+        self._suggestionIndex.add("identifier", ["Lord of the rings", "Fellowship of the ring"], [None, None], [None, None])
+        self._suggestionIndex.createSuggestionNGramIndex(True, False)
+        self._suggestionIndex.commit()
+        self.assertSuggestion("l", ["Lord of the rings"])

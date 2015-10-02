@@ -4,6 +4,7 @@
 #
 # Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Drents Archief http://www.drentsarchief.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
@@ -52,10 +53,10 @@ class ConvertToComposedQuery(Observable):
         self._extraFilterQueries = ExtractFilterQueries(self._cores)
 
     @asyncnoreturnvalue
-    def updateConfig(self, config, indexConfig, **kwargs):
+    def updateConfig(self, config, indexConfig=None, **kwargs):
         self._groupingEnabled = bool(self._groupingFieldName) and 'grouping' not in config.get('features_disabled', [])
         clusterFields = []
-        fieldWeights = indexConfig.get('clustering', {})
+        fieldWeights = indexConfig.get('clustering', {}) if indexConfig else {}
         for fieldname in self._clusterFieldNames:
             clusterFields.append((fieldname, fieldWeights.get(fieldname, 1.0)))
         self._clusterFields = clusterFields

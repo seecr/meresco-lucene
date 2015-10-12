@@ -54,7 +54,7 @@ class ExtractFilterQueries(object):
             elif len(expression.operands) == 0:
                 expression = None
         if expression and self.coresInExpression(expression=expression, core=core) != set([core]):
-            raise TooComplexQueryExpression()
+            raise TooComplexQueryExpression('Multiple core query detected, but unable to convert to a correct composed query')
         return expression, filterQueries
 
     def _otherCores(self, core):

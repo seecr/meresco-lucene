@@ -26,8 +26,10 @@
 
 from cqlparser.cqltoexpression import QueryExpression
 
-class ExtractFilterQueries(object):
+class TooComplexQueryExpression(Exception):
+    pass
 
+class ExtractFilterQueries(object):
     def __init__(self, availableCores):
         self._availableCores = set(availableCores)
 
@@ -51,6 +53,8 @@ class ExtractFilterQueries(object):
                 expression = expression.operands[0]
             elif len(expression.operands) == 0:
                 expression = None
+        if expression and self.coresInExpression(expression=expression, core=core) != set([core]):
+            raise TooComplexQueryExpression()
         return expression, filterQueries
 
     def _otherCores(self, core):

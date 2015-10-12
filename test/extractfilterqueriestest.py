@@ -25,7 +25,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.extractfilterqueries import ExtractFilterQueries
+from meresco.lucene.extractfilterqueries import ExtractFilterQueries, TooComplexQueryExpression
 from cqlparser import cqlToExpression
 
 class ExtractFilterQueriesTest(SeecrTestCase):
@@ -80,10 +80,9 @@ class ExtractFilterQueriesTest(SeecrTestCase):
         self.assertEqual(cqlToExpression('f=v'), query)
         self.assertEqual({'core2': [cqlToExpression('a=b'), cqlToExpression('b=c')]}, filters)
 
-    def testOtherFilterWithORIsIgnored(self):
-        query, filters = self.convert(cqlToExpression('core2.a=b OR f=v'), 'core1')
-        self.assertEqual(cqlToExpression('core2.a=b OR f=v'), query)
-        self.assertEqual({}, filters)
+    def testTooComplesQueries(self):
+        self.assertRaises(TooComplexQueryExpression, lambda: self.convert(cqlToExpression('core2.a=b OR f=v'), 'core1'))
+        self.assertRaises(TooComplexQueryExpression, lambda: self.convert(cqlToExpression('core1.f=v OR (core1.a=b AND core2.f=v)'), 'core1'))
 
     def testCoreQueryInOtherCore(self):
         query, filters = self.convert(cqlToExpression('core2.a=b'), 'core1')

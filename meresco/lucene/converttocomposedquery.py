@@ -45,22 +45,20 @@ class ConvertToComposedQuery(Observable):
         self._dedupSortFieldName = dedupSortFieldName
         self._dedupByDefault = dedupByDefault
         self._groupingFieldName = groupingFieldName
-        self._clusterFields = []
+        self._clusteringConfig = {}
         self._drilldownFieldnamesTranslate = drilldownFieldnamesTranslate
         self._clusterFieldNames = clusterFieldNames or []
         self._groupingEnabled = bool(self._groupingFieldName)
-        self._clusteringEnabled = bool(self._clusterFields)
+        self._clusteringEnabled = bool(self._clusteringConfig)
         self._extraFilterQueries = ExtractFilterQueries(self._cores)
 
     @asyncnoreturnvalue
     def updateConfig(self, config, indexConfig=None, **kwargs):
         self._groupingEnabled = bool(self._groupingFieldName) and 'grouping' not in config.get('features_disabled', [])
-        clusterFields = []
-        fieldWeights = indexConfig.get('clustering', {}) if indexConfig else {}
-        for fieldname in self._clusterFieldNames:
-            clusterFields.append((fieldname, fieldWeights.get(fieldname, 1.0)))
-        self._clusterFields = clusterFields
-        self._clusteringEnabled = bool(self._clusterFields) and 'clustering' not in config.get('features_disabled', [])
+        self._clusteringConfig = indexConfig.get('clustering', {}) if indexConfig else {}
+        print 'clusteringConfig', self._clusteringConfig
+        import sys; sys.stdout.flush()
+        self._clusteringEnabled = bool(self._clusteringConfig) and 'clustering' not in config.get('features_disabled', [])
 
     def executeQuery(self, query=None, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, sortKeys=None, **kwargs):
         if 'cqlAbstractSyntaxTree' in kwargs:
@@ -111,7 +109,7 @@ class ConvertToComposedQuery(Observable):
                 setattr(cq, "groupingField", self._groupingFieldName)
 
         if self._clusteringEnabled and 'true' == extraArguments.get('x-clustering', [None])[0]:
-            setattr(cq, "clusterFields", self._clusterFields)
+            setattr(cq, "clusteringConfig", self._clusteringConfig)
 
         fieldTranslations = {}
         for drilldownField in (facets or []):

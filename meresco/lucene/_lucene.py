@@ -172,12 +172,12 @@ class Lucene(Observable):
         generatorReturn(self._facetResult(facetCollector, facets))
         yield
 
-    def _createCollectors(self, start, stop, sortKeys=None, clusterFields=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollectors=None, scoreCollectors=None, **kwargs):
+    def _createCollectors(self, start, stop, sortKeys=None, clusteringConfig=None, groupingField=None, dedupField=None, dedupSortField=None, facets=None, keyCollectors=None, scoreCollectors=None, **kwargs):
         collectors = []
         dedupCollector = None
         groupingCollector = None
         facetCollector = None
-        if clusterFields:
+        if clusteringConfig:
             resultsCollector = topCollector = self._topCollector(start=start, stop=stop + self._clusterMoreRecords, sortKeys=sortKeys)
         elif groupingField:
             topCollector = self._topCollector(start=start, stop=stop * 10, sortKeys=sortKeys)
@@ -208,7 +208,7 @@ class Lucene(Observable):
                 collector = scoreCollector
         return collector, topCollector, groupingCollector, dedupCollector, facetCollector
 
-    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, filterQueries=None, suggestionRequest=None, filters=None, drilldownQueries=None, clusterFields=None, storedFields=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, filterQueries=None, suggestionRequest=None, filters=None, drilldownQueries=None, clusteringConfig=None, storedFields=None, **kwargs):
         times = {}
         t0 = time()
         stop = 10 if stop is None else stop
@@ -216,7 +216,7 @@ class Lucene(Observable):
 
         topCollectorStop = stop
         while True:
-            collector, topCollector, groupingCollector, dedupCollector, facetCollector = self._createCollectors(start=start, stop=topCollectorStop, facets=facets, clusterFields=clusterFields, **kwargs)
+            collector, topCollector, groupingCollector, dedupCollector, facetCollector = self._createCollectors(start=start, stop=topCollectorStop, facets=facets, clusteringConfig=clusteringConfig, **kwargs)
             filter_ = self._filtersFor(filterQueries, filters)
 
             if drilldownQueries:
@@ -226,9 +226,9 @@ class Lucene(Observable):
             self._index.search(luceneQuery, filter_, collector)
             times['searchTime'] = millis(time() - t1)
 
-            if clusterFields:
+            if clusteringConfig:
                 t1 = time()
-                total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusterFields=clusterFields, times=times, storedFields=storedFields)
+                total, hits = self._clusterTopDocsResponse(topCollector, start=start, stop=stop, clusteringConfig=clusteringConfig, times=times, storedFields=storedFields)
                 times['totalClusterTime'] = millis(time() - t1)
             else:
                 t1 = time()
@@ -377,12 +377,12 @@ class Lucene(Observable):
         eps = self._clusteringEps * (hits - slice) / self._clusterMoreRecords
         return max(min(eps, self._clusteringEps), 0.0)
 
-    def _clusterTopDocsResponse(self, collector, start, stop, clusterFields, times, storedFields):
+    def _clusterTopDocsResponse(self, collector, start, stop, clusteringConfig, times, storedFields):
         totalHits = collector.getTotalHits()
         epsilon = self._interpolateEpsilon(totalHits, stop - start)
         clusterer = MerescoClusterer(self._index.getIndexReader(), epsilon, self._clusteringMinPoints)
-        for fieldname, weight in clusterFields:
-            clusterer.registerField(fieldname, float(weight))
+        for cf in clusteringConfig['fields'].values():
+            clusterer.registerField(cf['fieldname'], cf['weight'], cf['filterValue'])
         hits = []
         if hasattr(collector, "topDocs"):
             topDocs = collector.topDocs(start)

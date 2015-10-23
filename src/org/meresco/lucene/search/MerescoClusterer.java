@@ -46,6 +46,7 @@ public class MerescoClusterer {
 
     private IndexReader reader;
     private Map<String, Double> fieldsWeight = new HashMap<String, Double>();
+    private Map<String, BytesRef> fieldFilters = new HashMap<String, BytesRef>();
     private List<MerescoVector> docvectors = new ArrayList<MerescoVector>();
     private BytesRefHash ords = new BytesRefHash();
     public List<Cluster<MerescoVector>> clusters;
@@ -62,8 +63,12 @@ public class MerescoClusterer {
         this.minPoints = minPoints;
     }
 
-    public void registerField(String fieldname, double weight) {
+    public void registerField(String fieldname, double weight, String filterValue) {
         this.fieldsWeight.put(fieldname, weight);
+        if (filterValue != null) {
+            BytesRef ref = new BytesRef(filterValue);
+            this.fieldFilters.put(fieldname, ref);
+        }
     }
 
     public void collect(int doc) throws IOException {
@@ -122,40 +127,52 @@ public class MerescoClusterer {
     private MerescoVector createVector(int docId) throws IOException {
         MerescoVector vector = null;
         double vectorWeight = 1.0;
-        for (String fieldname : this.fieldsWeight.keySet()) {
-            MerescoVector v = this.termVector(docId, fieldname);
-            if (v != null) {
-                double weight = this.fieldsWeight.get(fieldname);
-                if (vector == null) {
-                    vector = v;
-                    vectorWeight = weight;
-                } else {
-                    vector.combineToSelf(vectorWeight, weight, v);
-                    vectorWeight = 1;
+        try {
+            for (String fieldname : this.fieldsWeight.keySet()) {
+                MerescoVector v = this.termVector(docId, fieldname);
+                if (v != null) {
+                    double weight = this.fieldsWeight.get(fieldname);
+                    if (vector == null) {
+                        vector = v;
+                        vectorWeight = weight;
+                    } else {
+                        vector.combineToSelf(vectorWeight, weight, v);
+                        vectorWeight = 1;
+                    }
                 }
             }
-        }
-        if (vector == null) {
+        } catch (FilterConditionFailed e) {
+            System.out.println("FilterConditionFailed");
             return null;
         }
         return vector;
     }
 
     private MerescoVector termVector(final int docId, String field) throws IOException {
+        System.out.println("termVector for field " + field);
         Terms terms = this.reader.getTermVector(docId, field);
         if (terms == null)
             return null;
+        BytesRef filterTerm = this.fieldFilters.get(field);
+        boolean found = false;
         TermsEnum termsEnum = terms.iterator(null);
         MerescoVector vector = new MerescoVector(docId);
         while (termsEnum.next() != null) {
             BytesRef term = termsEnum.term();
+            System.out.println("? " + term + " = " + filterTerm);
+            if (term.equals(filterTerm)) {
+                found = true;
+            }
             vector.setEntry(ord(term), termsEnum.totalTermFreq());
+        }
+        if (filterTerm != null && !found) {
+            throw new FilterConditionFailed();
         }
         return vector;
     }
 
     private int ord(BytesRef b) {
-        int ord = ords.add(b);
+        int ord = this.ords.add(b);
         if (ord < 0)
             ord = -ord - 1;
         return ord;
@@ -165,4 +182,6 @@ public class MerescoClusterer {
         ClusterClusterer cc = new ClusterClusterer(this.ords, this.clusters);
         cc.print();
     }
+
+    class FilterConditionFailed extends RuntimeException {};
 }

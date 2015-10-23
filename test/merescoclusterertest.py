@@ -30,9 +30,10 @@ from org.meresco.lucene.search import MerescoClusterer
 
 from lucenetestcase import LuceneTestCase
 
-class MerescoClustererTest(LuceneTestCase):
 
-    def testClusterOnTermVectors(self):
+class MerescoClustererTest(LuceneTestCase):
+    def setUp(self):
+        LuceneTestCase.setUp(self)
         factory = FieldRegistry(termVectorFields=['termvector.field'])
         for i in range(5):
             doc = Document()
@@ -50,24 +51,45 @@ class MerescoClustererTest(LuceneTestCase):
             consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
         self.lucene.commit()
         reader = self.lucene._index._indexAndTaxonomy.searcher.getIndexReader()
+        self.collector = MerescoClusterer(reader, 0.5)
 
-        collector = MerescoClusterer(reader, 0.5)
-        collector.registerField("termvector.field", 1.0)
+    def tearDown(self):
+        del self.collector
+        LuceneTestCase.tearDown(self)
+
+    def testClusterOnTermVectors(self):
+        self.collector.registerField("termvector.field", 1.0, None)
         for i in range(15):
-            collector.collect(i)
-        collector.finish()
+            self.collector.collect(i)
+        self.collector.finish()
 
-        cluster1 = collector.cluster(0)
+        cluster1 = self.collector.cluster(0)
         self.assertEqual(5, len(list(cluster1.topDocs)))
         self.assertEqual(['else', 'something'], list([t.term for t in cluster1.topTerms]))
 
-        cluster2 = collector.cluster(5)
+        cluster2 = self.collector.cluster(5)
         self.assertEqual(5, len(list(cluster2.topDocs)))
         self.assertEqual(['noot', 'aap', 'vuur'], list([t.term for t in cluster2.topTerms]))
 
-        cluster3 = collector.cluster(10)
+        cluster3 = self.collector.cluster(10)
         self.assertEqual(5, len(list(cluster3.topDocs)))
         self.assertEqual(['anders', 'iets'], list([t.term for t in cluster3.topTerms]))
 
         self.assertNotEqual(cluster1.topDocs, cluster2.topDocs)
         self.assertNotEqual(cluster1.topDocs, cluster3.topDocs)
+
+    def testClusteringWithFieldFilter(self):
+        self.collector.registerField("termvector.field", 1.0, 'noot')
+        for i in range(15):
+            self.collector.collect(i)
+        self.collector.finish()
+
+        cluster1 = self.collector.cluster(0)
+        self.assertEquals(None, cluster1)
+
+        cluster2 = self.collector.cluster(5)
+        self.assertEqual(5, len(list(cluster2.topDocs)))
+        self.assertEqual(['noot', 'aap', 'vuur'], list([t.term for t in cluster2.topTerms]))
+
+        cluster3 = self.collector.cluster(10)
+        self.assertEquals(None, cluster3)

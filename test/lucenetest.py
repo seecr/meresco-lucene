@@ -775,7 +775,7 @@ class LuceneTest(LuceneTestCase):
         self.lucene.commit()
 
         self.lucene._interpolateEpsilon = lambda *args: 0.4
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1.0)]))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusteringConfig={'fields': {'termvector': {'fieldname': "termvector", 'weight': 1.0, 'filterValue': 'vuur'}}}))
         self.assertEquals(2, len(result.hits))
         duplicates = [sorted([t['id'] for t in h.duplicates['topDocs']]) for h in result.hits]
         self.assertEqual(sorted([[], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
@@ -810,7 +810,7 @@ class LuceneTest(LuceneTestCase):
             consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
         self.lucene.commit()
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1)], start=0, stop=2))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusteringConfig={'fields': {'termvector': {'fieldname': "termvector", 'weight': 1.0, 'filterValue': None}}}, start=0, stop=2))
         self.assertEquals(15, result.total)
         self.assertEquals(2, len(result.hits))
 
@@ -836,7 +836,7 @@ class LuceneTest(LuceneTestCase):
 
         self.lucene.setSettings(clusteringEps=10.0)
         self.lucene._interpolateEpsilon = lambda *args: 10.0
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1)]))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusterFields=[("termvector", 1, None)]))
         self.assertEquals(3, result.total)
         self.assertEquals(1, len(result.hits))
         self.assertEqual('id:1', result.hits[0].id)
@@ -863,7 +863,7 @@ class LuceneTest(LuceneTestCase):
         consume(self.lucene.addDocument(identifier="id:98", document=doc))
         self.lucene.commit()
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector", 1)], start=0, stop=5))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector", 1, None)], start=0, stop=5))
         self.assertEquals(5, len(result.hits))
         self.assertTrue(hasattr(result.hits[0], "duplicates"))
 
@@ -891,12 +891,12 @@ class LuceneTest(LuceneTestCase):
         doc = Document()
         consume(self.lucene.addDocument(identifier="id:400", document=doc))
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1)], start=0, stop=10))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1, None)], start=0, stop=10))
         self.assertEquals(4, len(result.hits))
         duplicates = [sorted([t['id'] for t in h.duplicates['topDocs']]) for h in result.hits]
         self.assertTrue('id:100' in [d for d in duplicates if 'id:0' in d][0])
 
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1), ("termvector2", 2)], start=0, stop=5))
+        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), dedupField="dedupField", clusterFields=[("termvector1", 1, None), ("termvector2", 2)], start=0, stop=5))
         self.assertEquals(5, len(result.hits))
         duplicates = [sorted([t['id'] for t in h.duplicates['topDocs']]) for h in result.hits]
         self.assertFalse('id:100' in [d for d in duplicates if 'id:0' in d][0])

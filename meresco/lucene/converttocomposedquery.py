@@ -56,8 +56,6 @@ class ConvertToComposedQuery(Observable):
     def updateConfig(self, config, indexConfig=None, **kwargs):
         self._groupingEnabled = bool(self._groupingFieldName) and 'grouping' not in config.get('features_disabled', [])
         self._clusteringConfig = indexConfig.get('clustering', {}) if indexConfig else {}
-        print 'clusteringConfig', self._clusteringConfig
-        import sys; sys.stdout.flush()
         self._clusteringEnabled = bool(self._clusteringConfig) and 'clustering' not in config.get('features_disabled', [])
 
     def executeQuery(self, query=None, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, sortKeys=None, **kwargs):

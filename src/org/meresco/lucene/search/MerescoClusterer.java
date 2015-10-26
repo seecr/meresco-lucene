@@ -42,8 +42,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.meresco.lucene.search.PageRank.Node;
 
-public class MerescoClusterer {
 
+public class MerescoClusterer {
     private IndexReader reader;
     private Map<String, Double> fieldsWeight = new HashMap<String, Double>();
     private Map<String, BytesRef> fieldFilters = new HashMap<String, BytesRef>();
@@ -142,30 +142,28 @@ public class MerescoClusterer {
                 }
             }
         } catch (FilterConditionFailed e) {
-            System.out.println("FilterConditionFailed");
             return null;
         }
         return vector;
     }
 
     private MerescoVector termVector(final int docId, String field) throws IOException {
-        System.out.println("termVector for field " + field);
-        Terms terms = this.reader.getTermVector(docId, field);
-        if (terms == null)
-            return null;
+        MerescoVector vector = null;
         BytesRef filterTerm = this.fieldFilters.get(field);
-        boolean found = false;
-        TermsEnum termsEnum = terms.iterator(null);
-        MerescoVector vector = new MerescoVector(docId);
-        while (termsEnum.next() != null) {
-            BytesRef term = termsEnum.term();
-            System.out.println("? " + term + " = " + filterTerm);
-            if (term.equals(filterTerm)) {
-                found = true;
+        boolean matched = (filterTerm == null);
+        Terms terms = this.reader.getTermVector(docId, field);
+        if (terms != null) {
+            TermsEnum termsEnum = terms.iterator(null);
+            vector = new MerescoVector(docId);
+            while (termsEnum.next() != null) {
+                BytesRef term = termsEnum.term();
+                if (term.equals(filterTerm)) {
+                    matched = true;
+                }
+                vector.setEntry(ord(term), termsEnum.totalTermFreq());
             }
-            vector.setEntry(ord(term), termsEnum.totalTermFreq());
         }
-        if (filterTerm != null && !found) {
+        if (!matched) {
             throw new FilterConditionFailed();
         }
         return vector;

@@ -25,11 +25,14 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
+
 from cqlparser.cqltoexpression import QueryExpression, cqlToExpression
 from cqlparser import parseString as parseCql, UnsupportedCQL
+
 from meresco.lucene import LuceneSettings, DrilldownField
 from meresco.lucene.fieldregistry import FieldRegistry, INTFIELD, LONGFIELD, NO_TERMS_FREQUENCY_FIELDTYPE
 from meresco.lucene.queryexpressiontolucenequery import QueryExpressionToLuceneQuery
+
 from org.apache.lucene.analysis.core import WhitespaceAnalyzer
 from org.apache.lucene.document import StringField
 from org.apache.lucene.facet import DrillDownQuery
@@ -37,8 +40,8 @@ from org.apache.lucene.index import Term
 from org.apache.lucene.search import TermQuery, BooleanQuery, BooleanClause, MatchAllDocsQuery, PhraseQuery, PrefixQuery, TermRangeQuery, NumericRangeQuery, WildcardQuery
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 
-class QueryExpressionToLuceneQueryTest(SeecrTestCase):
 
+class QueryExpressionToLuceneQueryTest(SeecrTestCase):
     def testTermQuery(self):
         self.assertConversion(TermQuery(Term("field", "value")), QueryExpression.searchterm("field", "=", "value"))
 
@@ -336,10 +339,10 @@ class QueryExpressionToLuceneQueryTest(SeecrTestCase):
             settings.fieldRegistry.register("intField", fieldDefinition=INTFIELD)
             settings.fieldRegistry.register("longField", fieldDefinition=LONGFIELD)
         converter = QueryExpressionToLuceneQuery(
-                unqualifiedTermFields=unqualifiedFields,
-                luceneSettings=settings,
-                ignoreStemmingForWords=getattr(self, '_ignoredStemmingForWords', None)
-            )
+            unqualifiedTermFields=unqualifiedFields,
+            luceneSettings=settings,
+            ignoreStemmingForWords=getattr(self, '_ignoredStemmingForWords', None)
+        )
         return converter.convert(expression)
 
     def assertConversion(self, expected, expression=None, cql=None):

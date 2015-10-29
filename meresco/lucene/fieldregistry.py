@@ -24,11 +24,13 @@
 #
 ## end license ##
 
+
+from warnings import warn
+
 from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType, IntField, LongField, DoubleField
 from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery, SortField
 from org.apache.lucene.index import FieldInfo
 from org.apache.lucene.facet import FacetsConfig, DrillDownQuery, FacetField
-from warnings import warn
 
 
 IDFIELD = '__id__'
@@ -48,7 +50,7 @@ class FieldRegistry(object):
         self._drilldownFieldNames = set()
         self._hierarchicalDrilldownFieldNames = set()
         self._multivaluedDrilldownFieldNames = set()
-        self._termVectorFieldNames = termVectorFields or []
+        self._termVectorFieldNames = set(termVectorFields or [])
         self.facetsConfig = FacetsConfig()
         for field in (drilldownFields or []):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued, indexFieldName=field.indexFieldName)
@@ -76,7 +78,7 @@ class FieldRegistry(object):
         return self._getFieldDefinition(fieldname).phraseQueryPossible
 
     def isUntokenized(self, fieldname):
-        return self._getFieldDefinition(fieldname).isUntokenized
+        return self.isDrilldownField(fieldname) or self._getFieldDefinition(fieldname).isUntokenized
 
     def isNumeric(self, fieldname):
         fieldType = self._getFieldDefinition(fieldname).type
@@ -93,7 +95,6 @@ class FieldRegistry(object):
         if indexFieldName is not None:
             self.facetsConfig.setIndexFieldName(fieldname, indexFieldName)
         self._indexFieldNames[fieldname] = indexFieldName
-        self._fieldDefinitions[fieldname] = DrilldownFieldDefinition
 
     def indexFieldNames(self, fieldnames=None):
         if fieldnames is None:
@@ -113,6 +114,12 @@ class FieldRegistry(object):
 
     def isMultivaluedDrilldown(self, fieldname):
         return fieldname in self._multivaluedDrilldownFieldNames
+
+    def isTermVectorField(self, fieldname):
+        return fieldname in self._termVectorFieldNames
+
+    def isIndexField(self, fieldname):
+        return not self.isDrilldownField(fieldname) or self.isTermVectorField(fieldname)
 
     def makeDrilldownTerm(self, fieldname, path):
         indexFieldName = self.facetsConfig.getDimConfig(fieldname).indexFieldName;
@@ -154,7 +161,7 @@ class FieldRegistry(object):
 
     def _getFieldDefinition(self, fieldname):
         fieldDefinition = self._fieldDefinitions.get(fieldname)
-        if fieldDefinition is not None:
+        if not fieldDefinition is None:
             return fieldDefinition
         fieldDefinitionCreator = self._defaultDefinition
         if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
@@ -166,6 +173,7 @@ class FieldRegistry(object):
         fieldDefinition = fieldDefinitionCreator(name=fieldname, termVectors=fieldname in self._termVectorFieldNames)
         self._fieldDefinitions[fieldname] = fieldDefinition
         return fieldDefinition
+
 
 class _FieldDefinition(object):
     def __init__(self, type, pythonType, field, update, create):
@@ -199,11 +207,6 @@ class _FieldDefinition(object):
             update=lambda field, value: field.setStringValue(value)
         )
 
-class DrilldownFieldDefinition(object):
-    isUntokenized = True
-    phraseQueryPossible = False
-    type = StringField.TYPE_NOT_STORED
-DrilldownFieldDefinition = DrilldownFieldDefinition()
 
 def copyType(orig):
     new = FieldType()
@@ -219,6 +222,7 @@ def copyType(orig):
     new.setDocValueType(orig.docValueType())
     new.setNumericType(orig.numericType())
     return new
+
 
 STRINGFIELD = lambda **kwargs: _FieldDefinition.define(type=StringField.TYPE_NOT_STORED, **kwargs)
 NUMERICFIELD = lambda name, **ignored: _FieldDefinition(

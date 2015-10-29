@@ -53,11 +53,12 @@ class FieldsListToLuceneDocument(Observable):
 
     def _addFieldToLuceneDocument(self, fieldname, value, doc, fieldnamesSeen):
         if self._fieldRegistry.isDrilldownField(fieldname):
-            if isinstance(value, basestring):
-                value = [str(value)]
-            value = [v[:MAX_STRING_LENGTH] for v in value]
-            doc.add(FacetField(fieldname, value))
-        else:
+            lvalue = value
+            if isinstance(lvalue, basestring):
+                lvalue = [str(lvalue)]
+            lvalue = [v[:MAX_STRING_LENGTH] for v in lvalue]
+            doc.add(FacetField(fieldname, lvalue))
+        if self._fieldRegistry.isIndexField(fieldname):
             field = self._fieldRegistry.createField(fieldname, value, mayReUse=(fieldname not in fieldnamesSeen))
             fieldnamesSeen.add(fieldname)
             doc.add(field)

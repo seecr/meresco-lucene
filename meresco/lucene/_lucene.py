@@ -381,7 +381,7 @@ class Lucene(Observable):
         totalHits = collector.getTotalHits()
         epsilon = self._interpolateEpsilon(totalHits, stop - start)
         clusterer = MerescoClusterer(self._index.getIndexReader(), epsilon, self._clusteringMinPoints)
-        for cf in clusteringConfig['fields'].values():
+        for cf in clusteringConfig.get('fields', {}).values():
             clusterer.registerField(cf['fieldname'], cf['weight'], cf['filterValue'])
         hits = []
         if hasattr(collector, "topDocs"):

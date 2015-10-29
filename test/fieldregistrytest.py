@@ -63,8 +63,10 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(registry.phraseQueryPossible('other.fieldname'))
 
     def testIsUntokenized(self):
-        registry = FieldRegistry()
+        registry = FieldRegistry(drilldownFields=[DrilldownField('aDrilldownField')])
+        self.assertTrue(registry.isUntokenized('aDrilldownField'))
         self.assertTrue(registry.isUntokenized('untokenized.some.field'))
+        self.assertFalse(registry.isUntokenized('other.field'))
         registry.register('fieldname', StringField.TYPE_NOT_STORED)
         self.assertTrue(registry.isUntokenized('fieldname'))
         registry.register('fieldname', TextField.TYPE_NOT_STORED)
@@ -129,12 +131,22 @@ class FieldRegistryTest(SeecrTestCase):
 
     def testTermVectorsForField(self):
         registry = FieldRegistry(termVectorFields=['field1', 'field2'])
+        self.assertTrue(registry.isTermVectorField('field1'))
+        self.assertTrue(registry.isTermVectorField('field2'))
+        self.assertFalse(registry.isTermVectorField('field3'))
         field = registry.createField('field1', 'id:1')
         self.assertTrue(field.fieldType().storeTermVectors())
         field = registry.createField('field2', 'id:1')
         self.assertTrue(field.fieldType().storeTermVectors())
         field = registry.createField('field3', 'id:1')
         self.assertFalse(field.fieldType().storeTermVectors())
+
+    def testIsIndexField(self):
+        registry = FieldRegistry(drilldownFields=[DrilldownField(f) for f in ['field2', 'field3']], termVectorFields=['field1', 'field2'])
+        self.assertTrue(registry.isIndexField('field1'))
+        self.assertTrue(registry.isIndexField('field2'))
+        self.assertFalse(registry.isIndexField('field3'))
+        self.assertTrue(registry.isIndexField('field4'))
 
     def testIsNumeric(self):
         registry = FieldRegistry()

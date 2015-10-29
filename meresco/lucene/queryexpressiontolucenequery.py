@@ -23,16 +23,19 @@
 #
 ## end license ##
 
+from re import compile
+
+from cqlparser import UnsupportedCQL
+
+from weightless.core import Observable
+
+from java.io import StringReader
 from org.apache.lucene.index import Term
 from org.apache.lucene.search import TermQuery, BooleanQuery, BooleanClause, MatchAllDocsQuery, WildcardQuery, PhraseQuery, PrefixQuery
 from org.meresco.lucene.analysis import MerescoStandardAnalyzer
-from weightless.core import Observable
-from java.io import StringReader
-from re import compile
-from cqlparser import UnsupportedCQL
+
 
 class QueryExpressionToLuceneQuery(Observable):
-
     def __init__(self, unqualifiedTermFields, luceneSettings, ignoreStemmingForWords=None):
         Observable.__init__(self)
         self._unqualifiedTermFields = unqualifiedTermFields

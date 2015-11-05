@@ -2,8 +2,9 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -66,7 +67,8 @@ class AggregateScoreSubCollector extends SubCollector {
     private final SubCollector delegate;
     private final ScoreSuperCollector[] otherScoreCollectors;
     private String keyName;
-    private int[] keyValuesArray;
+    private int[] keyValues;
+    private AggregateSuperScorer scorer;
 
     public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate)
             throws IOException {
@@ -78,12 +80,15 @@ class AggregateScoreSubCollector extends SubCollector {
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {
-        this.delegate.setScorer(new AggregateSuperScorer(scorer));
+        this.scorer = new AggregateSuperScorer(scorer, this.otherScoreCollectors, this.keyValues);
+        this.delegate.setScorer(this.scorer);
     }
 
     @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.keyValuesArray = KeyValuesCache.get(context, keyName);
+        this.keyValues = KeyValuesCache.get(context, keyName);
+        if (this.scorer != null)
+            this.scorer.setKeyValues(this.keyValues);
         this.delegate.setNextReader(context);
     }
 
@@ -101,52 +106,60 @@ class AggregateScoreSubCollector extends SubCollector {
     public void complete() throws IOException {
         this.delegate.complete();
     }
+}
+
+class AggregateSuperScorer extends Scorer {
+    private final Scorer scorer;
+    private int[] keyValues;
+    private final ScoreSuperCollector[] otherScoreCollectors;
+
+    AggregateSuperScorer(Scorer scorer, ScoreSuperCollector[] otherScoreCollectors, int[] keyValues) {
+        super(weightFromScorer(scorer));
+        this.scorer = scorer;
+        this.otherScoreCollectors = otherScoreCollectors;
+        this.keyValues = keyValues;
+    }
+
+    public void setKeyValues(int[] keyValues) {
+        this.keyValues = keyValues;
+    }
+
+    public float score() throws IOException {
+        float score = this.scorer.score();
+        int docId = this.docID();
+        int key = this.keyValues[docId];
+        for (ScoreSuperCollector sc : this.otherScoreCollectors) {
+            float otherScore = sc.score(key);
+            score *= (float) (1 + otherScore);
+        }
+        return score;
+    }
+
+    public int freq() throws IOException {
+        return this.scorer.freq();
+    }
+
+    public long cost() {
+        return this.scorer.cost();
+    }
+
+    public int advance(int target) throws IOException {
+        return this.scorer.advance(target);
+    }
+
+    public int nextDoc() throws IOException {
+        return this.scorer.nextDoc();
+    }
+
+    public int docID() {
+        return this.scorer.docID();
+    }
 
     private static Weight weightFromScorer(Scorer scorer) {
         try {
             return scorer.getWeight();
         } catch (UnsupportedOperationException e) {
             return null;
-        }
-    }
-
-    private class AggregateSuperScorer extends Scorer {
-        private final Scorer scorer;
-
-        private AggregateSuperScorer(Scorer scorer) {
-            super(weightFromScorer(scorer));
-            this.scorer = scorer;
-        }
-
-        public float score() throws IOException {
-            float score = this.scorer.score();
-            int docId = this.docID();
-            int key = keyValuesArray[docId];
-            for (ScoreSuperCollector sc : otherScoreCollectors) {
-                float otherScore = sc.score(key);
-                score *= (float) (1 + otherScore);
-            }
-            return score;
-        }
-
-        public int freq() throws IOException {
-            return this.scorer.freq();
-        }
-
-        public long cost() {
-            return this.scorer.cost();
-        }
-
-        public int advance(int target) throws IOException {
-            return this.scorer.advance(target);
-        }
-
-        public int nextDoc() throws IOException {
-            return this.scorer.nextDoc();
-        }
-
-        public int docID() {
-            return this.scorer.docID();
         }
     }
 }

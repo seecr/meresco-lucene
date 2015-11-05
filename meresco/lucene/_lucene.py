@@ -268,6 +268,7 @@ class Lucene(Observable):
                     **kwargs
                 ))
             }
+        collector, topCollector, groupingCollector, dedupCollector, facetCollector = None, None, None, None, None
         raise StopIteration(response)
         yield
 

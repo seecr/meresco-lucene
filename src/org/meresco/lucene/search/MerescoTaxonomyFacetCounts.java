@@ -44,8 +44,7 @@ public class MerescoTaxonomyFacetCounts extends IntTaxonomyFacets {
 
     public MerescoTaxonomyFacetCounts(List<OrdinalsReader> ordinalsReaders, TaxonomyReader taxoReader, FacetsConfig config,
             FacetsCollector fc, int[] valuesArray) throws IOException {
-        super(ordinalsReaders.get(0).getIndexFieldName(), taxoReader, config);
-//        super(ordinalsReaders.get(0).getIndexFieldName(), taxoReader, config, valuesArray); TODO: Patch me
+        super(ordinalsReaders.get(0).getIndexFieldName(), taxoReader, config, valuesArray); //TODO: Patch me
         this.ordinalsReaders = ordinalsReaders;
         this.fc = fc;
     }

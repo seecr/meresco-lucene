@@ -10,9 +10,16 @@ import javax.json.JsonReader;
 import javax.json.JsonValue;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexableField;
 
 public class DocumentStringToDocument {
@@ -34,17 +41,62 @@ public class DocumentStringToDocument {
         return doc;
     }
 
-    private IndexableField createField(JsonObject jsonValue) {
-        switch (jsonValue.getString("type")) {
-        case "StringField":
-            return new Field(jsonValue.getString("name"), jsonValue.getString("value"), StringField.TYPE_NOT_STORED);
-        case "StringFieldStored":
-            return new Field(jsonValue.getString("name"), jsonValue.getString("value"), StringField.TYPE_STORED);
-        case "TextField":
-            return new Field(jsonValue.getString("name"), jsonValue.getString("value"), TextField.TYPE_NOT_STORED);
+    private IndexableField createField(JsonObject jsonField) {
+        String name = jsonField.getString("name");
+        Field field = null;
+        switch (jsonField.getString("type")) {
+            case "StringField":
+                field = new Field(name, jsonField.getString("value"), maybeAddTermVectors(jsonField, StringField.TYPE_NOT_STORED));
+                break;
+            case "StringFieldStored":
+                field = new Field(name, jsonField.getString("value"), maybeAddTermVectors(jsonField, StringField.TYPE_STORED));
+                break;
+            case "TextField":
+                field = new Field(name, jsonField.getString("value"), maybeAddTermVectors(jsonField, TextField.TYPE_NOT_STORED));
+                break;
+            case "NoTermsFrequencyField":
+                field = new Field(name, jsonField.getString("value"), NO_TERMS_FREQUENCY_FIELD);
+                break;
+            case "IntField":
+                field = new IntField(name, jsonField.getInt("value"), Store.NO);
+                break;
+            case "DoubleField":
+                field = new DoubleField(name, jsonField.getInt("value"), Store.NO);
+                break;
+            case "LongField":
+                field = new LongField(name, jsonField.getInt("value"), Store.NO);
+                break;
+            case "FacetField":
+                JsonArray jsonArray = jsonField.getJsonArray("path");
+                String[] path = new String[jsonArray.size()];
+                for (int i = 0; i < jsonArray.size(); i++) {
+                    path[i] = jsonArray.getString(i);
+                }
+                field = new FacetField(name, path);
         }
-        throw new UnknownTypeException();
+        if (field == null)
+            throw new UnknownTypeException();
+        
+        return field;
+    }
+    
+    private FieldType maybeAddTermVectors(JsonObject jsonValue, FieldType type) {
+        if (!jsonValue.getBoolean("termVectors", false))
+            return type;
+        
+        FieldType fieldType = new FieldType(type);
+        fieldType.setStoreTermVectors(true);
+        return fieldType;
+    }
+    
+    private static final FieldType NO_TERMS_FREQUENCY_FIELD = new FieldType();
+    static {
+        NO_TERMS_FREQUENCY_FIELD.setIndexed(true);
+        NO_TERMS_FREQUENCY_FIELD.setTokenized(true);
+        NO_TERMS_FREQUENCY_FIELD.setOmitNorms(true);
+        NO_TERMS_FREQUENCY_FIELD.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
     }
 }
 
 class UnknownTypeException extends RuntimeException {};
+

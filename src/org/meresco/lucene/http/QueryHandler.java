@@ -30,7 +30,7 @@ public class QueryHandler implements HttpHandler {
         LuceneResponse response = new LuceneResponse(0);
         try {
             Query query = new QueryStringToQuery(reader).convert();
-            response = this.lucene.executeQuery(query, 0, 10, null);
+            response = this.lucene.executeQuery(query);
         } catch (Exception e) {
             exchange.sendResponseHeaders(500, 0);
             Utils.writeToStream(Utils.getStackTrace(e), outputStream);

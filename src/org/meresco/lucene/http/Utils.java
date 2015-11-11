@@ -1,6 +1,9 @@
 package org.meresco.lucene.http;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 
@@ -33,5 +36,16 @@ class Utils {
             }
         }
         return params;
+    }
+    
+    public static String getStackTrace(Throwable aThrowable) {
+        /*
+         * shameless partial copy from:
+         * http://www.javapractices.com/topic/TopicAction.do?Id=78
+         */
+        final Writer result = new StringWriter();
+        final PrintWriter printWriter = new PrintWriter(result);
+        aThrowable.printStackTrace(printWriter);
+        return result.toString();
     }
 }

@@ -1,5 +1,6 @@
 package org.meresco.lucene;
 
+import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.index.Term;
@@ -13,8 +14,8 @@ public class QueryStringToQuery {
     
     private JsonObject object;
 
-    public QueryStringToQuery(String query) {
-        JsonReader jsonReader = Json.createReader(new StringReader(query));
+    public QueryStringToQuery(Reader queryReader) {
+        JsonReader jsonReader = Json.createReader(queryReader);
         object = jsonReader.readObject();
     }
     

@@ -81,15 +81,14 @@ public class LuceneHttpServer {
         }
 
         Lucene lucene = new Lucene(new File(storeLocation));
-        HttpHandler handler = new QueryHandler(lucene);
-
+        
         server = HttpServer.create(new InetSocketAddress(port), 15);
         ThreadPoolExecutor executor = new ThreadPoolExecutor(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         server.setExecutor(executor);
 
         registerShutdownHandler(lucene, server);
 
-        server.createContext("/", handler);
+        server.createContext("/query", new QueryHandler(lucene));
         server.start();
     }
 

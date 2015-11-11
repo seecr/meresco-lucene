@@ -23,7 +23,7 @@ public class LuceneResponse {
         hits.add(new Hit(id));
     }
      
-    public class Hit {
+    public static class Hit {
         public String id;
         
         public Hit(String id) {
@@ -31,7 +31,7 @@ public class LuceneResponse {
         }
     }
     
-    public class DrilldownData {
+    public static class DrilldownData {
         public String fieldname;
         public String[] path;
         public Map<String, Integer> terms = new HashMap<String, Integer>();

@@ -17,8 +17,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.Lucene;
-import org.meresco.lucene.Lucene.FacetRequest;
 import org.meresco.lucene.LuceneResponse;
+import org.meresco.lucene.QueryStringToQuery;
+import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 
 public class LuceneTest {
 
@@ -89,7 +90,7 @@ public class LuceneTest {
         assertNull(result.drilldownData);
         
         ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
-        facets.add(lucene.new FacetRequest("facet-field2", 10));
+        facets.add(new FacetRequest("facet-field2", 10));
         result = lucene.executeQuery(new MatchAllDocsQuery(), facets);
         assertEquals(3, result.total);
         assertEquals(1, result.drilldownData.size());

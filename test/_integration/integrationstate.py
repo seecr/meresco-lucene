@@ -31,7 +31,6 @@ from time import time
 
 from seecr.test.integrationtestcase import IntegrationState as SeecrIntegrationState
 from seecr.test.portnumbergenerator import PortNumberGenerator
-from seecr.test.utils import sleepWheel
 
 
 mydir = dirname(abspath(__file__))

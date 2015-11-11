@@ -10,6 +10,7 @@ import javax.json.JsonObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse;
+import org.meresco.lucene.LuceneResponse.DrilldownData;
 
 public class LuceneResponseToJson {
 
@@ -22,7 +23,7 @@ public class LuceneResponseToJson {
         LuceneResponse response = new LuceneResponse(2);
         response.addHit("id1");
         response.addHit("id2");
-        LuceneResponse.DrilldownData dd = response.new DrilldownData("field");
+        LuceneResponse.DrilldownData dd = new DrilldownData("field");
         dd.addTerm("value1", 1);
         dd.addTerm("value2", 5);
         response.drilldownData = new ArrayList<LuceneResponse.DrilldownData>();

@@ -29,6 +29,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
+import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.MultiSuperCollector;
 import org.meresco.lucene.search.SuperCollector;
@@ -149,7 +150,7 @@ public class Lucene {
     private void facetResult(LuceneResponse response, FacetSuperCollector facetCollector, List<FacetRequest> facets) throws IOException {
         List<DrilldownData> drilldownData = new ArrayList<DrilldownData>();
         for (FacetRequest facet : facets) {
-            DrilldownData dd = response.new DrilldownData(facet.fieldname);
+            DrilldownData dd = new DrilldownData(facet.fieldname);
             
             FacetResult result = facetCollector.getTopChildren(facet.maxTerms, facet.fieldname, facet.path);
             if (result == null)
@@ -162,18 +163,7 @@ public class Lucene {
         response.drilldownData = drilldownData;
     }
     
-    public class FacetRequest {
-        public String fieldname;
-        public int maxTerms;
-        public String[] path = new String[0];
-
-        public FacetRequest(String fieldname, int maxTerms) {
-            this.fieldname = fieldname;
-            this.maxTerms = maxTerms;
-        }
-    }
-   
-    public class Collectors {
+    public static class Collectors {
         public TopDocSuperCollector topCollector;
         public FacetSuperCollector facetCollector;
         public SuperCollector<?> root;

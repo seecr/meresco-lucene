@@ -1,5 +1,8 @@
 package org.meresco.lucene.http;
 
+import java.io.BufferedWriter;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
@@ -47,5 +50,15 @@ class Utils {
         final PrintWriter printWriter = new PrintWriter(result);
         aThrowable.printStackTrace(printWriter);
         return result.toString();
+    }
+
+    public static void writeToStream(String response, OutputStream stream) {
+        try {
+            Writer writer = new BufferedWriter(new OutputStreamWriter(stream, "UTF-8"));
+            writer.write(response, 0, response.length());
+            writer.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

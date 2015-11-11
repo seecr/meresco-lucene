@@ -1,6 +1,6 @@
 package org.meresco.lucene;
 
-import java.io.StringReader;
+import java.io.Reader;
 import java.util.Iterator;
 
 import javax.json.Json;
@@ -19,8 +19,8 @@ public class DocumentStringToDocument {
 
     private JsonArray object;
 
-    public DocumentStringToDocument(String document) {
-        JsonReader jsonReader = Json.createReader(new StringReader(document));
+    public DocumentStringToDocument(Reader documentReader) {
+        JsonReader jsonReader = Json.createReader(documentReader);
         object = (JsonArray) jsonReader.read();
     }
 

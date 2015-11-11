@@ -1,20 +1,18 @@
 package test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
+import java.io.StringReader;
 
 import javax.json.Json;
 import javax.json.JsonArray;
-import javax.json.JsonObject;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.search.Query;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.DocumentStringToDocument;
-import org.meresco.lucene.QueryStringToQuery;
 
 public class DocumentStringToDocumentTest {
 
@@ -62,6 +60,6 @@ public class DocumentStringToDocumentTest {
     }
 
     private Document convert(String documentString) {
-        return new DocumentStringToDocument(documentString).convert();
+        return new DocumentStringToDocument(new StringReader(documentString)).convert();
     }
 }

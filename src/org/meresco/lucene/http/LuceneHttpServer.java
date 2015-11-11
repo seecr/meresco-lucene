@@ -43,7 +43,6 @@ import org.meresco.lucene.Lucene;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
-import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 public class LuceneHttpServer {
@@ -89,6 +88,7 @@ public class LuceneHttpServer {
         registerShutdownHandler(lucene, server);
 
         server.createContext("/query", new QueryHandler(lucene));
+        server.createContext("/update", new UpdateHandler(lucene));
         server.start();
     }
 

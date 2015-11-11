@@ -4,21 +4,20 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.net.URI;
 
-import org.apache.lucene.search.Query;
+import org.apache.lucene.document.Document;
+import org.meresco.lucene.DocumentStringToDocument;
 import org.meresco.lucene.Lucene;
-import org.meresco.lucene.LuceneResponse;
-import org.meresco.lucene.QueryStringToQuery;
 
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
-public class QueryHandler implements HttpHandler {
+public class UpdateHandler implements HttpHandler {
 
     private Lucene lucene;
 
-    public QueryHandler(Lucene lucene) {
+    public UpdateHandler(Lucene lucene) {
         this.lucene = lucene;
     }
     
@@ -26,20 +25,18 @@ public class QueryHandler implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         OutputStream outputStream = exchange.getResponseBody();
         Reader reader = new InputStreamReader(exchange.getRequestBody());
+        URI requestURI = exchange.getRequestURI();
+        QueryParameters httpArguments = Utils.parseQS(requestURI.getRawQuery());
         
-        LuceneResponse response = new LuceneResponse(0);
         try {
-            Query query = new QueryStringToQuery(reader).convert();
-            response = this.lucene.executeQuery(query, 0, 10, null);
+            Document document = new DocumentStringToDocument(reader).convert();
+            this.lucene.addDocument(httpArguments.singleValue("identifier"), document);
         } catch (Exception e) {
             exchange.sendResponseHeaders(500, 0);
             Utils.writeToStream(Utils.getStackTrace(e), outputStream);
             return;
         }
-        Headers responseHeaders = exchange.getResponseHeaders();
-        responseHeaders.set("Content-Type","application/json");
         exchange.sendResponseHeaders(200, 0);
-        Utils.writeToStream(response.toJson().toString(), outputStream);
         exchange.close();
     }
 

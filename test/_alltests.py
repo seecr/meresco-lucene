@@ -44,7 +44,6 @@ from fieldregistry2test import FieldRegistry2Test
 from fields2lucenedoctest import Fields2LuceneDocTest
 from fieldslisttolucenedocumenttest import FieldsListToLuceneDocumentTest
 from generalizedjaccarddistancetest import GeneralizedJaccardDistanceTest
-# from groupcollectortest import GroupCollectorTest
 from lrucachetest import LruCacheTest
 from lucenekeyvaluestoretest import LuceneKeyValueStoreTest
 from lucenequerycomposertest import LuceneQueryComposerTest

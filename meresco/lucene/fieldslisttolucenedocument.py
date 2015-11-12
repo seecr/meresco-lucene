@@ -44,23 +44,21 @@ class FieldsListToLuceneDocument(Observable):
 
     def add(self, identifier, fieldslist, **kwargs):
         indexFieldFactory = self._indexFieldFactory(self, self._untokenizedFieldnames)
-        fieldnamesSeen = set()
-        doc = Document()
+        fields = []
         for fieldname, value in fieldslist:
             for fieldname, value in (yield compose(indexFieldFactory.fieldsFor(fieldname, value))):
-                self._addFieldToLuceneDocument(doc=doc, fieldnamesSeen=fieldnamesSeen, fieldname=fieldname, value=value)
-        yield self.all.addDocument(identifier=self._rewriteIdentifier(identifier), document=doc)
+                self._addFieldToLuceneDocument(fields=fields, fieldname=fieldname, value=value)
+        yield self.all.addDocument(identifier=self._rewriteIdentifier(identifier), fields=fields)
 
-    def _addFieldToLuceneDocument(self, fieldname, value, doc, fieldnamesSeen):
+    def _addFieldToLuceneDocument(self, fieldname, value, fields):
         if self._fieldRegistry.isDrilldownField(fieldname):
             lvalue = value
             if isinstance(lvalue, basestring):
                 lvalue = [str(lvalue)]
             lvalue = [v[:MAX_STRING_LENGTH] for v in lvalue]
-            doc.add(FacetField(fieldname, lvalue))
+            fields.append(self._fieldRegistry.createFacetField(fieldname, lvalue))
         if self._fieldRegistry.isIndexField(fieldname):
-            field = self._fieldRegistry.createField(fieldname, value, mayReUse=(fieldname not in fieldnamesSeen))
-            fieldnamesSeen.add(fieldname)
-            doc.add(field)
+            field = self._fieldRegistry.createField(fieldname, value)
+            fields.append(field)
 
 MAX_STRING_LENGTH = 256

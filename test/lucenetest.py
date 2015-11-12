@@ -35,7 +35,7 @@ from weightless.core import consume, retval
 from meresco.lucene import Lucene, DrilldownField, LuceneSettings
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
-from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELDTYPE, FieldRegistry, INTFIELD
+from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELD, FieldRegistry, INTFIELD
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause, PhraseQuery
@@ -719,8 +719,8 @@ class LuceneTest(LuceneTestCase):
 
     def testNoTermFrequency(self):
         factory = FieldRegistry()
-        factory.register("no.term.frequency", NO_TERMS_FREQUENCY_FIELDTYPE)
-        factory.register("no.term.frequency2", NO_TERMS_FREQUENCY_FIELDTYPE)
+        factory.register("no.term.frequency", NO_TERMS_FREQUENCY_FIELD)
+        factory.register("no.term.frequency2", NO_TERMS_FREQUENCY_FIELD)
         doc = Document()
         doc.add(factory.createField("no.term.frequency", "aap noot noot noot vuur"))
         consume(self.lucene.addDocument(identifier="no.term.frequency", document=doc))

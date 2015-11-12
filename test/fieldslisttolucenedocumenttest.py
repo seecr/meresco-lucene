@@ -32,10 +32,8 @@ from weightless.core import consume
 
 from seecr.test import SeecrTestCase, CallTrace
 
-from meresco.lucene.fieldregistry import FieldRegistry
+from meresco.lucene.fieldregistry2 import FieldRegistry2
 from meresco.lucene import FieldsListToLuceneDocument, DrilldownField
-
-from org.apache.lucene.facet import FacetField
 
 
 class FieldsListToLuceneDocumentTest(SeecrTestCase):
@@ -50,7 +48,7 @@ class FieldsListToLuceneDocumentTest(SeecrTestCase):
                 yield
         fieldFactory = Factory
 
-        fieldRegistry = FieldRegistry(drilldownFields=[DrilldownField('drilldown.field')])
+        fieldRegistry = FieldRegistry2(drilldownFields=[DrilldownField('drilldown.field')])
         index = FieldsListToLuceneDocument(fieldRegistry, untokenizedFieldnames=[], indexFieldFactory=fieldFactory)
         observer = CallTrace(emptyGeneratorMethods=['addDocument'])
         index.addObserver(observer)
@@ -61,17 +59,9 @@ class FieldsListToLuceneDocumentTest(SeecrTestCase):
         ]
         consume(index.add(identifier="", fieldslist=fields))
         self.assertEquals(['addDocument'], observer.calledMethodNames())
-        document = observer.calledMethods[0].kwargs['document']
-        searchFields, facetsFields = fieldsFromDocument(document)
-        self.assertEquals(set([
-                'field1',
-                'field2',
-            ]), set([f.name() for f in searchFields]))
-        self.assertEquals([
-                ('drilldown.field', ['a drilldown value']),
-            ], [(f.dim, list(f.path)) for f in facetsFields])
-
-def fieldsFromDocument(document):
-    searchFields = [f for f in document.getFields() if not FacetField.instance_(f)]
-    facetsFields = [FacetField.cast_(f) for f in document.getFields() if FacetField.instance_(f)]
-    return searchFields, facetsFields
+        fields = observer.calledMethods[0].kwargs['fields']
+        self.assertEqual([
+                {'name': 'field1', 'type': 'TextField', 'value': 'value1'},
+                {'name': 'field2', 'type': 'TextField', 'value': 'value2'},
+                {'name': 'drilldown.field', 'type': 'FacetField', 'path': ['a drilldown value']},
+            ], fields)

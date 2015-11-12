@@ -27,10 +27,8 @@
 
 from warnings import warn
 
-from org.apache.lucene.document import TextField, StringField, NumericDocValuesField, Field, FieldType, IntField, LongField, DoubleField
 from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery, SortField
-from org.apache.lucene.index import FieldInfo
-from org.apache.lucene.facet import FacetsConfig, DrillDownQuery, FacetField
+from org.apache.lucene.facet import FacetsConfig, DrillDownQuery
 
 
 IDFIELD = '__id__'
@@ -43,7 +41,7 @@ RANGE_DOUBLE_PREFIX = 'range.double.'
 class FieldRegistry(object):
     def __init__(self, drilldownFields=None, defaultDefinition=None, termVectorFields=None, isDrilldownFieldFunction=None):
         self._fieldDefinitions = {
-            IDFIELD: _FieldDefinition.define(type=StringField.TYPE_STORED, name=IDFIELD),
+            IDFIELD: STRINGFIELD_STORED,
         }
         self._indexFieldNames = {}
         self._defaultDefinition = defaultDefinition or TEXTFIELD
@@ -59,20 +57,17 @@ class FieldRegistry(object):
             self._isDrilldownFieldFunction = isDrilldownFieldFunction
             warn("isDrilldownFieldFunction can have side effects.")
 
-    def createField(self, fieldname, value, mayReUse=False):
-        return self._getFieldDefinition(fieldname).createField(value, mayReUse=mayReUse)
+    def createField(self, fieldname, value):
+        return self._getFieldDefinition(fieldname).createField(fieldname, value, fieldname in self._termVectorFieldNames)
 
     def createFacetField(self, field, path):
-        return FacetField(field, path)
+        return dict(type="FacetField", name=field, path=path)
 
     def createIdField(self, value):
         return self.createField(IDFIELD, value)
 
-    def register(self, fieldname, fieldType=None, fieldDefinition=None):
-        if fieldType:
-            self._fieldDefinitions[fieldname] = _FieldDefinition.define(type=fieldType, name=fieldname)
-        else:
-            self._fieldDefinitions[fieldname] = fieldDefinition(name=fieldname)
+    def register(self, fieldname, fieldDefinition):
+        self._fieldDefinitions[fieldname] = fieldDefinition
 
     def phraseQueryPossible(self, fieldname):
         return self._getFieldDefinition(fieldname).phraseQueryPossible
@@ -81,8 +76,8 @@ class FieldRegistry(object):
         return self.isDrilldownField(fieldname) or self._getFieldDefinition(fieldname).isUntokenized
 
     def isNumeric(self, fieldname):
-        fieldType = self._getFieldDefinition(fieldname).type
-        return fieldType.numericType() is not None or fieldType.docValueType() == FieldInfo.DocValuesType.NUMERIC
+        fieldType = self._getFieldDefinition(fieldname).pythonType
+        return fieldType in [long, int, float]
 
     def registerDrilldownField(self, fieldname, hierarchical=False, multiValued=True, indexFieldName=None):
         self._drilldownFieldNames.add(fieldname)
@@ -133,25 +128,25 @@ class FieldRegistry(object):
             return TermRangeQuery.newStringRange, str
         definition = self._getFieldDefinition(fieldname)
         query = NumericRangeQuery.newLongRange
-        numericType = definition.type.numericType()
-        if numericType == FieldType.NumericType.INT:
+        pythonType = definition.pythonType
+        if pythonType == int:
             query = NumericRangeQuery.newIntRange
-        elif numericType == FieldType.NumericType.DOUBLE:
+        elif pythonType == float:
             query = NumericRangeQuery.newDoubleRange
-        elif numericType == FieldType.NumericType.FLOAT:
-            query = NumericRangeQuery.newFloatRange
+        elif pythonType == long:
+            query = NumericRangeQuery.newLongRange
         return query, definition.pythonType
 
     def sortFieldType(self, fieldname):
         if not self.isNumeric(fieldname):
             return SortField.Type.STRING
         definition = self._getFieldDefinition(fieldname)
-        numericType = definition.type.numericType()
-        if numericType == FieldType.NumericType.INT:
+        pythonType = definition.pythonType
+        if pythonType == int:
             return SortField.Type.INT
-        elif numericType == FieldType.NumericType.DOUBLE:
+        elif pythonType == float:
             return SortField.Type.DOUBLE
-        elif numericType == FieldType.NumericType.LONG:
+        elif pythonType == long:
             return SortField.Type.LONG
 
     def defaultMissingValueForSort(self, fieldname, sortDescending):
@@ -163,119 +158,64 @@ class FieldRegistry(object):
         fieldDefinition = self._fieldDefinitions.get(fieldname)
         if not fieldDefinition is None:
             return fieldDefinition
-        fieldDefinitionCreator = self._defaultDefinition
+        fieldDefinition = self._defaultDefinition
         if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
-            fieldDefinitionCreator = STRINGFIELD
+            fieldDefinition = STRINGFIELD
         elif fieldname.startswith(KEY_PREFIX) or fieldname.startswith(NUMERIC_PREFIX):
-            fieldDefinitionCreator = NUMERICFIELD
+            fieldDefinition = NUMERICFIELD
         elif fieldname.startswith(RANGE_DOUBLE_PREFIX):
-            fieldDefinitionCreator = DOUBLEFIELD
-        fieldDefinition = fieldDefinitionCreator(name=fieldname, termVectors=fieldname in self._termVectorFieldNames)
+            fieldDefinition = DOUBLEFIELD
         self._fieldDefinitions[fieldname] = fieldDefinition
         return fieldDefinition
 
+# These names should be the same in the meresco-lucene-server code.
 
 class _FieldDefinition(object):
-    def __init__(self, type, pythonType, field, update, create):
+    def __init__(self, type, pythonType, isUntokenized, phraseQueryPossible):
         self.type = type
         self.pythonType = pythonType
-        positionsStored = self.type.indexOptions() in [FieldInfo.IndexOptions.DOCS_ONLY, FieldInfo.IndexOptions.DOCS_AND_FREQS]
-        self.phraseQueryPossible = not positionsStored
-        self.isUntokenized = not self.type.tokenized()
-        self._field = field
-        self._update = update
-        self._create = create
+        self.phraseQueryPossible = phraseQueryPossible
+        self.isUntokenized = isUntokenized
 
-    def createField(self, value, mayReUse):
-        if mayReUse:
-            self._update(self._field, value)
-        else:
-            self._field = self._create(value)
-        return self._field
-
-    @classmethod
-    def define(cls, type, name, termVectors=False):
-        if termVectors:
-            type = copyType(type) # Copy constructor of FieldType not in working in PyLucene
-            type.setStoreTermVectors(True)
-        create = lambda value: Field(name, value, type)
-        return cls(
-            type=type,
-            field=create(""),
-            pythonType=str,
-            create=create,
-            update=lambda field, value: field.setStringValue(value)
+    def createField(self, name, value, termVectors=False):
+        field = dict(
+            type=self.type,
+            name=name,
+            value=value,
         )
+        if termVectors:
+            field['termVectors'] = True
+        return field
 
-
-def copyType(orig):
-    new = FieldType()
-    new.setIndexed(orig.indexed())
-    new.setStored(orig.stored())
-    new.setTokenized(orig.tokenized())
-    new.setStoreTermVectors(orig.storeTermVectors())
-    new.setStoreTermVectorOffsets(orig.storeTermVectorOffsets())
-    new.setStoreTermVectorPositions(orig.storeTermVectorPositions())
-    new.setStoreTermVectorPayloads(orig.storeTermVectorPayloads())
-    new.setOmitNorms(orig.omitNorms())
-    new.setIndexOptions(orig.indexOptions())
-    new.setDocValueType(orig.docValueType())
-    new.setNumericType(orig.numericType())
-    return new
-
-
-STRINGFIELD = lambda **kwargs: _FieldDefinition.define(type=StringField.TYPE_NOT_STORED, **kwargs)
-NUMERICFIELD = lambda name, **ignored: _FieldDefinition(
-    type=NumericDocValuesField.TYPE,
-    pythonType=long,
-    field=NumericDocValuesField(name, long(0)),
-    create=lambda value: NumericDocValuesField(name, long(value)),
-    update=lambda field, value: field.setLongValue(long(value)),
-)
-TEXTFIELD = lambda **kwargs: _FieldDefinition.define(type=TextField.TYPE_NOT_STORED, **kwargs)
-INTFIELD = lambda name, **ignoreds: _FieldDefinition(
-    type=IntField.TYPE_NOT_STORED,
+STRINGFIELD_STORED = _FieldDefinition("StringFieldStored",
+    pythonType=str,
+    isUntokenized=True,
+    phraseQueryPossible=True)
+STRINGFIELD = _FieldDefinition("StringField",
+    pythonType=str,
+    isUntokenized=True,
+    phraseQueryPossible=True)
+TEXTFIELD = _FieldDefinition("TextField",
+    pythonType=str,
+    isUntokenized=False,
+    phraseQueryPossible=True)
+NO_TERMS_FREQUENCY_FIELD = _FieldDefinition("NoTermsFrequencyField",
+    pythonType=str,
+    isUntokenized=False,
+    phraseQueryPossible=False)
+INTFIELD = _FieldDefinition("IntField",
     pythonType=int,
-    field=IntField(name, int(0), IntField.TYPE_NOT_STORED),
-    create=lambda value: IntField(name, int(value), IntField.TYPE_NOT_STORED),
-    update=lambda field, value: field.setIntValue(int(value)),
-)
-INTFIELDSTORED = lambda name, **ignoreds: _FieldDefinition(
-    type=IntField.TYPE_STORED,
-    pythonType=int,
-    field=IntField(name, int(0), IntField.TYPE_STORED),
-    create=lambda value: IntField(name, int(value), IntField.TYPE_STORED),
-    update=lambda field, value: field.setIntValue(int(value)),
-)
-LONGFIELD = lambda name, **ignored: _FieldDefinition(
-    type=LongField.TYPE_NOT_STORED,
+    isUntokenized=False,
+    phraseQueryPossible=False)
+LONGFIELD = _FieldDefinition("LongField",
     pythonType=long,
-    field=LongField(name, long(0), LongField.TYPE_NOT_STORED),
-    create=lambda value: LongField(name, long(value), LongField.TYPE_NOT_STORED),
-    update=lambda field, value: field.setLongValue(long(value)),
-)
-DOUBLEFIELD = lambda name, **ignored: _FieldDefinition(
-    type=DoubleField.TYPE_NOT_STORED,
+    isUntokenized=False,
+    phraseQueryPossible=False)
+DOUBLEFIELD = _FieldDefinition("DoubleField",
     pythonType=float,
-    field=DoubleField(name, float(0), DoubleField.TYPE_NOT_STORED),
-    create=lambda value: DoubleField(name, float(value), DoubleField.TYPE_NOT_STORED),
-    update=lambda field, value: field.setDoubleValue(float(value)),
-)
-DOUBLEFIELDSTORED = lambda name, **ignored: _FieldDefinition(
-    type=DoubleField.TYPE_STORED,
-    pythonType=float,
-    field=DoubleField(name, float(0), DoubleField.TYPE_STORED),
-    create=lambda value: DoubleField(name, float(value), DoubleField.TYPE_STORED),
-    update=lambda field, value: field.setDoubleValue(float(value)),
-)
-
-
-def _createNoTermsFrequencyFieldType():
-    f = FieldType()
-    f.setIndexed(True)
-    f.setTokenized(True)
-    f.setOmitNorms(True)
-    f.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY)
-    f.freeze()
-    return f
-NO_TERMS_FREQUENCY_FIELDTYPE = _createNoTermsFrequencyFieldType()
+    isUntokenized=False,
+    phraseQueryPossible=False)
+NUMERICFIELD = _FieldDefinition("NumericField",
+    pythonType=long,
+    isUntokenized=False,
+    phraseQueryPossible=False)

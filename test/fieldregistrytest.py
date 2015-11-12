@@ -25,10 +25,8 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE, STRINGFIELD, INTFIELD, LONGFIELD
-from org.apache.lucene.index import FieldInfo
+from meresco.lucene.fieldregistry import FieldRegistry, STRINGFIELD_STORED, NO_TERMS_FREQUENCY_FIELD, STRINGFIELD, TEXTFIELD, LONGFIELD, INTFIELD
 from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery, SortField
-from org.apache.lucene.document import StringField, TextField
 from meresco.lucene import DrilldownField
 import warnings
 
@@ -37,28 +35,41 @@ class FieldRegistryTest(SeecrTestCase):
     def testDefault(self):
         registry = FieldRegistry()
         field = registry.createField('__id__', 'id:1')
-        self.assertFalse(field.fieldType().tokenized())
-        self.assertTrue(field.fieldType().stored())
-        self.assertTrue(field.fieldType().indexed())
-        self.assertTrue(registry.isUntokenized('__id__'))
+        self.assertEquals({
+                "type": "StringFieldStored",
+                "name": "__id__",
+                "value": "id:1",
+            }, field)
 
     def testSpecificField(self):
         registry = FieldRegistry()
         field = registry.createField('fieldname', 'value')
-        self.assertFalse(field.fieldType().stored())
-        registry.register('fieldname', StringField.TYPE_STORED)
+        self.assertEquals({
+                "type": "TextField",
+                "name": "fieldname",
+                "value": "value",
+            }, field)
+        registry.register('fieldname', STRINGFIELD_STORED)
         field = registry.createField('fieldname', 'value')
-        self.assertTrue(field.fieldType().stored())
+        self.assertEquals({
+                "type": "StringFieldStored",
+                "name": "fieldname",
+                "value": "value",
+            }, field)
 
     def testNoTermsFreqField(self):
         registry = FieldRegistry()
-        registry.register('fieldname', NO_TERMS_FREQUENCY_FIELDTYPE)
+        registry.register('fieldname', NO_TERMS_FREQUENCY_FIELD)
         field = registry.createField('fieldname', 'value')
-        self.assertEquals(FieldInfo.IndexOptions.DOCS_ONLY, field.fieldType().indexOptions())
+        self.assertEquals({
+                "type": "NoTermsFrequencyField",
+                "name": "fieldname",
+                "value": "value",
+            }, field)
 
     def testPhraseQueryPossible(self):
         registry = FieldRegistry()
-        registry.register('fieldname', NO_TERMS_FREQUENCY_FIELDTYPE)
+        registry.register('fieldname', NO_TERMS_FREQUENCY_FIELD)
         self.assertFalse(registry.phraseQueryPossible('fieldname'))
         self.assertTrue(registry.phraseQueryPossible('other.fieldname'))
 
@@ -67,9 +78,9 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(registry.isUntokenized('aDrilldownField'))
         self.assertTrue(registry.isUntokenized('untokenized.some.field'))
         self.assertFalse(registry.isUntokenized('other.field'))
-        registry.register('fieldname', StringField.TYPE_NOT_STORED)
+        registry.register('fieldname', STRINGFIELD)
         self.assertTrue(registry.isUntokenized('fieldname'))
-        registry.register('fieldname', TextField.TYPE_NOT_STORED)
+        registry.register('fieldname', TEXTFIELD)
         self.assertFalse(registry.isUntokenized('fieldname'))
 
     def testDrilldownFields(self):
@@ -87,6 +98,13 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertFalse(registry.isMultivaluedDrilldown('mies'))
         self.assertTrue(registry.isUntokenized('mies'))
 
+        field = registry.createFacetField("name", ["value"])
+        self.assertEqual({
+                "type": "FacetField",
+                "name": "name",
+                "path": ["value"]
+            }, field)
+
         facetsConfig = registry.facetsConfig
         dimConfigs = facetsConfig.getDimConfigs()
         self.assertEquals(set(['aap', 'noot', 'mies']), set(dimConfigs.keySet()))
@@ -103,30 +121,23 @@ class FieldRegistryTest(SeecrTestCase):
             self.assertTrue(registry.isDrilldownField('drilldown.noot'))
             self.assertFalse(registry.isDrilldownField('noot'))
 
-    def testReuseCreatedField(self):
-        registry = FieldRegistry()
-        field = registry.createField('fieldname', 'value')
-        self.assertEquals("value", field.stringValue())
-        newField = registry.createField('fieldname', 'newvalue', mayReUse=True)
-        self.assertEquals("newvalue", newField.stringValue())
-        self.assertEquals(field, newField)
-        newField2 = registry.createField('fieldname', 'newvalue', mayReUse=False)
-        self.assertEquals("newvalue", newField2.stringValue())
-        self.assertNotEqual(newField, newField2)
-
     def testDefaultDefinition(self):
         registry = FieldRegistry()
         field = registry.createField('aField', 'id:1')
-        self.assertTrue(field.fieldType().tokenized())
-        self.assertFalse(field.fieldType().stored())
-        self.assertTrue(field.fieldType().indexed())
+        self.assertEquals({
+                "type": "TextField",
+                "name": "aField",
+                "value": "id:1",
+            }, field)
         self.assertFalse(registry.isUntokenized('aField'))
 
         registry = FieldRegistry(defaultDefinition=STRINGFIELD)
         field = registry.createField('aField', 'id:1')
-        self.assertFalse(field.fieldType().tokenized())
-        self.assertFalse(field.fieldType().stored())
-        self.assertTrue(field.fieldType().indexed())
+        self.assertEquals({
+                "type": "StringField",
+                "name": "aField",
+                "value": "id:1",
+            }, field)
         self.assertTrue(registry.isUntokenized('aField'))
 
     def testTermVectorsForField(self):
@@ -135,11 +146,25 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(registry.isTermVectorField('field2'))
         self.assertFalse(registry.isTermVectorField('field3'))
         field = registry.createField('field1', 'id:1')
-        self.assertTrue(field.fieldType().storeTermVectors())
+        self.assertEquals({
+                "type": "TextField",
+                "name": "field1",
+                "value": "id:1",
+                "termVectors": True,
+            }, field)
         field = registry.createField('field2', 'id:1')
-        self.assertTrue(field.fieldType().storeTermVectors())
+        self.assertEquals({
+                "type": "TextField",
+                "name": "field2",
+                "value": "id:1",
+                "termVectors": True,
+            }, field)
         field = registry.createField('field3', 'id:1')
-        self.assertFalse(field.fieldType().storeTermVectors())
+        self.assertEquals({
+                "type": "TextField",
+                "name": "field3",
+                "value": "id:1",
+            }, field)
 
     def testIsIndexField(self):
         registry = FieldRegistry(drilldownFields=[DrilldownField(f) for f in ['field2', 'field3']], termVectorFields=['field1', 'field2'])

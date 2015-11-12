@@ -34,7 +34,7 @@ from org.apache.lucene.search import TermQuery, WildcardQuery, BooleanClause, Bo
 from org.apache.lucene.index import Term
 
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
-from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELDTYPE, INTFIELD, LONGFIELD
+from meresco.lucene.fieldregistry import FieldRegistry, NO_TERMS_FREQUENCY_FIELD, INTFIELD, LONGFIELD
 from org.apache.lucene.document import StringField
 from meresco.lucene import DrilldownField, LuceneSettings
 from org.apache.lucene.facet import DrillDownQuery
@@ -281,7 +281,7 @@ class LuceneQueryComposerTest(TestCase):
 
     def testExcludeUnqualifiedFieldForWhichNoPhraseQueryIsPossibleInCaseOfPhraseQuery(self):
         fieldRegistry = FieldRegistry()
-        fieldRegistry.register('noTermFreqField', NO_TERMS_FREQUENCY_FIELDTYPE)
+        fieldRegistry.register('noTermFreqField', NO_TERMS_FREQUENCY_FIELD)
         self.composer = LuceneQueryComposer(unqualifiedTermFields=[("unqualified", 1.0), ('noTermFreqField', 2.0)], luceneSettings=LuceneSettings(fieldRegistry=fieldRegistry))
         expected = PhraseQuery()
         expected.add(Term("unqualified", "phrase query"))

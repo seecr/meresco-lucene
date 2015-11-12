@@ -21,8 +21,8 @@ public class LuceneResponseToJson {
     @Test
     public void test() {
         LuceneResponse response = new LuceneResponse(2);
-        response.addHit("id1");
-        response.addHit("id2");
+        response.addHit("id1", 0.1f);
+        response.addHit("id2", 0.2f);
         LuceneResponse.DrilldownData dd = new DrilldownData("field");
         dd.addTerm("value1", 1);
         dd.addTerm("value2", 5);
@@ -34,6 +34,7 @@ public class LuceneResponseToJson {
         JsonArray hits = jsonResponse.getJsonArray("hits");
         assertEquals(2, hits.size());
         assertEquals("id1", hits.getJsonObject(0).getString("id"));
+//        assertEquals("id1", hits.getJsonObject(0).get("score"));
         assertEquals("id2", hits.getJsonObject(1).getString("id"));
         JsonArray ddData = jsonResponse.getJsonArray("drilldownData");
         assertEquals(1, ddData.size());

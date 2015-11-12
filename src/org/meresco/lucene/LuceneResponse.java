@@ -20,15 +20,17 @@ public class LuceneResponse {
         total = totalHits;
     }   
     
-    public void addHit(String id) {
-        hits.add(new Hit(id));
+    public void addHit(String id, float score) {
+        hits.add(new Hit(id, score));
     }
      
     public static class Hit {
         public String id;
+        public float score;
         
-        public Hit(String id) {
+        public Hit(String id, float score) {
             this.id = id;
+            this.score = score;
         }
     }
     

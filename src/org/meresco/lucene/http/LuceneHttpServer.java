@@ -39,6 +39,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
 import org.meresco.lucene.Lucene;
+import org.meresco.lucene.LuceneSettings;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -79,7 +80,7 @@ public class LuceneHttpServer {
             System.exit(1);
         }
 
-        Lucene lucene = new Lucene(new File(storeLocation));
+        Lucene lucene = new Lucene(new File(storeLocation), new LuceneSettings());
         
         server = HttpServer.create(new InetSocketAddress(port), 15);
         ThreadPoolExecutor executor = new ThreadPoolExecutor(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));

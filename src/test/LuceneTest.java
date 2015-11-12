@@ -3,7 +3,6 @@ package test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import java.io.File;
 import java.util.ArrayList;
 
 import org.apache.lucene.document.Document;
@@ -15,30 +14,17 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;
+import org.meresco.lucene.LuceneSettings;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 
-public class LuceneTest {
+public class LuceneTest extends SeecrTestCase {
 
-    private File tmpDir;
-
-    @Before
-    public void setUp() throws Exception {
-        this.tmpDir = TestUtils.createTempDirectory();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        TestUtils.deleteDirectory(this.tmpDir);
-    }
-    
     @Test
     public void testAddDocument() throws Exception {
-        Lucene lucene = new Lucene(this.tmpDir);
+        Lucene lucene = new Lucene(this.tmpDir, new LuceneSettings());
         Document doc = new Document();
         doc.add(new StringField("naam", "waarde", Store.NO));
         lucene.addDocument("id1", doc);
@@ -50,7 +36,7 @@ public class LuceneTest {
     
     @Test
     public void testAddDeleteDocument() throws Exception {
-        Lucene lucene = new Lucene(this.tmpDir);
+        Lucene lucene = new Lucene(this.tmpDir, new LuceneSettings());
         lucene.addDocument("id1", new Document());
         lucene.addDocument("id2", new Document());
         lucene.addDocument("id3", new Document());
@@ -62,7 +48,7 @@ public class LuceneTest {
     
     @Test
     public void testAddTwiceUpdatesDocument() throws Exception {
-        Lucene lucene = new Lucene(this.tmpDir);
+        Lucene lucene = new Lucene(this.tmpDir, new LuceneSettings());
         Document doc1 = new Document();
         doc1.add(new StringField("field0", "value0", Store.NO));
         doc1.add(new StringField("field1", "value1", Store.NO));
@@ -78,7 +64,7 @@ public class LuceneTest {
     
     @Test
     public void testFacets() throws Exception {
-        Lucene lucene = new Lucene(this.tmpDir);
+        Lucene lucene = new Lucene(this.tmpDir, new LuceneSettings());
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "id0", Store.NO));
         doc1.add(new FacetField("facet-field2", "first item0"));
@@ -111,7 +97,7 @@ public class LuceneTest {
     
     @Test
     public void testSorting() throws Exception {
-        Lucene lucene = new Lucene(this.tmpDir);
+        Lucene lucene = new Lucene(this.tmpDir, new LuceneSettings());
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "AA", Store.NO));
         lucene.addDocument("id1", doc1);

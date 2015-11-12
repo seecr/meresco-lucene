@@ -21,6 +21,7 @@ import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -45,7 +46,7 @@ public class Lucene {
     private IndexAndTaxanomy indexAndTaxo;
     private FacetsConfig facetsConfig;
 
-    public Lucene(File stateDir) throws IOException {
+    public Lucene(File stateDir, LuceneSettings settings) throws IOException {
         MMapDirectory indexDirectory = new MMapDirectory(new File(stateDir, "index"));
         indexDirectory.setUseUnmap(false);
 
@@ -53,13 +54,18 @@ public class Lucene {
         taxoDirectory.setUseUnmap(false);
 
         IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_10_4, new StandardAnalyzer());
+        config.setSimilarity(settings.similarity);
+        TieredMergePolicy mergePolicy = new TieredMergePolicy();
+        mergePolicy.setMaxMergeAtOnce(settings.maxMergeAtOnce);
+        mergePolicy.setSegmentsPerTier(settings.segmentsPerTier);
+        config.setMergePolicy(mergePolicy);
         
         indexWriter = new IndexWriter(indexDirectory, config);
         indexWriter.commit();
-        taxoWriter = new DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(4000));
+        taxoWriter = new DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(settings.lruTaxonomyWriterCacheSize));
         taxoWriter.commit();
         
-        indexAndTaxo = new IndexAndTaxanomy(indexDirectory, taxoDirectory, 6);
+        indexAndTaxo = new IndexAndTaxanomy(indexDirectory, taxoDirectory, settings);
         facetsConfig = new FacetsConfig();
     }
     
@@ -102,7 +108,7 @@ public class Lucene {
         indexAndTaxo.searcher().search(query, null, collectors.root);
         LuceneResponse response = new LuceneResponse(collectors.topCollector.getTotalHits());
         for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(start).scoreDocs) {
-            response.addHit(getDocument(scoreDoc.doc).get(ID_FIELD));
+            response.addHit(getDocument(scoreDoc.doc).get(ID_FIELD), scoreDoc.score);
         }
         if (collectors.facetCollector != null)
             facetResult(response, collectors.facetCollector, facets);

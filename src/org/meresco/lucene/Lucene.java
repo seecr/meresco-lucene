@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -32,6 +33,7 @@ import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 import org.meresco.lucene.search.FacetSuperCollector;
+import org.meresco.lucene.search.GroupSuperCollector;
 import org.meresco.lucene.search.MultiSuperCollector;
 import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.TopDocSuperCollector;
@@ -40,7 +42,7 @@ import org.meresco.lucene.search.TopScoreDocSuperCollector;
 
 public class Lucene {
 
-    private static final String ID_FIELD = "__id__";
+    public static final String ID_FIELD = "__id__";
     private IndexWriter indexWriter;
     private DirectoryTaxonomyWriter taxoWriter;
     private IndexAndTaxanomy indexAndTaxo;
@@ -117,7 +119,7 @@ public class Lucene {
         return response;
     }
 
-    private Document getDocument(int docID) throws IOException {
+    public Document getDocument(int docID) throws IOException {
         return indexAndTaxo.searcher().doc(docID);
     }
 
@@ -169,6 +171,10 @@ public class Lucene {
         public TopDocSuperCollector topCollector;
         public FacetSuperCollector facetCollector;
         public SuperCollector<?> root;
+    }
+
+    public void search(Query q, SuperCollector<?> c) throws Exception {
+        indexAndTaxo.searcher().search(q, null, c);
     }
 
 }

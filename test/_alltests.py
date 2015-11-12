@@ -62,7 +62,6 @@ from queryexpressiontolucenequerystringtest import QueryExpressionToLuceneQueryS
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
 from suggestionindextest import SuggestionIndexTest
 # from supercollectortest import SuperCollectorTest
-# from superindexsearchertest import SuperIndexSearcherTest
 from termnumeratortest import TermNumeratorTest
 
 if __name__ == '__main__':

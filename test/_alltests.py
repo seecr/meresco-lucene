@@ -39,7 +39,6 @@ from conversiontest import ConversionTest
 from converttocomposedquerytest import ConvertToComposedQueryTest
 from extractfilterqueriestest import ExtractFilterQueriesTest
 # from dedupfiltercollectortest import DeDupFilterCollectorTest
-# from facetsupercollectortest import FacetSuperCollectorTest
 from fieldregistrytest import FieldRegistryTest
 from fieldregistry2test import FieldRegistry2Test
 from fields2lucenedoctest import Fields2LuceneDocTest

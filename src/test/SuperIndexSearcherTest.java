@@ -1,0 +1,111 @@
+package test;
+
+import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.util.Version;
+import org.junit.Before;
+import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
+import org.meresco.lucene.search.SuperIndexSearcher;
+import org.meresco.lucene.test.DummyIndexReader;
+
+public class SuperIndexSearcherTest extends SeecrTestCase {
+
+    private IndexWriter writer;
+    private DirectoryReader reader;
+    private SuperIndexSearcher sis;
+    private ExecutorService executor;
+
+    @Before
+    public void setUp() throws Exception {
+        this.executor = Executors.newFixedThreadPool(5);
+        Directory indexDirectory = new SimpleFSDirectory(this.tmpDir);
+        IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_4_10_4, new MerescoStandardAnalyzer());
+        this.writer = new IndexWriter(indexDirectory, conf);
+        this.reader = DirectoryReader.open(this.writer, true);
+        this.sis = new SuperIndexSearcher(this.reader);
+    }
+    
+    public void testGroupLeaves() {
+        List<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
+        contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
+        List<List<AtomicReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
+        assertEquals(1, result.size());
+        List<AtomicReaderContext> firstContext = result.get(0);
+        assertEquals(1, firstContext.size());
+    }
+    
+    public void testGroupLeaves1ForEach() {
+        ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
+        contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(9).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(8).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(7).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(6).getContext());
+        List<List<AtomicReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
+        assertEquals(5, result.size());
+        for (int i = 0; i < 5; i++) {
+            List<AtomicReaderContext> context = result.get(i);
+            assertEquals(1, context.size());
+        }
+    }
+
+    public void testGroupLeaves1TooMuch() {
+        ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
+        contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(9).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(8).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(7).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(6).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(5).getContext());
+        List<List<AtomicReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
+        assertEquals(5, result.size());
+        for (int i = 0; i < 4; i++) {
+            List<AtomicReaderContext> context = result.get(i);
+            assertEquals(1, context.size());
+        }
+        List<AtomicReaderContext> context = result.get(4);
+        assertEquals(2, context.size());
+    }
+    
+    public void testGroupLeavesAllDouble() {
+        ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
+        contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(9).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(8).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(7).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(6).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(5).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(4).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(3).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(2).getContext());
+        contexts.add(DummyIndexReader.dummyIndexReader(1).getContext());
+        List<List<AtomicReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
+        assertEquals(5, result.size());
+        for (int i = 0; i < 4; i++) {
+            List<AtomicReaderContext> context = result.get(i);
+            assertEquals(2, context.size());
+            int totalDocs = context.get(0).reader().numDocs() + context.get(1).reader().numDocs();
+            assertEquals(11, totalDocs);
+        }
+            
+    }
+    
+    public void testFindSmallestSlice() {
+        assertEquals(0, this.sis.find_smallest_slice_test(new int[] {0, 0, 0, 0, 0}));
+        assertEquals(1, this.sis.find_smallest_slice_test(new int[] {1, 0, 0, 0, 0}));
+        assertEquals(1, this.sis.find_smallest_slice_test(new int[] {1, 0, 1, 0, 0}));
+        assertEquals(0, this.sis.find_smallest_slice_test(new int[] {1, 1, 1, 1, 1}));
+        assertEquals(4, this.sis.find_smallest_slice_test(new int[] {2, 1, 1, 1, 0}));
+    }
+}

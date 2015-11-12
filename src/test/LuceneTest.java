@@ -12,13 +12,14 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;
-import org.meresco.lucene.QueryStringToQuery;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 
 public class LuceneTest {
@@ -45,6 +46,18 @@ public class LuceneTest {
         assertEquals(1, response.total);
         assertEquals(1, response.hits.size());
         assertEquals("id1", response.hits.get(0).id);
+    }
+    
+    @Test
+    public void testAddDeleteDocument() throws Exception {
+        Lucene lucene = new Lucene(this.tmpDir);
+        lucene.addDocument("id1", new Document());
+        lucene.addDocument("id2", new Document());
+        lucene.addDocument("id3", new Document());
+        lucene.deleteDocument("id1");
+        LuceneResponse response = lucene.executeQuery(new MatchAllDocsQuery());
+        assertEquals(2, response.total);
+        assertEquals(2, response.hits.size());
     }
     
     @Test
@@ -94,5 +107,37 @@ public class LuceneTest {
         result = lucene.executeQuery(new MatchAllDocsQuery(), facets);
         assertEquals(3, result.total);
         assertEquals(1, result.drilldownData.size());
+    }
+    
+    @Test
+    public void testSorting() throws Exception {
+        Lucene lucene = new Lucene(this.tmpDir);
+        Document doc1 = new Document();
+        doc1.add(new StringField("field1", "AA", Store.NO));
+        lucene.addDocument("id1", doc1);
+        
+        Document doc2 = new Document();
+        doc2.add(new StringField("field1", "BB", Store.NO));
+        lucene.addDocument("id2", doc2);
+        
+        Document doc3 = new Document();
+        doc3.add(new StringField("field1", "CC", Store.NO));
+        lucene.addDocument("id3", doc3);
+        
+        Sort sort = new Sort();
+        sort.setSort(new SortField("field1", SortField.Type.STRING, false));
+        LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null);
+        assertEquals(3, result.total);
+        assertEquals("id1", result.hits.get(0).id);
+        assertEquals("id2", result.hits.get(1).id);
+        assertEquals("id3", result.hits.get(2).id);
+        
+        sort = new Sort();
+        sort.setSort(new SortField("field1", SortField.Type.STRING, true));
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null);
+        assertEquals(3, result.total);
+        assertEquals("id3", result.hits.get(0).id);
+        assertEquals("id2", result.hits.get(1).id);
+        assertEquals("id1", result.hits.get(2).id);
     }
 }

@@ -30,6 +30,7 @@ public class LuceneResponseToJson {
         response.drilldownData.add(dd);
         JsonObject jsonResponse = response.toJson();
         assertEquals(2, jsonResponse.getInt("total"));
+        assertEquals(0, jsonResponse.getInt("queryTime"));
         JsonArray hits = jsonResponse.getJsonArray("hits");
         assertEquals(2, hits.size());
         assertEquals("id1", hits.getJsonObject(0).getString("id"));

@@ -14,6 +14,7 @@ public class LuceneResponse {
     public int total;
     public ArrayList<Hit> hits = new ArrayList<Hit>();
     public List<DrilldownData> drilldownData = null;
+    public long queryTime = 0;
     
     public LuceneResponse(int totalHits) {
         total = totalHits;
@@ -45,14 +46,16 @@ public class LuceneResponse {
     }
     
     public JsonObject toJson() {
+        JsonObjectBuilder jsonBuilder = Json.createObjectBuilder()
+                .add("total", total)
+                .add("queryTime", queryTime);
+        
         JsonArrayBuilder hitsArray = Json.createArrayBuilder();
         for (Hit hit : hits) {
             hitsArray.add(Json.createObjectBuilder()
                     .add("id", hit.id));
         }
-        JsonObjectBuilder jsonBuilder = Json.createObjectBuilder()
-                .add("total", total)
-                .add("hits", hitsArray);
+        jsonBuilder.add("hits", hitsArray);
                 
         if (drilldownData != null) {
             JsonArrayBuilder ddArray = Json.createArrayBuilder();

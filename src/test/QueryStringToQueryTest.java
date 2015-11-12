@@ -11,6 +11,8 @@ import javax.json.JsonObject;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
 import org.meresco.lucene.QueryStringToQuery;
@@ -55,5 +57,36 @@ public class QueryStringToQueryTest {
         assertEquals(new MatchAllDocsQuery(), q.query);
         List<FacetRequest> facets = q.facets;
         assertEquals(1, facets.size());
+        assertEquals("fieldname", facets.get(0).fieldname);
+        assertEquals(10, facets.get(0).maxTerms);
+    }
+    
+    @Test
+    public void testSortKeys() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                        .add("type", "MatchAllDocsQuery"))
+                .add("sortKeys", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder()
+                                .add("sortBy", "fieldname")
+                                .add("type", "String")
+                                .add("sortDescending", false))
+                        .add(Json.createObjectBuilder()
+                                .add("sortBy", "score")
+                                .add("sortDescending", true))
+                        .add(Json.createObjectBuilder()
+                                .add("sortBy", "intfield")
+                                .add("type", "Int")
+                                .add("sortDescending", true))
+                        .add(Json.createObjectBuilder()
+                                .add("sortBy", "fieldname")
+                                .add("type", "String")
+                                .add("missingValue", "STRING_FIRST")
+                                .add("sortDescending", true)))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        assertEquals(new MatchAllDocsQuery(), q.query);
+        SortField[] sortFields = q.sort.getSort();
+        assertEquals(4, sortFields.length);
     }
 }

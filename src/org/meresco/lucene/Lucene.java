@@ -75,6 +75,11 @@ public class Lucene {
         indexWriter.updateDocument(new Term(ID_FIELD, identifier), doc);
         commit();
     }
+
+    public void deleteDocument(String identifier) throws IOException {
+        indexWriter.deleteDocuments(new Term(ID_FIELD, identifier));
+        commit();
+    }
     
     public void commit() throws IOException {
         indexWriter.commit();
@@ -90,8 +95,9 @@ public class Lucene {
         return executeQuery(query, 0, 10, null, facets);
     }
     
-    public LuceneResponse executeQuery(Query query, int start, int stop, String[] sortKeys, List<FacetRequest> facets) throws Exception {
-        Collectors collectors = createCollectors(start, stop, sortKeys, facets);
+    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets) throws Exception {
+        long t0 = System.currentTimeMillis();
+        Collectors collectors = createCollectors(start, stop, sort, facets);
         
         indexAndTaxo.searcher().search(query, null, collectors.root);
         LuceneResponse response = new LuceneResponse(collectors.topCollector.getTotalHits());
@@ -100,6 +106,8 @@ public class Lucene {
         }
         if (collectors.facetCollector != null)
             facetResult(response, collectors.facetCollector, facets);
+        
+        response.queryTime = System.currentTimeMillis() - t0;
         return response;
     }
 
@@ -107,9 +115,9 @@ public class Lucene {
         return indexAndTaxo.searcher().doc(docID);
     }
 
-    private Collectors createCollectors(int start, int stop, String[] sortKeys, List<FacetRequest> facets) {
+    private Collectors createCollectors(int start, int stop, Sort sort, List<FacetRequest> facets) {
         Collectors allCollectors = new Collectors();
-        allCollectors.topCollector = topCollector(start, stop, sortKeys);
+        allCollectors.topCollector = topCollector(start, stop, sort);
         allCollectors.facetCollector = facetCollector(facets);
         
         List<SuperCollector<?>> collectors = new ArrayList<SuperCollector<?>>();
@@ -121,22 +129,10 @@ public class Lucene {
         return allCollectors;
     }
     
-    private TopDocSuperCollector topCollector(int start, int stop, String[] sortKeys) {
+    private TopDocSuperCollector topCollector(int start, int stop, Sort sort) {
 //        if (stop <= start)
 //            return new TotalHitCountSuperCollector();
-        Sort sort = null;
-        if (sortKeys != null) {
-            SortField[] sortFields = new SortField[sortKeys.length];
-            for (int i=0; i<sortKeys.length; i++) {
-                
-            }
-//            for sortKey in sortKeys:
-//                if isinstance(sortKey, dict):
-//                    sortFields.append(self._sortField(sortKey))
-//                else:
-//                    sortFields.append(sortKey)
-            sort = new Sort(sortFields);
-        } else
+        if (sort == null)
             return new TopScoreDocSuperCollector(stop, true);
         return new TopFieldSuperCollector(sort, stop, true, false, true);
     }
@@ -168,4 +164,5 @@ public class Lucene {
         public FacetSuperCollector facetCollector;
         public SuperCollector<?> root;
     }
+
 }

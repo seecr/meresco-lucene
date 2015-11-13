@@ -29,7 +29,9 @@ public class MerescoClustererTest extends SeecrTestCase {
         super.setUp();
         Document doc;
 
-        lucene = new Lucene(this.tmpDir, new LuceneSettings());
+        LuceneSettings settings = new LuceneSettings();
+        settings.commitCount = 1;
+        lucene = new Lucene(this.tmpDir, settings);
         FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
         fieldType.setStoreTermVectors(true);
 

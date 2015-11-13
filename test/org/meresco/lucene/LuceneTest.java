@@ -3,6 +3,7 @@ package org.meresco.lucene;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 import org.apache.lucene.document.Document;
@@ -14,6 +15,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;
@@ -22,9 +24,18 @@ import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 
 public class LuceneTest extends SeecrTestCase {
 
+    private Lucene lucene;
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        LuceneSettings settings = new LuceneSettings();
+        settings.commitCount = 1;
+        lucene = new Lucene(this.tmpDir, settings);
+    }
+    
     @Test
     public void testAddDocument() throws Exception {
-        Lucene lucene = new Lucene(this.tmpDir, new LuceneSettings());
         Document doc = new Document();
         doc.add(new StringField("naam", "waarde", Store.NO));
         lucene.addDocument("id1", doc);
@@ -36,7 +47,6 @@ public class LuceneTest extends SeecrTestCase {
     
     @Test
     public void testAddDeleteDocument() throws Exception {
-        Lucene lucene = new Lucene(this.tmpDir, new LuceneSettings());
         lucene.addDocument("id1", new Document());
         lucene.addDocument("id2", new Document());
         lucene.addDocument("id3", new Document());
@@ -48,7 +58,6 @@ public class LuceneTest extends SeecrTestCase {
     
     @Test
     public void testAddTwiceUpdatesDocument() throws Exception {
-        Lucene lucene = new Lucene(this.tmpDir, new LuceneSettings());
         Document doc1 = new Document();
         doc1.add(new StringField("field0", "value0", Store.NO));
         doc1.add(new StringField("field1", "value1", Store.NO));
@@ -64,7 +73,6 @@ public class LuceneTest extends SeecrTestCase {
     
     @Test
     public void testFacets() throws Exception {
-        Lucene lucene = new Lucene(this.tmpDir, new LuceneSettings());
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "id0", Store.NO));
         doc1.add(new FacetField("facet-field2", "first item0"));
@@ -97,7 +105,6 @@ public class LuceneTest extends SeecrTestCase {
     
     @Test
     public void testSorting() throws Exception {
-        Lucene lucene = new Lucene(this.tmpDir, new LuceneSettings());
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "AA", Store.NO));
         lucene.addDocument("id1", doc1);
@@ -125,5 +132,18 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals("id3", result.hits.get(0).id);
         assertEquals("id2", result.hits.get(1).id);
         assertEquals("id1", result.hits.get(2).id);
+    }
+    
+    @Test
+    public void testCommitTimer() throws Exception {
+        lucene.close();
+        LuceneSettings settings = new LuceneSettings();
+        settings.commitTimeout = 1;
+        lucene = new Lucene(this.tmpDir, settings);
+        lucene.addDocument("id1", new Document());
+        Thread.sleep(500);
+        assertEquals(0, lucene.executeQuery(new MatchAllDocsQuery()).total);
+        Thread.sleep(550);
+        assertEquals(1, lucene.executeQuery(new MatchAllDocsQuery()).total);
     }
 }

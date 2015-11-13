@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -42,8 +44,13 @@ public class Lucene {
     DirectoryTaxonomyWriter taxoWriter;
     IndexAndTaxanomy indexAndTaxo;
     FacetsConfig facetsConfig;
+    private LuceneSettings settings;
+    private int commitCount;
+    private Timer commitTimer = new Timer();
+    private TimerTask timerTask;
 
     public Lucene(File stateDir, LuceneSettings settings) throws IOException {
+        this.settings = settings;
         MMapDirectory indexDirectory = new MMapDirectory(new File(stateDir, "index"));
         indexDirectory.setUseUnmap(false);
 
@@ -84,7 +91,31 @@ public class Lucene {
         commit();
     }
     
-    public void commit() throws IOException {
+    public synchronized void commit() throws IOException {
+        commitCount++;
+        if (commitCount >= settings.commitCount) {
+            realCommit();
+            return;
+        }
+        if (timerTask == null) {
+            timerTask = new TimerTask() {
+                public void run() {
+                    try {
+                        realCommit();
+                    } catch (IOException e) {
+                        throw new RuntimeException();
+                    }
+                }
+            };
+            commitTimer.schedule(timerTask, settings.commitTimeout * 1000);
+        }
+    }
+    
+    public void realCommit() throws IOException {
+        commitCount = 0;
+        timerTask = null;
+        commitTimer.cancel();
+        commitTimer.purge();
         indexWriter.commit();
         taxoWriter.commit();
         indexAndTaxo.reopen();

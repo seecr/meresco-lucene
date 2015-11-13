@@ -148,7 +148,7 @@ public class Lucene {
     private FacetSuperCollector facetCollector(List<FacetRequest> facets) {
         if (facets == null)
             return null;
-        return new FacetSuperCollector(indexAndTaxo.taxoReader, facetsConfig, new CachedOrdinalsReader(new DocValuesOrdinalsReader()));
+        return new FacetSuperCollector(indexAndTaxo.taxoReader, facetsConfig, new CachedOrdinalsReader(new DocValuesOrdinalsReader())); //TODO: cache ordinals reader
     }
     
     private void facetResult(LuceneResponse response, FacetSuperCollector facetCollector, List<FacetRequest> facets) throws IOException {

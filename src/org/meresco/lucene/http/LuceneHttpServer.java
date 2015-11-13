@@ -90,6 +90,7 @@ public class LuceneHttpServer {
 
         server.createContext("/query", new QueryHandler(lucene));
         server.createContext("/update", new UpdateHandler(lucene));
+        server.createContext("/delete", new DeleteHandler(lucene));
         server.start();
     }
 

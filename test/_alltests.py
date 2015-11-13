@@ -51,7 +51,6 @@ from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
 from lucenesettingstest import LuceneSettingsTest
 # from lucenetest import LuceneTest
-# from merescoclusterertest import MerescoClustererTest
 from adaptertolucenequerytest import AdapterToLuceneQueryTest
 # from multilucenetest import MultiLuceneTest
 from pageranktest import PageRankTest

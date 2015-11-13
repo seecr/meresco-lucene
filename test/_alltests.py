@@ -38,7 +38,6 @@ from composedquerytest import ComposedQueryTest
 from conversiontest import ConversionTest
 from converttocomposedquerytest import ConvertToComposedQueryTest
 from extractfilterqueriestest import ExtractFilterQueriesTest
-# from dedupfiltercollectortest import DeDupFilterCollectorTest
 from fieldregistrytest import FieldRegistryTest
 from fieldregistry2test import FieldRegistry2Test
 from fields2lucenedoctest import Fields2LuceneDocTest
@@ -54,11 +53,9 @@ from lucenesettingstest import LuceneSettingsTest
 from adaptertolucenequerytest import AdapterToLuceneQueryTest
 # from multilucenetest import MultiLuceneTest
 from pageranktest import PageRankTest
-# from queryexpressiontolucenequerytest import QueryExpressionToLuceneQueryTest
 from queryexpressiontolucenequerystringtest import QueryExpressionToLuceneQueryStringTest
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
 from suggestionindextest import SuggestionIndexTest
-# from supercollectortest import SuperCollectorTest
 from termnumeratortest import TermNumeratorTest
 
 if __name__ == '__main__':

@@ -25,11 +25,12 @@
 
 package org.meresco.lucene;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
@@ -37,16 +38,16 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.DocValuesOrdinalsReader;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.junit.Test;
-import org.meresco.lucene.Lucene;
-import org.meresco.lucene.LuceneSettings;
 import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.MultiSuperCollector;
+import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.TopFieldSuperCollector;
 import org.meresco.lucene.search.TopScoreDocSuperCollector;
 import org.meresco.lucene.search.TotalHitCountSuperCollector;
@@ -110,90 +111,97 @@ public class SuperCollectorTest extends SeecrTestCase {
             fields.put("field1", Integer.toString(i));
             fields.put("field2", new String(new char[1000]).replace("\0", Integer.toString(i)));
             Map<String, String> facets = new HashMap<String, String>();
-            facets.put("facet1", "value" + i % 100);
+            facets.put("facet1", "value" + (i % 100));
             Document document1 = createDocument(fields,facets);
-            document1 = I.facetsConfig.build(I.taxoWriter, document1);
-            I.addDocument("id1", document1);
+            I.addDocument("id" + i, document1);
         }
         I.close();
         I = new Lucene(this.tmpDir, new LuceneSettings());
         FacetSuperCollector C = new FacetSuperCollector(I.indexAndTaxo.taxoReader, I.facetsConfig, new DocValuesOrdinalsReader());
         MatchAllDocsQuery Q = new MatchAllDocsQuery();
         I.search(Q, null, C);
-        FacetResult tc = C.getTopChildren(10, "facet1", new String[0]);
-//        assertEquals([
-//                ('value90', 10),
-//                ('value91', 10),
-//                ('value92', 10),
-//                ('value93', 10),
-//                ('value94', 10),
-//                ('value95', 10),
-//                ('value96', 10),
-//                ('value97', 10),
-//                ('value98', 10),
-//                ('value99', 10)
-//            ], [(l.label, l.value.intValue()) for l in tc.labelValues]);
+        FacetResult tc = C.getTopChildren(10, "facet1");
+        LabelAndValue[] expected = new LabelAndValue[] {
+                new LabelAndValue("value90", 10),
+                new LabelAndValue("value91", 10),
+                new LabelAndValue("value92", 10),
+                new LabelAndValue("value93", 10),
+                new LabelAndValue("value94", 10),
+                new LabelAndValue("value95", 10),
+                new LabelAndValue("value96", 10),
+                new LabelAndValue("value97", 10),
+                new LabelAndValue("value98", 10),
+                new LabelAndValue("value99", 10)
+        };
+        assertArrayEquals(expected, tc.labelValues);
     }
-//
-//    @Test
-//    public void testFacetAndTopsMultiCollector() {
-//        I = new Lucene(this.tmpDir, new LuceneSettings());
-//        for i in xrange(99):
-//            document1 = createDocument(fields=[("field1", str(i)), ("field2", str(i)*1000)], facets=[("facet1", "value%s" % (i % 10))]);
-//            document1 = I._facetsConfig.build(I._taxoWriter, document1);
-//            I.addDocument("id1", document1);
-//        I.commit();
-//        I.close();
-//        I = new Lucene(this.tmpDir, new LuceneSettings());
-//
-//        f = new FacetSuperCollector(I._indexAndTaxonomy.taxoReader, I._facetsConfig, new DocValuesOrdinalsReader());
-//        t = new TopScoreDocSuperCollector(10, true);
-//        collectors = ArrayList().of_(SuperCollector);
-//        collectors.add(t);
-//        collectors.add(f);
-//        C = new MultiSuperCollector(collectors);
-//        Q = new MatchAllDocsQuery();
-//        I.search(Q, null, C);
-//
-//        assertEquals(99, t.topDocs(0).totalHits);
-//        assertEquals(10, len(t.topDocs(0).scoreDocs));
-//        tc = f.getTopChildren(10, "facet1", []);
-//
-//        assertEquals([
-//                ('value0', 10),
-//                ('value1', 10),
-//                ('value2', 10),
-//                ('value3', 10),
-//                ('value4', 10),
-//                ('value5', 10),
-//                ('value6', 10),
-//                ('value7', 10),
-//                ('value8', 10),
-//                ('value9', 9)
-//            ], [(l.label, l.value.intValue()) for l in tc.labelValues]);
-//    }
-//
-//    @Test
-//    public void testSearchTopField() {
-//        I = new Lucene(this.tmpDir, new LuceneSettings());
-//        I.addDocument("id1", document(__id__='1', name="one", price="aap noot mies"));
-//        I.commit();
-//        I.addDocument("id1", document(__id__='2', name="two", price="aap vuur boom"));
-//        I.commit();
-//        I.addDocument("id1", document(__id__='3', name="three", price="noot boom mies"));
-//        I.commit();
-//        I.close();
-//        I = new Lucene(this.tmpDir, new LuceneSettings());
-//        sort = new Sort(new SortField("name", SortField.Type.STRING, true));
-//        C = new TopFieldSuperCollector(sort, 2, true, false, true);
-//        Q = new MatchAllDocsQuery();
-//        I.search(Q, null, C);
-//        td = C.topDocs(0);
-//        assertEquals(3, C.getTotalHits());
-//        assertEquals(3, td.totalHits);
-//        assertEquals(2, len(td.scoreDocs));
-//        assertEquals(['2', '3'], [I.getDocument(s.doc).get("__id__") for s in td.scoreDocs]);
-//    }
+
+    @Test
+    public void testFacetAndTopsMultiCollector() throws Exception {
+        Lucene I = new Lucene(this.tmpDir, new LuceneSettings());
+        for (int i = 0; i < 99; i++) {
+            Map<String, String> fields = new HashMap<String, String>();
+            fields.put("field1", Integer.toString(i));
+            fields.put("field2", new String(new char[1000]).replace("\0", Integer.toString(i)));
+            Map<String, String> facets = new HashMap<String, String>();
+            facets.put("facet1", "value" + (i % 10));
+            Document document1 = createDocument(fields,facets);
+            I.addDocument("id" + i, document1);
+        }
+        I.commit();
+        I.close();
+        I = new Lucene(this.tmpDir, new LuceneSettings());
+
+        FacetSuperCollector f = new FacetSuperCollector(I.indexAndTaxo.taxoReader, I.facetsConfig, new DocValuesOrdinalsReader());
+        TopScoreDocSuperCollector t = new TopScoreDocSuperCollector(10, true);
+        List<SuperCollector<?>> collectors = new ArrayList<SuperCollector<?>>();
+        collectors.add(t);
+        collectors.add(f);
+        MultiSuperCollector C = new MultiSuperCollector(collectors);
+        MatchAllDocsQuery Q = new MatchAllDocsQuery();
+        I.search(Q, null, C);
+
+        assertEquals(99, t.topDocs(0).totalHits);
+        assertEquals(10, t.topDocs(0).scoreDocs.length);
+        FacetResult tc = f.getTopChildren(10, "facet1");
+        
+        LabelAndValue[] expected = new LabelAndValue[] {
+                new LabelAndValue("value0", 10),
+                new LabelAndValue("value1", 10),
+                new LabelAndValue("value2", 10),
+                new LabelAndValue("value3", 10),
+                new LabelAndValue("value4", 10),
+                new LabelAndValue("value5", 10),
+                new LabelAndValue("value6", 10),
+                new LabelAndValue("value7", 10),
+                new LabelAndValue("value8", 10),
+                new LabelAndValue("value9", 9)
+        };
+        assertArrayEquals(expected, tc.labelValues);
+    }
+
+    @Test
+    public void testSearchTopField() throws Exception {
+        Lucene I = new Lucene(this.tmpDir, new LuceneSettings());
+        I.addDocument("id1", document("one", "aap noot mies"));
+        I.commit();
+        I.addDocument("id2", document("two", "aap vuur boom"));
+        I.commit();
+        I.addDocument("id3", document("three", "noot boom mies"));
+        I.commit();
+        I.close();
+        I = new Lucene(this.tmpDir, new LuceneSettings());
+        Sort sort = new Sort(new SortField("name", SortField.Type.STRING, true));
+        TopFieldSuperCollector C = new TopFieldSuperCollector(sort, 2, true, false, true);
+        MatchAllDocsQuery Q = new MatchAllDocsQuery();
+        I.search(Q, null, C);
+        TopDocs td = C.topDocs(0);
+        assertEquals(3, C.getTotalHits());
+        assertEquals(3, td.totalHits);
+        assertEquals(2, td.scoreDocs.length);
+        assertEquals("id2", I.getDocument(td.scoreDocs[0].doc).get("__id__"));
+        assertEquals("id3", I.getDocument(td.scoreDocs[1].doc).get("__id__"));
+    }
 
     private Document document(String name, String price) {
         Document doc = new Document();

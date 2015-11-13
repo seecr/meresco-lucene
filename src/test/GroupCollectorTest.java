@@ -1,6 +1,6 @@
 package test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -24,16 +24,19 @@ public class GroupCollectorTest extends SeecrTestCase {
     
     @Before
     public void setUp() throws Exception {
+        super.setUp();
         LuceneSettings settings = new LuceneSettings();
         settings.commitCount = 1;
         lucene = new Lucene(this.tmpDir, settings);
     }
     
     @After
-    public void tearDown() throws IOException {
+    public void tearDown() throws Exception {
         lucene.close();
+        super.tearDown();
     }
     
+    @Test
     public void test() throws Exception {
         addDocument("id:0", 42L);
         addDocument("id:1", 42L);

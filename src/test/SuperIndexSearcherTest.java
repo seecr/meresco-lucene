@@ -14,7 +14,9 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Version;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
 import org.meresco.lucene.search.SuperIndexSearcher;
 import org.meresco.lucene.test.DummyIndexReader;
@@ -28,6 +30,7 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
 
     @Before
     public void setUp() throws Exception {
+        super.setUp();
         this.executor = Executors.newFixedThreadPool(5);
         Directory indexDirectory = new SimpleFSDirectory(this.tmpDir);
         IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_4_10_4, new MerescoStandardAnalyzer());
@@ -36,6 +39,15 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
         this.sis = new SuperIndexSearcher(this.reader);
     }
     
+    @After
+    public void tearDown() throws Exception {
+        this.reader.close();
+        this.writer.close();
+        this.executor.shutdownNow();
+        super.tearDown();
+    }
+    
+    @Test
     public void testGroupLeaves() {
         List<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
         contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
@@ -45,6 +57,7 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
         assertEquals(1, firstContext.size());
     }
     
+    @Test
     public void testGroupLeaves1ForEach() {
         ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
         contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
@@ -60,6 +73,7 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
         }
     }
 
+    @Test
     public void testGroupLeaves1TooMuch() {
         ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
         contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
@@ -78,6 +92,7 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
         assertEquals(2, context.size());
     }
     
+    @Test
     public void testGroupLeavesAllDouble() {
         ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
         contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
@@ -101,6 +116,7 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
             
     }
     
+    @Test
     public void testFindSmallestSlice() {
         assertEquals(0, this.sis.find_smallest_slice_test(new int[] {0, 0, 0, 0, 0}));
         assertEquals(1, this.sis.find_smallest_slice_test(new int[] {1, 0, 0, 0, 0}));

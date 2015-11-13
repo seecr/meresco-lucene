@@ -1,8 +1,6 @@
 package test;
 
-import static org.junit.Assert.*;
-
-import java.io.IOException;
+import static org.junit.Assert.assertEquals;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -10,7 +8,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;

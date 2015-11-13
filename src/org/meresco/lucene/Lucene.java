@@ -3,10 +3,7 @@ package org.meresco.lucene;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -23,17 +20,14 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 import org.meresco.lucene.search.FacetSuperCollector;
-import org.meresco.lucene.search.GroupSuperCollector;
 import org.meresco.lucene.search.MultiSuperCollector;
 import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.TopDocSuperCollector;
@@ -45,7 +39,7 @@ public class Lucene {
     public static final String ID_FIELD = "__id__";
     private IndexWriter indexWriter;
     private DirectoryTaxonomyWriter taxoWriter;
-    private IndexAndTaxanomy indexAndTaxo;
+    public IndexAndTaxanomy indexAndTaxo;
     private FacetsConfig facetsConfig;
 
     public Lucene(File stateDir, LuceneSettings settings) throws IOException {
@@ -119,6 +113,11 @@ public class Lucene {
         return response;
     }
 
+
+    public void search(Query q, SuperCollector<?> c) throws Exception {
+        indexAndTaxo.searcher().search(q, null, c);
+    }
+    
     public Document getDocument(int docID) throws IOException {
         return indexAndTaxo.searcher().doc(docID);
     }
@@ -171,10 +170,6 @@ public class Lucene {
         public TopDocSuperCollector topCollector;
         public FacetSuperCollector facetCollector;
         public SuperCollector<?> root;
-    }
-
-    public void search(Query q, SuperCollector<?> c) throws Exception {
-        indexAndTaxo.searcher().search(q, null, c);
     }
 
 }

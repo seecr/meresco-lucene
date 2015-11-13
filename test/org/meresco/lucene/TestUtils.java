@@ -1,4 +1,4 @@
-package test;
+package org.meresco.lucene;
 
 import java.io.File;
 import java.io.IOException;

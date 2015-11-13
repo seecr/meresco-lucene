@@ -1,4 +1,4 @@
-package test;
+package org.meresco.lucene;
 
 import static org.junit.Assert.assertEquals;
 
@@ -44,7 +44,7 @@ public class GroupCollectorTest extends SeecrTestCase {
         addDocument("id:3", 17L);
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100, true);
         GroupSuperCollector c = new GroupSuperCollector("__isformatof__", tc);
-        lucene.search(new MatchAllDocsQuery(), c);
+        lucene.search(new MatchAllDocsQuery(), null, c);
         assertEquals(4, tc.getTotalHits());
         Map<String, Integer> idFields = new HashMap<String, Integer>();
         for (ScoreDoc scoreDoc : tc.topDocs(0).scoreDocs) {

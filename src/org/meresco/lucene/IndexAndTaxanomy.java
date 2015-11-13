@@ -13,7 +13,7 @@ import org.meresco.lucene.search.SuperIndexSearcher;
 public class IndexAndTaxanomy {
     private int numberOfConcurrentTasks;
     private DirectoryReader reader;
-    public DirectoryTaxonomyReader taxoReader;
+    DirectoryTaxonomyReader taxoReader;
     private ExecutorService executor = null;
     private SuperIndexSearcher searcher;
     private boolean reopenSearcher = true;

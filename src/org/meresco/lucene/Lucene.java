@@ -20,6 +20,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -37,10 +38,10 @@ import org.meresco.lucene.search.TopScoreDocSuperCollector;
 public class Lucene {
 
     public static final String ID_FIELD = "__id__";
-    private IndexWriter indexWriter;
-    private DirectoryTaxonomyWriter taxoWriter;
-    public IndexAndTaxanomy indexAndTaxo;
-    private FacetsConfig facetsConfig;
+    IndexWriter indexWriter;
+    DirectoryTaxonomyWriter taxoWriter;
+    IndexAndTaxanomy indexAndTaxo;
+    FacetsConfig facetsConfig;
 
     public Lucene(File stateDir, LuceneSettings settings) throws IOException {
         MMapDirectory indexDirectory = new MMapDirectory(new File(stateDir, "index"));
@@ -114,8 +115,8 @@ public class Lucene {
     }
 
 
-    public void search(Query q, SuperCollector<?> c) throws Exception {
-        indexAndTaxo.searcher().search(q, null, c);
+    public void search(Query q, Filter f, SuperCollector<?> c) throws Exception {
+        indexAndTaxo.searcher().search(q, f, c);
     }
     
     public Document getDocument(int docID) throws IOException {

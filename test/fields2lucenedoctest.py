@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -27,7 +28,6 @@ from seecr.test import IntegrationTestCase, CallTrace
 from meresco.lucene import Fields2LuceneDoc, DrilldownField
 from meresco.core import Transaction
 from weightless.core import consume
-from org.apache.lucene.facet import FacetField
 from meresco.lucene.fieldregistry import FieldRegistry
 
 class Fields2LuceneDocTest(IntegrationTestCase):
@@ -43,40 +43,46 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry())
         observer = CallTrace(returnValues={'numerateTerm': 1})
         fields2LuceneDoc.addObserver(observer)
-        document = fields2LuceneDoc._createDocument(fields)
-        self.assertEquals(set(['field1', 'field2', 'sorted.field3', 'untokenized.field4', '__key__.field5', '__numeric__.field6']), set([f.name() for f in document.getFields()]))
+        fields = fields2LuceneDoc._createFields(fields)
+        print fields
 
-        field1 = document.getField("field1")
-        self.assertEquals('value1', field1.stringValue())
-        self.assertTrue(field1.fieldType().indexed())
-        self.assertFalse(field1.fieldType().stored())
-        self.assertTrue(field1.fieldType().tokenized())
-
-        self.assertEquals(['value2', 'value2.1'], document.getValues('field2'))
-
-        field3 = document.getField("sorted.field3")
-        self.assertEquals('value3', field3.stringValue())
-        self.assertTrue(field3.fieldType().indexed())
-        self.assertFalse(field3.fieldType().stored())
-        self.assertFalse(field3.fieldType().tokenized())
-
-        field4 = document.getField("untokenized.field4")
-        self.assertEquals('value4', field4.stringValue())
-        self.assertTrue(field4.fieldType().indexed())
-        self.assertFalse(field4.fieldType().stored())
-        self.assertFalse(field4.fieldType().tokenized())
-
-        field5 = document.getField("__key__.field5")
-        self.assertEquals(1, field5.numericValue().longValue())
-        self.assertFalse(field5.fieldType().indexed())
-        self.assertFalse(field5.fieldType().stored())
-        self.assertTrue(field5.fieldType().tokenized())
-
-        field6 = document.getField("__numeric__.field6")
-        self.assertEquals(12345, field6.numericValue().longValue())
-        self.assertFalse(field6.fieldType().indexed())
-        self.assertFalse(field6.fieldType().stored())
-        self.assertTrue(field6.fieldType().tokenized())
+        self.assertEqual([
+                {
+                    "name": "field2",
+                    "type": "TextField",
+                    "value": "value2"
+                },
+                {
+                    "name": "field2",
+                    "type": "TextField",
+                    "value": "value2.1"
+                },
+                {
+                    "name": "__key__.field5",
+                    "type": "NumericField",
+                    "value": 1
+                },
+                {
+                    "name": "field1",
+                    "type": "TextField",
+                    "value": "value1"
+                },
+                {
+                    "name": "sorted.field3",
+                    "type": "StringField",
+                    "value": "value3"
+                },
+                {
+                    "name": "__numeric__.field6",
+                    "type": "NumericField",
+                    "value": "12345"
+                },
+                {
+                    "name": "untokenized.field4",
+                    "type": "StringField",
+                    "value": "value4"
+                }
+            ], fields)
 
     def testCreateFacet(self):
         fields = {
@@ -106,11 +112,12 @@ class Fields2LuceneDocTest(IntegrationTestCase):
 
         consume(fields2LuceneDoc.commit('unused'))
 
-        document = observer.calledMethods[0].kwargs['document']
-        searchFields = [f for f in document.getFields() if not FacetField.instance_(f)]
-        self.assertEquals(['field1', 'sorted.field3', 'untokenized.field7'], [f.name() for f in searchFields])
+        fields = observer.calledMethods[0].kwargs['fields']
 
-        facetsFields = [FacetField.cast_(f) for f in document.getFields() if FacetField.instance_(f)]
+        searchFields = [f for f in fields if not "path" in f]
+        self.assertEquals(['field1', 'sorted.field3', 'untokenized.field7'], [f['name'] for f in searchFields])
+
+        facetsFields = [f for f in fields if "path" in f]
         self.assertEquals(6, len(facetsFields))
         self.assertEquals([
                 ('untokenized.field8', ['grandparent', 'parent', 'child']),
@@ -119,7 +126,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                 ('untokenized.field4', ['value4']),
                 ('untokenized.field5', ['value5']),
                 ('untokenized.field5', ['value6']),
-            ], [(f.dim, list(f.path)) for f in facetsFields])  # Note: a FacetField doesn't have a name
+            ], [(f['name'], f['path']) for f in facetsFields])
 
     def testAddFacetField(self):
         fields2LuceneDoc = Fields2LuceneDoc('tsname',
@@ -134,8 +141,8 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc.addField('field', 'value')
         fields2LuceneDoc.addFacetField('untokenized.field', 'untokenized value')
         consume(fields2LuceneDoc.commit('unused'))
-        document = observer.calledMethods[0].kwargs['document']
-        facetsFields = [FacetField.cast_(f) for f in document.getFields() if FacetField.instance_(f)]
+        fields = observer.calledMethods[0].kwargs['fields']
+        facetsFields = [f for f in fields if "path" in f]
         self.assertEquals(1, len(facetsFields))
 
     def testAddDocument(self):
@@ -177,6 +184,6 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc.addField('field2', 'value2')
         consume(fields2LuceneDoc.commit('unused'))
         self.assertEquals(['addDocument'], observer.calledMethodNames())
-        doc = observer.calledMethods[0].kwargs['document']
-        self.assertEquals(set(['field1', 'field2', 'keys']), set([f.name() for f in doc.getFields()]))
-        self.assertEquals(['field1', 'field2'], [f.stringValue() for f in doc.getFields('keys')])
+        fields = observer.calledMethods[0].kwargs['fields']
+        self.assertEquals(set(['field1', 'field2', 'keys']), set([f['name'] for f in fields]))
+        self.assertEquals(['field1', 'field2'], [f['value'] for f in fields if f['name'] == 'keys'])

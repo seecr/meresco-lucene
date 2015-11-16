@@ -56,33 +56,33 @@ class Fields2LuceneDoc(Observable):
 
     def commit(self, id):
         tx = self.ctx.tx
-        fields = tx.objectScope(self).get('fields', {})
+        fieldValues = tx.objectScope(self).get('fields', {})
         facet_fields = tx.objectScope(self).get('facet_fields', {})
-        if not (fields or facet_fields):
+        if not (fieldValues or facet_fields):
             return
         identifier = self._identifierRewrite(tx.locals['id'])
-        fields = self._rewriteFields(fields)
+        fieldValues = self._rewriteFields(fieldValues)
         yield self.all.addDocument(
                 identifier=identifier,
-                document=self._createDocument(fields, facet_fields),
+                fields=self._createFields(fieldValues, facet_fields),
             )
 
-    def _createDocument(self, fields, facet_fields=None):
+    def _createFields(self, fieldValues, facet_fields=None):
         facet_fields = facet_fields or {}
-        doc = Document()
-        for field, values in (fields.items() + facet_fields.items()):
+        fields = []
+        for field, values in (fieldValues.items() + facet_fields.items()):
             if self._fieldRegistry.isDrilldownField(field):
                 for value in values:
                     if hasattr(value, 'extend'):
                         path = [str(category) for category in value]
                     else:
                         path = [str(value)]
-                    doc.add(self._fieldRegistry.createFacetField(field, path))
+                    fields.append(self._fieldRegistry.createFacetField(field, path))
             else:
                 for value in values:
                     if field == IDFIELD:
                         raise ValueError("Field '%s' is protected and created by Meresco Lucene" % IDFIELD)
                     if field.startswith(KEY_PREFIX):
                         value = self.call.numerateTerm(value)
-                    doc.add(self._fieldRegistry.createField(field, value))
-        return doc
+                    fields.append(self._fieldRegistry.createField(field, value))
+        return fields

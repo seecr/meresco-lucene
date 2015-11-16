@@ -45,9 +45,8 @@ public class Lucene {
     IndexAndTaxanomy indexAndTaxo;
     FacetsConfig facetsConfig;
     private LuceneSettings settings;
-    private int commitCount;
-    private Timer commitTimer = new Timer();
-    private TimerTask timerTask;
+    private int commitCount = 0;
+    private Timer commitTimer;
 
     public Lucene(File stateDir, LuceneSettings settings) throws IOException {
         this.settings = settings;
@@ -97,8 +96,8 @@ public class Lucene {
             realCommit();
             return;
         }
-        if (timerTask == null) {
-            timerTask = new TimerTask() {
+        if (commitTimer == null) {
+            TimerTask timerTask = new TimerTask() {
                 public void run() {
                     try {
                         realCommit();
@@ -107,15 +106,18 @@ public class Lucene {
                     }
                 }
             };
+            commitTimer = new Timer();
             commitTimer.schedule(timerTask, settings.commitTimeout * 1000);
         }
     }
     
     public void realCommit() throws IOException {
         commitCount = 0;
-        timerTask = null;
-        commitTimer.cancel();
-        commitTimer.purge();
+        if (commitTimer != null) {
+            commitTimer.cancel();
+            commitTimer.purge();
+            commitTimer = null;
+        }
         indexWriter.commit();
         taxoWriter.commit();
         indexAndTaxo.reopen();

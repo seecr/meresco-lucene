@@ -146,4 +146,20 @@ public class LuceneTest extends SeecrTestCase {
         Thread.sleep(550);
         assertEquals(1, lucene.executeQuery(new MatchAllDocsQuery()).total);
     }
+    
+    @Test
+    public void testCommitTimerAndCount() throws Exception {
+        lucene.close();
+        LuceneSettings settings = new LuceneSettings();
+        settings.commitTimeout = 1;
+        settings.commitCount = 2;
+        lucene = new Lucene(this.tmpDir, settings);
+        lucene.addDocument("id1", new Document());
+        lucene.addDocument("id2", new Document());
+        assertEquals(2, lucene.executeQuery(new MatchAllDocsQuery()).total);
+        lucene.addDocument("id3", new Document());
+        Thread.sleep(1050);
+        assertEquals(3, lucene.executeQuery(new MatchAllDocsQuery()).total);
+        
+    }
 }

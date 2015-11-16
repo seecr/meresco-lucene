@@ -12,6 +12,7 @@ import javax.json.JsonValue;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -82,16 +83,35 @@ public class QueryStringToQuery {
     }
 
     public Query convertToQuery(JsonObject query) {
+        Query q;
         switch(query.getString("type")) {
             case "MatchAllDocsQuery":
-                return new MatchAllDocsQuery();
+                q = new MatchAllDocsQuery();
+                break;
             case "TermQuery":
-                return createTermQuery(query);
+                q = new TermQuery(createTerm(query.getJsonObject("term")));
+                break;
             case "BooleanQuery":
-                return createBooleanQuery(query);
+                q = createBooleanQuery(query);
+                break;
+            case "PhraseQuery":
+                q = createPhraseQuery(query);
+                break;
             default:
                 return null;
         }
+        if (query.get("boost") != null) 
+            q.setBoost(query.getJsonNumber("boost").longValue());
+        return q;
+    }
+
+    private Query createPhraseQuery(JsonObject query) {
+        PhraseQuery q = new PhraseQuery();
+        JsonArray clauses = query.getJsonArray("clauses");
+        for (int i = 0; i < clauses.size(); i++) {
+            q.add(createTerm(clauses.getJsonObject(i)));
+        }
+        return q;
     }
 
     private Query createBooleanQuery(JsonObject query) {
@@ -116,12 +136,8 @@ public class QueryStringToQuery {
         return null;
     }
 
-    private Query createTermQuery(JsonObject object) {
-        JsonObject term = object.getJsonObject("term");
-        TermQuery q = new TermQuery(new Term(term.getString("field"), term.getString("value")));
-        if (object.get("boost") != null) 
-            q.setBoost(object.getJsonNumber("boost").longValue());
-        return q;
+    private Term createTerm(JsonObject term) {
+        return new Term(term.getString("field"), term.getString("value"));
     }
     
     public static class FacetRequest {

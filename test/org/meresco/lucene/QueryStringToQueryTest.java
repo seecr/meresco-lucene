@@ -60,7 +60,7 @@ public class QueryStringToQueryTest {
     }
     
     @Test
-    public void testBooleanQuery() {
+    public void testBooleanShouldQuery() {
         JsonObject json = Json.createObjectBuilder()
                 .add("query", Json.createObjectBuilder()
                     .add("type", "BooleanQuery")
@@ -90,7 +90,38 @@ public class QueryStringToQueryTest {
         query.add(oQuery, Occur.SHOULD);
         assertEquals(query, q.query);
     }
-    
+   
+    @Test
+    public void testBooleanMustQuery() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "BooleanQuery")
+                    .add("clauses", Json.createArrayBuilder()
+                            .add(Json.createObjectBuilder()
+                                .add("type", "TermQuery")
+                                .add("boost", 1.0)
+                                .add("occur", "MUST")
+                                .add("term", Json.createObjectBuilder()
+                                    .add("field", "aField")
+                                    .add("value", "value")))
+                            .add(Json.createObjectBuilder()
+                                .add("type", "TermQuery")
+                                .add("boost", 2.0)
+                                .add("occur", "MUST_NOT")
+                                .add("term", Json.createObjectBuilder()
+                                    .add("field", "oField")
+                                    .add("value", "value")))))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        TermQuery aQuery = new TermQuery(new Term("aField", "value"));
+        aQuery.setBoost(1.0f);
+        TermQuery oQuery = new TermQuery(new Term("oField", "value"));
+        oQuery.setBoost(2.0f);
+        BooleanQuery query = new BooleanQuery();
+        query.add(aQuery, Occur.MUST);
+        query.add(oQuery, Occur.MUST_NOT);
+        assertEquals(query, q.query);
+    }
     
     @Test
     public void testFacets() {

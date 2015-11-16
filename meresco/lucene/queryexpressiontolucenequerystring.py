@@ -95,12 +95,14 @@ class QueryExpressionToLuceneQueryString(Observable):
             return query
 
     def _nestedExpression(self, expr):
-        q = BooleanQuery()
+        q = dict(type="BooleanQuery", clauses=[])
         for operand in expr.operands:
             occur = OCCUR[expr.operator]
             if operand.must_not:
                 occur = OCCUR['NOT']
-            q.add(self._expression(operand), occur)
+            query = self._expression(operand)
+            query['occur'] = occur
+            q['clauses'].append(query)
         return q
 
 
@@ -120,9 +122,9 @@ class QueryExpressionToLuceneQueryString(Observable):
         else:
             if '???*' == termString:
                 return WildcardQuery(self._createStringTerm(index, termString))
-            query = PhraseQuery()
+            query = dict(type="PhraseQuery", terms=[])
             for term in terms:
-                query.add(self._createStringTerm(index, term))
+                query['terms'].append(self._createStringTerm(index, term))
             return query
 
     def _termRangeQuery(self, index, relation, termString):

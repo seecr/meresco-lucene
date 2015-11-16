@@ -72,62 +72,114 @@ class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
                 ]
             }, QueryExpression.searchterm(term="value"))
 
-    # def testBooleanAndQuery(self):
-    #     expr = QueryExpression.nested(operator='AND')
-    #     expr.operands=[
-    #             QueryExpression.searchterm("field1", "=", "value1"),
-    #             QueryExpression.searchterm("field2", "=", "value2")
-    #         ]
-    #     expected = BooleanQuery()
-    #     expected.add(TermQuery(Term("field1", "value1")), BooleanClause.Occur.MUST)
-    #     expected.add(TermQuery(Term("field2", "value2")), BooleanClause.Occur.MUST)
-    #     self.assertConversion(expected, expr)
+    def testBooleanAndQuery(self):
+        expr = QueryExpression.nested(operator='AND')
+        expr.operands=[
+                QueryExpression.searchterm("field1", "=", "value1"),
+                QueryExpression.searchterm("field2", "=", "value2")
+            ]
+        self.assertConversion({
+                "type": "BooleanQuery",
+                "clauses": [
+                    {
+                        "type": "TermQuery",
+                        "term": {"field": "field1", "value": "value1"},
+                        "occur": "MUST"
+                    }, {
+                        "type": "TermQuery",
+                        "term": {"field": "field2", "value": "value2"},
+                        "occur": "MUST"
+                    }
+                ]
+            }, expr)
 
-    # def testBooleanOrQuery(self):
-    #     expr = QueryExpression.nested(operator='OR')
-    #     expr.operands=[
-    #             QueryExpression.searchterm("field1", "=", "value1"),
-    #             QueryExpression.searchterm("field2", "=", "value2")
-    #         ]
-    #     expected = BooleanQuery()
-    #     expected.add(TermQuery(Term("field1", "value1")), BooleanClause.Occur.SHOULD)
-    #     expected.add(TermQuery(Term("field2", "value2")), BooleanClause.Occur.SHOULD)
-    #     self.assertConversion(expected, expr)
+    def testBooleanOrQuery(self):
+        expr = QueryExpression.nested(operator='OR')
+        expr.operands=[
+                QueryExpression.searchterm("field1", "=", "value1"),
+                QueryExpression.searchterm("field2", "=", "value2")
+            ]
+        self.assertConversion({
+                "type": "BooleanQuery",
+                "clauses": [
+                    {
+                        "type": "TermQuery",
+                        "term": {"field": "field1", "value": "value1"},
+                        "occur": "SHOULD"
+                    }, {
+                        "type": "TermQuery",
+                        "term": {"field": "field2", "value": "value2"},
+                        "occur": "SHOULD"
+                    }
+                ]
+            }, expr)
 
-    # def testBooleanNotQuery(self):
-    #     expr = QueryExpression.nested(operator='AND')
-    #     expr.operands=[
-    #             QueryExpression.searchterm("field1", "=", "value1"),
-    #             QueryExpression.searchterm("field2", "=", "value2")
-    #         ]
-    #     expr.operands[1].must_not = True
-    #     expected = BooleanQuery()
-    #     expected.add(TermQuery(Term("field1", "value1")), BooleanClause.Occur.MUST)
-    #     expected.add(TermQuery(Term("field2", "value2")), BooleanClause.Occur.MUST_NOT)
-    #     self.assertConversion(expected, expr)
+    def testBooleanNotQuery(self):
+        expr = QueryExpression.nested(operator='AND')
+        expr.operands=[
+                QueryExpression.searchterm("field1", "=", "value1"),
+                QueryExpression.searchterm("field2", "=", "value2")
+            ]
+        expr.operands[1].must_not = True
+        self.assertConversion({
+                "type": "BooleanQuery",
+                "clauses": [
+                    {
+                        "type": "TermQuery",
+                        "term": {"field": "field1", "value": "value1"},
+                        "occur": "MUST"
+                    }, {
+                        "type": "TermQuery",
+                        "term": {"field": "field2", "value": "value2"},
+                        "occur": "MUST_NOT"
+                    }
+                ]
+            }, expr)
 
-    # def testBooleanNotQueryNexted(self):
-    #     expr = QueryExpression.nested(operator='AND')
-    #     nestedNotExpr = QueryExpression.nested(operator='AND')
-    #     nestedNotExpr.must_not = True
-    #     nestedNotExpr.operands = [
-    #         QueryExpression.searchterm("field2", "=", "value2"),
-    #         QueryExpression.searchterm("field3", "=", "value3")
-    #     ]
-    #     expr.operands = [QueryExpression.searchterm("field1", "=", "value1"), nestedNotExpr]
-    #     expected = BooleanQuery()
-    #     expected.add(TermQuery(Term("field1", "value1")), BooleanClause.Occur.MUST)
-    #     nested = BooleanQuery()
-    #     nested.add(TermQuery(Term("field2", "value2")), BooleanClause.Occur.MUST)
-    #     nested.add(TermQuery(Term("field3", "value3")), BooleanClause.Occur.MUST)
-    #     expected.add(nested, BooleanClause.Occur.MUST_NOT)
-    #     self.assertConversion(expected, expr)
+    def testBooleanNotQueryNested(self):
+        expr = QueryExpression.nested(operator='AND')
+        nestedNotExpr = QueryExpression.nested(operator='AND')
+        nestedNotExpr.must_not = True
+        nestedNotExpr.operands = [
+            QueryExpression.searchterm("field2", "=", "value2"),
+            QueryExpression.searchterm("field3", "=", "value3")
+        ]
+        expr.operands = [QueryExpression.searchterm("field1", "=", "value1"), nestedNotExpr]
+        self.assertConversion({
+                "type": "BooleanQuery",
+                "clauses": [
+                    {
+                        "type": "TermQuery",
+                        "term": {"field": "field1", "value": "value1"},
+                        "occur": "MUST"
+                    }, {
+                        "type": "BooleanQuery",
+                        "occur": "MUST_NOT",
+                        "clauses": [
+                            {
+                                "type": "TermQuery",
+                                "term": {"field": "field2", "value": "value2"},
+                                "occur": "MUST"
+                            },
+                            {
+                                "type": "TermQuery",
+                                "term": {"field": "field3", "value": "value3"},
+                                "occur": "MUST"
+                            }
+                        ]
+                    }
+                ]
+            }, expr)
 
-    # def testPhraseOutput(self):
-    #     query = PhraseQuery()
-    #     query.add(Term("unqualified", "cats"))
-    #     query.add(Term("unqualified", "dogs"))
-    #     self.assertConversion(query, QueryExpression.searchterm(term='"cats dogs"'))
+    def testPhraseOutput(self):
+        self.assertConversion({
+                "type": "PhraseQuery",
+                "boost": 1.0,
+                "terms": [
+                    {"field": "unqualified", "value": "cats"},
+                    {"field": "unqualified", "value": "dogs"}
+                ]
+            }, QueryExpression.searchterm(term='"cats dogs"'))
 
     # def testWhitespaceAnalyzer(self):
     #     self._analyzer = WhitespaceAnalyzer()

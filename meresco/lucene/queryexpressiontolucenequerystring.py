@@ -71,13 +71,14 @@ class QueryExpressionToLuceneQueryString(Observable):
                 query = self._determineQuery(index, expr.term)
                 if isinstance(query, PhraseQuery) and not self._fieldRegistry.phraseQueryPossible(index):
                     continue
-                query.setBoost(boost)
+                query['boost'] = boost
                 queries.append(query)
             if len(queries) == 1:
                 return queries[0]
-            q = BooleanQuery()
+            q = dict(type="BooleanQuery", clauses=[])
             for query in queries:
-                q.add(query, OCCUR['OR'])
+                query['occur'] = OCCUR['OR']
+                q['clauses'].append(query)
             return q
         else:
             if expr.relation in ['==', 'exact'] or \
@@ -90,7 +91,7 @@ class QueryExpressionToLuceneQueryString(Observable):
             else:
                 raise UnsupportedCQL("'%s' not supported for the field '%s'" % (expr.relation, expr.index))
             if expr.relation_boost:
-                query.setBoost(expr.relation_boost)
+                query['boost'] = expr.relation_boost
             return query
 
     def _nestedExpression(self, expr):
@@ -168,7 +169,7 @@ class QueryExpressionToLuceneQueryString(Observable):
 prefixRegexp = compile(r'^([\w-]{2,})\*$') # pr*, prefix* ....
 
 OCCUR = {
-    'AND': BooleanClause.Occur.MUST,
-    'OR': BooleanClause.Occur.SHOULD,
-    'NOT': BooleanClause.Occur.MUST_NOT
+    'AND': "MUST",
+    'OR': "SHOULD",
+    'NOT': "MUST_NOT"
 }

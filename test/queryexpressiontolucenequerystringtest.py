@@ -49,20 +49,28 @@ class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
     def testMatchAllQuery(self):
         self.assertConversion({"type": "MatchAllDocsQuery"}, QueryExpression.searchterm(term="*"))
 
-    # def testUnqualifiedTermFields(self):
-    #     self.unqualifiedFields = [('aField', 1.0)]
-    #     self.assertConversion(TermQuery(Term("aField", "value")), QueryExpression.searchterm(term="value"))
+    def testUnqualifiedTermFields(self):
+        self.unqualifiedFields = [('aField', 1.0)]
+        self.assertConversion({"type": "TermQuery", "term": {"field": "aField", "value": "value"}, 'boost': 1.0}, QueryExpression.searchterm(term="value"))
 
-    # def testMultipleUnqualifiedTermFields(self):
-    #     self.unqualifiedFields = [('aField', 1.0), ('oField', 2.0)]
-    #     expected = BooleanQuery()
-    #     q1 = TermQuery(Term("aField", "value"))
-    #     q1.setBoost(1.0)
-    #     expected.add(q1, BooleanClause.Occur.SHOULD)
-    #     q2 = TermQuery(Term("oField", "value"))
-    #     q2.setBoost(2.0)
-    #     expected.add(q2, BooleanClause.Occur.SHOULD)
-    #     self.assertConversion(expected, QueryExpression.searchterm(term="value"))
+    def testMultipleUnqualifiedTermFields(self):
+        self.unqualifiedFields = [('aField', 1.0), ('oField', 2.0)]
+        self.assertConversion({
+                "type": "BooleanQuery",
+                "clauses": [
+                    {
+                        "type": "TermQuery",
+                        "term": {"field": "aField", "value": "value"},
+                        "boost": 1.0,
+                        "occur": "SHOULD"
+                    }, {
+                        "type": "TermQuery",
+                        "term": {"field": "oField", "value": "value"},
+                        "boost": 2.0,
+                        "occur": "SHOULD"
+                    }
+                ]
+            }, QueryExpression.searchterm(term="value"))
 
     # def testBooleanAndQuery(self):
     #     expr = QueryExpression.nested(operator='AND')

@@ -30,8 +30,7 @@ from cqlparser import UnsupportedCQL
 from weightless.core import Observable
 
 from java.io import StringReader
-from org.apache.lucene.index import Term
-from org.apache.lucene.search import TermQuery, BooleanQuery, BooleanClause, MatchAllDocsQuery, WildcardQuery, PhraseQuery, PrefixQuery
+from org.apache.lucene.search import BooleanQuery, BooleanClause, WildcardQuery, PhraseQuery, PrefixQuery
 from org.meresco.lucene.analysis import MerescoStandardAnalyzer
 from meresco.components.json import JsonDict
 

@@ -32,7 +32,7 @@ from weightless.core import consume
 
 from seecr.test import SeecrTestCase, CallTrace
 
-from meresco.lucene.fieldregistry2 import FieldRegistry2
+from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene import FieldsListToLuceneDocument, DrilldownField
 
 
@@ -48,7 +48,7 @@ class FieldsListToLuceneDocumentTest(SeecrTestCase):
                 yield
         fieldFactory = Factory
 
-        fieldRegistry = FieldRegistry2(drilldownFields=[DrilldownField('drilldown.field')])
+        fieldRegistry = FieldRegistry(drilldownFields=[DrilldownField('drilldown.field')])
         index = FieldsListToLuceneDocument(fieldRegistry, untokenizedFieldnames=[], indexFieldFactory=fieldFactory)
         observer = CallTrace(emptyGeneratorMethods=['addDocument'])
         index.addObserver(observer)

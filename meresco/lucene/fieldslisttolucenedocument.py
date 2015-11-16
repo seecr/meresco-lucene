@@ -30,9 +30,6 @@
 from weightless.core import compose
 from meresco.core import Observable
 
-from org.apache.lucene.document import Document
-from org.apache.lucene.facet import FacetField
-
 
 class FieldsListToLuceneDocument(Observable):
     def __init__(self, fieldRegistry, untokenizedFieldnames, indexFieldFactory, rewriteIdentifier=None, **kwargs):

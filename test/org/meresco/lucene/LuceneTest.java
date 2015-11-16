@@ -1,10 +1,11 @@
 package org.meresco.lucene;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -17,9 +18,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Before;
 import org.junit.Test;
-import org.meresco.lucene.Lucene;
-import org.meresco.lucene.LuceneResponse;
-import org.meresco.lucene.LuceneSettings;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 
 public class LuceneTest extends SeecrTestCase {
@@ -101,6 +99,27 @@ public class LuceneTest extends SeecrTestCase {
         result = lucene.executeQuery(new MatchAllDocsQuery(), facets);
         assertEquals(3, result.total);
         assertEquals(1, result.drilldownData.size());
+        assertEquals("facet-field2", result.drilldownData.get(0).fieldname);
+        assertEquals(3, result.drilldownData.get(0).terms.size());
+        String[] ddTerms = result.drilldownData.get(0).terms.keySet().toArray(new String[0]);
+        Arrays.sort(ddTerms);
+        assertArrayEquals(new String[] { "first item0", "first item1", "first item2" }, ddTerms);
+        assertEquals(1, result.drilldownData.get(0).terms.get("first item0").intValue());
+        assertEquals(1, result.drilldownData.get(0).terms.get("first item1").intValue());
+        assertEquals(1, result.drilldownData.get(0).terms.get("first item2").intValue());
+        
+        facets = new ArrayList<FacetRequest>();
+        facets.add(new FacetRequest("facet-field3", 10));
+        result = lucene.executeQuery(new MatchAllDocsQuery(), facets);
+        assertEquals(3, result.total);
+        assertEquals(1, result.drilldownData.size());
+        assertEquals("facet-field3", result.drilldownData.get(0).fieldname);
+        assertEquals(2, result.drilldownData.get(0).terms.size());
+        ddTerms = result.drilldownData.get(0).terms.keySet().toArray(new String[0]);
+        Arrays.sort(ddTerms);
+        assertArrayEquals(new String[] { "other value", "second item" }, ddTerms);
+        assertEquals(2, result.drilldownData.get(0).terms.get("second item").intValue());
+        assertEquals(1, result.drilldownData.get(0).terms.get("other value").intValue());
     }
     
     @Test
@@ -160,6 +179,36 @@ public class LuceneTest extends SeecrTestCase {
         lucene.addDocument("id3", new Document());
         Thread.sleep(1050);
         assertEquals(3, lucene.executeQuery(new MatchAllDocsQuery()).total);
+    }
+    
+    @Test
+    public void testStartStop() throws Exception {
+        Document doc1 = new Document();
+        doc1.add(new StringField("field1", "AA", Store.NO));
+        lucene.addDocument("id1", doc1);
         
+        Document doc2 = new Document();
+        doc2.add(new StringField("field1", "BB", Store.NO));
+        lucene.addDocument("id2", doc2);
+        
+        Document doc3 = new Document();
+        doc3.add(new StringField("field1", "CC", Store.NO));
+        lucene.addDocument("id3", doc3);
+        
+        LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery());
+        assertEquals(3, result.total);
+        assertEquals(3, result.hits.size());
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 1, 10, null, null);
+        assertEquals(3, result.total);
+        assertEquals(2, result.hits.size());
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 2, null, null);
+        assertEquals(3, result.total);
+        assertEquals(2, result.hits.size());
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 2, 2, null, null);
+        assertEquals(3, result.total);
+        assertEquals(0, result.hits.size());
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 1, 2, null, null);
+        assertEquals(3, result.total);
+        assertEquals(1, result.hits.size());
     }
 }

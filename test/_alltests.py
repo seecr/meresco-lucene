@@ -39,19 +39,17 @@ from conversiontest import ConversionTest
 from converttocomposedquerytest import ConvertToComposedQueryTest
 from extractfilterqueriestest import ExtractFilterQueriesTest
 from fieldregistrytest import FieldRegistryTest
-from fieldregistry2test import FieldRegistry2Test
 from fields2lucenedoctest import Fields2LuceneDocTest
 from fieldslisttolucenedocumenttest import FieldsListToLuceneDocumentTest
-from generalizedjaccarddistancetest import GeneralizedJaccardDistanceTest
 from lrucachetest import LruCacheTest
 from lucenekeyvaluestoretest import LuceneKeyValueStoreTest
 from lucenequerycomposertest import LuceneQueryComposerTest
 from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
 from lucenesettingstest import LuceneSettingsTest
-# from lucenetest import LuceneTest
+from lucenetest import LuceneTest
 from adaptertolucenequerytest import AdapterToLuceneQueryTest
-# from multilucenetest import MultiLuceneTest
+from multilucenetest import MultiLuceneTest
 from pageranktest import PageRankTest
 from queryexpressiontolucenequerystringtest import QueryExpressionToLuceneQueryStringTest
 from suggestionindexcomponenttest import SuggestionIndexComponentTest

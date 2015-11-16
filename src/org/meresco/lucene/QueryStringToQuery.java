@@ -51,9 +51,22 @@ public class QueryStringToQuery {
                 field = new SortField(null, SortField.Type.SCORE, !sortDescending);
             else
                 field = new SortField(sortBy, typeForSortField(sortKey.getString("type")), !sortDescending);
+            Object missingValue = missingSortValue(sortKey.getString("missingValue", null));
+            if (missingValue != null)
+                field.setMissingValue(missingValue);
             sortFields[i] = field;
         }
         return new Sort(sortFields);
+    }
+
+    private Object missingSortValue(String missingValue) {
+        if (missingValue == null)
+            return null;
+        if (missingValue.equals("STRING_FIRST")) 
+            return SortField.STRING_FIRST;
+        else if (missingValue.equals("STRING_LAST"))
+            return SortField.STRING_LAST;
+        return null;
     }
 
     private SortField.Type typeForSortField(String type) {

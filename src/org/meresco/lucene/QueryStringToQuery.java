@@ -7,13 +7,18 @@ import java.util.List;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
+
+import com.sun.org.apache.xpath.internal.operations.Bool;
 
 public class QueryStringToQuery {
     
@@ -81,14 +86,42 @@ public class QueryStringToQuery {
             case "MatchAllDocsQuery":
                 return new MatchAllDocsQuery();
             case "TermQuery":
-                return createTermQuery(query.getJsonObject("term"));
+                return createTermQuery(query);
+            case "BooleanQuery":
+                return createBooleanQuery(query);
             default:
                 return null;
         }
     }
 
+    private Query createBooleanQuery(JsonObject query) {
+        BooleanQuery q = new BooleanQuery();
+        JsonArray clauses = query.getJsonArray("clauses");
+        for (int i = 0; i < clauses.size(); i++) {
+            JsonObject termQ = clauses.getJsonObject(i);
+            q.add(convertToQuery(termQ), occurForString(termQ.getString("occur")));
+        }
+        return q;
+    }
+    
+    private Occur occurForString(String occur) {
+        switch (occur) {
+            case "SHOULD":
+                return Occur.SHOULD;
+            case "MUST":
+                return Occur.MUST;
+            case "MUST_NOT":
+                return Occur.MUST_NOT;
+        }
+        return null;
+    }
+
     private Query createTermQuery(JsonObject object) {
-        return new TermQuery(new Term(object.getString("field"), object.getString("value")));
+        JsonObject term = object.getJsonObject("term");
+        TermQuery q = new TermQuery(new Term(term.getString("field"), term.getString("value")));
+        if (object.get("boost") != null) 
+            q.setBoost(object.getJsonNumber("boost").longValue());
+        return q;
     }
     
     public static class FacetRequest {

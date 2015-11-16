@@ -27,9 +27,6 @@
 
 from warnings import warn
 
-from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery, SortField
-from org.apache.lucene.facet import FacetsConfig, DrillDownQuery
-
 
 IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
@@ -49,7 +46,6 @@ class FieldRegistry(object):
         self._hierarchicalDrilldownFieldNames = set()
         self._multivaluedDrilldownFieldNames = set()
         self._termVectorFieldNames = set(termVectorFields or [])
-        self.facetsConfig = FacetsConfig()
         for field in (drilldownFields or []):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued, indexFieldName=field.indexFieldName)
         self._isDrilldownFieldFunction = lambda name: False
@@ -85,10 +81,10 @@ class FieldRegistry(object):
             self._hierarchicalDrilldownFieldNames.add(fieldname)
         if multiValued:
             self._multivaluedDrilldownFieldNames.add(fieldname)
-        self.facetsConfig.setMultiValued(fieldname, multiValued)
-        self.facetsConfig.setHierarchical(fieldname, hierarchical)
-        if indexFieldName is not None:
-            self.facetsConfig.setIndexFieldName(fieldname, indexFieldName)
+        # self.facetsConfig.setMultiValued(fieldname, multiValued)
+        # self.facetsConfig.setHierarchical(fieldname, hierarchical)
+        # if indexFieldName is not None:
+            # self.facetsConfig.setIndexFieldName(fieldname, indexFieldName)
         self._indexFieldNames[fieldname] = indexFieldName
 
     def indexFieldNames(self, fieldnames=None):
@@ -125,33 +121,33 @@ class FieldRegistry(object):
 
     def rangeQueryAndType(self, fieldname):
         if not self.isNumeric(fieldname):
-            return TermRangeQuery.newStringRange, str
+            return "String", str
         definition = self._getFieldDefinition(fieldname)
-        query = NumericRangeQuery.newLongRange
+        query = "Long"
         pythonType = definition.pythonType
         if pythonType == int:
-            query = NumericRangeQuery.newIntRange
+            query = "Int"
         elif pythonType == float:
-            query = NumericRangeQuery.newDoubleRange
+            query = "Double"
         elif pythonType == long:
-            query = NumericRangeQuery.newLongRange
+            query = "Long"
         return query, definition.pythonType
 
     def sortFieldType(self, fieldname):
         if not self.isNumeric(fieldname):
-            return SortField.Type.STRING
+            return "String"
         definition = self._getFieldDefinition(fieldname)
         pythonType = definition.pythonType
         if pythonType == int:
-            return SortField.Type.INT
+            return "Int"
         elif pythonType == float:
-            return SortField.Type.DOUBLE
+            return "Double"
         elif pythonType == long:
-            return SortField.Type.LONG
+            return "Long"
 
     def defaultMissingValueForSort(self, fieldname, sortDescending):
         if not self.isNumeric(fieldname):
-            return SortField.STRING_FIRST if sortDescending else SortField.STRING_LAST
+            return "STRING_FIRST" if sortDescending else "STRING_LAST"
         return None
 
     def _getFieldDefinition(self, fieldname):

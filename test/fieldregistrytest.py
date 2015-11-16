@@ -26,7 +26,7 @@
 
 from seecr.test import SeecrTestCase
 from meresco.lucene.fieldregistry import FieldRegistry, STRINGFIELD_STORED, NO_TERMS_FREQUENCY_FIELD, STRINGFIELD, TEXTFIELD, LONGFIELD, INTFIELD
-from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery, SortField
+# from org.apache.lucene.search import NumericRangeQuery, TermRangeQuery, SortField
 from meresco.lucene import DrilldownField
 import warnings
 
@@ -105,13 +105,14 @@ class FieldRegistryTest(SeecrTestCase):
                 "path": ["value"]
             }, field)
 
-        facetsConfig = registry.facetsConfig
-        dimConfigs = facetsConfig.getDimConfigs()
-        self.assertEquals(set(['aap', 'noot', 'mies']), set(dimConfigs.keySet()))
-        self.assertFalse(dimConfigs.get('aap').hierarchical)
-        self.assertTrue(dimConfigs.get('noot').hierarchical)
-        self.assertTrue(dimConfigs.get('noot').multiValued)
-        self.assertFalse(dimConfigs.get('mies').multiValued)
+        # facetsConfig = registry.facetsConfig
+        # dimConfigs = facetsConfig.getDimConfigs()
+        # self.assertEquals(set(['aap', 'noot', 'mies']), set(dimConfigs.keySet()))
+        # self.assertFalse(dimConfigs.get('aap').hierarchical)
+        # self.assertTrue(dimConfigs.get('noot').hierarchical)
+        # self.assertTrue(dimConfigs.get('noot').multiValued)
+        # self.assertFalse(dimConfigs.get('mies').multiValued)
+        # TODO
 
     def testGenericDrilldownFields(self):
         with warnings.catch_warnings():
@@ -188,17 +189,17 @@ class FieldRegistryTest(SeecrTestCase):
         registry.register("longfield", fieldDefinition=LONGFIELD)
         registry.register("intfield", fieldDefinition=INTFIELD)
         q, t = registry.rangeQueryAndType('longfield')
-        self.assertEqual(NumericRangeQuery.newLongRange, q)
+        self.assertEqual("Long", q)
         self.assertEqual(long, t)
         q, t = registry.rangeQueryAndType('intfield')
-        self.assertEqual(NumericRangeQuery.newIntRange, q)
+        self.assertEqual("Int", q)
         self.assertEqual(int, t)
         q, t = registry.rangeQueryAndType('range.double.field')
-        self.assertEqual(NumericRangeQuery.newDoubleRange, q)
+        self.assertEqual("Double", q)
         self.assertEqual(float, t)
 
         q, t = registry.rangeQueryAndType('anyfield')
-        self.assertEqual(TermRangeQuery.newStringRange, q)
+        self.assertEqual("String", q)
         self.assertEqual(str, t)
 
     def testDrilldownField(self):
@@ -237,12 +238,12 @@ class FieldRegistryTest(SeecrTestCase):
         registry.register("intfield", fieldDefinition=INTFIELD)
         registry.register("stringfield", fieldDefinition=STRINGFIELD)
 
-        self.assertEqual(SortField.Type.LONG, registry.sortFieldType("longfield"))
+        self.assertEqual("Long", registry.sortFieldType("longfield"))
         self.assertEqual(None, registry.defaultMissingValueForSort("longfield", True))
 
-        self.assertEqual(SortField.Type.INT, registry.sortFieldType("intfield"))
+        self.assertEqual("Int", registry.sortFieldType("intfield"))
         self.assertEqual(None, registry.defaultMissingValueForSort("intfield", True))
 
-        self.assertEqual(SortField.Type.STRING, registry.sortFieldType("stringfield"))
-        self.assertEqual(SortField.STRING_FIRST, registry.defaultMissingValueForSort("stringfield", True))
-        self.assertEqual(SortField.STRING_LAST, registry.defaultMissingValueForSort("stringfield", False))
+        self.assertEqual("String", registry.sortFieldType("stringfield"))
+        self.assertEqual("STRING_FIRST", registry.defaultMissingValueForSort("stringfield", True))
+        self.assertEqual("STRING_LAST", registry.defaultMissingValueForSort("stringfield", False))

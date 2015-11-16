@@ -35,7 +35,7 @@ from weightless.core import consume, retval
 from meresco.lucene import Lucene, DrilldownField, LuceneSettings
 from meresco.lucene._lucene import IDFIELD
 from meresco.lucene.hit import Hit
-from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELD, FieldRegistry, INTFIELD
+from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELD, FieldRegistry, INTFIELD, STRINGFIELD_STORED
 from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from org.apache.lucene.search import MatchAllDocsQuery, TermQuery, TermRangeQuery, BooleanQuery, BooleanClause, PhraseQuery
@@ -982,7 +982,7 @@ FIELD_REGISTRY = FieldRegistry(
         ]
     )
 FIELD_REGISTRY.register(fieldname='intField', fieldDefinition=INTFIELD)
-FIELD_REGISTRY.register(fieldname='storedField', fieldType=StringField.TYPE_STORED)
+FIELD_REGISTRY.register(fieldname='storedField', fieldDefinition=STRINGFIELD_STORED)
 
 def createDocument(fields, facets=None, registry=FIELD_REGISTRY):
     document = Document()

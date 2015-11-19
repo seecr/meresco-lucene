@@ -36,7 +36,7 @@ public class QueryStringToQuery {
     }
     
     private Sort convertToSort(JsonArray sortKeys) {
-        if (sortKeys == null)
+        if (sortKeys == null || sortKeys.size() == 0)
             return null;
         SortField[] sortFields = new SortField[sortKeys.size()];
         for (int i = 0; i < sortKeys.size(); i++) {
@@ -45,9 +45,9 @@ public class QueryStringToQuery {
             boolean sortDescending = sortKey.getBoolean("sortDescending", false);
             SortField field;
             if (sortBy.equals("score"))
-                field = new SortField(null, SortField.Type.SCORE, !sortDescending);
+                field = new SortField(null, SortField.Type.SCORE, sortDescending);
             else
-                field = new SortField(sortBy, typeForSortField(sortKey.getString("type")), !sortDescending);
+                field = new SortField(sortBy, typeForSortField(sortKey.getString("type")), sortDescending);
             Object missingValue = missingSortValue(sortKey.getString("missingValue", null));
             if (missingValue != null)
                 field.setMissingValue(missingValue);

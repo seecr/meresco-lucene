@@ -170,22 +170,22 @@ public class QueryStringToQueryTest {
         assertEquals(4, sortFields.length);
         assertEquals("fieldname", sortFields[0].getField());
         assertEquals(SortField.Type.STRING, sortFields[0].getType());
-        assertEquals(true, sortFields[0].getReverse());
+        assertEquals(false, sortFields[0].getReverse());
         assertEquals(null, sortFields[0].missingValue);
         
         assertEquals(null, sortFields[1].getField());
         assertEquals(SortField.Type.SCORE, sortFields[1].getType());
-        assertEquals(false, sortFields[1].getReverse());
+        assertEquals(true, sortFields[1].getReverse());
         assertEquals(null, sortFields[1].missingValue);
         
         assertEquals("intfield", sortFields[2].getField());
         assertEquals(SortField.Type.INT, sortFields[2].getType());
-        assertEquals(false, sortFields[2].getReverse());
+        assertEquals(true, sortFields[2].getReverse());
         assertEquals(null, sortFields[2].missingValue);
         
         assertEquals("fieldname", sortFields[3].getField());
         assertEquals(SortField.Type.STRING, sortFields[3].getType());
-        assertEquals(false, sortFields[3].getReverse());
+        assertEquals(true, sortFields[3].getReverse());
         assertEquals(SortField.STRING_FIRST, sortFields[3].missingValue);
     }
 }

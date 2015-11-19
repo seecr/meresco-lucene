@@ -49,6 +49,10 @@ public class Lucene {
     private Timer commitTimer;
     public String name;
 
+    public Lucene(File stateDir, LuceneSettings settings) throws IOException {
+        this(null, stateDir, settings);
+    }
+    
     public Lucene(String name, File stateDir, LuceneSettings settings) throws IOException {
         this.name = name;
         this.settings = settings;

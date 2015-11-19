@@ -11,6 +11,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
@@ -136,6 +137,19 @@ public class DocumentStringToDocumentTest {
                 .build();
         Document result = convert(json.toString());
         assertEquals(DoubleField.TYPE_NOT_STORED, result.getField("name").fieldType());
+        assertEquals(1, result.getField("name").numericValue().doubleValue(), 0);
+    }
+    
+    @Test
+    public void testNumericField() {
+        JsonArray json = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                    .add("type", "NumericField")
+                    .add("name", "name")
+                    .add("value", 1))
+                .build();
+        Document result = convert(json.toString());
+        assertEquals(NumericDocValuesField.TYPE, result.getField("name").fieldType());
         assertEquals(1, result.getField("name").numericValue().doubleValue(), 0);
     }
     

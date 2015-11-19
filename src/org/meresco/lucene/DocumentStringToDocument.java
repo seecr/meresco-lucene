@@ -16,6 +16,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
@@ -65,6 +66,9 @@ public class DocumentStringToDocument {
                 break;
             case "LongField":
                 field = new LongField(name, jsonField.getInt("value"), Store.NO);
+                break;
+            case "NumericField":
+                field = new NumericDocValuesField(name, jsonField.getJsonNumber("value").longValue());
                 break;
             case "FacetField":
                 JsonArray jsonArray = jsonField.getJsonArray("path");

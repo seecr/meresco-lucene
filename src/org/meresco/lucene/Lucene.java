@@ -47,8 +47,10 @@ public class Lucene {
     private LuceneSettings settings;
     private int commitCount = 0;
     private Timer commitTimer;
+    public String name;
 
-    public Lucene(File stateDir, LuceneSettings settings) throws IOException {
+    public Lucene(String name, File stateDir, LuceneSettings settings) throws IOException {
+        this.name = name;
         this.settings = settings;
         MMapDirectory indexDirectory = new MMapDirectory(new File(stateDir, "index"));
         indexDirectory.setUseUnmap(false);

@@ -30,6 +30,7 @@ public class UpdateHandler extends AbstractHandler {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write(Utils.getStackTrace(e));
             baseRequest.setHandled(true);
+            return;
         }
         response.setStatus(HttpServletResponse.SC_OK);
         baseRequest.setHandled(true);

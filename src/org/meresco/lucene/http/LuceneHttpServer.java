@@ -27,6 +27,8 @@ package org.meresco.lucene.http;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -51,8 +53,6 @@ import sun.misc.SignalHandler;
 import com.sun.net.httpserver.HttpServer;
 
 public class LuceneHttpServer {
-    private static HttpServer server = null;
-
     public static void main(String[] args) throws Exception {
         Options options = new Options();
 
@@ -63,6 +63,11 @@ public class LuceneHttpServer {
 
         option = new Option("d", "stateDir", true, "Directory in which lucene data is located");
         option.setType(String.class);
+        option.setRequired(true);
+        options.addOption(option);
+        
+        option = new Option("", "core", true, "Lucene core");
+        option.setType(String[].class);
         option.setRequired(true);
         options.addOption(option);
 
@@ -78,14 +83,36 @@ public class LuceneHttpServer {
 
         Integer port = new Integer(commandLine.getOptionValue("p"));
         String storeLocation = commandLine.getOptionValue("d");
+        String[] cores = commandLine.getOptionValues("core");
 
         if (Charset.defaultCharset() != Charset.forName("UTF-8")) {
         System.err.println("file.encoding must be UTF-8.");
             System.exit(1);
         }
 
-        LuceneSettings settings = new LuceneSettings();
-        Lucene lucene = new Lucene(new File(storeLocation), settings);
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        List<Lucene> lucenes = new ArrayList<Lucene>();
+        for (String core : cores) {
+            LuceneSettings settings = new LuceneSettings();
+            Lucene lucene = new Lucene(core, new File(storeLocation, core), settings);
+            lucenes.add(lucene);
+            
+            ContextHandler context = new ContextHandler("/" + core + "/query");
+            context.setHandler(new QueryHandler(lucene));
+            contexts.addHandler(context);
+            
+            context = new ContextHandler("/" + core + "/update");
+            context.setHandler(new UpdateHandler(lucene));
+            contexts.addHandler(context);
+    
+            context = new ContextHandler("/" + core + "/delete");
+            context.setHandler(new DeleteHandler(lucene));
+            contexts.addHandler(context);
+            
+            context = new ContextHandler("/" + core + "/settings");
+            context.setHandler(new SettingsHandler(settings));
+            contexts.addHandler(context);
+        }
         
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         Server server = new Server(pool);
@@ -93,54 +120,39 @@ public class LuceneHttpServer {
         http.setPort(port);
         server.addConnector(http);
                 
-        registerShutdownHandler(lucene, server);
-
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        ContextHandler context = new ContextHandler("/query");
-        context.setHandler(new QueryHandler(lucene));
-        contexts.addHandler(context);
-        
-        context = new ContextHandler("/update");
-        context.setHandler(new UpdateHandler(lucene));
-        contexts.addHandler(context);
-
-        context = new ContextHandler("/delete");
-        context.setHandler(new DeleteHandler(lucene));
-        contexts.addHandler(context);
-        
-        context = new ContextHandler("/settings");
-        context.setHandler(new SettingsHandler(settings));
-        contexts.addHandler(context);
+        registerShutdownHandler(lucenes, server);
 
         server.setHandler(contexts);
         server.start();
         server.join();
     }
 
-    static void registerShutdownHandler(final Lucene lucene, final Server server) {
+    static void registerShutdownHandler(final List<Lucene> lucenes, final Server server) {
         Signal.handle(new Signal("TERM"), new SignalHandler() {
             public void handle(Signal sig) {
-                shutdown(server, lucene);
+                shutdown(server, lucenes);
             }
         });
         Signal.handle(new Signal("INT"), new SignalHandler() {
             public void handle(Signal sig) {
-                shutdown(server, lucene);
+                shutdown(server, lucenes);
             }
         });
     }
 
-    static void shutdown(final Server server, final Lucene lucene) {
+    static void shutdown(final Server server, final List<Lucene> lucenes) {
         System.out.println("Shutting down lucene. Please wait...");
-        try {
-            lucene.close();
-            System.out.println("Shutdown completed.");
-            System.out.flush();
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.flush();
-            System.out.println("Shutdown failed.");
-            System.out.flush();
+        for (Lucene lucene : lucenes) {
+            try {
+                lucene.close();
+                System.out.println("Shutdown " + lucene.name + " completed.");
+                System.out.flush();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.err.flush();
+                System.out.println("Shutdown failed.");
+                System.out.flush();
+            }
         }
         try {
             server.stop();

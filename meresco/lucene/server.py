@@ -39,7 +39,7 @@ from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
 from meresco.lucene import Lucene, Fields2LuceneDoc, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator, DrilldownField, LuceneSettings
-from meresco.lucene.queryexpressiontolucenequery import QueryExpressionToLuceneQuery
+from meresco.lucene.queryexpressiontolucenequerystring import QueryExpressionToLuceneQueryString
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 from meresco.lucene.fieldregistry import FieldRegistry
 
@@ -113,16 +113,19 @@ def main(reactor, port, databasePath):
 
     fieldRegistry = FieldRegistry(drilldownFields)
     luceneSettings = LuceneSettings(fieldRegistry=fieldRegistry, commitCount=30, commitTimeout=1, analyzer=MerescoDutchStemmingAnalyzer(['field4', 'field5']))
-    lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, name='main', settings=luceneSettings)
+    # lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, name='main', settings=luceneSettings)
+    lucene = Lucene(host="localhost", port=1234, name='main', settings=luceneSettings)
 
     lucene2Settings = LuceneSettings(fieldRegistry=fieldRegistry, commitTimeout=0.1)
-    lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, name='main2', settings=lucene2Settings)
+    # lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, name='main2', settings=lucene2Settings)
+    lucene2 = Lucene(host="localhost", port=1234, name='main2', settings=lucene2Settings)
 
     termNumerator = TermNumerator(path=join(databasePath, 'termNumerator'))
 
     emptyLuceneSettings = LuceneSettings(commitTimeout=1)
     multiLuceneHelix = (MultiLucene(defaultCore='main'),
-            (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, name='empty-core', settings=emptyLuceneSettings),),
+            # (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, name='empty-core', settings=emptyLuceneSettings),),
+            (Lucene(host='localhost', port=1234, name='empty-core', settings=emptyLuceneSettings),),
             (lucene,),
             (lucene2,),
         )
@@ -174,9 +177,9 @@ def main(reactor, port, databasePath):
                                 (AdapterToLuceneQuery(
                                     defaultCore='main',
                                     coreConverters={
-                                        "main": QueryExpressionToLuceneQuery([], luceneSettings=luceneSettings),
-                                        "main2": QueryExpressionToLuceneQuery([], luceneSettings=lucene2Settings),
-                                        "empty-core": QueryExpressionToLuceneQuery([], luceneSettings=emptyLuceneSettings),
+                                        "main": QueryExpressionToLuceneQueryString([], luceneSettings=luceneSettings),
+                                        "main2": QueryExpressionToLuceneQueryString([], luceneSettings=lucene2Settings),
+                                        "empty-core": QueryExpressionToLuceneQueryString([], luceneSettings=emptyLuceneSettings),
                                     }),
                                     multiLuceneHelix,
                                 ),
@@ -201,9 +204,9 @@ def main(reactor, port, databasePath):
                             (AdapterToLuceneQuery(
                                     defaultCore='main',
                                     coreConverters={
-                                        "main": QueryExpressionToLuceneQuery([], luceneSettings=luceneSettings),
-                                        "main2": QueryExpressionToLuceneQuery([], luceneSettings=lucene2Settings),
-                                        "empty-core": QueryExpressionToLuceneQuery([], luceneSettings=emptyLuceneSettings),
+                                        "main": QueryExpressionToLuceneQueryString([], luceneSettings=luceneSettings),
+                                        "main2": QueryExpressionToLuceneQueryString([], luceneSettings=lucene2Settings),
+                                        "empty-core": QueryExpressionToLuceneQueryString([], luceneSettings=emptyLuceneSettings),
                                     }),
                                 multiLuceneHelix,
                             )

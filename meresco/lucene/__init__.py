@@ -51,7 +51,8 @@ VMM = initVM()
 from fieldregistry import SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX, NUMERIC_PREFIX, RANGE_DOUBLE_PREFIX
 from _version import version
 from luceneresponse import LuceneResponse
-from _lucene import Lucene
+# from _lucene import Lucene
+from _lucene2 import Lucene
 from lucenesettings import LuceneSettings
 from fields2lucenedoc import Fields2LuceneDoc
 from multilucene import MultiLucene

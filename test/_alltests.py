@@ -47,9 +47,10 @@ from lucenequerycomposertest import LuceneQueryComposerTest
 from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
 from lucenesettingstest import LuceneSettingsTest
-from lucenetest import LuceneTest
+# from lucenetest import LuceneTest
+from lucene2test import LuceneTest
 from adaptertolucenequerytest import AdapterToLuceneQueryTest
-from multilucenetest import MultiLuceneTest
+# from multilucenetest import MultiLuceneTest
 from pageranktest import PageRankTest
 from queryexpressiontolucenequerystringtest import QueryExpressionToLuceneQueryStringTest
 from suggestionindexcomponenttest import SuggestionIndexComponentTest

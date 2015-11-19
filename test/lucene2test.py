@@ -1,0 +1,76 @@
+## begin license ##
+#
+# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+#
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+# Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+#
+# This file is part of "Meresco Lucene"
+#
+# "Meresco Lucene" is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# "Meresco Lucene" is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with "Meresco Lucene"; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+## end license ##
+
+from seecr.test import SeecrTestCase
+from seecr.utils.generatorutils import returnValueFromGenerator
+from meresco.components.json import JsonDict
+from meresco.lucene import Lucene, LuceneSettings
+from meresco.lucene.fieldregistry import FieldRegistry
+from meresco.lucene.queryexpressiontolucenequerystring import QueryExpressionToLuceneQueryString
+from weightless.core import consume
+from cqlparser import cqlToExpression
+
+class LuceneTest(SeecrTestCase):
+
+    def setUp(self):
+        SeecrTestCase.setUp(self)
+        self._lucene = Lucene(host="localhost", port=1234, name='lucene', settings=LuceneSettings())
+        self.post = []
+        self.response = ""
+        def mockPost(data, path):
+            self.post.append(dict(data=data, path=path))
+            raise StopIteration(self.response)
+            yield
+        self._lucene._post = mockPost
+
+    def testAdd(self):
+        registry = FieldRegistry()
+        fields = [registry.createField("id", "id1")]
+        consume(self._lucene.addDocument(identifier='id1', fields=fields))
+        self.assertEqual(1, len(self.post))
+        self.assertEqual('/lucene/update/?identifier=id1', self.post[0]['path'])
+        self.assertEqual('[{"type": "TextField", "name": "id", "value": "id1"}]', self.post[0]['data'])
+
+    def testDelete(self):
+        consume(self._lucene.delete(identifier='id1'))
+        self.assertEqual(1, len(self.post))
+        self.assertEqual('/lucene/delete/?identifier=id1', self.post[0]['path'])
+        self.assertEqual(None, self.post[0]['data'])
+
+    def testExecuteQuery(self):
+        self.response = JsonDict({
+                "total": 887,
+                "queryTime": 6,
+                "hits": [{"id": "record:1"}]
+            }).dumps()
+        query = QueryExpressionToLuceneQueryString([], LuceneSettings()).convert(cqlToExpression("field=value"))
+        response = returnValueFromGenerator(self._lucene.executeQuery(luceneQuery=query, start=1, stop=5))
+        self.assertEqual(1, len(self.post))
+        self.assertEqual('/lucene/query/', self.post[0]['path'])
+        self.assertEqual('{"start": 1, "stop": 5, "query": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"}}', self.post[0]['data'])
+        self.assertEqual(887, response.total)
+        self.assertEqual(6, response.queryTime)
+        self.assertEqual(1, len(response.hits))
+        self.assertEqual("record:1", response.hits[0].id)

@@ -44,7 +44,6 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         observer = CallTrace(returnValues={'numerateTerm': 1})
         fields2LuceneDoc.addObserver(observer)
         fields = fields2LuceneDoc._createFields(fields)
-        print fields
 
         self.assertEqual([
                 {

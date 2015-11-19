@@ -84,7 +84,8 @@ public class LuceneHttpServer {
             System.exit(1);
         }
 
-        Lucene lucene = new Lucene(new File(storeLocation), new LuceneSettings());
+        LuceneSettings settings = new LuceneSettings();
+        Lucene lucene = new Lucene(new File(storeLocation), settings);
         
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         Server server = new Server(pool);
@@ -105,6 +106,10 @@ public class LuceneHttpServer {
 
         context = new ContextHandler("/delete");
         context.setHandler(new DeleteHandler(lucene));
+        contexts.addHandler(context);
+        
+        context = new ContextHandler("/settings");
+        context.setHandler(new SettingsHandler(settings));
         contexts.addHandler(context);
 
         server.setHandler(contexts);

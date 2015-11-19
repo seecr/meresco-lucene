@@ -29,6 +29,10 @@ from meresco.components.json import JsonList, JsonDict
 from simplejson import loads
 
 class LuceneServerTest(IntegrationTestCase):
+    def setUp(self):
+        IntegrationTestCase.setUp(self)
+        header, body = postRequest(self.serverPort, '/settings/', data=JsonDict(commitCount=1).dumps())
+        self.assertTrue("200 OK" in header.upper(), header)
 
     def testAddAndQueryDocument(self):
         data = JsonList([

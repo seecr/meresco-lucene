@@ -31,6 +31,7 @@ from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene.queryexpressiontolucenequerystring import QueryExpressionToLuceneQueryString
 from weightless.core import consume
 from cqlparser import cqlToExpression
+from simplejson import loads
 
 class LuceneTest(SeecrTestCase):
 
@@ -39,7 +40,7 @@ class LuceneTest(SeecrTestCase):
         self._lucene = Lucene(host="localhost", port=1234, name='lucene', settings=LuceneSettings())
         self.post = []
         self.response = ""
-        def mockPost(data, path):
+        def mockPost(data, path, **kwargs):
             self.post.append(dict(data=data, path=path))
             raise StopIteration(self.response)
             yield
@@ -63,14 +64,25 @@ class LuceneTest(SeecrTestCase):
         self.response = JsonDict({
                 "total": 887,
                 "queryTime": 6,
-                "hits": [{"id": "record:1"}]
+                "hits": [{"id": "record:1"}],
+                "drilldownData": [
+                    {"fieldname": "facet", "path": [], "terms": [{"term": "term", "count": 1}]}
+                ]
             }).dumps()
         query = QueryExpressionToLuceneQueryString([], LuceneSettings()).convert(cqlToExpression("field=value"))
-        response = returnValueFromGenerator(self._lucene.executeQuery(luceneQuery=query, start=1, stop=5))
+        response = returnValueFromGenerator(self._lucene.executeQuery(luceneQuery=query, start=1, stop=5, facets=[dict(maxTerms=10, fieldname='facet')], sortKeys=[dict(sortBy='field', sortDescending=False)]))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/query/', self.post[0]['path'])
-        self.assertEqual('{"start": 1, "stop": 5, "query": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"}}', self.post[0]['data'])
+        self.assertEqual({
+                    "start": 1, "stop": 5,
+                    "query": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"},
+                    "facets": [{"fieldname": "facet", "maxTerms": 10}],
+                    "sortKeys": [{"sortBy": "field", "sortDescending": False, "type": "String"}]
+                }, loads(self.post[0]['data']))
         self.assertEqual(887, response.total)
         self.assertEqual(6, response.queryTime)
         self.assertEqual(1, len(response.hits))
         self.assertEqual("record:1", response.hits[0].id)
+        self.assertEqual([
+                {"fieldname": "facet", "path": [], "terms": [{"term": "term", "count": 1}]}
+            ], response.drilldownData)

@@ -41,6 +41,7 @@ class Lucene(Observable):
         self._host = host
         self._port = port
         self._settings = settings
+        self._fieldRegistry = settings.fieldRegistry
         self._name = name
 
     def observer_init(self):
@@ -52,15 +53,24 @@ class Lucene(Observable):
     def delete(self, identifier):
         yield self._send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
 
-    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, sortKeys=None, **kwargs):
+        stop = 10 if stop is None else stop
+        start = 0 if start is None else start
+
+        for sortKey in sortKeys or []:
+            sortKey["type"] = self._fieldRegistry.sortFieldType(sortKey["sortBy"])
         jsonDict = JsonDict(
             query=loads(luceneQuery),
             start=start,
-            stop=stop
+            stop=stop,
+            facets=facets or [],
+            sortKeys=sortKeys or [],
         )
         responseDict = (yield self._send(jsonDict=jsonDict, path='/query/'))
         hits = [Hit(**hit) for hit in responseDict['hits']]
         response = LuceneResponse(total=responseDict["total"], queryTime=responseDict["queryTime"], hits=hits)
+        if "drilldownData" in responseDict:
+            response.drilldownData = responseDict['drilldownData']
         raise StopIteration(response)
 
     def _send(self, path, jsonDict=None, synchronous=False):

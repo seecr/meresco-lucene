@@ -1,45 +1,41 @@
 package org.meresco.lucene.http;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Reader;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.QueryStringToQuery;
 
-import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-
-public class QueryHandler implements HttpHandler {
+public class QueryHandler extends AbstractHandler {
 
     private Lucene lucene;
 
     public QueryHandler(Lucene lucene) {
         this.lucene = lucene;
     }
-    
+
     @Override
-    public void handle(HttpExchange exchange) throws IOException {
-        OutputStream outputStream = exchange.getResponseBody();
-        Reader reader = new InputStreamReader(exchange.getRequestBody());
-        
-        LuceneResponse response = new LuceneResponse(0);
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        LuceneResponse luceneResponse = new LuceneResponse(0);
         try {
-            QueryStringToQuery q = new QueryStringToQuery(reader);
-            response = this.lucene.executeQuery(q.query, q.start, q.stop, q.sort, q.facets);
+            QueryStringToQuery q = new QueryStringToQuery(request.getReader());
+            luceneResponse = this.lucene.executeQuery(q.query, q.start, q.stop, q.sort, q.facets);
         } catch (Exception e) {
-            exchange.sendResponseHeaders(500, 0);
-            Utils.writeToStream(Utils.getStackTrace(e), outputStream);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write(Utils.getStackTrace(e));
+            baseRequest.setHandled(true);
             return;
         }
-        Headers responseHeaders = exchange.getResponseHeaders();
-        responseHeaders.set("Content-Type","application/json");
-        exchange.sendResponseHeaders(200, 0);
-        Utils.writeToStream(response.toJson().toString(), outputStream);
-        exchange.close();
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("application/json");
+        response.getWriter().write(luceneResponse.toJson().toString());
+        baseRequest.setHandled(true);
     }
 
 }

@@ -1,15 +1,16 @@
 package org.meresco.lucene.http;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URI;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-
-public class DeleteHandler implements HttpHandler {
+public class DeleteHandler extends AbstractHandler {
 
     private Lucene lucene;
 
@@ -18,20 +19,16 @@ public class DeleteHandler implements HttpHandler {
     }
     
     @Override
-    public void handle(HttpExchange exchange) throws IOException {
-        OutputStream outputStream = exchange.getResponseBody();
-        URI requestURI = exchange.getRequestURI();
-        QueryParameters httpArguments = Utils.parseQS(requestURI.getRawQuery());
-        
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        String identifier = request.getParameter("identifier");
         try {
-            this.lucene.deleteDocument(httpArguments.singleValue("identifier"));
+            this.lucene.deleteDocument(identifier);
         } catch (Exception e) {
-            exchange.sendResponseHeaders(500, 0);
-            Utils.writeToStream(Utils.getStackTrace(e), outputStream);
-            return;
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write(Utils.getStackTrace(e));
+            baseRequest.setHandled(true);
         }
-        exchange.sendResponseHeaders(200, 0);
-        exchange.close();
+        response.setStatus(HttpServletResponse.SC_OK);
+        baseRequest.setHandled(true);
     }
-
 }

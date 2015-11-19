@@ -1,19 +1,18 @@
 package org.meresco.lucene.http;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.net.URI;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.document.Document;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.DocumentStringToDocument;
 import org.meresco.lucene.Lucene;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-
-public class UpdateHandler implements HttpHandler {
+public class UpdateHandler extends AbstractHandler {
 
     private Lucene lucene;
 
@@ -22,22 +21,17 @@ public class UpdateHandler implements HttpHandler {
     }
     
     @Override
-    public void handle(HttpExchange exchange) throws IOException {
-        OutputStream outputStream = exchange.getResponseBody();
-        Reader reader = new InputStreamReader(exchange.getRequestBody());
-        URI requestURI = exchange.getRequestURI();
-        QueryParameters httpArguments = Utils.parseQS(requestURI.getRawQuery());
-        
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        String identifier = request.getParameter("identifier");
         try {
-            Document document = new DocumentStringToDocument(reader).convert();
-            this.lucene.addDocument(httpArguments.singleValue("identifier"), document);
+          Document document = new DocumentStringToDocument(request.getReader()).convert();
+          this.lucene.addDocument(identifier, document);
         } catch (Exception e) {
-            exchange.sendResponseHeaders(500, 0);
-            Utils.writeToStream(Utils.getStackTrace(e), outputStream);
-            return;
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write(Utils.getStackTrace(e));
+            baseRequest.setHandled(true);
         }
-        exchange.sendResponseHeaders(200, 0);
-        exchange.close();
+        response.setStatus(HttpServletResponse.SC_OK);
+        baseRequest.setHandled(true);
     }
-
 }

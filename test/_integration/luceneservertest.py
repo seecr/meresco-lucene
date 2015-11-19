@@ -34,16 +34,16 @@ class LuceneServerTest(IntegrationTestCase):
         data = JsonList([
                 {"type": "TextField", "name": "fieldname", "value": "value"}
             ]).dumps()
-        header, body = postRequest(self.serverPort, '/update?identifier=id1', data=data)
+        header, body = postRequest(self.serverPort, '/update/?identifier=id1', data=data)
         self.assertTrue("200 OK" in header.upper(), header)
 
-        header, body = postRequest(self.serverPort, '/query', data=JsonDict(query=dict(type="MatchAllDocsQuery")).dumps(), parse=False)
+        header, body = postRequest(self.serverPort, '/query/', data=JsonDict(query=dict(type="MatchAllDocsQuery")).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         response = loads(body)
         self.assertEqual(1, response['total'])
         self.assertEqual([{'id': 'id1'}], response['hits'])
 
-        header, body = postRequest(self.serverPort, '/query', data=JsonDict(query=dict(type="TermQuery", term=dict(field="fieldname", value="value"))).dumps(), parse=False)
+        header, body = postRequest(self.serverPort, '/query/', data=JsonDict(query=dict(type="TermQuery", term=dict(field="fieldname", value="value"))).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         response = loads(body)
         self.assertEqual(1, response['total'])
@@ -54,10 +54,10 @@ class LuceneServerTest(IntegrationTestCase):
                 {"type": "TextField", "name": "fieldname", "value": "value"},
                 {"type": "FacetField", "name": "fieldname", "path": ["value"]}
             ]).dumps()
-        header, body = postRequest(self.serverPort, '/update?identifier=id1', data=data)
+        header, body = postRequest(self.serverPort, '/update/?identifier=id1', data=data)
         self.assertTrue("200 OK" in header.upper(), header)
 
-        header, body = postRequest(self.serverPort, '/query', data=JsonDict(query=dict(type="MatchAllDocsQuery"), facets=[{"fieldname": "fieldname", "maxTerms": 10}]).dumps(), parse=False)
+        header, body = postRequest(self.serverPort, '/query/', data=JsonDict(query=dict(type="MatchAllDocsQuery"), facets=[{"fieldname": "fieldname", "maxTerms": 10}]).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         response = loads(body)
         self.assertEqual(1, response['total'])

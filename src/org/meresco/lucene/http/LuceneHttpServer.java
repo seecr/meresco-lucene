@@ -26,10 +26,8 @@
 package org.meresco.lucene.http;
 
 import java.io.File;
-import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.cli.CommandLine;
@@ -38,6 +36,12 @@ import org.apache.commons.cli.MissingOptionException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.PosixParser;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneSettings;
 
@@ -82,32 +86,46 @@ public class LuceneHttpServer {
 
         Lucene lucene = new Lucene(new File(storeLocation), new LuceneSettings());
         
-        server = HttpServer.create(new InetSocketAddress(port), 15);
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
-        server.setExecutor(executor);
-
+        ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
+        Server server = new Server(pool);
+        ServerConnector http = new ServerConnector(server, new HttpConnectionFactory());
+        http.setPort(port);
+        server.addConnector(http);
+                
         registerShutdownHandler(lucene, server);
 
-        server.createContext("/query", new QueryHandler(lucene));
-        server.createContext("/update", new UpdateHandler(lucene));
-        server.createContext("/delete", new DeleteHandler(lucene));
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        ContextHandler context = new ContextHandler("/query");
+        context.setHandler(new QueryHandler(lucene));
+        contexts.addHandler(context);
+        
+        context = new ContextHandler("/update");
+        context.setHandler(new UpdateHandler(lucene));
+        contexts.addHandler(context);
+
+        context = new ContextHandler("/delete");
+        context.setHandler(new DeleteHandler(lucene));
+        contexts.addHandler(context);
+
+        server.setHandler(contexts);
         server.start();
+        server.join();
     }
 
-    static void registerShutdownHandler(final Lucene lucene, final HttpServer httpServer) {
+    static void registerShutdownHandler(final Lucene lucene, final Server server) {
         Signal.handle(new Signal("TERM"), new SignalHandler() {
             public void handle(Signal sig) {
-                shutdown(httpServer, lucene);
+                shutdown(server, lucene);
             }
         });
         Signal.handle(new Signal("INT"), new SignalHandler() {
             public void handle(Signal sig) {
-                shutdown(httpServer, lucene);
+                shutdown(server, lucene);
             }
         });
     }
 
-    static void shutdown(final HttpServer httpServer, final Lucene lucene) {
+    static void shutdown(final Server server, final Lucene lucene) {
         System.out.println("Shutting down lucene. Please wait...");
         try {
             lucene.close();
@@ -119,7 +137,11 @@ public class LuceneHttpServer {
             System.out.println("Shutdown failed.");
             System.out.flush();
         }
-        server.stop(1);
+        try {
+            server.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         System.out.println("Http-server stopped");
         System.exit(0);
    }

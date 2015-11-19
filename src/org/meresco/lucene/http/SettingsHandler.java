@@ -1,21 +1,16 @@
 package org.meresco.lucene.http;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 
 import javax.json.Json;
 import javax.json.JsonObject;
-import javax.json.JsonReader;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.lucene.document.Document;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.meresco.lucene.DocumentStringToDocument;
-import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneSettings;
 
 public class SettingsHandler extends AbstractHandler {
@@ -24,7 +19,6 @@ public class SettingsHandler extends AbstractHandler {
 
     public SettingsHandler(LuceneSettings settings) {
         this.settings = settings;
-        
     }
 
     @Override

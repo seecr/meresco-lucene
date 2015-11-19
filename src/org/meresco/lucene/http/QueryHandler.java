@@ -37,5 +37,4 @@ public class QueryHandler extends AbstractHandler {
         response.getWriter().write(luceneResponse.toJson().toString());
         baseRequest.setHandled(true);
     }
-
 }

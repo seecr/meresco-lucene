@@ -5,7 +5,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Reader;
 
-import org.apache.lucene.search.Query;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.QueryStringToQuery;

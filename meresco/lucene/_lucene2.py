@@ -40,21 +40,27 @@ class Lucene(Observable):
         Observable.__init__(self, name=name, **kwargs)
         self._host = host
         self._port = port
-        self._settings = settings
+        self.settings = settings
         self._fieldRegistry = settings.fieldRegistry
         self._name = name
 
     def observer_init(self):
         consume(self._send(jsonDict=JsonDict(
-                    commitTimeout=self._settings.commitTimeout,
-                    commitCount=self._settings.commitCount,
-                    lruTaxonomyWriterCacheSize=self._settings.lruTaxonomyWriterCacheSize,
-                    analyzer=self._settings._analyzer,
-                    similarity=self._settings._similarity,
-                    maxMergeAtOnce=self._settings.maxMergeAtOnce,
-                    segmentsPerTier=self._settings.segmentsPerTier,
-                    numberOfConcurrentTasks=self._settings.numberOfConcurrentTasks
+                    commitTimeout=self.settings.commitTimeout,
+                    commitCount=self.settings.commitCount,
+                    lruTaxonomyWriterCacheSize=self.settings.lruTaxonomyWriterCacheSize,
+                    analyzer=self.settings._analyzer,
+                    similarity=self.settings._similarity,
+                    maxMergeAtOnce=self.settings.maxMergeAtOnce,
+                    segmentsPerTier=self.settings.segmentsPerTier,
+                    numberOfConcurrentTasks=self.settings.numberOfConcurrentTasks
                 ), path="/settings/", synchronous=True))
+
+    def setSettings(self, clusteringEps=None, clusteringMinPoints=None, clusterMoreRecords=None, **kwargs):
+        pass
+
+    def getSettings(self):
+        return dict()
 
     def addDocument(self, identifier, fields):
         yield self._send(jsonDict=JsonList(fields), path='/update/?{}'.format(urlencode(dict(identifier=identifier))))
@@ -92,6 +98,21 @@ class Lucene(Observable):
         raise StopIteration(response)
         yield
 
+    def fieldnames(self, **kwargs):
+        fieldnames = (yield self._send(path='/fieldnames/'))
+        raise StopIteration(LuceneResponse(total=len(fieldnames), hits=fieldnames))
+        yield
+
+    def drilldownFieldnames(self, path=None, limit=50, **kwargs):
+        args = dict(limit=limit)
+        if path:
+            args["dim"] = path[0]
+            args["path"] = path[1:]
+        args = urlencode(args, doseq=True)
+        fieldnames = (yield self._send(path='/drilldownFieldnames/?{}'.format(args)))
+        raise StopIteration(LuceneResponse(total=len(fieldnames), hits=fieldnames))
+        yield
+
     def numDocs(self):
         raise StopIteration((yield self._send(path='/numDocs/')))
 
@@ -102,7 +123,7 @@ class Lucene(Observable):
         def __init__(inner, self):
             inner._lucene = self
             inner.name = self._name
-            inner.numDocs = self.numDocs()
+            inner.numDocs = self.numDocs
 
     def _luceneResponse(self, responseDict):
         hits = [Hit(**hit) for hit in responseDict['hits']]

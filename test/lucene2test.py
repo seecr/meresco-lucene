@@ -101,3 +101,23 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self._lucene.numDocs())
         self.assertEqual(150, result)
         self.assertEqual([{'data': None, 'path': '/lucene/numDocs/'}], self.post)
+
+    def testFieldnames(self):
+        self.response = '["field1", "field2"]'
+        result = returnValueFromGenerator(self._lucene.fieldnames())
+        self.assertEqual(["field1", "field2"], result.hits)
+        self.assertEqual([{"data": None, "path": "/lucene/fieldnames/"}], self.post)
+
+    def testDrilldownFieldnames(self):
+        self.response = '["field1", "field2"]'
+        result = returnValueFromGenerator(self._lucene.drilldownFieldnames())
+        self.assertEqual(["field1", "field2"], result.hits)
+        self.assertEqual([{"data": None, "path": "/lucene/drilldownFieldnames/?limit=50"}], self.post)
+
+        result = returnValueFromGenerator(self._lucene.drilldownFieldnames(limit=1, path=['field']))
+        self.assertEqual(["field1", "field2"], result.hits)
+        self.assertEqual({"data": None, "path": "/lucene/drilldownFieldnames/?dim=field&limit=1"}, self.post[-1])
+
+        result = returnValueFromGenerator(self._lucene.drilldownFieldnames(limit=1, path=['xyz', 'abc', 'field']))
+        self.assertEqual(["field1", "field2"], result.hits)
+        self.assertEqual({"data": None, "path": "/lucene/drilldownFieldnames/?dim=xyz&limit=1&path=abc&path=field"}, self.post[-1])

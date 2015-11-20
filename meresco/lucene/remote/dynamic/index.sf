@@ -2,15 +2,16 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
 # "Meresco Lucene" is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.d
+# (at your option) any later version.
 #
 # "Meresco Lucene" is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -36,8 +37,8 @@ def main(**kwargs):
     for coreInfo in allCoreInfo():
         yield """<li>Index: <a href="core?%s">'%s'</a> (%s documents)</li>\n""" % (
                 escapeHtml(urlencode(dict(name=coreInfo.name))),
-                coreInfo.name, 
-                page.formatInt(coreInfo.numDocs()),
+                coreInfo.name,
+                page.formatInt((yield coreInfo.numDocs())),
             )
 
     yield '</ul>'

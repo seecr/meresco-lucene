@@ -27,6 +27,7 @@
 from os.path import dirname, abspath, join, realpath
 from sys import stdout
 
+from meresco.components.log import LogComponent
 from meresco.html import DynamicHtml
 
 from meresco.components.http import StringServer, ObservableHttpServer, BasicHttpHandler, ApacheLogger, PathFilter, PathRename, FileServer
@@ -112,19 +113,22 @@ def main(reactor, port, databasePath):
     ]
 
     fieldRegistry = FieldRegistry(drilldownFields)
-    luceneSettings = LuceneSettings(fieldRegistry=fieldRegistry, commitCount=30, commitTimeout=1, analyzer=MerescoDutchStemmingAnalyzer(['field4', 'field5']))
-    # lucene = Lucene(path=join(databasePath, 'lucene'), reactor=reactor, name='main', settings=luceneSettings)
+    luceneSettings = LuceneSettings(
+                fieldRegistry=fieldRegistry,
+                commitCount=30,
+                commitTimeout=1,
+                analyzer=MerescoDutchStemmingAnalyzer(["field4", "field5"]),
+                _analyzer=dict(type="MerescoDutchStemmingAnalyzer", fields=['field4', 'field5'])
+            )
     lucene = Lucene(host="localhost", port=1234, name='main', settings=luceneSettings)
 
     lucene2Settings = LuceneSettings(fieldRegistry=fieldRegistry, commitTimeout=0.1)
-    # lucene2 = Lucene(path=join(databasePath, 'lucene2'), reactor=reactor, name='main2', settings=lucene2Settings)
     lucene2 = Lucene(host="localhost", port=1234, name='main2', settings=lucene2Settings)
 
     termNumerator = TermNumerator(path=join(databasePath, 'termNumerator'))
 
     emptyLuceneSettings = LuceneSettings(commitTimeout=1)
     multiLuceneHelix = (MultiLucene(defaultCore='main'),
-            # (Lucene(path=join(databasePath, 'lucene-empty'), reactor=reactor, name='empty-core', settings=emptyLuceneSettings),),
             (Lucene(host='localhost', port=1234, name='empty-core', settings=emptyLuceneSettings),),
             (lucene,),
             (lucene2,),

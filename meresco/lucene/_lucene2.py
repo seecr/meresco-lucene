@@ -45,7 +45,11 @@ class Lucene(Observable):
         self._name = name
 
     def observer_init(self):
-        consume(self._send(jsonDict=JsonDict(commitCount=self._settings.commitCount, commitTimeout=self._settings.commitTimeout), path="/settings/", synchronous=True))
+        consume(self._send(jsonDict=JsonDict(
+                    commitCount=self._settings.commitCount,
+                    commitTimeout=self._settings.commitTimeout,
+                    analyzer=self._settings._analyzer,
+                ), path="/settings/", synchronous=True))
 
     def addDocument(self, identifier, fields):
         yield self._send(jsonDict=JsonList(fields), path='/update/?{}'.format(urlencode(dict(identifier=identifier))))

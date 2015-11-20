@@ -36,7 +36,9 @@ class LuceneSettings(object):
                 readonly=False,
                 lruTaxonomyWriterCacheSize=4000,
                 analyzer=MerescoStandardAnalyzer(),
+                _analyzer=dict(type="MerescoStandardAnalyzer"),
                 similarity=BM25Similarity(),
+                _similarity=dict(type="BM25Similarity"),
                 fieldRegistry=FieldRegistry(),
                 maxMergeAtOnce=2,
                 segmentsPerTier=8.0,
@@ -48,7 +50,9 @@ class LuceneSettings(object):
         self.readonly = readonly
         self.lruTaxonomyWriterCacheSize = lruTaxonomyWriterCacheSize
         self.analyzer = analyzer
+        self._analyzer = _analyzer
         self.similarity = similarity
+        self._similarity = _similarity
         self.fieldRegistry = fieldRegistry
         self.maxMergeAtOnce = maxMergeAtOnce
         self.segmentsPerTier = segmentsPerTier

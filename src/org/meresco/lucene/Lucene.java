@@ -20,13 +20,17 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
@@ -227,10 +231,51 @@ public class Lucene {
         response.drilldownData = drilldownData;
     }
     
+    public List<TermCount> termsForField(String field, String prefix, int limit) throws Exception {
+        
+//        if t == str:
+//            convert = lambda term: term.utf8ToString()
+//        elif t == int:
+//            convert = lambda term: NumericUtils.prefixCodedToInt(term)
+//        elif t == long:
+//            convert = lambda term: NumericUtils.prefixCodedToLong(term)
+//        elif t == float:
+//            convert = lambda term: NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term))
+        
+        List<TermCount> terms = new ArrayList<TermCount>();
+        Terms termsEnum = MultiFields.getTerms(this.indexAndTaxo.reader, field);
+        if (termsEnum == null)
+            return terms;
+        TermsEnum iterator = termsEnum.iterator(null);
+        if (prefix != null) {
+            iterator.seekCeil(new BytesRef(prefix));
+            terms.add(new TermCount(iterator.term().utf8ToString(), iterator.docFreq()));
+        }
+        while (terms.size() < limit) {
+            BytesRef next = iterator.next();
+            if (next == null)
+                break;
+            String term = next.utf8ToString();
+            if (prefix != null && !term.startsWith(prefix)) {
+                break;
+            }
+            terms.add(new TermCount(term, iterator.docFreq()));
+        }
+        return terms;
+    }
+
     public static class Collectors {
         public TopDocSuperCollector topCollector;
         public FacetSuperCollector facetCollector;
         public SuperCollector<?> root;
     }
 
+    public class TermCount {
+        public String term;
+        public int count;
+        public TermCount(String term, int count) {
+            this.term = term;
+            this.count = count;
+        }
+    }
 }

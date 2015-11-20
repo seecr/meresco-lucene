@@ -31,6 +31,8 @@ from time import time
 
 from seecr.test.integrationtestcase import IntegrationState as SeecrIntegrationState
 from seecr.test.portnumbergenerator import PortNumberGenerator
+from seecr.test.utils import postRequest
+from meresco.components.json import JsonDict
 
 
 mydir = dirname(abspath(__file__))
@@ -64,6 +66,7 @@ class IntegrationState(SeecrIntegrationState):
         try:
             # self._runExecutable(join(self.testdataDir, 'upload.py'), processName='IntegrationUpload', cwd=self.testdataDir, port=self.httpPort, redirect=False, timeoutInSeconds=20)
             # sleepWheel(5)
+            postRequest(self.serverPort, "/default/settings/", data=JsonDict(commitCount=1).dumps(), parse=False)
             print "Finished creating database in %s seconds" % (time() - start)
         except Exception:
             print 'Error received while creating database for', self.stateName
@@ -71,7 +74,7 @@ class IntegrationState(SeecrIntegrationState):
             exit(1)
 
     def startServer(self):
-        self._startServer('lucene-server', self.binPath('start-lucene-server'), 'http://localhost:{}/info'.format(self.serverPort), port=self.serverPort, stateDir=join(self.integrationTempdir, 'server'))
+        self._startServer('lucene-server', self.binPath('start-lucene-server'), 'http://localhost:{}/info'.format(self.serverPort), port=self.serverPort, stateDir=join(self.integrationTempdir, 'server'), core="default")
 
     def startExampleServer(self):
         self._startServer('meresco-lucene', self.binPath('start-server'), 'http://localhost:%s/' % self.httpPort, port=self.httpPort, stateDir=join(self.integrationTempdir, 'example-state'))

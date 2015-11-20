@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -18,6 +19,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Before;
 import org.junit.Test;
+import org.meresco.lucene.Lucene.TermCount;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 
 public class LuceneTest extends SeecrTestCase {
@@ -213,5 +215,29 @@ public class LuceneTest extends SeecrTestCase {
         result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null);
         assertEquals(3, result.total);
         assertEquals(0, result.hits.size());
+    }
+    
+    @Test
+    public void testPrefixSearch() throws Exception {
+        Document doc1 = new Document();
+        doc1.add(new StringField("field1", "value0", Store.NO));
+        lucene.addDocument("id1", doc1);
+        
+        Document doc2 = new Document();
+        doc2.add(new StringField("field1", "value1", Store.NO));
+        lucene.addDocument("id2", doc2);
+        
+        Document doc3 = new Document();
+        doc3.add(new StringField("field1", "value2", Store.NO));
+        lucene.addDocument("id3", doc3);
+        
+        List<TermCount> terms = lucene.termsForField("field1", "val", 10);
+        assertEquals(3, terms.size());
+        assertEquals("value0", terms.get(0).term);
+        assertEquals(1, terms.get(0).count);
+        assertEquals("value1", terms.get(1).term);
+        assertEquals(1, terms.get(0).count);
+        assertEquals("value2", terms.get(2).term);
+        assertEquals(1, terms.get(0).count);
     }
 }

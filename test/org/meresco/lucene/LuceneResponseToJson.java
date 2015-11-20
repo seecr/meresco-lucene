@@ -7,16 +7,10 @@ import java.util.ArrayList;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
-import org.junit.Before;
 import org.junit.Test;
-import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 
 public class LuceneResponseToJson {
-
-    @Before
-    public void setUp() throws Exception {
-    }
 
     @Test
     public void test() {
@@ -34,8 +28,9 @@ public class LuceneResponseToJson {
         JsonArray hits = jsonResponse.getJsonArray("hits");
         assertEquals(2, hits.size());
         assertEquals("id1", hits.getJsonObject(0).getString("id"));
-//        assertEquals("id1", hits.getJsonObject(0).get("score"));
+        assertEquals(0.1, hits.getJsonObject(0).getJsonNumber("score").doubleValue(), 0.0001);
         assertEquals("id2", hits.getJsonObject(1).getString("id"));
+        assertEquals(0.2, hits.getJsonObject(1).getJsonNumber("score").doubleValue(), 0.0001);
         JsonArray ddData = jsonResponse.getJsonArray("drilldownData");
         assertEquals(1, ddData.size());
         assertEquals("field", ddData.getJsonObject(0).getString("fieldname"));

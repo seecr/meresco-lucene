@@ -55,7 +55,8 @@ public class LuceneResponse {
         JsonArrayBuilder hitsArray = Json.createArrayBuilder();
         for (Hit hit : hits) {
             hitsArray.add(Json.createObjectBuilder()
-                    .add("id", hit.id));
+                    .add("id", hit.id)
+                    .add("score", hit.score));
         }
         jsonBuilder.add("hits", hitsArray);
                 

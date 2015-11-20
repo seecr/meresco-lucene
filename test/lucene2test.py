@@ -87,3 +87,14 @@ class LuceneTest(SeecrTestCase):
         self.assertEqual([
                 {"fieldname": "facet", "path": [], "terms": [{"term": "term", "count": 1}]}
             ], response.drilldownData)
+
+    def testPrefixSearch(self):
+        self.response = JsonDict({
+                "total": 2,
+                "hits": [["value0", 1], ["value1", 2]]
+            }).dumps()
+        response = returnValueFromGenerator(self._lucene.prefixSearch(fieldname='field1', prefix='valu'))
+        self.assertEquals(['value0', 'value1'], response.hits)
+
+        response = returnValueFromGenerator(self._lucene.prefixSearch(fieldname='field1', prefix='valu', showCount=True))
+        self.assertEquals([['value0', 1], ['value1', 2]], response.hits)

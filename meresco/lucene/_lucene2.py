@@ -76,11 +76,30 @@ class Lucene(Observable):
             sortKeys=sortKeys or [],
         )
         responseDict = (yield self._send(jsonDict=jsonDict, path='/query/'))
+        raise StopIteration(self._luceneResponse(responseDict))
+        yield
+
+    def prefixSearch(self, fieldname, prefix, showCount=False, limit=10):
+        jsonDict = JsonDict(
+            fieldname=fieldname,
+            prefix=prefix,
+            limit=limit,
+        )
+        args = urlencode(dict(fieldname=fieldname, prefix=prefix, limit=limit))
+        responseDict = (yield self._send(jsonDict=jsonDict, path='/prefixSearch/?{}'.format(args)))
+        hits = responseDict['hits']
+        if not showCount:
+            hits = [h[0] for h in hits]
+        response = LuceneResponse(total=responseDict['total'], hits=hits)
+        raise StopIteration(response)
+        yield
+
+    def _luceneResponse(self, responseDict):
         hits = [Hit(**hit) for hit in responseDict['hits']]
         response = LuceneResponse(total=responseDict["total"], queryTime=responseDict["queryTime"], hits=hits)
         if "drilldownData" in responseDict:
             response.drilldownData = responseDict['drilldownData']
-        raise StopIteration(response)
+        return response
 
     def _send(self, path, jsonDict=None, synchronous=False):
         path = "/" + self._name + path

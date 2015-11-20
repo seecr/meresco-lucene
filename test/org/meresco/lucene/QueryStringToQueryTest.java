@@ -7,13 +7,20 @@ import java.util.List;
 
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
+import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.junit.Test;
 import org.meresco.lucene.QueryStringToQuery;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
@@ -120,6 +127,155 @@ public class QueryStringToQueryTest {
         BooleanQuery query = new BooleanQuery();
         query.add(aQuery, Occur.MUST);
         query.add(oQuery, Occur.MUST_NOT);
+        assertEquals(query, q.query);
+    }
+    
+    @Test
+    public void testWildcardQuery() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "WildcardQuery")
+                    .add("term", Json.createObjectBuilder()
+                        .add("field", "field")
+                        .add("value", "???*")))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        WildcardQuery query = new WildcardQuery(new Term("field", "???*"));
+        assertEquals(query, q.query);
+    }
+    
+    @Test
+    public void testPrefixQuery() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "PrefixQuery")
+                    .add("term", Json.createObjectBuilder()
+                        .add("field", "field")
+                        .add("value", "fiet")))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        PrefixQuery query = new PrefixQuery(new Term("field", "fiet"));
+        assertEquals(query, q.query);
+    }
+    
+    @Test
+    public void testPhraseQuery() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "PhraseQuery")
+                    .add("terms", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder()
+                            .add("field", "field")
+                            .add("value", "phrase"))
+                        .add(Json.createObjectBuilder()
+                            .add("field", "field")
+                            .add("value", "query"))))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        PhraseQuery query = new PhraseQuery();
+        query.add(new Term("field", "phrase"));
+        query.add(new Term("field", "query"));
+        assertEquals(query, q.query);
+    }
+    
+    @Test
+    public void testTermRangeQueryBigger() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "RangeQuery")
+                    .add("rangeType", "String")
+                    .add("field", "field")
+                    .add("lowerTerm", "value")
+                    .add("upperTerm", JsonValue.NULL)
+                    .add("includeLower", JsonValue.FALSE)
+                    .add("includeUpper", JsonValue.FALSE))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        TermRangeQuery query = TermRangeQuery.newStringRange("field", "value", null, false, false);
+        assertEquals(query, q.query);
+    }
+    
+    @Test
+    public void testTermRangeQueryLower() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "RangeQuery")
+                    .add("rangeType", "String")
+                    .add("field", "field")
+                    .add("lowerTerm", JsonValue.NULL)
+                    .add("upperTerm", "value")
+                    .add("includeLower", JsonValue.TRUE)
+                    .add("includeUpper", JsonValue.TRUE))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        TermRangeQuery query = TermRangeQuery.newStringRange("field", null, "value", true, true);
+        assertEquals(query, q.query);
+    }
+    
+    @Test
+    public void testIntRangeQuery() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "RangeQuery")
+                    .add("rangeType", "Int")
+                    .add("field", "field")
+                    .add("lowerTerm", 1)
+                    .add("upperTerm", 5)
+                    .add("includeLower", JsonValue.FALSE)
+                    .add("includeUpper", JsonValue.TRUE))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        NumericRangeQuery<Integer> query = NumericRangeQuery.newIntRange("field", 1, 5, false, true);
+        assertEquals(query, q.query);
+    }
+        
+    @Test
+    public void testLongRangeQuery() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "RangeQuery")
+                    .add("rangeType", "Long")
+                    .add("field", "field")
+                    .add("lowerTerm", 1L)
+                    .add("upperTerm", 5L)
+                    .add("includeLower", JsonValue.FALSE)
+                    .add("includeUpper", JsonValue.TRUE))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        NumericRangeQuery<Long> query = NumericRangeQuery.newLongRange("field", 1L, 5L, false, true);
+        assertEquals(query, q.query);
+    }
+    
+    @Test
+    public void testDoubleRangeQuery() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "RangeQuery")
+                    .add("rangeType", "Double")
+                    .add("field", "field")
+                    .add("lowerTerm", 1.0)
+                    .add("upperTerm", 5.0)
+                    .add("includeLower", JsonValue.FALSE)
+                    .add("includeUpper", JsonValue.TRUE))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        NumericRangeQuery<Double> query = NumericRangeQuery.newDoubleRange("field", 1.0, 5.0, false, true);
+        assertEquals(query, q.query);
+    }
+    
+    @Test
+    public void testDrilldownQuery() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "TermQuery")
+                    .add("term", Json.createObjectBuilder()
+                        .add("field", "dd-field")
+                        .add("path", Json.createArrayBuilder()
+                            .add("value"))
+                        .add("type", "DrillDown")))
+                .build();
+        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        TermQuery query = new TermQuery(DrillDownQuery.term("$facets", "dd-field", "value"));
         assertEquals(query, q.query);
     }
     

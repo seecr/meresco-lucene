@@ -7,16 +7,22 @@ import java.util.List;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
+import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.WildcardQuery;
 
 public class QueryStringToQuery {
     
@@ -107,6 +113,15 @@ public class QueryStringToQuery {
             case "PhraseQuery":
                 q = createPhraseQuery(query);
                 break;
+            case "PrefixQuery":
+                q = new PrefixQuery(createTerm(query.getJsonObject("term")));
+                break;
+            case "WildcardQuery":
+                q = new WildcardQuery(createTerm(query.getJsonObject("term")));
+                break;
+            case "RangeQuery":
+                q = createRangeQuery(query);
+                break;
             default:
                 return null;
         }
@@ -117,9 +132,9 @@ public class QueryStringToQuery {
 
     private Query createPhraseQuery(JsonObject query) {
         PhraseQuery q = new PhraseQuery();
-        JsonArray clauses = query.getJsonArray("clauses");
-        for (int i = 0; i < clauses.size(); i++) {
-            q.add(createTerm(clauses.getJsonObject(i)));
+        JsonArray terms = query.getJsonArray("terms");
+        for (int i = 0; i < terms.size(); i++) {
+            q.add(createTerm(terms.getJsonObject(i)));
         }
         return q;
     }
@@ -132,6 +147,25 @@ public class QueryStringToQuery {
             q.add(convertToQuery(termQ), occurForString(termQ.getString("occur")));
         }
         return q;
+    }
+    
+    private Query createRangeQuery(JsonObject query) {
+        String field = query.getString("field");
+        boolean includeLower = query.getBoolean("includeLower");
+        boolean includeUpper = query.getBoolean("includeUpper");
+        boolean lower = query.get("lowerTerm") != JsonValue.NULL;
+        boolean upper = query.get("upperTerm") != JsonValue.NULL;
+        switch (query.getString("rangeType")) {
+            case "String":
+                return TermRangeQuery.newStringRange(field, lower ? query.getString("lowerTerm") : null, upper ? query.getString("upperTerm") : null, includeLower, includeUpper);
+            case "Int":
+                return NumericRangeQuery.newIntRange(field, lower ? query.getInt("lowerTerm") : null, upper ? query.getInt("upperTerm") : null, includeLower, includeUpper);
+            case "Long":
+                return NumericRangeQuery.newLongRange(field, lower ? query.getJsonNumber("lowerTerm").longValue() : null, upper ? query.getJsonNumber("upperTerm").longValue() : null, includeLower, includeUpper);
+            case "Double":
+                return NumericRangeQuery.newDoubleRange(field, lower ? query.getJsonNumber("lowerTerm").doubleValue() : null, upper ? query.getJsonNumber("upperTerm").doubleValue() : null, includeLower, includeUpper);
+        }
+        return null;
     }
     
     private Occur occurForString(String occur) {
@@ -147,6 +181,15 @@ public class QueryStringToQuery {
     }
 
     private Term createTerm(JsonObject term) {
+        JsonValue type = term.get("type");
+        if (type != null && type.toString().equals("DrillDown")) {
+            JsonArray jsonPath = term.getJsonArray("path");
+            String[] path = new String[jsonPath.size()];
+            for (int i = 0; i < jsonPath.size(); i++) {
+                path[i] = jsonPath.getString(i);
+            }
+            return DrillDownQuery.term("$facets", term.getString("field"), path);
+        }
         return new Term(term.getString("field"), term.getString("value"));
     }
     

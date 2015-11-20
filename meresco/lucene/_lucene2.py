@@ -46,9 +46,14 @@ class Lucene(Observable):
 
     def observer_init(self):
         consume(self._send(jsonDict=JsonDict(
-                    commitCount=self._settings.commitCount,
                     commitTimeout=self._settings.commitTimeout,
+                    commitCount=self._settings.commitCount,
+                    lruTaxonomyWriterCacheSize=self._settings.lruTaxonomyWriterCacheSize,
                     analyzer=self._settings._analyzer,
+                    similarity=self._settings._similarity,
+                    maxMergeAtOnce=self._settings.maxMergeAtOnce,
+                    segmentsPerTier=self._settings.segmentsPerTier,
+                    numberOfConcurrentTasks=self._settings.numberOfConcurrentTasks
                 ), path="/settings/", synchronous=True))
 
     def addDocument(self, identifier, fields):

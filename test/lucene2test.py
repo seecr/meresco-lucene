@@ -64,7 +64,7 @@ class LuceneTest(SeecrTestCase):
         self.response = JsonDict({
                 "total": 887,
                 "queryTime": 6,
-                "hits": [{"id": "record:1"}],
+                "hits": [{"id": "record:1", "score": 0.1234}],
                 "drilldownData": [
                     {"fieldname": "facet", "path": [], "terms": [{"term": "term", "count": 1}]}
                 ]
@@ -83,6 +83,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEqual(6, response.queryTime)
         self.assertEqual(1, len(response.hits))
         self.assertEqual("record:1", response.hits[0].id)
+        self.assertEqual(0.1234, response.hits[0].score)
         self.assertEqual([
                 {"fieldname": "facet", "path": [], "terms": [{"term": "term", "count": 1}]}
             ], response.drilldownData)

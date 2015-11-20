@@ -377,12 +377,6 @@ class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
         expected = dict(type="RangeQuery", rangeType="Double", field='range.double.field', lowerTerm=float(5), upperTerm=float(5), includeLower=True, includeUpper=True)
         self.assertConversion(expected, cql="range.double.field=5")
 
-    def testCreateDrilldownQuery(self):
-        self.fieldRegistry = FieldRegistry(drilldownFields=[DrilldownField('dd-field')])
-        expected = dict(type="TermQuery", term=self.fieldRegistry.makeDrilldownTerm("dd-field", "VALUE"))
-        self.assertConversion(expected, cql='dd-field exact VALUE')
-        self.assertConversion(expected, cql='dd-field=VALUE')
-
     def testWildcardQuery(self):
         self.fieldRegistry = FieldRegistry()
         expected = dict(type="WildcardQuery", term=dict(field="field", value="???*"))

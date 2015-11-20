@@ -25,7 +25,7 @@
 
 from seecr.test import SeecrTestCase
 from seecr.utils.generatorutils import returnValueFromGenerator
-from meresco.components.json import JsonDict
+from meresco.components.json import JsonDict, JsonList
 from meresco.lucene import Lucene, LuceneSettings
 from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene.queryexpressiontolucenequerystring import QueryExpressionToLuceneQueryString
@@ -89,12 +89,9 @@ class LuceneTest(SeecrTestCase):
             ], response.drilldownData)
 
     def testPrefixSearch(self):
-        self.response = JsonDict({
-                "total": 2,
-                "hits": [["value0", 1], ["value1", 2]]
-            }).dumps()
+        self.response = JsonList([["value0", 1], ["value1", 2]]).dumps()
         response = returnValueFromGenerator(self._lucene.prefixSearch(fieldname='field1', prefix='valu'))
-        self.assertEquals(['value0', 'value1'], response.hits)
+        self.assertEquals(['value1', 'value0'], response.hits)
 
         response = returnValueFromGenerator(self._lucene.prefixSearch(fieldname='field1', prefix='valu', showCount=True))
-        self.assertEquals([['value0', 1], ['value1', 2]], response.hits)
+        self.assertEquals([('value1', 2), ('value0', 1)], response.hits)

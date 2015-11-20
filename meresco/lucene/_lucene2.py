@@ -87,10 +87,8 @@ class Lucene(Observable):
         )
         args = urlencode(dict(fieldname=fieldname, prefix=prefix, limit=limit))
         responseDict = (yield self._send(jsonDict=jsonDict, path='/prefixSearch/?{}'.format(args)))
-        hits = responseDict['hits']
-        if not showCount:
-            hits = [h[0] for h in hits]
-        response = LuceneResponse(total=responseDict['total'], hits=hits)
+        hits = [((term, count) if showCount else term) for term, count in sorted(responseDict, key=lambda t: t[1], reverse=True)]
+        response = LuceneResponse(total=len(hits), hits=hits)
         raise StopIteration(response)
         yield
 

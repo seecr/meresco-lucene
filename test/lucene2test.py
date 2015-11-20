@@ -95,3 +95,9 @@ class LuceneTest(SeecrTestCase):
 
         response = returnValueFromGenerator(self._lucene.prefixSearch(fieldname='field1', prefix='valu', showCount=True))
         self.assertEquals([('value1', 2), ('value0', 1)], response.hits)
+
+    def testNumDocs(self):
+        self.response = "150"
+        result = returnValueFromGenerator(self._lucene.numDocs())
+        self.assertEqual(150, result)
+        self.assertEqual([{'data': None, 'path': '/lucene/numDocs/'}], self.post)

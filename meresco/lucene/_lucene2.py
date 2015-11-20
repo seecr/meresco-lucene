@@ -92,6 +92,18 @@ class Lucene(Observable):
         raise StopIteration(response)
         yield
 
+    def numDocs(self):
+        raise StopIteration((yield self._send(path='/numDocs/')))
+
+    def coreInfo(self):
+        yield self.LuceneInfo(self)
+
+    class LuceneInfo(object):
+        def __init__(inner, self):
+            inner._lucene = self
+            inner.name = self._name
+            inner.numDocs = self.numDocs()
+
     def _luceneResponse(self, responseDict):
         hits = [Hit(**hit) for hit in responseDict['hits']]
         response = LuceneResponse(total=responseDict["total"], queryTime=responseDict["queryTime"], hits=hits)

@@ -24,15 +24,13 @@
 #
 ## end license ##
 
-from seecr.test import SeecrTestCase
-
-from cqlparser.cqltoexpression import QueryExpression, cqlToExpression
-from cqlparser import parseString as parseCql
-
 from meresco.components.json import JsonDict
-from meresco.lucene import LuceneSettings
-from meresco.lucene.fieldregistry import FieldRegistry, INTFIELD, LONGFIELD
+from meresco.lucene import LuceneSettings, DrilldownField
+from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELD, FieldRegistry, LONGFIELD, INTFIELD, STRINGFIELD
 from meresco.lucene.queryexpressiontolucenequerystring import QueryExpressionToLuceneQueryString
+from cqlparser import cqlToExpression, parseString as parseCql, UnsupportedCQL
+from cqlparser.cqltoexpression import QueryExpression
+from seecr.test import SeecrTestCase
 
 
 class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
@@ -222,169 +220,181 @@ class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
     #     query.add(TermQuery(Term("unqualified", "kat")), BooleanClause.Occur.SHOULD)
     #     self.assertConversion(query, cql='katten')
 
-    # def testPhraseQueryIsStandardAnalyzed(self):
-    #     expected = PhraseQuery()
-    #     for term in ["vol.118", "2008", "nr.3", "march", "p.435-444"]:
-    #         expected.add(Term("unqualified", term))
-    #     input = '"vol.118 (2008) nr.3 (March) p.435-444"'
-    #     self.assertConversion(expected, cql=input)
+    def testPhraseQueryIsStandardAnalyzed(self):
+        expected = dict(type="PhraseQuery", terms=[], boost=1.0)
+        for term in ["vol.118", "2008", "nr.3", "march", "p.435-444"]:
+            expected["terms"].append(dict(field="unqualified", value=term))
+        input = '"vol.118 (2008) nr.3 (March) p.435-444"'
+        self.assertConversion(expected, cql=input)
 
-    # def testOneTermPhraseQueryUsesStandardAnalyzed(self):
-    #     expected = PhraseQuery()
-    #     expected.add(Term('unqualified', 'aap'))
-    #     expected.add(Term('unqualified', 'noot'))
-    #     self.assertConversion(expected, cql='aap:noot')
+    def testOneTermPhraseQueryUsesStandardAnalyzed(self):
+        expected = dict(type="PhraseQuery", terms=[], boost=1.0)
+        expected["terms"].append(dict(field="unqualified", value='aap'))
+        expected["terms"].append(dict(field="unqualified", value='noot'))
+        self.assertConversion(expected, cql='aap:noot')
 
-    # def testCreatesEmptyPhraseQueryIfNoValidCharsFound(self):
-    #     expected = PhraseQuery()
-    #     self.assertConversion(expected, cql=':')
+    def testCreatesEmptyPhraseQueryIfNoValidCharsFound(self):
+        expected = dict(type="PhraseQuery", terms=[], boost=1.0)
+        self.assertConversion(expected, cql=':')
 
-    # def testStandardAnalyserWithoutStopWords(self):
-    #     expected = PhraseQuery()
-    #     for term in ["no", "is", "the", "only", "option"]:
-    #         expected.add(Term("unqualified", term))
-    #     self.assertConversion(expected, cql='"no is the only option"')
+    def testStandardAnalyserWithoutStopWords(self):
+        expected = dict(type="PhraseQuery", terms=[], boost=1.0)
+        for term in ["no", "is", "the", "only", "option"]:
+            expected["terms"].append(dict(field="unqualified", value=term))
+        self.assertConversion(expected, cql='"no is the only option"')
 
-    # def testDiacritics(self):
-    #     self.assertConversion(TermQuery(Term('title', 'moree')), cql='title=Moree')
-    #     self.assertConversion(TermQuery(Term('title', 'moree')), cql='title=Morée')
-    #     self.assertConversion(TermQuery(Term('title', 'moree')), cql='title=Morèe')
+    def testDiacritics(self):
+        expected = termQuery('title', 'moree')
+        self.assertConversion(expected, cql='title=Moree')
+        self.assertConversion(expected, cql='title=Morée')
+        self.assertConversion(expected, cql='title=Morèe')
 
-    #     self._analyzer = MerescoDutchStemmingAnalyzer()
-    #     query = PhraseQuery()
-    #     query.add(Term("title", "waar"))
-    #     query.add(Term("title", "is"))
-    #     query.add(Term("title", "moree"))
-    #     query.add(Term("title", "vandaag"))
-    #     self.assertConversion(query, cql='title="Waar is Morée vandaag"')
+        # self._analyzer = MerescoDutchStemmingAnalyzer()
+        # query = PhraseQuery()
+        # query.add(Term("title", "waar"))
+        # query.add(Term("title", "is"))
+        # query.add(Term("title", "moree"))
+        # query.add(Term("title", "vandaag"))
+        # self.assertConversion(query, cql='title="Waar is Morée vandaag"')
 
-    # def testDiacriticsShouldBeNormalizedNFC(self):
-    #     pq = PhraseQuery()
-    #     pq.add(Term("title", "more"))
-    #     pq.add(Term("title", "e"))
-    #     self.assertConversion(pq, cql='title=More\xcc\x81e') # Combined
-    #     from unicodedata import normalize
-    #     self.assertConversion(TermQuery(Term('title', 'moree')), cql=normalize('NFC', unicode('title=More\xcc\x81e')))
+    def testDiacriticsShouldBeNormalizedNFC(self):
+        pq = dict(type="PhraseQuery", terms=[])
+        pq["terms"].append(dict(field="title", value="more"))
+        pq["terms"].append(dict(field="title", value="e"))
+        self.assertConversion(pq, cql='title=More\xcc\x81e') # Combined
+        from unicodedata import normalize
+        self.assertConversion(termQuery('title', 'moree'), cql=normalize('NFC', unicode('title=More\xcc\x81e')))
 
-    # def testIndexRelationTermOutput(self):
-    #     self.assertConversion(TermQuery(Term("animal", "cats")), cql='animal=cats')
-    #     query = PhraseQuery()
-    #     query.add(Term("animal", "cats"))
-    #     query.add(Term("animal", "dogs"))
-    #     self.assertConversion(query, cql='animal="cats dogs"')
-    #     self.assertConversion(query, cql='animal="catS Dogs"')
+    def testIndexRelationTermOutput(self):
+        self.assertConversion(termQuery('animal', 'cats'), cql='animal=cats')
+        query = dict(type="PhraseQuery", terms=[])
+        query["terms"].append(dict(field="animal", value="cats"))
+        query["terms"].append(dict(field="animal", value="dogs"))
+        self.assertConversion(query, cql='animal="cats dogs"')
+        self.assertConversion(query, cql='animal="catS Dogs"')
 
-    # def testIndexRelationExactTermOutput(self):
-    #     self.assertConversion(TermQuery(Term("animal", "hairy cats")), cql='animal exact "hairy cats"')
-    #     self.assertConversion(TermQuery(Term("animal", "Capital Cats")), cql='animal exact "Capital Cats"')
+    def testIndexRelationExactTermOutput(self):
+        self.assertConversion(termQuery("animal", "hairy cats"), cql='animal exact "hairy cats"')
+        self.assertConversion(termQuery("animal", "Capital Cats"), cql='animal exact "Capital Cats"')
 
-    # def testBoost(self):
-    #     query = TermQuery(Term("title", "cats"))
-    #     query.setBoost(2.0)
-    #     self.assertConversion(query, cql="title =/boost=2.0 cats")
+    def testBoost(self):
+        query = termQuery("title", "cats", boost=2.0)
+        self.assertConversion(query, cql="title =/boost=2.0 cats")
 
-    # def testWildcards(self):
-    #     query = PrefixQuery(Term('unqualified', 'prefix'))
-    #     self.assertConversion(query, cql='prefix*')
-    #     self.assertConversion(query, cql='PREfix*')
-    #     query = PrefixQuery(Term('field', 'prefix'))
-    #     self.assertConversion(query, cql='field="PREfix*"')
-    #     self.assertConversion(query, cql='field=prefix*')
-    #     query = PrefixQuery(Term('field', 'oc-0123'))
-    #     self.assertConversion(query, cql='field="oc-0123*"')
-    #     query = TermQuery(Term('field', 'p'))
-    #     self.assertConversion(query, cql='field="P*"')
-    #     #only prefix queries for now
-    #     query = TermQuery(Term('field', 'post'))
-    #     self.assertConversion(query, cql='field="*post"')
+    def testWildcards(self):
+        query = prefixQuery('unqualified', 'prefix', 1.0)
+        self.assertConversion(query, cql='prefix*')
+        self.assertConversion(query, cql='PREfix*')
+        query = prefixQuery('field', 'prefix')
+        self.assertConversion(query, cql='field="PREfix*"')
+        self.assertConversion(query, cql='field=prefix*')
+        query = prefixQuery('field', 'oc-0123')
+        self.assertConversion(query, cql='field="oc-0123*"')
+        query = termQuery('field', 'p')
+        self.assertConversion(query, cql='field="P*"')
+        #only prefix queries for now
+        query = termQuery('field', 'post')
+        self.assertConversion(query, cql='field="*post"')
 
-    #     query = TermQuery(Term('field', 'prefix'))
-    #     self.assertConversion(query, cql='field=prefix**')
+        query = termQuery('field', 'prefix')
+        self.assertConversion(query, cql='field=prefix**')
 
-    #     self.unqualifiedFields = [("field0", 0.2), ("field1", 2.0)]
+        self.unqualifiedFields = [("field0", 0.2), ("field1", 2.0)]
 
-    #     query = BooleanQuery()
-    #     left = PrefixQuery(Term("field0", "prefix"))
-    #     left.setBoost(0.2)
-    #     query.add(left, BooleanClause.Occur.SHOULD)
+        query = dict(type="BooleanQuery", clauses=[])
+        query["clauses"].append(prefixQuery("field0", "prefix", 0.2))
+        query["clauses"][0]["occur"] = "SHOULD"
 
-    #     right = PrefixQuery(Term("field1", "prefix"))
-    #     right.setBoost(2.0)
-    #     query.add(right, BooleanClause.Occur.SHOULD)
-    #     self.assertConversion(query, cql="prefix*")
+        query["clauses"].append(prefixQuery("field1", "prefix", 2.0))
+        query["clauses"][1]["occur"] = "SHOULD"
+        self.assertConversion(query, cql="prefix*")
 
-    # def testMagicExact(self):
-    #     exactResult = self.convert(cql='animal exact "cats dogs"')
-    #     self.fieldRegistry = FieldRegistry()
-    #     self.fieldRegistry.register('animal', StringField.TYPE_NOT_STORED)
-    #     self.assertConversion(exactResult, cql='animal = "cats dogs"')
+    def testMagicExact(self):
+        exactResult = self.convert(cql='animal exact "cats dogs"')
+        self.fieldRegistry = FieldRegistry()
+        self.fieldRegistry.register('animal', STRINGFIELD)
+        self.assertConversion(exactResult, cql='animal = "cats dogs"')
 
-    # def testTextRangeQuery(self):
-    #     # (field, lowerTerm, upperTerm, includeLower, includeUpper)
-    #     self.assertConversion(TermRangeQuery.newStringRange('field', 'value', None, False, False), cql='field > value')
-    #     self.assertConversion(TermRangeQuery.newStringRange('field', 'value', None, True, False), cql='field >= value')
-    #     self.assertConversion(TermRangeQuery.newStringRange('field', None, 'value', False, False), cql='field < value')
-    #     self.assertConversion(TermRangeQuery.newStringRange('field', None, 'value', False, True), cql='field <= value')
+    def testTextRangeQuery(self):
+        # (field, lowerTerm, upperTerm, includeLower, includeUpper)
+        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm='value', upperTerm=None, includeLower=False, includeUpper=False)
+        self.assertConversion(q, cql='field > value')
+        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm='value', upperTerm=None, includeLower=True, includeUpper=False)
+        self.assertConversion(q, cql='field >= value')
+        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm=None, upperTerm='value', includeLower=False, includeUpper=False)
+        self.assertConversion(q, cql='field < value')
+        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm=None, upperTerm='value', includeLower=False, includeUpper=True)
+        self.assertConversion(q, cql='field <= value')
 
-    # def testIntRangeQuery(self):
-    #     # (field, lowerTerm, upperTerm, includeLower, includeUpper)
-    #     self.assertConversion(NumericRangeQuery.newIntRange('intField', 1, None, False, False), cql='intField > 1')
-    #     self.assertConversion(NumericRangeQuery.newIntRange('intField', 1, None, True, False), cql='intField >= 1')
-    #     self.assertConversion(NumericRangeQuery.newIntRange('intField', None, 3, False, False), cql='intField < 3')
-    #     self.assertConversion(NumericRangeQuery.newIntRange('intField', None, 3, False, True), cql='intField <= 3')
+    def testIntRangeQuery(self):
+        # (field, lowerTerm, upperTerm, includeLower, includeUpper)
+        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=1, upperTerm=None, includeLower=False, includeUpper=False)
+        self.assertConversion(q, cql='intField > 1')
+        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=1, upperTerm=None, includeLower=True, includeUpper=False)
+        self.assertConversion(q, cql='intField >= 1')
+        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=None, upperTerm=3, includeLower=False, includeUpper=False)
+        self.assertConversion(q, cql='intField < 3')
+        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=None, upperTerm=3, includeLower=False, includeUpper=True)
+        self.assertConversion(q, cql='intField <= 3')
 
-    # def testLongRangeQuery(self):
-    #     # (field, lowerTerm, upperTerm, includeLower, includeUpper)
-    #     self.assertConversion(NumericRangeQuery.newLongRange('longField', 1, None, False, False), cql='longField > 1')
-    #     self.assertConversion(NumericRangeQuery.newLongRange('longField', 1, None, True, False), cql='longField >= 1')
-    #     self.assertConversion(NumericRangeQuery.newLongRange('longField', None, 3, False, False), cql='longField < 3')
-    #     self.assertConversion(NumericRangeQuery.newLongRange('longField', None, 3, False, True), cql='longField <= 3')
+    def testLongRangeQuery(self):
+        # (field, lowerTerm, upperTerm, includeLower, includeUpper)
+        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=1, upperTerm=None, includeLower=False, includeUpper=False)
+        self.assertConversion(q, cql='longField > 1')
+        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=1, upperTerm=None, includeLower=True, includeUpper=False)
+        self.assertConversion(q, cql='longField >= 1')
+        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=None, upperTerm=3, includeLower=False, includeUpper=False)
+        self.assertConversion(q, cql='longField < 3')
+        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=None, upperTerm=3, includeLower=False, includeUpper=True)
+        self.assertConversion(q, cql='longField <= 3')
 
-    # def testDrilldownFieldQuery(self):
-    #     self.fieldRegistry = FieldRegistry([DrilldownField('field')])
-    #     self.assertConversion(TermQuery(DrillDownQuery.term("$facets", "field", "value")), cql="field = value")
+    def testDrilldownFieldQuery(self):
+        self.fieldRegistry = FieldRegistry([DrilldownField('field')])
+        self.assertConversion(dict(type="TermQuery", term=dict(field="field", path=["value"], type="DrillDown")), cql="field = value")
 
-    # def testExcludeUnqualifiedFieldForWhichNoPhraseQueryIsPossibleInCaseOfPhraseQuery(self):
-    #     self.fieldRegistry = FieldRegistry()
-    #     self.fieldRegistry.register('noTermFreqField', NO_TERMS_FREQUENCY_FIELDTYPE)
-    #     self.unqualifiedFields = [("unqualified", 1.0), ('noTermFreqField', 2.0)]
-    #     expected = PhraseQuery()
-    #     expected.add(Term("unqualified", "phrase query"))
-    #     self.assertConversion(expected, cql='"phrase query"')
+    def testExcludeUnqualifiedFieldForWhichNoPhraseQueryIsPossibleInCaseOfPhraseQuery(self):
+        self.fieldRegistry = FieldRegistry()
+        self.fieldRegistry.register('noTermFreqField', NO_TERMS_FREQUENCY_FIELD)
+        self.unqualifiedFields = [("unqualified", 1.0), ('noTermFreqField', 2.0)]
+        expected = dict(type="PhraseQuery", terms=[
+                dict(field="unqualified", value="phrase"),
+                dict(field="unqualified", value="query")
+            ], boost=1.0)
+        self.assertConversion(expected, cql='"phrase query"')
 
-    # def testQueryForIntField(self):
-    #     expected = NumericRangeQuery.newIntRange("intField", 5, 5, True, True)
-    #     self.assertConversion(expected, cql="intField=5")
+    def testQueryForIntField(self):
+        expected = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=5, upperTerm=5, includeLower=True, includeUpper=True)
+        self.assertConversion(expected, cql="intField=5")
 
-    #     expected = NumericRangeQuery.newIntRange("intField", 5, 5, True, True)
-    #     self.assertConversion(expected, cql="intField exact 5")
+        expected = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=5, upperTerm=5, includeLower=True, includeUpper=True)
+        self.assertConversion(expected, cql="intField exact 5")
 
-    # def testQueryForLongField(self):
-    #     expected = NumericRangeQuery.newLongRange("longField", long(5), long(5), True, True)
-    #     self.assertConversion(expected, cql="longField=5")
+    def testQueryForLongField(self):
+        expected = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=long(5), upperTerm=long(5), includeLower=True, includeUpper=True)
+        self.assertConversion(expected, cql="longField=5")
 
-    # def testQueryForDoubleField(self):
-    #     expected = NumericRangeQuery.newDoubleRange("range.double.field", float(5), float(5), True, True)
-    #     self.assertConversion(expected, cql="range.double.field=5")
+    def testQueryForDoubleField(self):
+        expected = dict(type="RangeQuery", rangeType="Double", field='range.double.field', lowerTerm=float(5), upperTerm=float(5), includeLower=True, includeUpper=True)
+        self.assertConversion(expected, cql="range.double.field=5")
 
-    # def testCreateDrilldownQuery(self):
-    #     self.fieldRegistry = FieldRegistry(drilldownFields=[DrilldownField('dd-field')])
-    #     expected = TermQuery(self.fieldRegistry.makeDrilldownTerm("dd-field", "VALUE"))
-    #     self.assertConversion(expected, cql='dd-field exact VALUE')
-    #     self.assertConversion(expected, cql='dd-field=VALUE')
+    def testCreateDrilldownQuery(self):
+        self.fieldRegistry = FieldRegistry(drilldownFields=[DrilldownField('dd-field')])
+        expected = dict(type="TermQuery", term=self.fieldRegistry.makeDrilldownTerm("dd-field", "VALUE"))
+        self.assertConversion(expected, cql='dd-field exact VALUE')
+        self.assertConversion(expected, cql='dd-field=VALUE')
 
-    # def testWildcardQuery(self):
-    #     self.fieldRegistry = FieldRegistry()
-    #     expected = WildcardQuery(Term("field", "???*"))
-    #     self.assertConversion(expected, cql='field=???*')
+    def testWildcardQuery(self):
+        self.fieldRegistry = FieldRegistry()
+        expected = dict(type="WildcardQuery", term=dict(field="field", value="???*"))
+        self.assertConversion(expected, cql='field=???*')
 
-    # def testUnsupportedCQL(self):
-    #     for relation in ['<>']:
-    #         try:
-    #             self.convert(cql='index %(relation)s term' % locals())
-    #             self.fail()
-    #         except UnsupportedCQL:
-    #             pass
+    def testUnsupportedCQL(self):
+        for relation in ['<>']:
+            try:
+                self.convert(cql='index %(relation)s term' % locals())
+                self.fail()
+            except UnsupportedCQL:
+                pass
 
     def convert(self, expression=None, cql=None):
         if expression is None:
@@ -411,3 +421,15 @@ class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
         if not isinstance(expected, basestring):
             result = JsonDict.loads(result)
         self.assertEquals(expected, result)
+
+def termQuery(field, value, boost=None):
+    q = dict(type="TermQuery", term=dict(field=field, value=value))
+    if boost:
+        q["boost"] = boost
+    return q
+
+def prefixQuery(field, value, boost=None):
+    q = dict(type="PrefixQuery", term=dict(field=field, value=value))
+    if boost:
+        q["boost"] = boost
+    return q

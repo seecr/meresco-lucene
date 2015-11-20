@@ -112,10 +112,6 @@ class FieldRegistry(object):
     def isIndexField(self, fieldname):
         return not self.isDrilldownField(fieldname) or self.isTermVectorField(fieldname)
 
-    def makeDrilldownTerm(self, fieldname, path):
-        indexFieldName = self.facetsConfig.getDimConfig(fieldname).indexFieldName;
-        return DrillDownQuery.term(indexFieldName, fieldname, path)
-
     def pythonType(self, fieldname):
         return self._getFieldDefinition(fieldname).pythonType
 

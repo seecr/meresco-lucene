@@ -30,7 +30,6 @@ from cqlparser import UnsupportedCQL
 from weightless.core import Observable
 
 from java.io import StringReader
-from org.apache.lucene.search import BooleanQuery, BooleanClause, WildcardQuery, PhraseQuery, PrefixQuery
 from org.meresco.lucene.analysis import MerescoStandardAnalyzer
 from meresco.components.json import JsonDict
 
@@ -68,7 +67,7 @@ class QueryExpressionToLuceneQueryString(Observable):
             queries = []
             for index, boost in self._unqualifiedTermFields:
                 query = self._determineQuery(index, expr.term)
-                if isinstance(query, PhraseQuery) and not self._fieldRegistry.phraseQueryPossible(index):
+                if query["type"] == "PhraseQuery" and not self._fieldRegistry.phraseQueryPossible(index):
                     continue
                 query['boost'] = boost
                 queries.append(query)
@@ -109,19 +108,22 @@ class QueryExpressionToLuceneQueryString(Observable):
         terms = self._pre_analyzeToken(index, termString)
         if len(terms) == 1:
             if prefixRegexp.match(termString):
-                return PrefixQuery(self._createStringTerm(index, terms[0]))
+                return dict(type="PrefixQuery", term=self._createStringTerm(index, terms[0]))
             else:
                 terms = self._post_analyzeToken(index, terms[0])
                 if len(terms) == 1:
                     return self._createQuery(index, terms[0])
-                query = BooleanQuery()
+                q = dict(type="BooleanQuery", clauses=[])
                 for term in terms:
-                    query.add(self._createQuery(index, term), BooleanClause.Occur.SHOULD)
-                return query
+                    query = self._createQuery(index, term)
+                    query['occur'] = OCCUR["OR"]
+                    q["clauses"].append(query)
+                return q
         else:
             if '???*' == termString:
-                return WildcardQuery(self._createStringTerm(index, termString))
+                return dict(type="WildcardQuery", term=self._createStringTerm(index, termString))
             query = dict(type="PhraseQuery", terms=[])
+            print terms
             for term in terms:
                 query['terms'].append(self._createStringTerm(index, term))
             return query
@@ -133,10 +135,10 @@ class QueryExpressionToLuceneQueryString(Observable):
         else:
             lowerTerm, upperTerm = termString, None
         includeLower, includeUpper = relation == '>=', relation == '<='
-        rangeQuery, pythonType = self._fieldRegistry.rangeQueryAndType(field)
+        rangeQueryType, pythonType = self._fieldRegistry.rangeQueryAndType(field)
         lowerTerm = pythonType(lowerTerm) if lowerTerm else None
         upperTerm = pythonType(upperTerm) if upperTerm else None
-        return rangeQuery(field, lowerTerm, upperTerm, includeLower, includeUpper)
+        return rangeQuery(rangeQueryType, field, lowerTerm, upperTerm, includeLower, includeUpper)
 
     def _pre_analyzeToken(self, index, token):
         if isinstance(self._analyzer, MerescoStandardAnalyzer):
@@ -152,20 +154,21 @@ class QueryExpressionToLuceneQueryString(Observable):
 
     def _createQuery(self, field, term):
         if self._fieldRegistry.isNumeric(field):
-            rangeQuery, pythonType = self._fieldRegistry.rangeQueryAndType(field)
+            rangeQueryType, pythonType = self._fieldRegistry.rangeQueryAndType(field)
             term = pythonType(term) if term else None
-            return rangeQuery(field, term, term, True, True)
+            return rangeQuery(rangeQueryType, field, term, term, True, True)
         else:
             return dict(type="TermQuery", term=self._createStringTerm(field, term))
-
 
     def _createStringTerm(self, field, value):
         if self._fieldRegistry.isDrilldownField(field):
             if self._fieldRegistry.isHierarchicalDrilldown(field):
                 value = value.split('>')
-            return self._fieldRegistry.makeDrilldownTerm(field, value)
+            return dict(field=field, path=[value], type="DrillDown")
         return dict(field=field, value=value)
 
+def rangeQuery(rangeQueryType, field, lowerTerm, upperTerm, includeLower, includeUpper):
+    return dict(type="RangeQuery", rangeType=rangeQueryType, field=field, lowerTerm=lowerTerm, upperTerm=upperTerm, includeLower=includeLower, includeUpper=includeUpper)
 
 prefixRegexp = compile(r'^([\w-]{2,})\*$') # pr*, prefix* ....
 

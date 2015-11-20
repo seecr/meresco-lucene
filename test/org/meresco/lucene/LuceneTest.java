@@ -210,5 +210,8 @@ public class LuceneTest extends SeecrTestCase {
         result = lucene.executeQuery(new MatchAllDocsQuery(), 1, 2, null, null);
         assertEquals(3, result.total);
         assertEquals(1, result.hits.size());
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null);
+        assertEquals(3, result.total);
+        assertEquals(0, result.hits.size());
     }
 }

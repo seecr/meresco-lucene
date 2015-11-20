@@ -162,7 +162,7 @@ public class Lucene {
         
         indexAndTaxo.searcher().search(query, null, collectors.root);
         LuceneResponse response = new LuceneResponse(collectors.topCollector.getTotalHits());
-        for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(start).scoreDocs) {
+        for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(stop == 0 ? 1 : start).scoreDocs) { //TODO: temp fix for start/stop = 0
             response.addHit(getDocument(scoreDoc.doc).get(ID_FIELD), scoreDoc.score);
         }
         if (collectors.facetCollector != null)
@@ -196,7 +196,9 @@ public class Lucene {
     }
     
     private TopDocSuperCollector topCollector(int start, int stop, Sort sort) {
-//        if (stop <= start)
+        if (stop <= start)
+            //TODO: temp fix for start/stop = 0; You should use TotalHitCountSuperCollector
+            return new TopScoreDocSuperCollector(stop == 0 ? 1 : stop, true);
 //            return new TotalHitCountSuperCollector();
         if (sort == null)
             return new TopScoreDocSuperCollector(stop, true);

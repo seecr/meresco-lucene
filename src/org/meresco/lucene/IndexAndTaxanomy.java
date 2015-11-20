@@ -17,13 +17,13 @@ public class IndexAndTaxanomy {
     private ExecutorService executor = null;
     private SuperIndexSearcher searcher;
     private boolean reopenSearcher = true;
-    private Similarity similarity;
+    private LuceneSettings settings;
     
     public IndexAndTaxanomy(Directory indexDirectory, Directory taxoDirectory, LuceneSettings settings) throws IOException {
         this.numberOfConcurrentTasks = settings.numberOfConcurrentTasks;
         this.reader = DirectoryReader.open(indexDirectory);
         this.taxoReader = new DirectoryTaxonomyReader(taxoDirectory);
-        this.similarity = settings.similarity;
+        this.settings = settings;
     }
     
     public boolean reopen() throws IOException {
@@ -49,7 +49,7 @@ public class IndexAndTaxanomy {
             this.executor.shutdown();
         this.executor  = Executors.newFixedThreadPool(this.numberOfConcurrentTasks);
         this.searcher = new SuperIndexSearcher(this.reader, this.executor, this.numberOfConcurrentTasks);
-        this.searcher.setSimilarity(this.similarity);
+        this.searcher.setSimilarity(this.settings.similarity);
         return this.searcher;
     }
     

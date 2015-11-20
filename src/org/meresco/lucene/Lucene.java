@@ -48,21 +48,35 @@ public class Lucene {
     private int commitCount = 0;
     private Timer commitTimer;
     public String name;
+    private File stateDir;
 
-    public Lucene(File stateDir, LuceneSettings settings) throws IOException {
+    public Lucene(String name, File stateDir) {
+        this.name = name;
+        this.stateDir = stateDir;
+    }
+    
+    public Lucene(File stateDir, LuceneSettings settings) throws Exception {
         this(null, stateDir, settings);
     }
     
-    public Lucene(String name, File stateDir, LuceneSettings settings) throws IOException {
+    public Lucene(String name, File stateDir, LuceneSettings settings) throws Exception {
         this.name = name;
+        this.stateDir = stateDir;
+        initSettings(settings);
+    }
+
+    public void initSettings(LuceneSettings settings) throws Exception {
+        if (this.settings != null)
+            throw new Exception("Init settings is only allowed once");
         this.settings = settings;
+        
         MMapDirectory indexDirectory = new MMapDirectory(new File(stateDir, "index"));
         indexDirectory.setUseUnmap(false);
 
         MMapDirectory taxoDirectory = new MMapDirectory(new File(stateDir, "taxo"));
         taxoDirectory.setUseUnmap(false);
-
-        IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_10_4, new StandardAnalyzer());
+    
+        IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_10_4, settings.analyzer);
         config.setSimilarity(settings.similarity);
         TieredMergePolicy mergePolicy = new TieredMergePolicy();
         mergePolicy.setMaxMergeAtOnce(settings.maxMergeAtOnce);
@@ -76,6 +90,11 @@ public class Lucene {
         
         indexAndTaxo = new IndexAndTaxanomy(indexDirectory, taxoDirectory, settings);
         facetsConfig = new FacetsConfig();
+        facetsConfig.setHierarchical("untokenized.fieldHier", true);
+    }
+    
+    public LuceneSettings getSettings() {
+        return this.settings;
     }
     
     public void close() throws IOException {

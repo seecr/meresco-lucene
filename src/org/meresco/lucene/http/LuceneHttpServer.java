@@ -66,7 +66,7 @@ public class LuceneHttpServer {
         option.setRequired(true);
         options.addOption(option);
         
-        option = new Option("", "core", true, "Lucene core");
+        option = new Option(null, "core", true, "Lucene core");
         option.setType(String[].class);
         option.setRequired(true);
         options.addOption(option);
@@ -93,8 +93,7 @@ public class LuceneHttpServer {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         List<Lucene> lucenes = new ArrayList<Lucene>();
         for (String core : cores) {
-            LuceneSettings settings = new LuceneSettings();
-            Lucene lucene = new Lucene(core, new File(storeLocation, core), settings);
+            Lucene lucene = new Lucene(core, new File(storeLocation, core));
             lucenes.add(lucene);
             
             ContextHandler context = new ContextHandler("/" + core + "/query");
@@ -110,7 +109,7 @@ public class LuceneHttpServer {
             contexts.addHandler(context);
             
             context = new ContextHandler("/" + core + "/settings");
-            context.setHandler(new SettingsHandler(settings));
+            context.setHandler(new SettingsHandler(lucene));
             contexts.addHandler(context);
         }
         

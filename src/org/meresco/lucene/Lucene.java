@@ -278,4 +278,12 @@ public class Lucene {
             this.count = count;
         }
     }
+
+    public int numDocs() {
+        return this.indexWriter.numDocs();
+    }
+    
+    public int maxDoc() {
+        return this.indexWriter.maxDoc();
+    }
 }

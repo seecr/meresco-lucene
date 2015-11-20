@@ -240,4 +240,15 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals("value2", terms.get(2).term);
         assertEquals(1, terms.get(0).count);
     }
+    
+    @Test
+    public void testNumDocs() throws Exception {
+        assertEquals(0, lucene.maxDoc());
+        assertEquals(0, lucene.numDocs());
+        Document doc1 = new Document();
+        doc1.add(new StringField("field1", "value0", Store.NO));
+        lucene.addDocument("id1", doc1);
+        assertEquals(1, lucene.maxDoc());
+        assertEquals(1, lucene.numDocs());
+    }
 }

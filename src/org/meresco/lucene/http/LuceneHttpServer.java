@@ -115,6 +115,10 @@ public class LuceneHttpServer {
             context = new ContextHandler("/" + core + "/prefixSearch");
             context.setHandler(new PrefixSearchHandler(lucene));
             contexts.addHandler(context);
+            
+            context = new ContextHandler("/" + core);
+            context.setHandler(new OtherHandler(lucene));
+            contexts.addHandler(context);
         }
         
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));

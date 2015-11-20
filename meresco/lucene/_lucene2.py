@@ -85,7 +85,7 @@ class Lucene(Observable):
         raise StopIteration(self._luceneResponse(responseDict))
         yield
 
-    def prefixSearch(self, fieldname, prefix, showCount=False, limit=10):
+    def prefixSearch(self, fieldname, prefix, showCount=False, limit=10, **kwargs):
         jsonDict = JsonDict(
             fieldname=fieldname,
             prefix=prefix,

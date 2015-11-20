@@ -123,7 +123,6 @@ class QueryExpressionToLuceneQueryString(Observable):
             if '???*' == termString:
                 return dict(type="WildcardQuery", term=self._createStringTerm(index, termString))
             query = dict(type="PhraseQuery", terms=[])
-            print terms
             for term in terms:
                 query['terms'].append(self._createStringTerm(index, term))
             return query

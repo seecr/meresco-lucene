@@ -2,6 +2,8 @@ package org.meresco.lucene.http;
 
 import java.io.IOException;
 
+import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,6 +31,22 @@ public class OtherHandler extends AbstractHandler {
                 case "/maxDoc/":
                     result = String.valueOf(lucene.maxDoc());
                     break;
+                case "/fieldnames/":
+                    JsonArrayBuilder builder = Json.createArrayBuilder();
+                    for (String fieldname : lucene.fieldnames())
+                        builder.add(fieldname);
+                    result = builder.build().toString();
+                    break;
+                case "/drilldownFieldnames/":
+                    String dim = request.getParameter("dim");
+                    String[] path = request.getParameterValues("path");
+                    if (path == null)
+                        path = new String[0];
+                    builder = Json.createArrayBuilder();
+                    for (String fieldname : lucene.drilldownFieldnames(50, dim, path))
+                        builder.add(fieldname);
+                    result = builder.build().toString();
+                    break;
             }
             response.getWriter().write(result);
         } catch (Exception e) {
@@ -38,6 +56,7 @@ public class OtherHandler extends AbstractHandler {
             return;
         }
         response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("application/json");
         baseRequest.setHandled(true);
     }
 }

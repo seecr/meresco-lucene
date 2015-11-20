@@ -3,6 +3,7 @@ package org.meresco.lucene;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -16,8 +17,12 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.CachedOrdinalsReader;
 import org.apache.lucene.facet.taxonomy.DocValuesOrdinalsReader;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
@@ -285,5 +290,33 @@ public class Lucene {
     
     public int maxDoc() {
         return this.indexWriter.maxDoc();
+    }
+
+    public List<String> fieldnames() throws IOException {
+        List<String> fieldnames = new ArrayList<String>();
+        Fields fields = MultiFields.getFields(this.indexAndTaxo.reader);
+        if (fields == null) 
+            return fieldnames;
+        for (Iterator<String> iterator = fields.iterator(); iterator.hasNext();) {
+            fieldnames.add(iterator.next());
+        }
+        return fieldnames;
+    }
+    
+    public List<String> drilldownFieldnames(int limit, String dim, String... path) throws IOException {
+        DirectoryTaxonomyReader taxoReader = this.indexAndTaxo.taxoReader;
+        int parentOrdinal = dim == null ? TaxonomyReader.ROOT_ORDINAL : taxoReader.getOrdinal(dim, path);
+        ChildrenIterator childrenIter = taxoReader.getChildren(parentOrdinal);
+        List<String> fieldnames = new ArrayList<String>();
+        while (true) {
+            int ordinal = childrenIter.next();
+            if (ordinal == TaxonomyReader.INVALID_ORDINAL)
+                break;
+            String[] components = taxoReader.getPath(ordinal).components;
+            fieldnames.add(components[components.length - 1 ]);
+            if (fieldnames.size() >= limit)
+                break;
+        }
+        return fieldnames;
     }
 }

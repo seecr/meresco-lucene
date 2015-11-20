@@ -1,6 +1,7 @@
 package org.meresco.lucene;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import java.io.IOException;
@@ -250,5 +251,37 @@ public class LuceneTest extends SeecrTestCase {
         lucene.addDocument("id1", doc1);
         assertEquals(1, lucene.maxDoc());
         assertEquals(1, lucene.numDocs());
+    }
+    
+    @SuppressWarnings("serial")
+    @Test
+    public void testFieldname() throws IOException {
+        Document doc1 = new Document();
+        doc1.add(new StringField("field1", "value0", Store.NO));
+        lucene.addDocument("id1", doc1);
+        
+        List<String> fieldnames = lucene.fieldnames();
+        assertEquals(2, fieldnames.size());
+        assertEquals(new ArrayList<String>() {{ add("__id__"); add("field1"); }}, fieldnames);
+    }
+    
+    @SuppressWarnings("serial")
+    @Test
+    public void testDrilldownFieldname() throws IOException {
+        Document doc1 = new Document();
+        doc1.add(new FacetField("cat", "cat 1"));
+        lucene.addDocument("id1", doc1);
+        
+        Document doc2 = new Document();
+        doc2.add(new FacetField("cat", "cat 2"));
+        lucene.addDocument("id2", doc2);
+        
+        List<String> fieldnames = lucene.drilldownFieldnames(50, null);
+        assertEquals(1, fieldnames.size());
+        assertEquals(new ArrayList<String>() {{ add("cat"); }}, fieldnames);
+        
+        fieldnames = lucene.drilldownFieldnames(50, "cat");
+        assertEquals(2, fieldnames.size());
+        assertEquals(new ArrayList<String>() {{ add("cat 2"); add("cat 1");}}, fieldnames);
     }
 }

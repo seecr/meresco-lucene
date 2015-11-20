@@ -93,7 +93,7 @@ public class LuceneHttpServer {
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         List<Lucene> lucenes = new ArrayList<Lucene>();
         for (String core : cores) {
-            Lucene lucene = new Lucene(core, new File(storeLocation, core));
+            Lucene lucene = new Lucene(core, new File(storeLocation, "lucene-" + core));
             lucenes.add(lucene);
             
             ContextHandler context = new ContextHandler("/" + core + "/query");

@@ -126,7 +126,6 @@ class Lucene(Observable):
     def _send(self, path, jsonDict=None, synchronous=False):
         path = "/" + self._name + path
         response = yield self._post(path=path, data=jsonDict.dumps() if jsonDict else None, synchronous=synchronous)
-        print response
         raise StopIteration(loads(response) if response else None)
 
     def _post(self, path, data, synchronous=False):

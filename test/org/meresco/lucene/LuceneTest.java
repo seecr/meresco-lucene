@@ -13,6 +13,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
@@ -123,6 +124,33 @@ public class LuceneTest extends SeecrTestCase {
         assertArrayEquals(new String[] { "other value", "second item" }, ddTerms);
         assertEquals(2, result.drilldownData.get(0).terms.get("second item").intValue());
         assertEquals(1, result.drilldownData.get(0).terms.get("other value").intValue());
+    }
+    
+    @Test
+    public void testFacetsInDifferentIndexFieldName() throws Exception {
+        FacetsConfig facetsConfig = lucene.getSettings().facetsConfig;
+        facetsConfig.setIndexFieldName("field0", "$facets_1");
+        facetsConfig.setIndexFieldName("field2", "$facets_1");
+        
+        
+        Document doc1 = new Document();
+        doc1.add(new FacetField("field0", "value0"));
+        doc1.add(new FacetField("field1", "value1"));
+        doc1.add(new FacetField("field2", "value2"));
+        lucene.addDocument("id0", doc1);
+        
+        ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
+        facets.add(new FacetRequest("field0", 10));
+        facets.add(new FacetRequest("field1", 10));
+        facets.add(new FacetRequest("field2", 10));
+        LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery(), facets);
+        assertEquals(3, result.drilldownData.size());
+        assertEquals("field0", result.drilldownData.get(0).fieldname);
+        assertEquals(1, result.drilldownData.get(0).terms.size());
+        assertEquals("field1", result.drilldownData.get(1).fieldname);
+        assertEquals(1, result.drilldownData.get(1).terms.size());
+        assertEquals("field2", result.drilldownData.get(2).fieldname);
+        assertEquals(1, result.drilldownData.get(2).terms.size());
     }
     
     @Test

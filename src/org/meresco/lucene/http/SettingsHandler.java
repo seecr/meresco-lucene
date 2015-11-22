@@ -93,7 +93,7 @@ public class SettingsHandler extends AbstractHandler {
             if (drilldownField.get("multiValued") != null)
                 facetsConfig.setMultiValued(dim, drilldownField.getBoolean("multiValued"));
             JsonValue fieldname = drilldownField.get("fieldname");
-            if (fieldname != null)
+            if (fieldname != null && fieldname != JsonValue.NULL)
                 facetsConfig.setIndexFieldName(dim, fieldname.toString());
         }   
     }

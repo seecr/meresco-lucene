@@ -3,8 +3,12 @@ package org.meresco.lucene;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -17,6 +21,7 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.CachedOrdinalsReader;
 import org.apache.lucene.facet.taxonomy.DocValuesOrdinalsReader;
+import org.apache.lucene.facet.taxonomy.OrdinalsReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -58,6 +63,7 @@ public class Lucene {
     private Timer commitTimer;
     public String name;
     private File stateDir;
+    private Map<String, CachedOrdinalsReader> cachedOrdinalsReader = new HashMap<String, CachedOrdinalsReader>();
 
     public Lucene(String name, File stateDir) {
         this.name = name;
@@ -98,8 +104,7 @@ public class Lucene {
         taxoWriter.commit();
         
         indexAndTaxo = new IndexAndTaxanomy(indexDirectory, taxoDirectory, settings);
-        facetsConfig = new FacetsConfig();
-        facetsConfig.setHierarchical("untokenized.fieldHier", true);
+        facetsConfig = settings.facetsConfig;
     }
     
     public LuceneSettings getSettings() {
@@ -124,7 +129,7 @@ public class Lucene {
         commit();
     }
     
-    public synchronized void commit() throws IOException {
+    public void commit() throws IOException {
         commitCount++;
         if (commitCount >= settings.commitCount) {
             realCommit();
@@ -145,7 +150,7 @@ public class Lucene {
         }
     }
     
-    public void realCommit() throws IOException {
+    public synchronized void realCommit() throws IOException {
         commitCount = 0;
         if (commitTimer != null) {
             commitTimer.cancel();
@@ -215,9 +220,34 @@ public class Lucene {
     }
     
     private FacetSuperCollector facetCollector(List<FacetRequest> facets) {
-        if (facets == null)
+        if (facets == null || facets.size() == 0)
             return null;
-        return new FacetSuperCollector(indexAndTaxo.taxoReader, facetsConfig, new CachedOrdinalsReader(new DocValuesOrdinalsReader())); //TODO: cache ordinals reader
+        List<OrdinalsReader> readers = getOrdinalsReaders(facets);
+        FacetSuperCollector collector = new FacetSuperCollector(indexAndTaxo.taxoReader, facetsConfig, readers.get(0));
+        for (int i = 1; i < readers.size(); i++) {
+            collector.addOrdinalsReader(readers.get(i));
+        }
+        return collector;
+    }
+    
+    private List<OrdinalsReader> getOrdinalsReaders(List<FacetRequest> facets) {
+        Set<String> indexFieldnames = new HashSet<String>();
+        for (FacetRequest f : facets)
+            indexFieldnames.add(this.facetsConfig.getDimConfig(f.fieldname).indexFieldName);
+        List<OrdinalsReader> readers = new ArrayList<OrdinalsReader>();
+        for (String indexFieldname : indexFieldnames)
+            readers.add(getOrdinalsReader(indexFieldname));
+        return readers;
+    }
+    
+    private OrdinalsReader getOrdinalsReader(String indexFieldname) {
+        CachedOrdinalsReader reader = cachedOrdinalsReader.get(indexFieldname);
+        if (reader == null) {
+            DocValuesOrdinalsReader docValuesReader = indexFieldname == null ? new DocValuesOrdinalsReader() : new DocValuesOrdinalsReader(indexFieldname);
+            reader = new CachedOrdinalsReader(docValuesReader);
+            cachedOrdinalsReader.put(indexFieldname, reader);
+        }
+        return reader;
     }
     
     private void facetResult(LuceneResponse response, FacetSuperCollector facetCollector, List<FacetRequest> facets) throws IOException {

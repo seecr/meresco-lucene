@@ -78,7 +78,8 @@ public class UpdateSettingsTest {
         LuceneSettings settings = new LuceneSettings();
         String json = "{\"drilldownFields\": [" +
         		    "{\"dim\": \"field0\", \"hierarchical\": true, \"multiValued\": false}," +
-        		    "{\"dim\": \"field1\", \"hierarchical\": true, \"multiValued\": true, \"fieldname\": \"$facets_2\"}" +
+        		    "{\"dim\": \"field1\", \"hierarchical\": true, \"multiValued\": true, \"fieldname\": \"$facets_2\"}," +
+        		    "{\"dim\": \"field2\", \"hierarchical\": false, \"multiValued\": false, \"fieldname\": null}" +
     		    "]}";
         
         SettingsHandler.updateSettings(settings, new StringReader(json));
@@ -91,5 +92,10 @@ public class UpdateSettingsTest {
         assertTrue(field1.hierarchical);
         assertTrue(field1.multiValued);
         assertEquals("$facets_2", field1.indexFieldName);
+        
+        DimConfig field2 = settings.facetsConfig.getDimConfig("field2");
+        assertFalse(field2.hierarchical);
+        assertFalse(field2.multiValued);
+        assertEquals("$facets", field2.indexFieldName);
     }
 }

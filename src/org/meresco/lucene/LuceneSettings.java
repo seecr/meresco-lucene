@@ -1,6 +1,7 @@
 package org.meresco.lucene;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
@@ -15,4 +16,5 @@ public class LuceneSettings {
     public int numberOfConcurrentTasks = 6;
     public int commitTimeout = 10;
     public int commitCount = 100000;
+    public FacetsConfig facetsConfig = new FacetsConfig();
 }

@@ -1,10 +1,12 @@
 package org.meresco.lucene;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 import java.io.StringReader;
 import java.util.ArrayList;
 
+import org.apache.lucene.facet.FacetsConfig.DimConfig;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.junit.Test;
 import org.meresco.lucene.analysis.MerescoDutchStemmingAnalyzer;
@@ -69,5 +71,25 @@ public class UpdateSettingsTest {
         assertEquals(BM25Similarity.class, settings.similarity.getClass());
         assertEquals(2.0f, ((BM25Similarity) settings.similarity).getB(), 0);
         assertEquals(1.0f, ((BM25Similarity) settings.similarity).getK1(), 0);
+    }
+    
+    @Test
+    public void testDrilldownFields() throws Exception {
+        LuceneSettings settings = new LuceneSettings();
+        String json = "{\"drilldownFields\": [" +
+        		    "{\"dim\": \"field0\", \"hierarchical\": true, \"multiValued\": false}," +
+        		    "{\"dim\": \"field1\", \"hierarchical\": true, \"multiValued\": true, \"fieldname\": \"$facets_2\"}" +
+    		    "]}";
+        
+        SettingsHandler.updateSettings(settings, new StringReader(json));
+        DimConfig field0 = settings.facetsConfig.getDimConfig("field0");
+        assertTrue(field0.hierarchical);
+        assertFalse(field0.multiValued);
+        assertEquals("$facets", field0.indexFieldName);
+        
+        DimConfig field1 = settings.facetsConfig.getDimConfig("field1");
+        assertTrue(field1.hierarchical);
+        assertTrue(field1.multiValued);
+        assertEquals("$facets_2", field1.indexFieldName);
     }
 }

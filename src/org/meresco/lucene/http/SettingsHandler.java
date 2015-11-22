@@ -7,11 +7,13 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.eclipse.jetty.server.Request;
@@ -75,9 +77,25 @@ public class SettingsHandler extends AbstractHandler {
                 case "similarity":
                     settings.similarity = getSimilarity(object.getJsonObject(key));
                     break;
+                case "drilldownFields":
+                    updateDrilldownFields(settings.facetsConfig, object.getJsonArray(key));
             }
         }
         
+    }
+
+    private static void updateDrilldownFields(FacetsConfig facetsConfig, JsonArray drilldownFields) {
+        for (int i = 0; i < drilldownFields.size(); i++) {
+            JsonObject drilldownField = drilldownFields.getJsonObject(i);
+            String dim = drilldownField.getString("dim");
+            if (drilldownField.get("hierarchical") != null)
+                facetsConfig.setHierarchical(dim, drilldownField.getBoolean("hierarchical"));
+            if (drilldownField.get("multiValued") != null)
+                facetsConfig.setMultiValued(dim, drilldownField.getBoolean("multiValued"));
+            JsonValue fieldname = drilldownField.get("fieldname");
+            if (fieldname != null)
+                facetsConfig.setIndexFieldName(dim, fieldname.toString());
+        }   
     }
 
     private static Similarity getSimilarity(JsonObject similarity) {

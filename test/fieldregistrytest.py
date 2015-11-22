@@ -212,25 +212,25 @@ class FieldRegistryTest(SeecrTestCase):
     #     self.assertEquals(set([None]), registry.indexFieldNames(['vuur']))
     #     self.assertEquals(set(['facetfield']), registry.indexFieldNames(['noot']))
 
-    def testIndexFieldnamesForFieldname(self):
-        drilldownFields = [
-            DrilldownField(name='aap'),
-            DrilldownField(name='noot', indexFieldName='facetfield'),
-            DrilldownField(name='vis', indexFieldName='facetfield2'),
-            DrilldownField(name='vuur')
-        ]
-        registry = FieldRegistry(drilldownFields=drilldownFields)
-        self.assertEquals(set([None, 'facetfield2']), registry.indexFieldNames(['aap', 'vis', 'vuur']))
+    # def testIndexFieldnamesForFieldname(self):
+    #     drilldownFields = [
+    #         DrilldownField(name='aap'),
+    #         DrilldownField(name='noot', indexFieldName='facetfield'),
+    #         DrilldownField(name='vis', indexFieldName='facetfield2'),
+    #         DrilldownField(name='vuur')
+    #     ]
+    #     registry = FieldRegistry(drilldownFields=drilldownFields)
+    #     self.assertEquals(set([None, 'facetfield2']), registry.indexFieldNames(['aap', 'vis', 'vuur']))
 
-    def testIsDrilldownField(self):
-        registry = FieldRegistry(drilldownFields=[DrilldownField(name='aap')], isDrilldownFieldFunction=lambda name:name == 'noot')
-        self.assertEquals(set([None]), registry.indexFieldNames(['aap']))
-        self.assertEquals(set([None]), registry.indexFieldNames(['noot']))
-        self.assertEquals(set([]), registry.indexFieldNames(['vis']))
+    # def testIsDrilldownField(self):
+    #     registry = FieldRegistry(drilldownFields=[DrilldownField(name='aap')], isDrilldownFieldFunction=lambda name:name == 'noot')
+    #     self.assertEquals(set([None]), registry.indexFieldNames(['aap']))
+    #     self.assertEquals(set([None]), registry.indexFieldNames(['noot']))
+    #     self.assertEquals(set([]), registry.indexFieldNames(['vis']))
 
-    def testIndexFieldNamesForFieldnamesNotRegistered(self):
-        registry = FieldRegistry(drilldownFields=[DrilldownField(name='aap', indexFieldName='aapjes')])
-        self.assertEquals(set(['aapjes']), registry.indexFieldNames(['aap', 'vis', 'vuur']))
+    # def testIndexFieldNamesForFieldnamesNotRegistered(self):
+    #     registry = FieldRegistry(drilldownFields=[DrilldownField(name='aap', indexFieldName='aapjes')])
+    #     self.assertEquals(set(['aapjes']), registry.indexFieldNames(['aap', 'vis', 'vuur']))
 
     def testSortField(self):
         registry = FieldRegistry()

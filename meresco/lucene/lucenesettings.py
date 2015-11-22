@@ -68,12 +68,12 @@ class LuceneSettings(object):
     def asPostDict(self):
         drilldownFields = []
         fieldRegistry = self.fieldRegistry
-        for fieldname in fieldRegistry._hierarchicalDrilldownFieldNames:
+        for fieldname, options in fieldRegistry.drilldownFieldNames.items():
             drilldownFields.append({
                     "dim": fieldname,
-                    "hierarchical": True,
-                    "multiValued": fieldname in fieldRegistry._multivaluedDrilldownFieldNames,
-                    "fieldname": fieldRegistry._indexFieldNames[fieldname]
+                    "hierarchical": options["hierarchical"],
+                    "multiValued": options["multiValued"],
+                    "fieldname": options["indexFieldName"]
                 })
         return JsonDict(
                 commitTimeout=self.commitTimeout,

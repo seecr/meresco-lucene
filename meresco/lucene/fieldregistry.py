@@ -42,9 +42,7 @@ class FieldRegistry(object):
         }
         self._indexFieldNames = {}
         self._defaultDefinition = defaultDefinition or TEXTFIELD
-        self._drilldownFieldNames = set()
-        self._hierarchicalDrilldownFieldNames = set()
-        self._multivaluedDrilldownFieldNames = set()
+        self.drilldownFieldNames = dict()
         self._termVectorFieldNames = set(termVectorFields or [])
         for field in (drilldownFields or []):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued, indexFieldName=field.indexFieldName)
@@ -76,35 +74,30 @@ class FieldRegistry(object):
         return fieldType in [long, int, float]
 
     def registerDrilldownField(self, fieldname, hierarchical=False, multiValued=True, indexFieldName=None):
-        self._drilldownFieldNames.add(fieldname)
-        if hierarchical:
-            self._hierarchicalDrilldownFieldNames.add(fieldname)
-        if multiValued:
-            self._multivaluedDrilldownFieldNames.add(fieldname)
-        # self.facetsConfig.setMultiValued(fieldname, multiValued)
-        # self.facetsConfig.setHierarchical(fieldname, hierarchical)
-        # if indexFieldName is not None:
-            # self.facetsConfig.setIndexFieldName(fieldname, indexFieldName)
-        self._indexFieldNames[fieldname] = indexFieldName
+        self.drilldownFieldNames[fieldname] = dict(
+                hierarchical=hierarchical,
+                multiValued=multiValued,
+                indexFieldName=indexFieldName
+            )
 
-    def indexFieldNames(self, fieldnames=None):
-        if fieldnames is None:
-            return set(self._indexFieldNames.values())
-        return set(self._indexFieldNames[f] for f in fieldnames if f in self._indexFieldNames or self.isDrilldownField(f))
+    # def indexFieldNames(self, fieldnames=None):
+    #     if fieldnames is None:
+    #         return set(self._indexFieldNames.values())
+    #     return set(self._indexFieldNames[f] for f in fieldnames if f in self._indexFieldNames or self.isDrilldownField(f))
 
     def isDrilldownField(self, fieldname):
         if self._isDrilldownFieldFunction(fieldname):
             # Side effect will only happen when using the _isDrilldownFieldFunction
-            if fieldname not in self._drilldownFieldNames:
+            if fieldname not in self.drilldownFieldNames:
                 self.registerDrilldownField(fieldname, multiValued=True)
             return True
-        return fieldname in self._drilldownFieldNames
+        return fieldname in self.drilldownFieldNames
 
     def isHierarchicalDrilldown(self, fieldname):
-        return fieldname in self._hierarchicalDrilldownFieldNames
+        return self.drilldownFieldNames.get(fieldname, {}).get("hierarchical")
 
     def isMultivaluedDrilldown(self, fieldname):
-        return fieldname in self._multivaluedDrilldownFieldNames
+        return self.drilldownFieldNames.get(fieldname, {}).get("multiValued")
 
     def isTermVectorField(self, fieldname):
         return fieldname in self._termVectorFieldNames

@@ -175,7 +175,6 @@ class Index(object):
         readers = list(self._getOrdinalsReaders(fieldnames))
         if not readers:
             return None
-        print readers
         fsc = FacetSuperCollector(self._indexAndTaxonomy.taxoReader, self._facetsConfig, readers[0])
         for reader in readers[1:]:
             fsc.addOrdinalsReader(reader)

@@ -46,6 +46,13 @@ class LuceneTest(SeecrTestCase):
             yield
         self._lucene._post = mockPost
 
+    def testPostSettingsAddObserverInit(self):
+        self.assertEqual([], self.post)
+        self._lucene.observer_init()
+        self.assertEqual(1, len(self.post))
+        self.assertEqual('/lucene/settings/', self.post[0]['path'])
+        self.assertEqual('{"lruTaxonomyWriterCacheSize": 4000, "maxMergeAtOnce": 2, "similarity": {"type": "BM25Similarity"}, "numberOfConcurrentTasks": 6, "segmentsPerTier": 8.0, "analyzer": {"type": "MerescoStandardAnalyzer"}, "drilldownFields": [], "commitCount": 100000, "commitTimeout": 10}', self.post[0]['data'])
+
     def testAdd(self):
         registry = FieldRegistry()
         fields = [registry.createField("id", "id1")]

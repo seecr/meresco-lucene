@@ -26,6 +26,7 @@
 
 from copy import copy
 from org.meresco.lucene.analysis import MerescoStandardAnalyzer
+from meresco.components.json import JsonDict
 from meresco.lucene.fieldregistry import FieldRegistry
 from org.apache.lucene.search.similarities import BM25Similarity
 
@@ -63,3 +64,25 @@ class LuceneSettings(object):
         arguments = copy(self.__dict__)
         arguments.update(kwargs)
         return LuceneSettings(**arguments)
+
+    def asPostDict(self):
+        drilldownFields = []
+        fieldRegistry = self.fieldRegistry
+        for fieldname in fieldRegistry._hierarchicalDrilldownFieldNames:
+            drilldownFields.append({
+                    "dim": fieldname,
+                    "hierarchical": True,
+                    "multiValued": fieldname in fieldRegistry._multivaluedDrilldownFieldNames,
+                    "fieldname": fieldRegistry._indexFieldNames[fieldname]
+                })
+        return JsonDict(
+                commitTimeout=self.commitTimeout,
+                commitCount=self.commitCount,
+                lruTaxonomyWriterCacheSize=self.lruTaxonomyWriterCacheSize,
+                analyzer=self._analyzer,
+                similarity=self._similarity,
+                maxMergeAtOnce=self.maxMergeAtOnce,
+                segmentsPerTier=self.segmentsPerTier,
+                numberOfConcurrentTasks=self.numberOfConcurrentTasks,
+                drilldownFields=drilldownFields
+            )

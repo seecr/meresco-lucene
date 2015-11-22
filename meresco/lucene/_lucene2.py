@@ -45,16 +45,7 @@ class Lucene(Observable):
         self._name = name
 
     def observer_init(self):
-        consume(self._send(jsonDict=JsonDict(
-                    commitTimeout=self.settings.commitTimeout,
-                    commitCount=self.settings.commitCount,
-                    lruTaxonomyWriterCacheSize=self.settings.lruTaxonomyWriterCacheSize,
-                    analyzer=self.settings._analyzer,
-                    similarity=self.settings._similarity,
-                    maxMergeAtOnce=self.settings.maxMergeAtOnce,
-                    segmentsPerTier=self.settings.segmentsPerTier,
-                    numberOfConcurrentTasks=self.settings.numberOfConcurrentTasks
-                ), path="/settings/", synchronous=True))
+        consume(self._send(jsonDict=self.settings.asPostDict(), path="/settings/", synchronous=True))
 
     def setSettings(self, clusteringEps=None, clusteringMinPoints=None, clusterMoreRecords=None, **kwargs):
         pass
@@ -135,6 +126,7 @@ class Lucene(Observable):
     def _send(self, path, jsonDict=None, synchronous=False):
         path = "/" + self._name + path
         response = yield self._post(path=path, data=jsonDict.dumps() if jsonDict else None, synchronous=synchronous)
+        print response
         raise StopIteration(loads(response) if response else None)
 
     def _post(self, path, data, synchronous=False):

@@ -222,22 +222,19 @@ public class Lucene {
     private FacetSuperCollector facetCollector(List<FacetRequest> facets) {
         if (facets == null || facets.size() == 0)
             return null;
-        List<OrdinalsReader> readers = getOrdinalsReaders(facets);
-        FacetSuperCollector collector = new FacetSuperCollector(indexAndTaxo.taxoReader, facetsConfig, readers.get(0));
-        for (int i = 1; i < readers.size(); i++) {
-            collector.addOrdinalsReader(readers.get(i));
+        String[] indexFieldnames = getIndexFieldNames(facets);
+        FacetSuperCollector collector = new FacetSuperCollector(indexAndTaxo.taxoReader, facetsConfig, getOrdinalsReader(indexFieldnames[0]));
+        for (int i = 1; i < indexFieldnames.length; i++) {
+            collector.addOrdinalsReader(getOrdinalsReader(indexFieldnames[i]));
         }
         return collector;
     }
     
-    private List<OrdinalsReader> getOrdinalsReaders(List<FacetRequest> facets) {
+    String[] getIndexFieldNames(List<FacetRequest> facets) {
         Set<String> indexFieldnames = new HashSet<String>();
         for (FacetRequest f : facets)
             indexFieldnames.add(this.facetsConfig.getDimConfig(f.fieldname).indexFieldName);
-        List<OrdinalsReader> readers = new ArrayList<OrdinalsReader>();
-        for (String indexFieldname : indexFieldnames)
-            readers.add(getOrdinalsReader(indexFieldname));
-        return readers;
+        return indexFieldnames.toArray(new String[0]);
     }
     
     private OrdinalsReader getOrdinalsReader(String indexFieldname) {

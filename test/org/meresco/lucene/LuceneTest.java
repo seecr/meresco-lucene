@@ -132,7 +132,6 @@ public class LuceneTest extends SeecrTestCase {
         facetsConfig.setIndexFieldName("field0", "$facets_1");
         facetsConfig.setIndexFieldName("field2", "$facets_1");
         
-        
         Document doc1 = new Document();
         doc1.add(new FacetField("field0", "value0"));
         doc1.add(new FacetField("field1", "value1"));
@@ -151,6 +150,24 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1, result.drilldownData.get(1).terms.size());
         assertEquals("field2", result.drilldownData.get(2).fieldname);
         assertEquals(1, result.drilldownData.get(2).terms.size());
+    }
+    
+    @SuppressWarnings("serial")
+    @Test
+    public void testFacetIndexFieldNames() throws Exception {
+        FacetsConfig facetsConfig = lucene.getSettings().facetsConfig;
+        facetsConfig.setIndexFieldName("field0", "$facets_1");
+        facetsConfig.setIndexFieldName("field2", "$facets_1");
+        
+        ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
+        facets.add(new FacetRequest("field0", 10));
+        facets.add(new FacetRequest("field1", 10));
+        facets.add(new FacetRequest("field2", 10));
+        
+        assertArrayEquals(new String[] {"$facets", "$facets_1"}, lucene.getIndexFieldNames(facets));
+        assertArrayEquals(new String[] {"$facets_1"}, lucene.getIndexFieldNames(new ArrayList<FacetRequest>() {{ add(new FacetRequest("field0", 10)); }}));
+        assertArrayEquals(new String[] {"$facets"}, lucene.getIndexFieldNames(new ArrayList<FacetRequest>() {{ add(new FacetRequest("field1", 10)); }}));
+        assertArrayEquals(new String[] {"$facets_1"}, lucene.getIndexFieldNames(new ArrayList<FacetRequest>() {{ add(new FacetRequest("field0", 10)); add(new FacetRequest("field2", 10)); }}));
     }
     
     @Test

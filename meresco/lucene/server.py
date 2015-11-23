@@ -105,7 +105,7 @@ def uploadHelix(lucene, termNumerator, storageComponent, drilldownFields, fieldR
         )
     )
 
-def main(reactor, port, databasePath):
+def main(reactor, port, serverPort, databasePath, **kwargs):
     drilldownFields = [
         DrilldownField('untokenized.field2'),
         DrilldownField('untokenized.field2.copy', indexFieldName='copy'),
@@ -120,16 +120,16 @@ def main(reactor, port, databasePath):
                 analyzer=MerescoDutchStemmingAnalyzer(["field4", "field5"]),
                 _analyzer=dict(type="MerescoDutchStemmingAnalyzer", fields=['field4', 'field5'])
             )
-    lucene = Lucene(host="localhost", port=1234, name='main', settings=luceneSettings)
+    lucene = Lucene(host="localhost", port=serverPort, name='main', settings=luceneSettings)
 
     lucene2Settings = LuceneSettings(fieldRegistry=fieldRegistry, commitTimeout=0.1)
-    lucene2 = Lucene(host="localhost", port=1234, name='main2', settings=lucene2Settings)
+    lucene2 = Lucene(host="localhost", port=serverPort, name='main2', settings=lucene2Settings)
 
     termNumerator = TermNumerator(path=join(databasePath, 'termNumerator'))
 
     emptyLuceneSettings = LuceneSettings(commitTimeout=1)
     multiLuceneHelix = (MultiLucene(defaultCore='main'),
-            (Lucene(host='localhost', port=1234, name='empty-core', settings=emptyLuceneSettings),),
+            (Lucene(host='localhost', port=serverPort, name='empty-core', settings=emptyLuceneSettings),),
             (lucene,),
             (lucene2,),
         )
@@ -242,14 +242,14 @@ class FieldHier(Observable):
         return
         yield
 
-def startServer(port, stateDir, **kwargs):
+def startServer(stateDir, **kwargs):
     setSignalHandlers()
     print 'Firing up Meresco Lucene Server.'
     reactor = Reactor()
     databasePath = realpath(abspath(stateDir))
 
     #main
-    dna = main(reactor, port=port, databasePath=databasePath)
+    dna = main(reactor, databasePath=databasePath, **kwargs)
     #/main
 
     server = be(dna)

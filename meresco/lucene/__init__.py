@@ -55,7 +55,7 @@ from luceneresponse import LuceneResponse
 from _lucene2 import Lucene
 from lucenesettings import LuceneSettings
 from fields2lucenedoc import Fields2LuceneDoc
-# from multilucene import MultiLucene
+from multilucene import MultiLucene
 from termnumerator import TermNumerator
 from composedquery import ComposedQuery
 from drilldownfield import DrilldownField

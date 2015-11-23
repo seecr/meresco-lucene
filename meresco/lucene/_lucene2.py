@@ -140,3 +140,5 @@ class Lucene(Observable):
     def _verify20x(self, header, response):
         if not header.startswith('HTTP/1.1 20'):
             raise IOError("Expected status 'HTTP/1.1 20x' from Lucene server, but got: " + response)
+
+millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 millisecs

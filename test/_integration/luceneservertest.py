@@ -46,13 +46,13 @@ class LuceneServerTest(IntegrationTestCase):
         self.assertTrue("200 OK" in header.upper(), header)
         response = loads(body)
         self.assertEqual(1, response['total'])
-        self.assertEqual([{'id': 'id1'}], response['hits'])
+        self.assertEqual([{'id': 'id1', 'score': 1.0}], response['hits'])
 
         header, body = postRequest(self.serverPort, self._path + '/query/', data=JsonDict(query=dict(type="TermQuery", term=dict(field="fieldname", value="value"))).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         response = loads(body)
         self.assertEqual(1, response['total'])
-        self.assertEqual([{'id': 'id1'}], response['hits'])
+        self.assertEqual([{'id': 'id1', 'score': 0.28768208622932434}], response['hits'])
 
     def testFacets(self):
         data = JsonList([

@@ -3,8 +3,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -45,6 +46,7 @@ if __name__ == '__main__':
         help="Port at which webpages are served.")
     parser.addOption('', '--pid', help="print pid", action="store_true", default=False)
     parser.addOption('', '--stateDir', mandatory=True, type='str', help='Directory for state')
+    parser.addOption('', '--serverPort', mandatory=True, type='int', help='Lucene server port')
     options, arguments = parser.parse()
 
     from meresco.lucene.server import startServer

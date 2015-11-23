@@ -52,8 +52,8 @@ if __name__ == '__main__':
     IntegrationState(
         'default',
         tests=[
-            # '_integration.lucenetest.LuceneTest',
-            # '_integration.luceneremoteservicetest.LuceneRemoteServiceTest',
+            '_integration.lucenetest.LuceneTest',
+            '_integration.luceneremoteservicetest.LuceneRemoteServiceTest',
             '_integration.luceneservertest.LuceneServerTest',
         ],
         fastMode=fastMode).addToTestRunner(runner)

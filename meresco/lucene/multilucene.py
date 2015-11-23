@@ -32,12 +32,12 @@ from meresco.core import Observable
 from seecr.utils.generatorutils import generatorReturn
 
 from org.apache.lucene.search import MatchAllDocsQuery
-from org.meresco.lucene.search.join import KeySuperCollector, AggregateScoreSuperCollector, ScoreSuperCollector
-from org.meresco.lucene.queries import KeyFilter
-from org.meresco.lucene.search import JoinSortCollector, JoinSortField
+# from org.meresco.lucene.search.join import KeySuperCollector, AggregateScoreSuperCollector, ScoreSuperCollector
+# from org.meresco.lucene.queries import KeyFilter
+# from org.meresco.lucene.search import JoinSortCollector, JoinSortField
 from java.util import ArrayList
 
-from _lucene import millis
+from _lucene2 import millis
 
 
 class MultiLucene(Observable):

@@ -104,15 +104,6 @@ class FieldRegistryTest(SeecrTestCase):
                 "path": ["value"]
             }, field)
 
-        # facetsConfig = registry.facetsConfig
-        # dimConfigs = facetsConfig.getDimConfigs()
-        # self.assertEquals(set(['aap', 'noot', 'mies']), set(dimConfigs.keySet()))
-        # self.assertFalse(dimConfigs.get('aap').hierarchical)
-        # self.assertTrue(dimConfigs.get('noot').hierarchical)
-        # self.assertTrue(dimConfigs.get('noot').multiValued)
-        # self.assertFalse(dimConfigs.get('mies').multiValued)
-        # TODO
-
     def testGenericDrilldownFields(self):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -200,37 +191,6 @@ class FieldRegistryTest(SeecrTestCase):
         q, t = registry.rangeQueryAndType('anyfield')
         self.assertEqual("String", q)
         self.assertEqual(str, t)
-
-    # TODO
-    # def testDrilldownField(self):
-    #     drilldownFields = [DrilldownField(name='aap'), DrilldownField(name='noot', indexFieldName='facetfield'), DrilldownField(name='vuur')]
-    #     registry = FieldRegistry(drilldownFields=drilldownFields)
-    #     self.assertEquals(u'$facets', registry.facetsConfig.getDimConfig('aap').indexFieldName)
-    #     self.assertEquals(u'facetfield', registry.facetsConfig.getDimConfig('noot').indexFieldName)
-    #     self.assertEquals(set([None, 'facetfield']), registry.indexFieldNames())
-    #     self.assertEquals(set([None]), registry.indexFieldNames(['aap']))
-    #     self.assertEquals(set([None]), registry.indexFieldNames(['vuur']))
-    #     self.assertEquals(set(['facetfield']), registry.indexFieldNames(['noot']))
-
-    # def testIndexFieldnamesForFieldname(self):
-    #     drilldownFields = [
-    #         DrilldownField(name='aap'),
-    #         DrilldownField(name='noot', indexFieldName='facetfield'),
-    #         DrilldownField(name='vis', indexFieldName='facetfield2'),
-    #         DrilldownField(name='vuur')
-    #     ]
-    #     registry = FieldRegistry(drilldownFields=drilldownFields)
-    #     self.assertEquals(set([None, 'facetfield2']), registry.indexFieldNames(['aap', 'vis', 'vuur']))
-
-    # def testIsDrilldownField(self):
-    #     registry = FieldRegistry(drilldownFields=[DrilldownField(name='aap')], isDrilldownFieldFunction=lambda name:name == 'noot')
-    #     self.assertEquals(set([None]), registry.indexFieldNames(['aap']))
-    #     self.assertEquals(set([None]), registry.indexFieldNames(['noot']))
-    #     self.assertEquals(set([]), registry.indexFieldNames(['vis']))
-
-    # def testIndexFieldNamesForFieldnamesNotRegistered(self):
-    #     registry = FieldRegistry(drilldownFields=[DrilldownField(name='aap', indexFieldName='aapjes')])
-    #     self.assertEquals(set(['aapjes']), registry.indexFieldNames(['aap', 'vis', 'vuur']))
 
     def testSortField(self):
         registry = FieldRegistry()

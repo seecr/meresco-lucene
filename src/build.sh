@@ -57,7 +57,7 @@ troveJar=${jarsDir}/trove-3.0.2.jar
 apacheMathJar=${jarsDir}/commons-math3-3.4.1.jar
 classpath=${luceneJarDir}/lucene-core-$LUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$LUCENEVERSION.jar:${luceneJarDir}/lucene-facet-$LUCENEVERSION.jar:${luceneJarDir}/lucene-queries-$LUCENEVERSION.jar:${luceneJarDir}/lucene-memory-$LUCENEVERSION.jar:${troveJar}:${apacheMathJar}
 
-${javac} -cp ${classpath} -d ${buildDir} `find org -name "*.java"`
+${javac} -cp ${classpath} -d ${buildDir} `find . -type f \( -path "*suggestion*" -o -path "*analysis*" \)`
 (cd $buildDir; jar -c org > $buildDir/meresco-lucene.jar)
 
 python -m jcc.__main__ \

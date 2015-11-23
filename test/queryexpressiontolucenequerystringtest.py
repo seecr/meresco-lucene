@@ -44,6 +44,13 @@ class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
         }, QueryExpression.searchterm("field", "=", "value"))
         self.assertConversion('{"term": {"field": "field", "value": "value"}, "type": "TermQuery"}', QueryExpression.searchterm("field", "=", "value"))
 
+
+    def testRightHandSideIsLowercase(self):
+        self.assertConversion({'boost': 1.0, 'term': {'field': 'unqualified', 'value': 'cat'}, 'type': 'TermQuery'}, QueryExpression.searchterm(term="CaT"))
+
+    def testOneTermOutputWithANumber(self):
+        self.assertConversion({'boost': 1.0, 'term': {'field': 'unqualified', 'value': '2005'}, 'type': 'TermQuery'}, QueryExpression.searchterm(term="2005"))
+
     def testMatchAllQuery(self):
         self.assertConversion({"type": "MatchAllDocsQuery"}, QueryExpression.searchterm(term="*"))
 

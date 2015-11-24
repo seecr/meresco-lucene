@@ -31,6 +31,7 @@ public class QueryStringToQuery {
     public int start;
     public int stop;
     public Sort sort;
+    public ComposedQuery composedQuery;
 
     public QueryStringToQuery(Reader queryReader) {
         JsonObject object = Json.createReader(queryReader).readObject();
@@ -39,9 +40,10 @@ public class QueryStringToQuery {
         this.start = object.getInt("start", 0);
         this.stop = object.getInt("stop", 10);
         this.sort = convertToSort(object.getJsonArray("sortKeys"));
+        this.composedQuery = ComposedQuery.fromJson(this, object.getJsonObject("composedQuery"));
     }
     
-    private Sort convertToSort(JsonArray sortKeys) {
+    Sort convertToSort(JsonArray sortKeys) {
         if (sortKeys == null || sortKeys.size() == 0)
             return null;
         SortField[] sortFields = new SortField[sortKeys.size()];
@@ -98,7 +100,9 @@ public class QueryStringToQuery {
         return facetRequests;
     }
 
-    public Query convertToQuery(JsonObject query) {
+    Query convertToQuery(JsonObject query) {
+        if (query == null)
+            return null;
         Query q;
         switch(query.getString("type")) {
             case "MatchAllDocsQuery":

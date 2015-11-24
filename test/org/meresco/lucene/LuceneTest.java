@@ -101,7 +101,7 @@ public class LuceneTest extends SeecrTestCase {
         
         LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery());
         assertEquals(3, result.total);
-        assertNull(result.drilldownData);
+        assertEquals(0, result.drilldownData.size());
         
         ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
         facets.add(new FacetRequest("facet-field2", 10));
@@ -130,7 +130,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(2, result.drilldownData.get(0).terms.get("second item").intValue());
         assertEquals(1, result.drilldownData.get(0).terms.get("other value").intValue());
         
-        assertEquals(result.drilldownData, lucene.facets(facets, null));
+        assertEquals(result.drilldownData, lucene.facets(facets, null, null));
     }
     
     @Test

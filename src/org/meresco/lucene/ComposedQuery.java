@@ -84,6 +84,17 @@ public class ComposedQuery {
         return this.queries.get(core);
     }
     
+    public List<Query> queriesFor(String core) {
+        List<Query> qs = new ArrayList<Query>();
+        Query otherCoreQuery = queryFor(core);
+        if (otherCoreQuery != null)
+            qs.add(otherCoreQuery);
+        List<Query> otherCoreFilterQueries = filterQueries.get(core);
+        if (otherCoreFilterQueries != null)
+            qs.addAll(otherCoreFilterQueries);
+        return qs;
+    }
+    
     public List<FacetRequest> facetsFor(String core) {
         return this.facets.get(core);
     }

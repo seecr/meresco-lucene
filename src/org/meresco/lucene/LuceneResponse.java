@@ -14,7 +14,7 @@ import javax.json.JsonObjectBuilder;
 public class LuceneResponse {
     public int total;
     public ArrayList<Hit> hits = new ArrayList<Hit>();
-    public List<DrilldownData> drilldownData = null;
+    public List<DrilldownData> drilldownData = new ArrayList<DrilldownData>();
     public long queryTime = 0;
     
     public LuceneResponse(int totalHits) {
@@ -69,7 +69,7 @@ public class LuceneResponse {
         }
         jsonBuilder.add("hits", hitsArray);
                 
-        if (drilldownData != null) {
+        if (drilldownData.size() > 0) {
             JsonArrayBuilder ddArray = Json.createArrayBuilder();
             for (DrilldownData dd : drilldownData) {
                 JsonArrayBuilder termArray = Json.createArrayBuilder();

@@ -62,6 +62,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.queries.ChainedFilter;
+import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -74,6 +75,7 @@ import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
+import org.meresco.lucene.queries.KeyFilter;
 import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.MultiSuperCollector;
 import org.meresco.lucene.search.SuperCollector;
@@ -205,7 +207,7 @@ public class Lucene {
         long t0 = System.currentTimeMillis();
         Collectors collectors = createCollectors(start, stop, sort, facets, keyCollectors);
 
-        Filter f = filtersFor(null, filters);
+        Filter f = filtersFor(null, filters == null ? null : filters.toArray(new Filter[0]));
 
         indexAndTaxo.searcher().search(query, f, collectors.root);
         LuceneResponse response = new LuceneResponse(collectors.topCollector.getTotalHits());
@@ -219,11 +221,11 @@ public class Lucene {
         return response;
     }
 
-    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries) throws Exception {//, drilldownQueries=None, filters=None) {
+    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, Filter filter) throws Exception {//, drilldownQueries=None, filters=None) {
         FacetSuperCollector facetCollector = facetCollector(facets);
         if (facetCollector == null)
             return new ArrayList<DrilldownData>();
-        Filter filter_ = null; //filtersFor(filterQueries, filters=filters)
+        Filter filter_ = filtersFor(filterQueries, filter);
         Query query = new MatchAllDocsQuery();
 //        if drilldownQueries:
 //            query = self.createDrilldownQuery(query, drilldownQueries)
@@ -231,10 +233,18 @@ public class Lucene {
         return facetResult(facetCollector, facets);
     }
 
-    private Filter filtersFor(Object object, List<Filter> filterList) {
-        if (filterList == null)
+    private Filter filtersFor(List<Query> filterQueries, Filter... filter) {
+        List<Filter> filters = new ArrayList<Filter>();
+        if (filterQueries != null)
+            for (Query query : filterQueries)
+                filters.add(new CachingWrapperFilter(new QueryWrapperFilter(query))); //TODO: Use filterCache
+        if (filter != null)
+            for (Filter f : filter)
+                if (f != null)
+                    filters.add(f);
+        if (filters.size() == 0)
             return null;
-        return new ChainedFilter(filterList.toArray(new Filter[0]));
+        return new ChainedFilter(filters.toArray(new Filter[0]), ChainedFilter.AND);
     }
 
     public Document getDocument(int docID) throws IOException {

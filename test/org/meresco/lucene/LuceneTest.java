@@ -10,19 +10,24 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.OpenBitSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.Lucene.TermCount;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
+import org.meresco.lucene.search.join.KeySuperCollector;
 
 public class LuceneTest extends SeecrTestCase {
 
@@ -124,6 +129,8 @@ public class LuceneTest extends SeecrTestCase {
         assertArrayEquals(new String[] { "other value", "second item" }, ddTerms);
         assertEquals(2, result.drilldownData.get(0).terms.get("second item").intValue());
         assertEquals(1, result.drilldownData.get(0).terms.get("other value").intValue());
+        
+        assertEquals(result.drilldownData, lucene.facets(facets, null));
     }
     
     @Test
@@ -186,7 +193,7 @@ public class LuceneTest extends SeecrTestCase {
         
         Sort sort = new Sort();
         sort.setSort(new SortField("field1", SortField.Type.STRING, false));
-        LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null);
+        LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null, null, null);
         assertEquals(3, result.total);
         assertEquals("id1", result.hits.get(0).id);
         assertEquals("id2", result.hits.get(1).id);
@@ -194,7 +201,7 @@ public class LuceneTest extends SeecrTestCase {
         
         sort = new Sort();
         sort.setSort(new SortField("field1", SortField.Type.STRING, true));
-        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null);
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null, null, null);
         assertEquals(3, result.total);
         assertEquals("id3", result.hits.get(0).id);
         assertEquals("id2", result.hits.get(1).id);
@@ -246,21 +253,71 @@ public class LuceneTest extends SeecrTestCase {
         LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery());
         assertEquals(3, result.total);
         assertEquals(3, result.hits.size());
-        result = lucene.executeQuery(new MatchAllDocsQuery(), 1, 10, null, null);
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 1, 10, null, null, null, null);
         assertEquals(3, result.total);
         assertEquals(2, result.hits.size());
-        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 2, null, null);
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 2, null, null, null, null);
         assertEquals(3, result.total);
         assertEquals(2, result.hits.size());
-        result = lucene.executeQuery(new MatchAllDocsQuery(), 2, 2, null, null);
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 2, 2, null, null, null, null);
         assertEquals(3, result.total);
         assertEquals(0, result.hits.size());
-        result = lucene.executeQuery(new MatchAllDocsQuery(), 1, 2, null, null);
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 1, 2, null, null, null, null);
         assertEquals(3, result.total);
         assertEquals(1, result.hits.size());
-        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null);
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, null);
         assertEquals(3, result.total);
         assertEquals(0, result.hits.size());
+    }
+    
+    @SuppressWarnings("serial")
+    @Test
+    public void testQueryWithFilter() throws Exception {
+        Document doc1 = new Document();
+        doc1.add(new StringField("field1", "value0", Store.NO));
+        lucene.addDocument("id1", doc1);
+        
+        Document doc2 = new Document();
+        doc2.add(new StringField("field1", "value1", Store.NO));
+        lucene.addDocument("id2", doc2);
+        
+        assertEquals(2, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, null).total);
+        final Filter f = new QueryWrapperFilter(new TermQuery(new Term("field1", "value1")));
+        assertEquals(1, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, new ArrayList<Filter>() {{ add(f); }}, null).total);
+    }
+    
+    @SuppressWarnings("serial")
+    @Test
+    public void testQueryWithKeyCollectors() throws Exception {
+        Document doc1 = new Document();
+        doc1.add(new StringField("field0", "value", Store.NO));
+        doc1.add(new NumericDocValuesField("field1", 1));
+        lucene.addDocument("id1", doc1);
+        
+        Document doc2 = new Document();
+        doc2.add(new NumericDocValuesField("field1", 2));
+        lucene.addDocument("id2", doc2);
+        
+        final KeySuperCollector k = new KeySuperCollector("field1");
+        assertEquals(2, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k); }}).total);
+        
+        OpenBitSet collectedKeys = k.getCollectedKeys();
+        assertEquals(false, collectedKeys.get(0));
+        assertEquals(true, collectedKeys.get(1));
+        assertEquals(true, collectedKeys.get(2));
+        assertEquals(false, collectedKeys.get(3));
+        assertEquals(collectedKeys, lucene.collectKeys(null, "field1", new MatchAllDocsQuery()));
+        
+        final KeySuperCollector k1 = new KeySuperCollector("field1");
+        TermQuery field0Query = new TermQuery(new Term("field0", "value"));
+        assertEquals(1, lucene.executeQuery(field0Query, 0, 0, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k1); }}).total);
+        
+        OpenBitSet keysWithFilter = k1.getCollectedKeys();
+        assertEquals(false, keysWithFilter.get(0));
+        assertEquals(true, keysWithFilter.get(1));
+        assertEquals(false, keysWithFilter.get(2));
+        assertEquals(keysWithFilter, lucene.collectKeys(field0Query, "field1", new MatchAllDocsQuery()));
+        
     }
     
     @Test

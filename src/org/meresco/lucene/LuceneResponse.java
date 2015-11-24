@@ -1,6 +1,7 @@
 package org.meresco.lucene;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class LuceneResponse {
     
     public static class DrilldownData {
         public String fieldname;
-        public String[] path;
+        public String[] path = new String[0];
         public Map<String, Integer> terms = new HashMap<String, Integer>();
         
         public DrilldownData(String fieldname) {
@@ -44,6 +45,14 @@ public class LuceneResponse {
         }
         public void addTerm(String label, int value) {
             terms.put(label, value);
+        }
+        public boolean equals(Object object) {
+            if(object instanceof DrilldownData){
+                DrilldownData ddObject = (DrilldownData) object;
+                return ddObject.fieldname.equals(fieldname) && Arrays.equals(ddObject.path, path) && ddObject.terms.equals(terms);
+            } else {
+                return false;
+            }
         }
     }
     

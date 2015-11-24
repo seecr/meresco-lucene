@@ -1,8 +1,34 @@
+/* begin license *
+ *
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ *
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ *
+ * This file is part of "Meresco Lucene"
+ *
+ * "Meresco Lucene" is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * "Meresco Lucene" is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with "Meresco Lucene"; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * end license */
+
 package org.meresco.lucene;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -11,8 +37,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -35,12 +61,16 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.queries.ChainedFilter;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
@@ -50,6 +80,7 @@ import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.TopDocSuperCollector;
 import org.meresco.lucene.search.TopFieldSuperCollector;
 import org.meresco.lucene.search.TopScoreDocSuperCollector;
+import org.meresco.lucene.search.join.KeySuperCollector;
 
 public class Lucene {
 
@@ -69,11 +100,11 @@ public class Lucene {
         this.name = name;
         this.stateDir = stateDir;
     }
-    
+
     public Lucene(File stateDir, LuceneSettings settings) throws Exception {
         this(null, stateDir, settings);
     }
-    
+
     public Lucene(String name, File stateDir, LuceneSettings settings) throws Exception {
         this.name = name;
         this.stateDir = stateDir;
@@ -84,33 +115,33 @@ public class Lucene {
         if (this.settings != null)
             throw new Exception("Init settings is only allowed once");
         this.settings = settings;
-        
+
         MMapDirectory indexDirectory = new MMapDirectory(new File(stateDir, "index"));
         indexDirectory.setUseUnmap(false);
 
         MMapDirectory taxoDirectory = new MMapDirectory(new File(stateDir, "taxo"));
         taxoDirectory.setUseUnmap(false);
-    
+
         IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_10_4, settings.analyzer);
         config.setSimilarity(settings.similarity);
         TieredMergePolicy mergePolicy = new TieredMergePolicy();
         mergePolicy.setMaxMergeAtOnce(settings.maxMergeAtOnce);
         mergePolicy.setSegmentsPerTier(settings.segmentsPerTier);
         config.setMergePolicy(mergePolicy);
-        
+
         indexWriter = new IndexWriter(indexDirectory, config);
         indexWriter.commit();
         taxoWriter = new DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(settings.lruTaxonomyWriterCacheSize));
         taxoWriter.commit();
-        
+
         indexAndTaxo = new IndexAndTaxanomy(indexDirectory, taxoDirectory, settings);
         facetsConfig = settings.facetsConfig;
     }
-    
+
     public LuceneSettings getSettings() {
         return this.settings;
     }
-    
+
     public void close() throws IOException {
         indexAndTaxo.close();
         taxoWriter.close();
@@ -128,7 +159,7 @@ public class Lucene {
         indexWriter.deleteDocuments(new Term(ID_FIELD, identifier));
         commit();
     }
-    
+
     public void commit() throws IOException {
         commitCount++;
         if (commitCount >= settings.commitCount) {
@@ -149,7 +180,7 @@ public class Lucene {
             commitTimer.schedule(timerTask, settings.commitTimeout * 1000);
         }
     }
-    
+
     public synchronized void realCommit() throws IOException {
         commitCount = 0;
         if (commitTimer != null) {
@@ -161,54 +192,71 @@ public class Lucene {
         taxoWriter.commit();
         indexAndTaxo.reopen();
     }
-    
+
     public LuceneResponse executeQuery(Query query) throws Exception {
-        return executeQuery(query, 0, 10, null, null);
+        return executeQuery(query, 0, 10, null, null, null, null);
     }
-    
+
     public LuceneResponse executeQuery(Query query, List<FacetRequest> facets) throws Exception {
-        return executeQuery(query, 0, 10, null, facets);
+        return executeQuery(query, 0, 10, null, facets, null, null);
     }
-    
-    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets) throws Exception {
+
+    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, List<Filter> filters, Collection<KeySuperCollector> keyCollectors) throws Exception {
         long t0 = System.currentTimeMillis();
-        Collectors collectors = createCollectors(start, stop, sort, facets);
-        
-        indexAndTaxo.searcher().search(query, null, collectors.root);
+        Collectors collectors = createCollectors(start, stop, sort, facets, keyCollectors);
+
+        Filter f = filtersFor(null, filters);
+
+        indexAndTaxo.searcher().search(query, f, collectors.root);
         LuceneResponse response = new LuceneResponse(collectors.topCollector.getTotalHits());
         for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(stop == 0 ? 1 : start).scoreDocs) { //TODO: temp fix for start/stop = 0
             response.addHit(getDocument(scoreDoc.doc).get(ID_FIELD), scoreDoc.score);
         }
         if (collectors.facetCollector != null)
-            facetResult(response, collectors.facetCollector, facets);
-        
+            response.drilldownData = facetResult(collectors.facetCollector, facets);
+
         response.queryTime = System.currentTimeMillis() - t0;
         return response;
     }
 
-
-    public void search(Query q, Filter f, SuperCollector<?> c) throws Exception {
-        indexAndTaxo.searcher().search(q, f, c);
+    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries) throws Exception {//, drilldownQueries=None, filters=None) {
+        FacetSuperCollector facetCollector = facetCollector(facets);
+        if (facetCollector == null)
+            return new ArrayList<DrilldownData>();
+        Filter filter_ = null; //filtersFor(filterQueries, filters=filters)
+        Query query = new MatchAllDocsQuery();
+//        if drilldownQueries:
+//            query = self.createDrilldownQuery(query, drilldownQueries)
+        indexAndTaxo.searcher().search(query, filter_, facetCollector);
+        return facetResult(facetCollector, facets);
     }
-    
+
+    private Filter filtersFor(Object object, List<Filter> filterList) {
+        if (filterList == null)
+            return null;
+        return new ChainedFilter(filterList.toArray(new Filter[0]));
+    }
+
     public Document getDocument(int docID) throws IOException {
         return indexAndTaxo.searcher().doc(docID);
     }
 
-    private Collectors createCollectors(int start, int stop, Sort sort, List<FacetRequest> facets) {
+    private Collectors createCollectors(int start, int stop, Sort sort, List<FacetRequest> facets, Collection<KeySuperCollector> keyCollectors) {
         Collectors allCollectors = new Collectors();
         allCollectors.topCollector = topCollector(start, stop, sort);
         allCollectors.facetCollector = facetCollector(facets);
-        
+
         List<SuperCollector<?>> collectors = new ArrayList<SuperCollector<?>>();
         collectors.add(allCollectors.topCollector);
         if (allCollectors.facetCollector != null) {
             collectors.add(allCollectors.facetCollector);
         }
+        if (keyCollectors != null)
+            collectors.addAll(keyCollectors);
         allCollectors.root = new MultiSuperCollector(collectors);
         return allCollectors;
     }
-    
+
     private TopDocSuperCollector topCollector(int start, int stop, Sort sort) {
         if (stop <= start)
             //TODO: temp fix for start/stop = 0; You should use TotalHitCountSuperCollector
@@ -218,7 +266,7 @@ public class Lucene {
             return new TopScoreDocSuperCollector(stop, true);
         return new TopFieldSuperCollector(sort, stop, true, false, true);
     }
-    
+
     private FacetSuperCollector facetCollector(List<FacetRequest> facets) {
         if (facets == null || facets.size() == 0)
             return null;
@@ -229,14 +277,14 @@ public class Lucene {
         }
         return collector;
     }
-    
+
     String[] getIndexFieldNames(List<FacetRequest> facets) {
         Set<String> indexFieldnames = new HashSet<String>();
         for (FacetRequest f : facets)
             indexFieldnames.add(this.facetsConfig.getDimConfig(f.fieldname).indexFieldName);
         return indexFieldnames.toArray(new String[0]);
     }
-    
+
     private OrdinalsReader getOrdinalsReader(String indexFieldname) {
         CachedOrdinalsReader reader = cachedOrdinalsReader.get(indexFieldname);
         if (reader == null) {
@@ -246,12 +294,12 @@ public class Lucene {
         }
         return reader;
     }
-    
-    private void facetResult(LuceneResponse response, FacetSuperCollector facetCollector, List<FacetRequest> facets) throws IOException {
+
+    private List<DrilldownData> facetResult(FacetSuperCollector facetCollector, List<FacetRequest> facets) throws IOException {
         List<DrilldownData> drilldownData = new ArrayList<DrilldownData>();
         for (FacetRequest facet : facets) {
             DrilldownData dd = new DrilldownData(facet.fieldname);
-            
+
             FacetResult result = facetCollector.getTopChildren(facet.maxTerms, facet.fieldname, facet.path);
             if (result == null)
                 continue;
@@ -260,11 +308,11 @@ public class Lucene {
             }
             drilldownData.add(dd);
         }
-        response.drilldownData = drilldownData;
+        return drilldownData;
     }
-    
+
     public List<TermCount> termsForField(String field, String prefix, int limit) throws Exception {
-        
+
 //        if t == str:
 //            convert = lambda term: term.utf8ToString()
 //        elif t == int:
@@ -273,7 +321,7 @@ public class Lucene {
 //            convert = lambda term: NumericUtils.prefixCodedToLong(term)
 //        elif t == float:
 //            convert = lambda term: NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term))
-        
+
         List<TermCount> terms = new ArrayList<TermCount>();
         Terms termsEnum = MultiFields.getTerms(this.indexAndTaxo.reader, field);
         if (termsEnum == null)
@@ -314,7 +362,7 @@ public class Lucene {
     public int numDocs() {
         return this.indexWriter.numDocs();
     }
-    
+
     public int maxDoc() {
         return this.indexWriter.maxDoc();
     }
@@ -322,14 +370,14 @@ public class Lucene {
     public List<String> fieldnames() throws IOException {
         List<String> fieldnames = new ArrayList<String>();
         Fields fields = MultiFields.getFields(this.indexAndTaxo.reader);
-        if (fields == null) 
+        if (fields == null)
             return fieldnames;
         for (Iterator<String> iterator = fields.iterator(); iterator.hasNext();) {
             fieldnames.add(iterator.next());
         }
         return fieldnames;
     }
-    
+
     public List<String> drilldownFieldnames(int limit, String dim, String... path) throws IOException {
         DirectoryTaxonomyReader taxoReader = this.indexAndTaxo.taxoReader;
         int parentOrdinal = dim == null ? TaxonomyReader.ROOT_ORDINAL : taxoReader.getOrdinal(dim, path);
@@ -345,5 +393,28 @@ public class Lucene {
                 break;
         }
         return fieldnames;
+    }
+
+    public void search(Query query, Query filterQuery, SuperCollector<?> collector) throws Exception {
+        Filter filter_ = null;
+        if (filterQuery != null)
+            filter_ = new QueryWrapperFilter(filterQuery);
+        indexAndTaxo.searcher().search(query, filter_, collector);
+    }
+
+    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Exception {
+        return collectKeys(filterQuery, keyName, query, true);
+    }
+
+    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Exception {
+        return doCollectKeys(filterQuery, keyName, query);
+    }
+
+    private OpenBitSet doCollectKeys(Query filterQuery, String keyName, Query query) throws Exception {
+        KeySuperCollector keyCollector = new KeySuperCollector(keyName);
+        if (query == null)
+            query = new MatchAllDocsQuery();
+        search(query, filterQuery, keyCollector);
+        return keyCollector.getCollectedKeys();
     }
 }

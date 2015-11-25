@@ -41,6 +41,7 @@ import java.util.TimerTask;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
@@ -61,6 +62,8 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.queries.ChainedFilter;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -68,6 +71,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
@@ -194,19 +198,21 @@ public class Lucene {
     }
 
     public LuceneResponse executeQuery(Query query) throws Exception {
-        return executeQuery(query, 0, 10, null, null, null, null);
+        return executeQuery(query, 0, 10, null, null, null, null, null);
     }
 
     public LuceneResponse executeQuery(Query query, List<FacetRequest> facets) throws Exception {
-        return executeQuery(query, 0, 10, null, facets, null, null);
+        return executeQuery(query, 0, 10, null, facets, null, null, null);
     }
 
-    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, List<Filter> filters, Collection<KeySuperCollector> keyCollectors) throws Exception {
+    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, List<Filter> filters, Collection<KeySuperCollector> keyCollectors, Map<String, String> drilldownQueries) throws Exception {
         long t0 = System.currentTimeMillis();
         Collectors collectors = createCollectors(start, stop, sort, facets, keyCollectors);
 
         Filter f = filtersFor(null, filters == null ? null : filters.toArray(new Filter[0]));
 
+        if (drilldownQueries != null) 
+            query = createDrilldownQuery(query, drilldownQueries);
         indexAndTaxo.searcher().search(query, f, collectors.root);
         LuceneResponse response = new LuceneResponse(collectors.topCollector.getTotalHits());
         for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(stop == 0 ? 1 : start).scoreDocs) { //TODO: temp fix for start/stop = 0
@@ -219,14 +225,14 @@ public class Lucene {
         return response;
     }
 
-    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, Filter filter) throws Exception {//, drilldownQueries=None, filters=None) {
+    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, Map<String, String> drilldownQueries, Filter filter) throws Exception {
         FacetSuperCollector facetCollector = facetCollector(facets);
         if (facetCollector == null)
             return new ArrayList<DrilldownData>();
         Filter filter_ = filtersFor(filterQueries, filter);
         Query query = new MatchAllDocsQuery();
-//        if drilldownQueries:
-//            query = self.createDrilldownQuery(query, drilldownQueries)
+        if (drilldownQueries != null)
+            query = createDrilldownQuery(query, drilldownQueries);
         indexAndTaxo.searcher().search(query, filter_, facetCollector);
         return facetResult(facetCollector, facets);
     }
@@ -424,5 +430,16 @@ public class Lucene {
             query = new MatchAllDocsQuery();
         search(query, filterQuery, keyCollector);
         return keyCollector.getCollectedKeys();
+    }
+    
+    public Query createDrilldownQuery(Query luceneQuery, Map<String, String> drilldownQueries) {
+        BooleanQuery q = new BooleanQuery(true);
+        if (luceneQuery != null)
+            q.add(luceneQuery, Occur.MUST);
+        for (String field : drilldownQueries.keySet()) {
+            String indexFieldName = facetsConfig.getDimConfig(field).indexFieldName;
+            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(field))), Occur.MUST); 
+        }
+        return q;
     }
 }

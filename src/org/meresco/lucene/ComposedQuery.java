@@ -37,8 +37,11 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 
 public class ComposedQuery {
@@ -47,8 +50,10 @@ public class ComposedQuery {
     public Set<String> cores = new HashSet<String>();
     private Map<String, Query> queries = new HashMap<String, Query>();
     public Map<String, List<Query>> filterQueries = new HashMap<String, List<Query>>();
-    public List<Unite> unites = new ArrayList<Unite>();
     private Map<String, List<FacetRequest>> facets = new HashMap<String, List<FacetRequest>>();
+    private Map<String, Map<String, String>> drilldownQueries = new HashMap<String, Map<String, String>>();
+    private Map<String, List<Query>> otherCoreFacetsFilter = new HashMap<String, List<Query>>();
+    private List<Unite> unites = new ArrayList<Unite>();
     public int start = 0;
     public int stop = 10;
     public Sort sort;
@@ -145,13 +150,25 @@ public class ComposedQuery {
     }
 
     public List<FacetRequest> facetsFor(String core) {
+        if (!this.facets.containsKey(core))
+            return new ArrayList<FacetRequest>();
         return this.facets.get(core);
     }
 
-    public String[] drilldownQueriesFor(String core) {
-        return null;
+    public Map<String, String> drilldownQueriesFor(String core) {
+        return this.drilldownQueries.get(core);
     }
-
+    
+    public List<Query> otherCoreFacetFiltersFor(String core) {
+        if (!this.otherCoreFacetsFilter.containsKey(core))
+            return new ArrayList<Query>();
+        return this.otherCoreFacetsFilter.get(core);
+    }
+    
+    public List<Unite> getUnites() {
+        return this.unites;
+    }
+    
     public String keyName(String coreName, String otherCoreName) {
         for (Match match : matches) {
             if (match.core1.equals(coreName) && match.core2.equals(otherCoreName))
@@ -183,6 +200,26 @@ public class ComposedQuery {
             List<Query> queries = new ArrayList<Query>();
             queries.add(query);
             filterQueries.put(coreName, queries);
+        }
+    }
+
+    public void addDrilldownQuery(String coreName, String dim, String value) {
+        if (drilldownQueries.containsKey(coreName))
+            drilldownQueries.get(coreName).put(dim, value);
+        else {
+            Map<String, String> fieldValuesMap = new HashMap<String, String>();
+            fieldValuesMap.put(dim, value);
+            drilldownQueries.put(coreName, fieldValuesMap);
+        }
+    }
+    
+    public void addOtherCoreFacetFilter(String coreName, Query query) {
+        if (this.otherCoreFacetsFilter.containsKey(coreName))
+            this.otherCoreFacetsFilter.get(coreName).add(query);
+        else {
+            List<Query> otherCoreFacetsFilter = new ArrayList<Query>();
+            otherCoreFacetsFilter.add(query);
+            this.otherCoreFacetsFilter.put(coreName, otherCoreFacetsFilter);
         }
     }
 

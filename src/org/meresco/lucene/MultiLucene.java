@@ -57,7 +57,7 @@ public class MultiLucene {
     private LuceneResponse singleCoreQuery(ComposedQuery query) throws Exception {
         String resultCoreName = query.resultsFrom;
         Query resultCoreQuery = luceneQueryForCore(resultCoreName, query);
-        return this.lucenes.get(resultCoreName).executeQuery(resultCoreQuery, query.start, query.stop, query.sort, null, null, null);
+        return this.lucenes.get(resultCoreName).executeQuery(resultCoreQuery, query.start, query.stop, query.sort, query.facetsFor(resultCoreName), null, null, query.drilldownQueriesFor(resultCoreName));
     }
 
     private LuceneResponse multipleCoreQuery(ComposedQuery query) throws Exception {
@@ -92,7 +92,8 @@ public class MultiLucene {
                 query.sort,
                 query.facetsFor(resultCoreName),
                 resultFilters,
-                keyCollectors.values()
+                keyCollectors.values(),
+                query.drilldownQueriesFor(resultCoreName)
             );
 
         for (String otherCoreName : otherCoreNames) {
@@ -100,9 +101,13 @@ public class MultiLucene {
             if (facets != null && facets.size() > 0) {
                 String coreKey = query.keyName(resultCoreName, otherCoreName);
                 KeyFilter keyFilter = new KeyFilter(keyCollectors.get(coreKey).getCollectedKeys(), query.keyName(otherCoreName, resultCoreName));
+                List<Query> queries = new ArrayList<Query>();
+                queries.addAll(query.queriesFor(otherCoreName));
+                queries.addAll(query.otherCoreFacetFiltersFor(otherCoreName));
                 response.drilldownData.addAll(lucenes.get(otherCoreName).facets(
                         facets,
-                        query.queriesFor(otherCoreName),
+                        queries,
+                        query.drilldownQueriesFor(otherCoreName),
                         keyFilter
                     ));
 //                result.drilldownData.extend((yield self.any[otherCoreName].facets(
@@ -120,7 +125,7 @@ public class MultiLucene {
 
     private Map<String, OpenBitSet> uniteFilter(ComposedQuery query) throws Exception {
         Map<String, OpenBitSet> keys = new HashMap<String, OpenBitSet>();
-        for (Unite unite : query.unites) {
+        for (Unite unite : query.getUnites()) {
             String keyNameA = query.keyName(unite.coreA, unite.coreB);
             String keyNameB = query.keyName(unite.coreB, unite.coreA);
             String resultKeyName = query.resultsFrom.equals(unite.coreA) ? keyNameA : keyNameB;
@@ -154,9 +159,9 @@ public class MultiLucene {
 
     private Query luceneQueryForCore(String coreName, ComposedQuery query) {
         Query luceneQuery = query.queryFor(coreName);
-        String[] ddQueries = query.drilldownQueriesFor(coreName);
-//        if (ddQueries.length == 0)
-//            luceneQuery = lucenes.get(coreName).createDrilldownQuery(luceneQuery, ddQueries);
+        Map<String, String> ddQueries = query.drilldownQueriesFor(coreName);
+        if (ddQueries != null && ddQueries.size() > 0)
+            luceneQuery = lucenes.get(coreName).createDrilldownQuery(luceneQuery, ddQueries);
         return luceneQuery;
     }
 

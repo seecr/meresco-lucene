@@ -40,7 +40,9 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
@@ -49,6 +51,7 @@ import org.apache.lucene.search.TermQuery;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 
@@ -179,13 +182,124 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals(3, result.drilldownData.get(1).terms.get(0).value.intValue());
         assertEquals(1, result.drilldownData.get(1).terms.get(1).value.intValue());
     }
-//    testJoinFacetWithDrilldownQueryFilters
-//    testJoinFacetWithJoinDrilldownQueryFilters
-//    testJoinDrilldownQueryFilters
-//    testJoinFacetWithFilter
+    
+    @Test
+    public void testJoinFacetWithDrilldownQueryFilters() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_O", 10));
+        q.addDrilldownQuery("coreA", "cat_Q", "true");
+        q.addMatch("coreA", "coreB", "A", "B");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(2, result.total);
+        assertEquals(1, result.drilldownData.size());
+        DrilldownData catO = result.drilldownData.get(0);
+        assertEquals("cat_O", catO.fieldname);
+        assertEquals(2, catO.terms.size());
+        assertEquals("false", catO.terms.get(0).label);
+        assertEquals(3, catO.terms.get(0).value.intValue());
+        assertEquals("true", catO.terms.get(1).label);
+        assertEquals(1, catO.terms.get(1).value.intValue());
+    }
+    
+    @Test
+    public void testJoinFacetWithJoinDrilldownQueryFilters() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_O", 10));
+        q.addDrilldownQuery("coreB", "cat_O", "true");
+        q.addMatch("coreA", "coreB", "A", "B");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(2, result.total);
+        assertEquals(1, result.drilldownData.size());
+        DrilldownData catO = result.drilldownData.get(0);
+        assertEquals("cat_O", catO.fieldname);
+        assertEquals(1, catO.terms.size());
+        assertEquals("true", catO.terms.get(0).label);
+        assertEquals(3, catO.terms.get(0).value.intValue());
+    }
+    
+    @Test
+    public void testJoinDrilldownQueryFilters() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
+        q.addDrilldownQuery("coreA", "cat_Q", "true");
+        q.addMatch("coreA", "coreB", "A", "B");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(2, result.total);
+    }
+    
+    @Test
+    public void testJoinFacetWithFilter() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
+        q.addFilterQuery("coreA", new TermQuery(new Term("Q", "true")));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_O", 10));
+        q.addMatch("coreA", "coreB", "A", "B");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(2, result.total);
+
+        assertEquals(1, result.drilldownData.size());
+        DrilldownData catO = result.drilldownData.get(0);
+        assertEquals("cat_O", catO.fieldname);
+        assertEquals(2, catO.terms.size());
+        assertEquals("false", catO.terms.get(0).label);
+        assertEquals(3, catO.terms.get(0).value.intValue());
+        assertEquals("true", catO.terms.get(1).label);
+        assertEquals(1, catO.terms.get(1).value.intValue());
+    }
+
 //    testJoinFacetFromBPointOfView
-//    testJoinFacetWillNotFilter
-//    testJoinFacetAndQuery
+    @Test
+    public void testJoinFacetWillNotFilter() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_N", 10));
+        q.addMatch("coreA", "coreB", "A", "B");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(8, result.total);
+
+        assertEquals(1, result.drilldownData.size());
+        DrilldownData catN = result.drilldownData.get(0);
+        assertEquals("cat_N", catN.fieldname);
+        assertEquals(2, catN.terms.size());
+        assertEquals("true", catN.terms.get(0).label);
+        assertEquals(4, catN.terms.get(0).value.intValue());
+        assertEquals("false", catN.terms.get(1).label);
+        assertEquals(4, catN.terms.get(1).value.intValue());
+    }
+    
+    @Test
+    public void testJoinFacetAndQuery() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_N", 10));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_O", 10));
+        q.addMatch("coreA", "coreB", "A", "B");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(4, result.total);
+        compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
+
+        assertEquals(2, result.drilldownData.size());
+        DrilldownData catN = result.drilldownData.get(0);
+        assertEquals("cat_N", catN.fieldname);
+        assertEquals(1, catN.terms.size());
+        assertEquals("true", catN.terms.get(0).label);
+        assertEquals(4, catN.terms.get(0).value.intValue());
+        
+        DrilldownData catO = result.drilldownData.get(1);
+        assertEquals("cat_O", catO.fieldname);
+        assertEquals(2, catO.terms.size());
+        assertEquals("true", catO.terms.get(0).label);
+        assertEquals(2, catO.terms.get(0).value.intValue());
+        assertEquals("false", catO.terms.get(1).label);
+        assertEquals(2, catO.terms.get(1).value.intValue());
+    }
 //    testCoreInfo
 
     @Test
@@ -211,10 +325,116 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals(3, result.total);
         compareHits(result, "A-QU", "A-MQ", "A-MQU");
     }
-//    testUniteAndFacets
-//    testUniteAndFacetsWithForeignQuery
-//    testUniteAndFacetsWithForeignQueryWithSpecialFacetsQuery
-//    testUniteMakesItTwoCoreQuery
+    
+    @Test
+    public void testUniteAndFacets() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
+        q.addFacet("coreA", new QueryStringToQuery.FacetRequest("cat_Q", 10));
+        q.addFacet("coreA", new QueryStringToQuery.FacetRequest("cat_U", 10));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_N", 10));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_O", 10));
+        q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
+        q.addOtherCoreFacetFilter("coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(3, result.total);
+        compareHits(result, "A-QU", "A-MQ", "A-MQU");
+        
+        assertEquals(4, result.drilldownData.size());
+        DrilldownData catQ = result.drilldownData.get(0);
+        assertEquals("cat_Q", catQ.fieldname);
+        assertEquals(1, catQ.terms.size());
+        assertEquals("true", catQ.terms.get(0).label);
+        assertEquals(3, catQ.terms.get(0).value.intValue());
+        DrilldownData catU = result.drilldownData.get(1);
+        assertEquals("cat_U", catU.fieldname);
+        assertEquals(2, catU.terms.size());
+        assertEquals("true", catU.terms.get(0).label);
+        assertEquals(2, catU.terms.get(0).value.intValue());
+        assertEquals("false", catU.terms.get(1).label);
+        assertEquals(1, catU.terms.get(1).value.intValue());
+        DrilldownData catN = result.drilldownData.get(2);
+        assertEquals("cat_N", catN.fieldname);
+        assertEquals(1, catN.terms.size());
+        assertEquals("true", catN.terms.get(0).label);
+        assertEquals(2, catN.terms.get(0).value.intValue());
+        DrilldownData catO = result.drilldownData.get(3);
+        assertEquals("cat_O", catO.fieldname);
+        assertEquals(2, catO.terms.size());
+        assertEquals("true", catO.terms.get(0).label);
+        assertEquals(1, catO.terms.get(0).value.intValue());
+        assertEquals("false", catO.terms.get(1).label);
+        assertEquals(1, catO.terms.get(1).value.intValue());
+    }
+    
+    @Test
+    public void testUniteAndFacetsWithForeignQuery() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_N", 10));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_O", 10));
+        q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(2, result.total);
+        compareHits(result, "A-M", "A-MQ");
+        
+        assertEquals(2, result.drilldownData.size());
+        DrilldownData catN = result.drilldownData.get(0);
+        assertEquals("cat_N", catN.fieldname);
+        assertEquals(2, catN.terms.size());
+        assertEquals("true", catN.terms.get(0).label);
+        assertEquals(2, catN.terms.get(0).value.intValue());
+        assertEquals("false", catN.terms.get(1).label);
+        assertEquals(1, catN.terms.get(1).value.intValue());
+        DrilldownData catO = result.drilldownData.get(1);
+        assertEquals("cat_O", catO.fieldname);
+        assertEquals(1, catO.terms.size());
+        assertEquals("true", catO.terms.get(0).label);
+        assertEquals(3, catO.terms.get(0).value.intValue());
+    }
+    
+    @Test
+    public void testUniteAndFacetsWithForeignQueryWithSpecialFacetsQuery() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_N", 10));
+        q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_O", 10));
+        q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
+        q.addOtherCoreFacetFilter("coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(2, result.total);
+        compareHits(result, "A-M", "A-MQ");
+        
+        assertEquals(2, result.drilldownData.size());
+        DrilldownData catN = result.drilldownData.get(0);
+        assertEquals("cat_N", catN.fieldname);
+        assertEquals(1, catN.terms.size());
+        assertEquals("true", catN.terms.get(0).label);
+        assertEquals(2, catN.terms.get(0).value.intValue());
+        DrilldownData catO = result.drilldownData.get(1);
+        assertEquals("cat_O", catO.fieldname);
+        assertEquals(1, catO.terms.size());
+        assertEquals("true", catO.terms.get(0).label);
+        assertEquals(2, catO.terms.get(0).value.intValue());
+    }
+    
+    @Test
+    public void testUniteMakesItTwoCoreQuery() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new TermQuery(new Term("Q", "true")));
+        q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(3, result.total);
+        compareHits(result, "A-QU", "A-MQ", "A-MQU");
+    }
+    
     @Test
     public void testStartStopSortKeys() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA");

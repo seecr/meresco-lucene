@@ -120,35 +120,6 @@ class MultiLuceneTest(SeecrTestCase):
     def hitIds(self, hits):
         return set([hit.id for hit in hits])
 
-    def testQueryOneIndex(self):
-        result = retval(self.dna.any.executeQuery(luceneQuery=luceneQueryFromCql('Q=true')))
-        self.assertEquals(set(['A-Q', 'A-QU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
-        result = retval(self.dna.any.executeQuery(luceneQuery=luceneQueryFromCql('Q=true AND M=true')))
-        self.assertEquals(set(['A-MQ', 'A-MQU']), self.hitIds(result.hits))
-
-    def testQueryOneIndexWithComposedQuery(self):
-        cq = ComposedQuery('coreA')
-        cq.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'))
-        result = retval(self.dna.any.executeComposedQuery(cq))
-        self.assertEquals(set(['A-Q', 'A-QU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
-        cq = ComposedQuery('coreA')
-        cq.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'), filterQueries=[luceneQueryFromCql('M=true')])
-        result = retval(self.dna.any.executeComposedQuery(cq))
-        self.assertEquals(set(['A-MQ', 'A-MQU']), self.hitIds(result.hits))
-
-    def testB_N_is_true(self):
-        result = retval(self.dna.any.executeQuery(core='coreB', luceneQuery=luceneQueryFromCql('N=true')))
-        self.assertEquals(5, result.total)
-        self.assertEquals(set(['B-N', 'B-N>A-M', 'B-N>A-MU', 'B-N>A-MQ', 'B-N>A-MQU']), self.hitIds(result.hits))
-
-    def testJoinQuery(self):
-        q = ComposedQuery('coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(4, result.total)
-        self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
-
     def testMultipleJoinQueriesKeepsCachesWithinMaxSize(self):
         for i in xrange(25):
             self.addDocument(self.luceneB, identifier=str(i), keys=[('X', i)], fields=[('Y', str(i))])
@@ -157,14 +128,6 @@ class MultiLuceneTest(SeecrTestCase):
             q.setCoreQuery(core='coreB', query=luceneQueryFromCql('Y=%s' % i))
             q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'X'))
             consume(self.dna.any.executeComposedQuery(q))
-
-    def testJoinQueryWithFilters(self):
-        q = ComposedQuery('coreA')
-        q.addFilterQuery('coreB', query=luceneQueryFromCql('N=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(4, result.total)
-        self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
 
     def testInfoOnQuery(self):
         q = ComposedQuery('coreA')
@@ -187,83 +150,6 @@ class MultiLuceneTest(SeecrTestCase):
             },
             'type': 'ComposedQuery'
         }, result.info)
-
-    def testJoinFacet(self):
-        q = ComposedQuery('coreA', query=luceneQueryFromCql('Q=true'))
-        q.addFacet('coreB', dict(fieldname='cat_N', maxTerms=10))
-        q.addFacet('coreB', dict(fieldname='cat_O', maxTerms=10))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
-        result = retval(self.dna.any.executeComposedQuery(query=q))
-        self.assertEquals(4, result.total)
-        self.assertEquals([{
-                'terms': [
-                        {'count': 2, 'term': u'true'},
-                        {'count': 2, 'term': u'false'},
-                    ],
-                'path': [],
-                'fieldname': u'cat_N'
-            }, {
-                'terms': [
-                    {'count': 3, 'term': u'false'},
-                    {'count': 1, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_O'
-            }], result.drilldownData)
-
-    def testJoinFacetWithDrilldownQueryFilters(self):
-        q = ComposedQuery('coreA', query=luceneQueryFromCql('M=true'))
-        q.addDrilldownQuery('coreA', drilldownQuery=('cat_Q', ['true']))
-        q.addFacet('coreB', dict(fieldname='cat_O', maxTerms=10))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
-        result = retval(self.dna.any.executeComposedQuery(query=q))
-        self.assertEquals(2, result.total)
-        self.assertEquals([{
-                'terms': [
-                    {'count': 3, 'term': u'false'},
-                    {'count': 1, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_O'
-            }], result.drilldownData)
-
-    def testJoinFacetWithJoinDrilldownQueryFilters(self):
-        q = ComposedQuery('coreA', query=luceneQueryFromCql('M=true'))
-        q.addDrilldownQuery('coreB', drilldownQuery=('cat_O', ['true']))
-        q.addFacet('coreB', dict(fieldname='cat_O', maxTerms=10))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
-        result = retval(self.dna.any.executeComposedQuery(query=q))
-        self.assertEquals(2, result.total)
-        self.assertEquals([{
-                'terms': [
-                    {'count': 3, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_O'
-            }], result.drilldownData)
-
-    def testJoinDrilldownQueryFilters(self):
-        q = ComposedQuery('coreA', query=luceneQueryFromCql('M=true'))
-        q.addDrilldownQuery('coreB', drilldownQuery=('cat_O', ['true']))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
-        result = retval(self.dna.any.executeComposedQuery(query=q))
-        self.assertEquals(2, result.total)
-
-    def testJoinFacetWithFilter(self):
-        q = ComposedQuery('coreA', query=luceneQueryFromCql('M=true'))
-        q.addFilterQuery('coreA', query=luceneQueryFromCql('Q=true'))
-        q.addFacet('coreB', dict(fieldname='cat_O', maxTerms=10))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
-        result = retval(self.dna.any.executeComposedQuery(query=q))
-        self.assertEquals(2, result.total)
-        self.assertEquals([{
-                'terms': [
-                    {'count': 3, 'term': u'false'},
-                    {'count': 1, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_O'
-            }], result.drilldownData)
 
     def testJoinFacetFromBPointOfView(self):
         q = ComposedQuery('coreB')
@@ -295,68 +181,9 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_O'
              }], result.drilldownData)
 
-    def testJoinFacetWillNotFilter(self):
-        query = ComposedQuery('coreA')
-        query.setCoreQuery(core='coreA', query=None)
-        query.setCoreQuery(core='coreB', query=None, facets=[
-                dict(fieldname='cat_N', maxTerms=10),
-            ])
-        query.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
-        result = retval(self.dna.any.executeComposedQuery(query=query))
-        self.assertEquals(8, result.total)
-        self.assertEquals([{
-                'terms': [
-                    {'count': 4, 'term': u'true'},
-                    {'count': 4, 'term': u'false'},
-                ],
-                'path': [],
-                'fieldname': u'cat_N'
-            }], result.drilldownData)
-
-    def testJoinFacetAndQuery(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=None)
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'), facets=[
-                dict(fieldname='cat_N', maxTerms=10),
-                dict(fieldname='cat_O', maxTerms=10),
-            ])
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX + 'A'), dict(core='coreB', key=KEY_PREFIX + 'B'))
-        result = retval(self.dna.any.executeComposedQuery(query=q))
-        self.assertEquals(4, result.total)
-        self.assertEquals(set(['A-M', 'A-MU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
-        self.assertEquals([{
-                'terms': [
-                    {'count': 4, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_N'
-            }, {
-                'terms': [
-                    {'count': 2, 'term': u'true'},
-                    {'count': 2, 'term': u'false'},
-                ],
-                'path': [],
-                'fieldname': u'cat_O'
-            }], result.drilldownData)
-
     def testCoreInfo(self):
         infos = list(compose(self.dna.all.coreInfo()))
         self.assertEquals(3, len(infos))
-
-    def testUniteResultForJustOneIndex(self):
-        result = retval(self.dna.any.executeQuery(core='coreA', luceneQuery=luceneQueryFromCql('(Q=true AND U=true) OR (Q=true AND M=true)')))
-        self.assertEquals(3, result.total)
-        self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
-
-    def testUniteResultFromTwoIndexes(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'))
-        q.setCoreQuery(core='coreB', query=None)
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(3, result.total)
-        self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
 
     def testUniteResultFromTwoIndexesCached(self):
         q = ComposedQuery('coreA')
@@ -452,59 +279,6 @@ class MultiLuceneTest(SeecrTestCase):
                 ], 'path': [], 'fieldname': u'cat_O'
             }], resultAgain.drilldownData)
 
-    def testUniteResultFromTwoIndexes_filterQueries(self):
-        q = ComposedQuery('coreA')
-        q.addFilterQuery(core='coreA', query=luceneQueryFromCql('Q=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(3, result.total)
-        self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
-
-    def testUniteAndFacets(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'), facets=[
-                dict(fieldname='cat_Q', maxTerms=10),
-                dict(fieldname='cat_U', maxTerms=10),
-            ])
-        q.setCoreQuery(core='coreB', query=None, facets=[
-                dict(fieldname='cat_N', maxTerms=10),
-                dict(fieldname='cat_O', maxTerms=10),
-            ])
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
-        q.addOtherCoreFacetFilter(core='coreB', query=luceneQueryFromCql('N=true'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(3, result.total)
-        self.assertEquals(['A-QU', 'A-MQ', 'A-MQU'], [h.id for h in result.hits])
-        self.assertEquals([{
-                'terms': [
-                    {'count': 3, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_Q'
-            }, {
-                'terms': [
-                    {'count': 2, 'term': u'true'},
-                    {'count': 1, 'term': u'false'},
-                ],
-                'path': [],
-                'fieldname': u'cat_U'
-            }, {
-                'terms': [
-                    {'count': 2, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_N'
-            }, {
-                'terms': [
-                    {'count': 1, 'term': u'true'},
-                    {'count': 1, 'term': u'false'},
-                ],
-                'path': [],
-                'fieldname': u'cat_O'
-            }], result.drilldownData)
-
     def NOT_YET_SUPPORTED_testUniteResultsFromCoreB(self):
         q = ComposedQuery('coreB')
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX +'A'), dict(core='coreB', key=KEY_PREFIX +'B'))
@@ -536,91 +310,6 @@ class MultiLuceneTest(SeecrTestCase):
                 ],
                 'fieldname': u'cat_O'
             }], result.drilldownData)
-
-    def testUniteAndFacetsWithForeignQuery(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=None)
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('O=true'), facets=[
-                dict(fieldname='cat_N', maxTerms=10),
-                dict(fieldname='cat_O', maxTerms=10),
-            ])
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(2, result.total)
-        self.assertEquals([{
-               'terms': [
-                    {'count': 2, 'term': u'true'},
-                    {'count': 1, 'term': 'false'}
-                ],
-                'path': [],
-                'fieldname': u'cat_N'
-            }, {
-                'terms': [
-                    {'count': 3, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_O'
-            }], result.drilldownData)
-
-    def testUniteAndFacetsWithForeignQueryWithSpecialFacetsQuery(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=None)
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('O=true'), facets=[
-                dict(fieldname='cat_N', maxTerms=10),
-                dict(fieldname='cat_O', maxTerms=10),
-            ])
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
-        q.addOtherCoreFacetFilter(core='coreB', query=luceneQueryFromCql('N=true'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(2, result.total)
-        self.assertEquals([{
-               'terms': [
-                    {'count': 2, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_N'
-            }, {
-                'terms': [
-                    {'count': 2, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_O'
-            }], result.drilldownData)
-
-    def testUniteMakesItTwoCoreQuery(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(3, result.total)
-        self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
-
-    def testStartStopSortKeys(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'))
-        q.setCoreQuery(core='coreB', query=None)
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addUnite(dict(core='coreA', query=luceneQueryFromCql('U=true')), dict(core='coreB', query=luceneQueryFromCql('N=true')))
-        q.sortKeys=[dict(sortBy='S', sortDescending=False)]
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(3, result.total)
-        self.assertEquals(set(['A-QU', 'A-MQ', 'A-MQU']), self.hitIds(result.hits))
-        q.sortKeys=[dict(sortBy='S', sortDescending=True)]
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(3, result.total)
-        self.assertEquals(set(['A-MQU', 'A-MQ', 'A-QU']), self.hitIds(result.hits))
-        q.stop = 2
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(3, result.total)
-        self.assertEquals(set(['A-MQU', 'A-MQ']), self.hitIds(result.hits))
-        q.stop = 10
-        q.start = 1
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(3, result.total)
-        self.assertEquals(set(['A-MQ', 'A-QU']), self.hitIds(result.hits))
 
     def testCachingCollectorsAfterUpdate(self):
         q = ComposedQuery('coreA')
@@ -665,21 +354,6 @@ class MultiLuceneTest(SeecrTestCase):
         result = retval(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set([u'A-M', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
 
-    def testJoinQueryOnOptionalKey(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'C'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(1, result.total)
-        self.assertEquals(set(['A-M']), self.hitIds(result.hits))
-
-    def testJoinQueryOnOptionalKeyOtherSide(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'D'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(1, result.total)
-        self.assertEquals(set(['A-M']), self.hitIds(result.hits))
 
     def NOT_YET_SUPPORTED_testJoinQueryOnOptionalKeyUniteResultsWithoutKey(self):
         q = ComposedQuery('coreA')
@@ -688,23 +362,6 @@ class MultiLuceneTest(SeecrTestCase):
         result = retval(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set(['A-U', 'A-QU', 'A-MU', 'A-MQU', 'A-M']), self.hitIds(result.hits))
 
-    def testJoinQueryThreeCores(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
-        q.setCoreQuery(core='coreC', query=luceneQueryFromCql('R=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
-        q.addFacet(core='coreA', facet=dict(fieldname='cat_M', maxTerms=10))
-        q.addFacet(core='coreB', facet=dict(fieldname='cat_N', maxTerms=10))
-        q.addFacet(core='coreC', facet=dict(fieldname='cat_R', maxTerms=10))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(1, result.total)
-        self.assertEquals(set(['A-M']), self.hitIds(result.hits))
-        self.assertEquals([
-               {'terms': [{'count': 1, 'term': u'true'}], 'path': [], 'fieldname': u'cat_M'},
-               {'terms': [{'count': 1, 'term': u'true'}], 'path': [], 'fieldname': u'cat_N'},
-               {'terms': [{'count': 1, 'term': u'true'}], 'path': [], 'fieldname': u'cat_R'},
-            ], result.drilldownData)
 
     def testRankQuery(self):
         q = ComposedQuery('coreA', query=MatchAllDocsQuery())

@@ -1,10 +1,33 @@
+/* begin license *
+ *
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ *
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ *
+ * This file is part of "Meresco Lucene"
+ *
+ * "Meresco Lucene" is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * "Meresco Lucene" is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with "Meresco Lucene"; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * end license */
+
 package org.meresco.lucene;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 import javax.json.Json;
@@ -13,6 +36,7 @@ import javax.json.JsonValue;
 
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.NumericRangeQuery;
@@ -20,11 +44,9 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.junit.Test;
-import org.meresco.lucene.QueryStringToQuery;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 
 public class QueryStringToQueryTest {
@@ -41,7 +63,7 @@ public class QueryStringToQueryTest {
         QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
         assertEquals(new TermQuery(new Term("field", "value")), q.query);
     }
-    
+
     @Test
     public void testTermQueryWithBoost() {
         JsonObject json = Json.createObjectBuilder()
@@ -57,7 +79,7 @@ public class QueryStringToQueryTest {
         query.setBoost(2.0f);
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testMatchAllDocsQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -67,7 +89,7 @@ public class QueryStringToQueryTest {
         QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
         assertEquals(new MatchAllDocsQuery(), q.query);
     }
-    
+
     @Test
     public void testBooleanShouldQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -99,7 +121,7 @@ public class QueryStringToQueryTest {
         query.add(oQuery, Occur.SHOULD);
         assertEquals(query, q.query);
     }
-   
+
     @Test
     public void testBooleanMustQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -131,7 +153,7 @@ public class QueryStringToQueryTest {
         query.add(oQuery, Occur.MUST_NOT);
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testWildcardQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -145,7 +167,7 @@ public class QueryStringToQueryTest {
         WildcardQuery query = new WildcardQuery(new Term("field", "???*"));
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testPrefixQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -159,7 +181,7 @@ public class QueryStringToQueryTest {
         PrefixQuery query = new PrefixQuery(new Term("field", "fiet"));
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testPhraseQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -179,7 +201,7 @@ public class QueryStringToQueryTest {
         query.add(new Term("field", "query"));
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testTermRangeQueryBigger() {
         JsonObject json = Json.createObjectBuilder()
@@ -196,7 +218,7 @@ public class QueryStringToQueryTest {
         TermRangeQuery query = TermRangeQuery.newStringRange("field", "value", null, false, false);
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testTermRangeQueryLower() {
         JsonObject json = Json.createObjectBuilder()
@@ -213,7 +235,7 @@ public class QueryStringToQueryTest {
         TermRangeQuery query = TermRangeQuery.newStringRange("field", null, "value", true, true);
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testIntRangeQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -230,7 +252,7 @@ public class QueryStringToQueryTest {
         NumericRangeQuery<Integer> query = NumericRangeQuery.newIntRange("field", 1, 5, false, true);
         assertEquals(query, q.query);
     }
-        
+
     @Test
     public void testLongRangeQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -247,7 +269,7 @@ public class QueryStringToQueryTest {
         NumericRangeQuery<Long> query = NumericRangeQuery.newLongRange("field", 1L, 5L, false, true);
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testDoubleRangeQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -264,7 +286,7 @@ public class QueryStringToQueryTest {
         NumericRangeQuery<Double> query = NumericRangeQuery.newDoubleRange("field", 1.0, 5.0, false, true);
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testDrilldownQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -280,7 +302,7 @@ public class QueryStringToQueryTest {
         TermQuery query = new TermQuery(DrillDownQuery.term("$facets", "dd-field", "value"));
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testFacets() {
         JsonObject json = Json.createObjectBuilder()
@@ -298,7 +320,7 @@ public class QueryStringToQueryTest {
         assertEquals("fieldname", facets.get(0).fieldname);
         assertEquals(10, facets.get(0).maxTerms);
     }
-    
+
     @Test
     public void testSortKeys() {
         JsonObject json = Json.createObjectBuilder()
@@ -330,17 +352,17 @@ public class QueryStringToQueryTest {
         assertEquals(SortField.Type.STRING, sortFields[0].getType());
         assertEquals(false, sortFields[0].getReverse());
         assertEquals(null, sortFields[0].missingValue);
-        
+
         assertEquals(null, sortFields[1].getField());
         assertEquals(SortField.Type.SCORE, sortFields[1].getType());
         assertEquals(true, sortFields[1].getReverse());
         assertEquals(null, sortFields[1].missingValue);
-        
+
         assertEquals("intfield", sortFields[2].getField());
         assertEquals(SortField.Type.INT, sortFields[2].getType());
         assertEquals(true, sortFields[2].getReverse());
         assertEquals(null, sortFields[2].missingValue);
-        
+
         assertEquals("fieldname", sortFields[3].getField());
         assertEquals(SortField.Type.STRING, sortFields[3].getType());
         assertEquals(true, sortFields[3].getReverse());

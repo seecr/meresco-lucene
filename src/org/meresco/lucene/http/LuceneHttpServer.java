@@ -45,13 +45,10 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.meresco.lucene.Lucene;
-import org.meresco.lucene.LuceneSettings;
 import org.meresco.lucene.MultiLucene;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
-
-import com.sun.net.httpserver.HttpServer;
 
 public class LuceneHttpServer {
     public static void main(String[] args) throws Exception {
@@ -66,7 +63,7 @@ public class LuceneHttpServer {
         option.setType(String.class);
         option.setRequired(true);
         options.addOption(option);
-        
+
         option = new Option(null, "core", true, "Lucene core");
         option.setType(String[].class);
         option.setRequired(true);
@@ -96,27 +93,27 @@ public class LuceneHttpServer {
         for (String core : cores) {
             Lucene lucene = new Lucene(core, new File(storeLocation, "lucene-" + core));
             lucenes.add(lucene);
-            
+
             ContextHandler context = new ContextHandler("/" + core + "/query");
             context.setHandler(new QueryHandler(lucene));
             contexts.addHandler(context);
-            
+
             context = new ContextHandler("/" + core + "/update");
             context.setHandler(new UpdateHandler(lucene));
             contexts.addHandler(context);
-    
+
             context = new ContextHandler("/" + core + "/delete");
             context.setHandler(new DeleteHandler(lucene));
             contexts.addHandler(context);
-            
+
             context = new ContextHandler("/" + core + "/settings");
             context.setHandler(new SettingsHandler(lucene));
             contexts.addHandler(context);
-            
+
             context = new ContextHandler("/" + core + "/prefixSearch");
             context.setHandler(new PrefixSearchHandler(lucene));
             contexts.addHandler(context);
-            
+
             context = new ContextHandler("/" + core);
             context.setHandler(new OtherHandler(lucene));
             contexts.addHandler(context);
@@ -124,13 +121,13 @@ public class LuceneHttpServer {
         ContextHandler composedHandler = new ContextHandler("/query");
         composedHandler.setHandler(new ComposedQueryHandler(new MultiLucene(lucenes)));
         contexts.addHandler(composedHandler);
-        
+
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         Server server = new Server(pool);
         ServerConnector http = new ServerConnector(server, new HttpConnectionFactory());
         http.setPort(port);
         server.addConnector(http);
-                
+
         registerShutdownHandler(lucenes, server);
 
         server.setHandler(contexts);

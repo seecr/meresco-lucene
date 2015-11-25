@@ -1,10 +1,33 @@
+/* begin license *
+ *
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ *
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ *
+ * This file is part of "Meresco Lucene"
+ *
+ * "Meresco Lucene" is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * "Meresco Lucene" is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with "Meresco Lucene"; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * end license */
+
 package org.meresco.lucene;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
@@ -18,30 +41,30 @@ public class LuceneResponse {
     public ArrayList<Hit> hits = new ArrayList<Hit>();
     public List<DrilldownData> drilldownData = new ArrayList<DrilldownData>();
     public long queryTime = 0;
-    
+
     public LuceneResponse(int totalHits) {
         total = totalHits;
-    }   
-    
+    }
+
     public void addHit(String id, float score) {
         hits.add(new Hit(id, score));
     }
-     
+
     public static class Hit {
         public String id;
         public float score;
-        
+
         public Hit(String id, float score) {
             this.id = id;
             this.score = score;
         }
     }
-    
+
     public static class DrilldownData {
         public String fieldname;
         public String[] path = new String[0];
         public ArrayList<LabelAndValue> terms = new ArrayList<LabelAndValue>();
-        
+
         public DrilldownData(String fieldname) {
             this.fieldname = fieldname;
         }
@@ -57,12 +80,12 @@ public class LuceneResponse {
             }
         }
     }
-    
+
     public JsonObject toJson() {
         JsonObjectBuilder jsonBuilder = Json.createObjectBuilder()
                 .add("total", total)
                 .add("queryTime", queryTime);
-        
+
         JsonArrayBuilder hitsArray = Json.createArrayBuilder();
         for (Hit hit : hits) {
             hitsArray.add(Json.createObjectBuilder()
@@ -70,7 +93,7 @@ public class LuceneResponse {
                     .add("score", hit.score));
         }
         jsonBuilder.add("hits", hitsArray);
-                
+
         if (drilldownData.size() > 0) {
             JsonArrayBuilder ddArray = Json.createArrayBuilder();
             for (DrilldownData dd : drilldownData) {

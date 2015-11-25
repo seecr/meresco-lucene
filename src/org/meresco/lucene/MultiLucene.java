@@ -1,3 +1,28 @@
+/* begin license *
+ *
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ *
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ *
+ * This file is part of "Meresco Lucene"
+ *
+ * "Meresco Lucene" is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * "Meresco Lucene" is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with "Meresco Lucene"; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * end license */
+
 package org.meresco.lucene;
 
 import java.util.ArrayList;
@@ -28,13 +53,13 @@ public class MultiLucene {
             return singleCoreQuery(q);
         return multipleCoreQuery(q);
     }
-    
+
     private LuceneResponse singleCoreQuery(ComposedQuery query) throws Exception {
         String resultCoreName = query.resultsFrom;
         Query resultCoreQuery = luceneQueryForCore(resultCoreName, query);
         return this.lucenes.get(resultCoreName).executeQuery(resultCoreQuery, query.start, query.stop, query.sort, null, null, null);
     }
-    
+
     private LuceneResponse multipleCoreQuery(ComposedQuery query) throws Exception {
         long t0 = System.currentTimeMillis();
         String resultCoreName = query.resultsFrom;
@@ -42,7 +67,7 @@ public class MultiLucene {
         for (String core : query.cores)
             if (!core.equals(resultCoreName))
                 otherCoreNames.add(core);
-            
+
         Map<String, OpenBitSet> finalKeys = uniteFilter(query);
         for (String otherCoreName : otherCoreNames)
             finalKeys = coreQueries(otherCoreName, resultCoreName, query, finalKeys);
@@ -61,23 +86,23 @@ public class MultiLucene {
         }
 
         LuceneResponse response = this.lucenes.get(resultCoreName).executeQuery(
-                resultCoreQuery, 
-                query.start, 
-                query.stop, 
-                query.sort, 
-                query.facetsFor(resultCoreName), 
-                resultFilters, 
+                resultCoreQuery,
+                query.start,
+                query.stop,
+                query.sort,
+                query.facetsFor(resultCoreName),
+                resultFilters,
                 keyCollectors.values()
             );
-        
+
         for (String otherCoreName : otherCoreNames) {
             List<FacetRequest> facets = query.facetsFor(otherCoreName);
             if (facets != null && facets.size() > 0) {
                 String coreKey = query.keyName(resultCoreName, otherCoreName);
                 KeyFilter keyFilter = new KeyFilter(keyCollectors.get(coreKey).getCollectedKeys(), query.keyName(otherCoreName, resultCoreName));
                 response.drilldownData.addAll(lucenes.get(otherCoreName).facets(
-                        facets, 
-                        query.queriesFor(otherCoreName), 
+                        facets,
+                        query.queriesFor(otherCoreName),
                         keyFilter
                     ));
 //                result.drilldownData.extend((yield self.any[otherCoreName].facets(
@@ -88,11 +113,11 @@ public class MultiLucene {
 //                )))
             }
         }
-        
+
         response.queryTime = System.currentTimeMillis() - t0;
         return response;
     }
-    
+
     private Map<String, OpenBitSet> uniteFilter(ComposedQuery query) throws Exception {
         Map<String, OpenBitSet> keys = new HashMap<String, OpenBitSet>();
         for (Unite unite : query.unites) {
@@ -101,11 +126,11 @@ public class MultiLucene {
             String resultKeyName = query.resultsFrom.equals(unite.coreA) ? keyNameA : keyNameB;
             OpenBitSet collectedKeys = lucenes.get(unite.coreA).collectKeys(unite.queryA, query.keyName(unite.coreA, unite.coreB), null);
             unionCollectedKeys(keys, collectedKeys, resultKeyName);
-            
+
             collectedKeys = lucenes.get(unite.coreB).collectKeys(unite.queryB, query.keyName(unite.coreB, unite.coreA), null);
             unionCollectedKeys(keys, collectedKeys, resultKeyName);
         }
-        
+
         for (String core : query.filterQueries.keySet()) {
             for (Query q : query.filterQueries.get(core)) {
                 String keyNameResult = query.keyName(query.resultsFrom, core);
@@ -134,7 +159,7 @@ public class MultiLucene {
 //            luceneQuery = lucenes.get(coreName).createDrilldownQuery(luceneQuery, ddQueries);
         return luceneQuery;
     }
-    
+
     private Map<String, OpenBitSet> coreQueries(String coreName, String otherCoreName, ComposedQuery query, Map<String, OpenBitSet> keysForKeyName) throws Exception {
         Query luceneQuery = luceneQueryForCore(coreName, query);
         if (luceneQuery != null) {

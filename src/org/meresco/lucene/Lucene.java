@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -75,7 +74,6 @@ import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
-import org.meresco.lucene.queries.KeyFilter;
 import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.MultiSuperCollector;
 import org.meresco.lucene.search.SuperCollector;

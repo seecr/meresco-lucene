@@ -25,8 +25,7 @@
 
 package org.meresco.lucene;
 
-import static org.junit.Assert.*;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,8 +51,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.search.TermFrequencySimilarity;
-
-import com.sun.corba.se.spi.orbutil.fsm.Guard.Result;
 
 public class MultiLuceneTest extends SeecrTestCase {
 
@@ -134,41 +131,41 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals(4, result.total);
         compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
     }
-    
+
 //    testMultipleJoinQueriesKeepsCachesWithinMaxSize
     @Test
     public void testJoinQueryWithFilters() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA");
         q.addFilterQuery("coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "A", "B");
-        
+
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
         compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
     }
 //    testInfoOnQuery
-    
+
     @Test
     public void testJoinWithFacetInResultCore() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
         q.addFacet("coreA", new QueryStringToQuery.FacetRequest("cat_M", 10));
         q.addMatch("coreA", "coreB", "A", "B");
-        
+
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(1, result.total);
         assertEquals(1, result.drilldownData.size());
         assertEquals("true", result.drilldownData.get(0).terms.get(0).label);
         assertEquals(1, result.drilldownData.get(0).terms.get(0).value.intValue());
     }
-    
+
     @Test
     public void testJoinFacet() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_N", 10));
         q.addFacet("coreB", new QueryStringToQuery.FacetRequest("cat_O", 10));
         q.addMatch("coreA", "coreB", "A", "B");
-        
+
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(2, result.drilldownData.size());
         assertEquals("cat_N", result.drilldownData.get(0).fieldname);
@@ -190,7 +187,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 //    testJoinFacetWillNotFilter
 //    testJoinFacetAndQuery
 //    testCoreInfo
-    
+
     @Test
     public void testUniteResultFromTwoIndexes() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA");
@@ -229,13 +226,13 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
         compareHits(result, "A-QU", "A-MQ", "A-MQU");
-        
+
         q.sort = new Sort(new SortField("S", SortField.Type.STRING, true));
         q.stop = 2;
         result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
         compareHits(result, "A-MQ", "A-MQU");
-        
+
         q.start = 1;
         q.stop = 10;
         result = multiLucene.executeComposedQuery(q);
@@ -245,24 +242,24 @@ public class MultiLuceneTest extends SeecrTestCase {
 //    testCachingCollectorsAfterUpdate
 //    testCachingCollectorsAfterUpdateInSegmentWithMultipleDocuments
 //    testCachingCollectorsAfterDelete
-    
+
     @Test
     public void testJoinQueryOnOptionalKey() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "C", "B");
-        
+
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(1, result.total);
         compareHits(result, "A-M");
     }
-    
+
     @Test
     public void testJoinQueryOnOptionalKeyOtherSide() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "A", "D");
-        
+
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(1, result.total);
         compareHits(result, "A-M");
@@ -278,7 +275,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.addFacet("coreC", new QueryStringToQuery.FacetRequest("cat_R", 10));
         q.addMatch("coreA", "coreB", "A", "B");
         q.addMatch("coreA", "coreC", "A", "C");
-        
+
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(1, result.total);
         compareHits(result, "A-M");
@@ -308,7 +305,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 //    testScoreCollectorOnDifferentKeys
 //    testJoinSort
 //    testSortWithJoinField
-    
+
     private void compareHits(LuceneResponse response, String... hitIds) {
         Set<String> responseHitIds = new HashSet<String>();
         for (Hit hit : response.hits)

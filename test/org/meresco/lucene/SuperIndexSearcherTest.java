@@ -1,3 +1,28 @@
+/* begin license *
+ *
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ *
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ *
+ * This file is part of "Meresco Lucene"
+ *
+ * "Meresco Lucene" is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * "Meresco Lucene" is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with "Meresco Lucene"; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * end license */
+
 package org.meresco.lucene;
 
 import static org.junit.Assert.assertEquals;
@@ -38,7 +63,7 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
         this.reader = DirectoryReader.open(this.writer, true);
         this.sis = new SuperIndexSearcher(this.reader);
     }
-    
+
     @After
     public void tearDown() throws Exception {
         this.reader.close();
@@ -46,7 +71,7 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
         this.executor.shutdownNow();
         super.tearDown();
     }
-    
+
     @Test
     public void testGroupLeaves() {
         List<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
@@ -56,7 +81,7 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
         List<AtomicReaderContext> firstContext = result.get(0);
         assertEquals(1, firstContext.size());
     }
-    
+
     @Test
     public void testGroupLeaves1ForEach() {
         ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
@@ -91,7 +116,7 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
         List<AtomicReaderContext> context = result.get(4);
         assertEquals(2, context.size());
     }
-    
+
     @Test
     public void testGroupLeavesAllDouble() {
         ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
@@ -113,9 +138,9 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
             int totalDocs = context.get(0).reader().numDocs() + context.get(1).reader().numDocs();
             assertEquals(11, totalDocs);
         }
-            
+
     }
-    
+
     @Test
     public void testFindSmallestSlice() {
         assertEquals(0, this.sis.find_smallest_slice_test(new int[] {0, 0, 0, 0, 0}));

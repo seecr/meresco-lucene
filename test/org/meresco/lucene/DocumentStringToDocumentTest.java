@@ -1,3 +1,28 @@
+/* begin license *
+ *
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ *
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ *
+ * This file is part of "Meresco Lucene"
+ *
+ * "Meresco Lucene" is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * "Meresco Lucene" is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with "Meresco Lucene"; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * end license */
+
 package org.meresco.lucene;
 
 import static org.junit.Assert.*;
@@ -40,7 +65,7 @@ public class DocumentStringToDocumentTest {
         assertEquals(StringField.TYPE_NOT_STORED, result.getField("name").fieldType());
         assertEquals("value", result.getField("name").stringValue());
     }
-    
+
     @Test
     public void testStringFieldStored() {
         JsonArray json = Json.createArrayBuilder()
@@ -68,7 +93,7 @@ public class DocumentStringToDocumentTest {
         assertFalse(fieldType.storeTermVectors());
         assertEquals("value", result.getField("name").stringValue());
     }
-    
+
     @Test
     public void testTextFieldWithTermVectors() {
         JsonArray json = Json.createArrayBuilder()
@@ -83,7 +108,7 @@ public class DocumentStringToDocumentTest {
         assertTrue(fieldType.storeTermVectors());
         assertEquals("value", result.getField("name").stringValue());
     }
-    
+
     @Test
     public void testNoTermsFrequencyField() {
         JsonArray json = Json.createArrayBuilder()
@@ -100,7 +125,7 @@ public class DocumentStringToDocumentTest {
         assertEquals(FieldInfo.IndexOptions.DOCS_ONLY, field.fieldType().indexOptions());
         assertEquals("value", field.stringValue());
     }
-    
+
     @Test
     public void testIntField() {
         JsonArray json = Json.createArrayBuilder()
@@ -113,7 +138,7 @@ public class DocumentStringToDocumentTest {
         assertEquals(IntField.TYPE_NOT_STORED, result.getField("name").fieldType());
         assertEquals(1, result.getField("name").numericValue().intValue());
     }
-    
+
     @Test
     public void testLongField() {
         JsonArray json = Json.createArrayBuilder()
@@ -126,7 +151,7 @@ public class DocumentStringToDocumentTest {
         assertEquals(LongField.TYPE_NOT_STORED, result.getField("name").fieldType());
         assertEquals(1, result.getField("name").numericValue().longValue());
     }
-    
+
     @Test
     public void testDoubleField() {
         JsonArray json = Json.createArrayBuilder()
@@ -139,7 +164,7 @@ public class DocumentStringToDocumentTest {
         assertEquals(DoubleField.TYPE_NOT_STORED, result.getField("name").fieldType());
         assertEquals(1, result.getField("name").numericValue().doubleValue(), 0);
     }
-    
+
     @Test
     public void testNumericField() {
         JsonArray json = Json.createArrayBuilder()
@@ -152,7 +177,7 @@ public class DocumentStringToDocumentTest {
         assertEquals(NumericDocValuesField.TYPE, result.getField("name").fieldType());
         assertEquals(1, result.getField("name").numericValue().doubleValue(), 0);
     }
-    
+
     @Test
     public void testFacetField() {
         JsonArray json = Json.createArrayBuilder()
@@ -169,7 +194,7 @@ public class DocumentStringToDocumentTest {
         assertEquals("name", field.dim);
         assertArrayEquals(new String[] { "path", "sub"}, field.path);
     }
-    
+
     private Document convert(String documentString) {
         return new DocumentStringToDocument(new StringReader(documentString)).convert();
     }

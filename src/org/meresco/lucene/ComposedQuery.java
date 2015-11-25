@@ -1,7 +1,31 @@
+/* begin license *
+ *
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ *
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ *
+ * This file is part of "Meresco Lucene"
+ *
+ * "Meresco Lucene" is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * "Meresco Lucene" is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with "Meresco Lucene"; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * end license */
+
 package org.meresco.lucene;
 
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,12 +36,9 @@ import java.util.Set;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
-import javax.json.JsonValue;
 
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TermQuery;
 import org.meresco.lucene.QueryStringToQuery.FacetRequest;
 
 public class ComposedQuery {
@@ -54,7 +75,7 @@ public class ComposedQuery {
         if (json.containsKey("cores")) {
             JsonArray jsonCores = json.getJsonArray("cores");
             for (int i = 0; i < jsonCores.size(); i++) {
-                cq.cores.add(jsonCores.getString(i)); 
+                cq.cores.add(jsonCores.getString(i));
             }
         }
         if (json.containsKey("queries")) {
@@ -80,7 +101,7 @@ public class ComposedQuery {
                     cq.addFacet(coreName, facetRequest);
             }
         }
-        
+
         if (json.containsKey("matches")) {
             JsonObject matches = json.getJsonObject("matches");
             for (String match : matches.keySet()) {
@@ -95,7 +116,7 @@ public class ComposedQuery {
                 } else {
                     cq.addMatch(coreNames[0], coreNames[1], keyName2, keyName1);
                 }
-                
+
             }
         }
         return cq;
@@ -107,11 +128,11 @@ public class ComposedQuery {
         cores.add(core1);
         cores.add(core2);
     }
-    
+
     public Query queryFor(String core) {
         return this.queries.get(core);
     }
-    
+
     public List<Query> queriesFor(String core) {
         List<Query> qs = new ArrayList<Query>();
         Query otherCoreQuery = queryFor(core);
@@ -122,11 +143,11 @@ public class ComposedQuery {
             qs.addAll(otherCoreFilterQueries);
         return qs;
     }
-    
+
     public List<FacetRequest> facetsFor(String core) {
         return this.facets.get(core);
     }
-    
+
     public String[] drilldownQueriesFor(String core) {
         return null;
     }
@@ -149,11 +170,11 @@ public class ComposedQuery {
         }
         return keyNames.toArray(new String[0]);
     }
-    
+
     public void setCoreQuery(String coreName, Query query) {
         this.queries.put(coreName, query);
     }
-    
+
 
     public void addFilterQuery(String coreName, Query query) {
         if (filterQueries.containsKey(coreName))
@@ -168,7 +189,7 @@ public class ComposedQuery {
     public void addUnite(String core1, Query query1, String core2, Query query2) {
         this.unites.add(new Unite(core1, core2, query1, query2));
     }
-    
+
     public void addFacet(String coreName, FacetRequest facetRequest) {
         if (this.facets.containsKey(coreName))
             this.facets.get(coreName).add(facetRequest);
@@ -178,7 +199,7 @@ public class ComposedQuery {
             this.facets.put(coreName, facets);
         }
     }
-    
+
     static class Match {
         private String core1;
         private String core2;
@@ -196,7 +217,7 @@ public class ComposedQuery {
         public String coreB;
         public Query queryA;
         public Query queryB;
-        
+
         public Unite(String core1, String core2, Query query1, Query query2) {
             this.coreA = core1;
             this.coreB = core2;

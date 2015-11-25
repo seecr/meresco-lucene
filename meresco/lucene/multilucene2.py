@@ -57,17 +57,14 @@ class MultiLucene(Observable):
         raise StopIteration(luceneResponseFromDict(responseDict))
         yield
 
-    def _send(self, path, jsonDict=None, synchronous=False):
-        response = yield self._post(path=path, data=jsonDict.dumps() if jsonDict else None, synchronous=synchronous)
+    def _send(self, path, jsonDict=None):
+        response = yield self._post(path=path, data=jsonDict.dumps() if jsonDict else None)
         raise StopIteration(loads(response) if response else None)
 
-    def _post(self, path, data, synchronous=False):
-        if synchronous:
-            body = urlopen("http://{}:{}{}".format(self._host, self._port, path), data=data).read()
-        else:
-            response = yield httppost(host=self._host, port=self._port, request=path, body=data)
-            header, body = response.split(CRLF * 2, 1)
-            self._verify20x(header, response)
+    def _post(self, path, data):
+        response = yield httppost(host=self._host, port=self._port, request=path, body=data)
+        header, body = response.split(CRLF * 2, 1)
+        self._verify20x(header, response)
         raise StopIteration(body)
 
     def _verify20x(self, header, response):

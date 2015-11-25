@@ -1,3 +1,28 @@
+/* begin license *
+ *
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ *
+ * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ *
+ * This file is part of "Meresco Lucene"
+ *
+ * "Meresco Lucene" is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * "Meresco Lucene" is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with "Meresco Lucene"; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * end license */
+
 package org.meresco.lucene;
 
 import java.io.Reader;
@@ -25,7 +50,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 
 public class QueryStringToQuery {
-    
+
     public Query query;
     public List<FacetRequest> facets;
     public int start;
@@ -41,7 +66,7 @@ public class QueryStringToQuery {
         this.stop = object.getInt("stop", 10);
         this.sort = convertToSort(object.getJsonArray("sortKeys"));
     }
-    
+
     static Sort convertToSort(JsonArray sortKeys) {
         if (sortKeys == null || sortKeys.size() == 0)
             return null;
@@ -66,7 +91,7 @@ public class QueryStringToQuery {
     private static Object missingSortValue(String missingValue) {
         if (missingValue == null)
             return null;
-        if (missingValue.equals("STRING_FIRST")) 
+        if (missingValue.equals("STRING_FIRST"))
             return SortField.STRING_FIRST;
         else if (missingValue.equals("STRING_LAST"))
             return SortField.STRING_LAST;
@@ -86,7 +111,7 @@ public class QueryStringToQuery {
         }
         return null;
     }
-    
+
     static List<FacetRequest> convertToFacets(JsonArray facets) {
         if (facets == null)
             return null;
@@ -128,7 +153,7 @@ public class QueryStringToQuery {
             default:
                 return null;
         }
-        if (query.get("boost") != null) 
+        if (query.get("boost") != null)
             q.setBoost(query.getJsonNumber("boost").longValue());
         return q;
     }
@@ -151,7 +176,7 @@ public class QueryStringToQuery {
         }
         return q;
     }
-    
+
     private static Query createRangeQuery(JsonObject query) {
         String field = query.getString("field");
         boolean includeLower = query.getBoolean("includeLower");
@@ -170,7 +195,7 @@ public class QueryStringToQuery {
         }
         return null;
     }
-    
+
     private static Occur occurForString(String occur) {
         switch (occur) {
             case "SHOULD":
@@ -195,7 +220,7 @@ public class QueryStringToQuery {
         }
         return new Term(term.getString("field"), term.getString("value"));
     }
-    
+
     public static class FacetRequest {
         public String fieldname;
         public int maxTerms;
@@ -206,5 +231,5 @@ public class QueryStringToQuery {
             this.maxTerms = maxTerms;
         }
     }
-   
+
 }

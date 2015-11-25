@@ -164,7 +164,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         assertEquals(99, t.topDocs(0).totalHits);
         assertEquals(10, t.topDocs(0).scoreDocs.length);
         FacetResult tc = f.getTopChildren(10, "facet1");
-        
+
         LabelAndValue[] expected = new LabelAndValue[] {
                 new LabelAndValue("value0", 10),
                 new LabelAndValue("value1", 10),
@@ -209,13 +209,13 @@ public class SuperCollectorTest extends SeecrTestCase {
         doc.add(new StringField("price", name, Store.NO));
         return doc;
     }
-    
+
     private Document createDocument(Map<String, String> fields, Map<String, String> facets) {
         Document doc = new Document();
         for(String x : fields.keySet()) {
             doc.add(new StringField(x, fields.get(x), Store.NO));
         }
-        
+
         for(String x : facets.keySet()) {
             doc.add(new FacetField(x, facets.get(x)));
         }

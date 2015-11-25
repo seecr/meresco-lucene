@@ -314,7 +314,7 @@ public class Lucene {
             if (result == null)
                 continue;
             for (LabelAndValue l : result.labelValues) {
-                dd.addTerm(l.label, l.value.intValue());
+                dd.addTerm(l);
             }
             drilldownData.add(dd);
         }

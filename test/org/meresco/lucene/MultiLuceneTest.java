@@ -158,7 +158,8 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(1, result.total);
         assertEquals(1, result.drilldownData.size());
-        assertEquals(1, result.drilldownData.get(0).terms.get("true").intValue());
+        assertEquals("true", result.drilldownData.get(0).terms.get(0).label);
+        assertEquals(1, result.drilldownData.get(0).terms.get(0).value.intValue());
     }
     
     @Test
@@ -171,11 +172,15 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(2, result.drilldownData.size());
         assertEquals("cat_N", result.drilldownData.get(0).fieldname);
-        assertEquals(2, result.drilldownData.get(0).terms.get("true").intValue());
-        assertEquals(2, result.drilldownData.get(0).terms.get("false").intValue());
+        assertEquals("true", result.drilldownData.get(0).terms.get(0).label);
+        assertEquals("false", result.drilldownData.get(0).terms.get(1).label);
+        assertEquals(2, result.drilldownData.get(0).terms.get(0).value.intValue());
+        assertEquals(2, result.drilldownData.get(0).terms.get(1).value.intValue());
         assertEquals("cat_O", result.drilldownData.get(1).fieldname);
-        assertEquals(1, result.drilldownData.get(1).terms.get("true").intValue());
-        assertEquals(3, result.drilldownData.get(1).terms.get("false").intValue());
+        assertEquals("false", result.drilldownData.get(1).terms.get(0).label);
+        assertEquals("true", result.drilldownData.get(1).terms.get(1).label);
+        assertEquals(3, result.drilldownData.get(1).terms.get(0).value.intValue());
+        assertEquals(1, result.drilldownData.get(1).terms.get(1).value.intValue());
     }
 //    testJoinFacetWithDrilldownQueryFilters
 //    testJoinFacetWithJoinDrilldownQueryFilters
@@ -280,14 +285,16 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals(3, result.drilldownData.size());
         assertEquals("cat_M", result.drilldownData.get(0).fieldname);
         assertEquals(1, result.drilldownData.get(0).terms.size());
-        assertEquals(1, result.drilldownData.get(0).terms.get("true").intValue());
+        assertEquals("true", result.drilldownData.get(0).terms.get(0).label);
+        assertEquals(1, result.drilldownData.get(0).terms.get(0).value.intValue());
         assertEquals("cat_N", result.drilldownData.get(1).fieldname);
         assertEquals(1, result.drilldownData.get(1).terms.size());
-        assertEquals(1, result.drilldownData.get(1).terms.get("true").intValue());
+        assertEquals("true", result.drilldownData.get(1).terms.get(0).label);
+        assertEquals(1, result.drilldownData.get(1).terms.get(0).value.intValue());
         assertEquals("cat_R", result.drilldownData.get(2).fieldname);
         assertEquals(1, result.drilldownData.get(2).terms.size());
-        assertEquals(1, result.drilldownData.get(2).terms.get("true").intValue());
-        
+        assertEquals("true", result.drilldownData.get(2).terms.get(0).label);
+        assertEquals(1, result.drilldownData.get(2).terms.get(0).value.intValue());
     }
 //    testRankQuery
 //    testMultipleRankQuery

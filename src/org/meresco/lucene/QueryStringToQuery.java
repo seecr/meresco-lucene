@@ -87,7 +87,7 @@ public class QueryStringToQuery {
         return null;
     }
     
-    private List<FacetRequest> convertToFacets(JsonArray facets) {
+    static List<FacetRequest> convertToFacets(JsonArray facets) {
         if (facets == null)
             return null;
         List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();

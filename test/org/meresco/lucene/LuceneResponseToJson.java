@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import org.apache.lucene.facet.LabelAndValue;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 
@@ -18,8 +19,8 @@ public class LuceneResponseToJson {
         response.addHit("id1", 0.1f);
         response.addHit("id2", 0.2f);
         LuceneResponse.DrilldownData dd = new DrilldownData("field");
-        dd.addTerm("value1", 1);
-        dd.addTerm("value2", 5);
+        dd.addTerm(new LabelAndValue("value1", 1));
+        dd.addTerm(new LabelAndValue("value2", 5));
         response.drilldownData = new ArrayList<LuceneResponse.DrilldownData>();
         response.drilldownData.add(dd);
         JsonObject jsonResponse = response.toJson();

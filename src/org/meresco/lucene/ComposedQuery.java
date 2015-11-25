@@ -63,7 +63,23 @@ public class ComposedQuery {
                 cq.setCoreQuery(core, QueryStringToQuery.convertToQuery(queries.getJsonObject(core)));
             }
         }
+        if (json.containsKey("filterQueries")) {
+            JsonObject filterQueries = json.getJsonObject("filterQueries");
+            for (String coreName : filterQueries.keySet()) {
+                JsonArray queries = filterQueries.getJsonArray(coreName);
+                for (int i = 0; i < queries.size(); i++) {
+                    cq.addFilterQuery(coreName, QueryStringToQuery.convertToQuery(queries.getJsonObject(i)));
+                }
+            }
+        }
         cq.sort = QueryStringToQuery.convertToSort(json.getJsonArray("sortKeys"));
+        if (json.containsKey("facets")) {
+            JsonObject jsonFacets = json.getJsonObject("facets");
+            for (String coreName : jsonFacets.keySet()) {
+                for (FacetRequest facetRequest : QueryStringToQuery.convertToFacets(jsonFacets.getJsonArray(coreName)))
+                    cq.addFacet(coreName, facetRequest);
+            }
+        }
         
         if (json.containsKey("matches")) {
             JsonObject matches = json.getJsonObject("matches");

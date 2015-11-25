@@ -11,6 +11,8 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
+import org.apache.lucene.facet.LabelAndValue;
+
 public class LuceneResponse {
     public int total;
     public ArrayList<Hit> hits = new ArrayList<Hit>();
@@ -38,13 +40,13 @@ public class LuceneResponse {
     public static class DrilldownData {
         public String fieldname;
         public String[] path = new String[0];
-        public Map<String, Integer> terms = new HashMap<String, Integer>();
+        public ArrayList<LabelAndValue> terms = new ArrayList<LabelAndValue>();
         
         public DrilldownData(String fieldname) {
             this.fieldname = fieldname;
         }
-        public void addTerm(String label, int value) {
-            terms.put(label, value);
+        public void addTerm(LabelAndValue term) {
+            terms.add(term);
         }
         public boolean equals(Object object) {
             if(object instanceof DrilldownData){
@@ -73,10 +75,10 @@ public class LuceneResponse {
             JsonArrayBuilder ddArray = Json.createArrayBuilder();
             for (DrilldownData dd : drilldownData) {
                 JsonArrayBuilder termArray = Json.createArrayBuilder();
-                for (String key : dd.terms.keySet()) {
+                for (LabelAndValue term : dd.terms) {
                     termArray.add(Json.createObjectBuilder()
-                            .add("term", key)
-                            .add("count", dd.terms.get(key)));
+                            .add("term", term.label)
+                            .add("count", term.value.intValue()));
                 }
                 ddArray.add(Json.createObjectBuilder()
                         .add("fieldname", dd.fieldname)

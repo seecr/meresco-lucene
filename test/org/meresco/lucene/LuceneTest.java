@@ -110,12 +110,12 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1, result.drilldownData.size());
         assertEquals("facet-field2", result.drilldownData.get(0).fieldname);
         assertEquals(3, result.drilldownData.get(0).terms.size());
-        String[] ddTerms = result.drilldownData.get(0).terms.keySet().toArray(new String[0]);
-        Arrays.sort(ddTerms);
-        assertArrayEquals(new String[] { "first item0", "first item1", "first item2" }, ddTerms);
-        assertEquals(1, result.drilldownData.get(0).terms.get("first item0").intValue());
-        assertEquals(1, result.drilldownData.get(0).terms.get("first item1").intValue());
-        assertEquals(1, result.drilldownData.get(0).terms.get("first item2").intValue());
+        assertEquals("first item0", result.drilldownData.get(0).terms.get(0).label);
+        assertEquals("first item1", result.drilldownData.get(0).terms.get(1).label);
+        assertEquals("first item2", result.drilldownData.get(0).terms.get(2).label);
+        assertEquals(1, result.drilldownData.get(0).terms.get(0).value.intValue());
+        assertEquals(1, result.drilldownData.get(0).terms.get(1).value.intValue());
+        assertEquals(1, result.drilldownData.get(0).terms.get(2).value.intValue());
         
         facets = new ArrayList<FacetRequest>();
         facets.add(new FacetRequest("facet-field3", 10));
@@ -124,11 +124,10 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1, result.drilldownData.size());
         assertEquals("facet-field3", result.drilldownData.get(0).fieldname);
         assertEquals(2, result.drilldownData.get(0).terms.size());
-        ddTerms = result.drilldownData.get(0).terms.keySet().toArray(new String[0]);
-        Arrays.sort(ddTerms);
-        assertArrayEquals(new String[] { "other value", "second item" }, ddTerms);
-        assertEquals(2, result.drilldownData.get(0).terms.get("second item").intValue());
-        assertEquals(1, result.drilldownData.get(0).terms.get("other value").intValue());
+        assertEquals("second item", result.drilldownData.get(0).terms.get(0).label);
+        assertEquals("other value", result.drilldownData.get(0).terms.get(1).label);
+        assertEquals(2, result.drilldownData.get(0).terms.get(0).value.intValue());
+        assertEquals(1, result.drilldownData.get(0).terms.get(1).value.intValue());
         
         assertEquals(result.drilldownData, lucene.facets(facets, null, null));
     }

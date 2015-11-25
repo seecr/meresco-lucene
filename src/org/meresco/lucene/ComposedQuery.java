@@ -1,5 +1,7 @@
 package org.meresco.lucene;
 
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -39,36 +42,45 @@ public class ComposedQuery {
         this.queries.put(resultsFrom, query);
     }
 
-    public static ComposedQuery fromJson(QueryStringToQuery queryStringToQuery, JsonObject json) {
-        if (json == null)
+    public static ComposedQuery fromJsonString(Reader jsonStringReader) {
+        if (jsonStringReader == null)
             return null;
+        JsonObject json = Json.createReader(jsonStringReader).readObject();
         ComposedQuery cq = new ComposedQuery(json.getString("resultsFrom"));
-        cq.start = json.getInt("start");
-        cq.stop = json.getInt("stop");
-        JsonArray jsonCores = json.getJsonArray("cores");
-        for (int i = 0; i < jsonCores.size(); i++) {
-            cq.cores.add(jsonCores.getString(i)); 
-        }
-        JsonObject queries = json.getJsonObject("queries");
-        for (String core : queries.keySet()) {
-            cq.setCoreQuery(core, queryStringToQuery.convertToQuery(queries.getJsonObject(core)));
-        }
-        cq.sort = queryStringToQuery.convertToSort(json.getJsonArray("sortKeys"));
-        
-        JsonObject matches = json.getJsonObject("_matches");
-        for (String match : matches.keySet()) {
-            String[] coreNames = match.split("->");
-            JsonArray coreDicts = matches.getJsonArray(match);
-            JsonObject coreSpec1 = coreDicts.getJsonObject(0);
-            JsonObject coreSpec2 = coreDicts.getJsonObject(1);
-            String keyName1 = coreSpec1.getString("key", coreSpec1.getString("uniqueKey", null));
-            String keyName2 = coreSpec2.getString("key", coreSpec2.getString("uniqueKey", null));
-            if (coreSpec1.getString("core").equals(coreNames[0])) {
-                cq.addMatch(coreNames[0], coreNames[1], keyName1, keyName2);
-            } else {
-                cq.addMatch(coreNames[0], coreNames[1], keyName2, keyName1);
+        if (json.containsKey("start"))
+            cq.start = json.getInt("start");
+        if (json.containsKey("stop"))
+            cq.stop = json.getInt("stop");
+        if (json.containsKey("cores")) {
+            JsonArray jsonCores = json.getJsonArray("cores");
+            for (int i = 0; i < jsonCores.size(); i++) {
+                cq.cores.add(jsonCores.getString(i)); 
             }
-            
+        }
+        if (json.containsKey("queries")) {
+            JsonObject queries = json.getJsonObject("queries");
+            for (String core : queries.keySet()) {
+                cq.setCoreQuery(core, QueryStringToQuery.convertToQuery(queries.getJsonObject(core)));
+            }
+        }
+        cq.sort = QueryStringToQuery.convertToSort(json.getJsonArray("sortKeys"));
+        
+        if (json.containsKey("matches")) {
+            JsonObject matches = json.getJsonObject("matches");
+            for (String match : matches.keySet()) {
+                String[] coreNames = match.split("->");
+                JsonArray coreDicts = matches.getJsonArray(match);
+                JsonObject coreSpec1 = coreDicts.getJsonObject(0);
+                JsonObject coreSpec2 = coreDicts.getJsonObject(1);
+                String keyName1 = coreSpec1.getString("key", coreSpec1.getString("uniqueKey", null));
+                String keyName2 = coreSpec2.getString("key", coreSpec2.getString("uniqueKey", null));
+                if (coreSpec1.getString("core").equals(coreNames[0])) {
+                    cq.addMatch(coreNames[0], coreNames[1], keyName1, keyName2);
+                } else {
+                    cq.addMatch(coreNames[0], coreNames[1], keyName2, keyName1);
+                }
+                
+            }
         }
         return cq;
     }

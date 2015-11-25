@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneSettings;
+import org.meresco.lucene.MultiLucene;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -120,6 +121,9 @@ public class LuceneHttpServer {
             context.setHandler(new OtherHandler(lucene));
             contexts.addHandler(context);
         }
+        ContextHandler composedHandler = new ContextHandler("/query");
+        composedHandler.setHandler(new ComposedQueryHandler(new MultiLucene(lucenes)));
+        contexts.addHandler(composedHandler);
         
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         Server server = new Server(pool);

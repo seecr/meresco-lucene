@@ -66,14 +66,14 @@ class Lucene(Observable):
         for sortKey in sortKeys or []:
             sortKey["type"] = self._fieldRegistry.sortFieldType(sortKey["sortBy"])
         jsonDict = JsonDict(
-            query=loads(luceneQuery),
+            query=luceneQuery,
             start=start,
             stop=stop,
             facets=facets or [],
             sortKeys=sortKeys or [],
         )
         responseDict = (yield self._send(jsonDict=jsonDict, path='/query/'))
-        raise StopIteration(self._luceneResponse(responseDict))
+        raise StopIteration(luceneResponseFromDict(responseDict))
         yield
 
     def prefixSearch(self, fieldname, prefix, showCount=False, limit=10, **kwargs):
@@ -116,13 +116,6 @@ class Lucene(Observable):
             inner.name = self._name
             inner.numDocs = self.numDocs
 
-    def _luceneResponse(self, responseDict):
-        hits = [Hit(**hit) for hit in responseDict['hits']]
-        response = LuceneResponse(total=responseDict["total"], queryTime=responseDict["queryTime"], hits=hits)
-        if "drilldownData" in responseDict:
-            response.drilldownData = responseDict['drilldownData']
-        return response
-
     def _send(self, path, jsonDict=None, synchronous=False):
         path = "/" + self._name + path
         response = yield self._post(path=path, data=jsonDict.dumps() if jsonDict else None, synchronous=synchronous)
@@ -140,5 +133,12 @@ class Lucene(Observable):
     def _verify20x(self, header, response):
         if not header.startswith('HTTP/1.1 20'):
             raise IOError("Expected status 'HTTP/1.1 20x' from Lucene server, but got: " + response)
+
+def luceneResponseFromDict(responseDict):
+    hits = [Hit(**hit) for hit in responseDict['hits']]
+    response = LuceneResponse(total=responseDict["total"], queryTime=responseDict["queryTime"], hits=hits)
+    if "drilldownData" in responseDict:
+        response.drilldownData = responseDict['drilldownData']
+    return response
 
 millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 millisecs

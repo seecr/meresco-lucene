@@ -40,7 +40,7 @@ from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
 from meresco.lucene import Lucene, Fields2LuceneDoc, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator, DrilldownField, LuceneSettings
-from meresco.lucene.queryexpressiontolucenequerystring import QueryExpressionToLuceneQueryString
+from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 from meresco.lucene.fieldregistry import FieldRegistry
 
@@ -128,7 +128,7 @@ def main(reactor, port, serverPort, databasePath, **kwargs):
     termNumerator = TermNumerator(path=join(databasePath, 'termNumerator'))
 
     emptyLuceneSettings = LuceneSettings(commitTimeout=1)
-    multiLuceneHelix = (MultiLucene(defaultCore='main'),
+    multiLuceneHelix = (MultiLucene(host='localhost', port=serverPort, defaultCore='main'),
             (Lucene(host='localhost', port=serverPort, name='empty-core', settings=emptyLuceneSettings),),
             (lucene,),
             (lucene2,),
@@ -181,9 +181,9 @@ def main(reactor, port, serverPort, databasePath, **kwargs):
                                 (AdapterToLuceneQuery(
                                     defaultCore='main',
                                     coreConverters={
-                                        "main": QueryExpressionToLuceneQueryString([], luceneSettings=luceneSettings),
-                                        "main2": QueryExpressionToLuceneQueryString([], luceneSettings=lucene2Settings),
-                                        "empty-core": QueryExpressionToLuceneQueryString([], luceneSettings=emptyLuceneSettings),
+                                        "main": QueryExpressionToLuceneQueryDict([], luceneSettings=luceneSettings),
+                                        "main2": QueryExpressionToLuceneQueryDict([], luceneSettings=lucene2Settings),
+                                        "empty-core": QueryExpressionToLuceneQueryDict([], luceneSettings=emptyLuceneSettings),
                                     }),
                                     multiLuceneHelix,
                                 ),
@@ -208,9 +208,9 @@ def main(reactor, port, serverPort, databasePath, **kwargs):
                             (AdapterToLuceneQuery(
                                     defaultCore='main',
                                     coreConverters={
-                                        "main": QueryExpressionToLuceneQueryString([], luceneSettings=luceneSettings),
-                                        "main2": QueryExpressionToLuceneQueryString([], luceneSettings=lucene2Settings),
-                                        "empty-core": QueryExpressionToLuceneQueryString([], luceneSettings=emptyLuceneSettings),
+                                        "main": QueryExpressionToLuceneQueryDict([], luceneSettings=luceneSettings),
+                                        "main2": QueryExpressionToLuceneQueryDict([], luceneSettings=lucene2Settings),
+                                        "empty-core": QueryExpressionToLuceneQueryDict([], luceneSettings=emptyLuceneSettings),
                                     }),
                                 multiLuceneHelix,
                             )

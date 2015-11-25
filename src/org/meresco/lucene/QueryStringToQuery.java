@@ -40,10 +40,9 @@ public class QueryStringToQuery {
         this.start = object.getInt("start", 0);
         this.stop = object.getInt("stop", 10);
         this.sort = convertToSort(object.getJsonArray("sortKeys"));
-        this.composedQuery = ComposedQuery.fromJson(this, object.getJsonObject("composedQuery"));
     }
     
-    Sort convertToSort(JsonArray sortKeys) {
+    static Sort convertToSort(JsonArray sortKeys) {
         if (sortKeys == null || sortKeys.size() == 0)
             return null;
         SortField[] sortFields = new SortField[sortKeys.size()];
@@ -64,7 +63,7 @@ public class QueryStringToQuery {
         return new Sort(sortFields);
     }
 
-    private Object missingSortValue(String missingValue) {
+    private static Object missingSortValue(String missingValue) {
         if (missingValue == null)
             return null;
         if (missingValue.equals("STRING_FIRST")) 
@@ -74,7 +73,7 @@ public class QueryStringToQuery {
         return null;
     }
 
-    private SortField.Type typeForSortField(String type) {
+    private static SortField.Type typeForSortField(String type) {
         switch (type) {
             case "String":
                 return SortField.Type.STRING;
@@ -100,7 +99,7 @@ public class QueryStringToQuery {
         return facetRequests;
     }
 
-    Query convertToQuery(JsonObject query) {
+    static Query convertToQuery(JsonObject query) {
         if (query == null)
             return null;
         Query q;
@@ -134,7 +133,7 @@ public class QueryStringToQuery {
         return q;
     }
 
-    private Query createPhraseQuery(JsonObject query) {
+    private static Query createPhraseQuery(JsonObject query) {
         PhraseQuery q = new PhraseQuery();
         JsonArray terms = query.getJsonArray("terms");
         for (int i = 0; i < terms.size(); i++) {
@@ -143,7 +142,7 @@ public class QueryStringToQuery {
         return q;
     }
 
-    private Query createBooleanQuery(JsonObject query) {
+    private static Query createBooleanQuery(JsonObject query) {
         BooleanQuery q = new BooleanQuery();
         JsonArray clauses = query.getJsonArray("clauses");
         for (int i = 0; i < clauses.size(); i++) {
@@ -153,7 +152,7 @@ public class QueryStringToQuery {
         return q;
     }
     
-    private Query createRangeQuery(JsonObject query) {
+    private static Query createRangeQuery(JsonObject query) {
         String field = query.getString("field");
         boolean includeLower = query.getBoolean("includeLower");
         boolean includeUpper = query.getBoolean("includeUpper");
@@ -172,7 +171,7 @@ public class QueryStringToQuery {
         return null;
     }
     
-    private Occur occurForString(String occur) {
+    private static Occur occurForString(String occur) {
         switch (occur) {
             case "SHOULD":
                 return Occur.SHOULD;
@@ -184,7 +183,7 @@ public class QueryStringToQuery {
         return null;
     }
 
-    private Term createTerm(JsonObject term) {
+    private static Term createTerm(JsonObject term) {
         JsonValue type = term.get("type");
         if (type != null && type.toString().equals("DrillDown")) {
             JsonArray jsonPath = term.getJsonArray("path");

@@ -18,7 +18,7 @@ public class MultiLucene {
 
     private Map<String, Lucene> lucenes = new HashMap<String, Lucene>();
 
-    public MultiLucene(Lucene[] lucenes) {
+    public MultiLucene(List<Lucene> lucenes) {
         for (Lucene lucene : lucenes)
             this.lucenes.put(lucene.name, lucene);
     }

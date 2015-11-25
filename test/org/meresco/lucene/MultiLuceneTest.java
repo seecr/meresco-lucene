@@ -74,7 +74,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         luceneB = new Lucene("coreB", new File(this.tmpDir, "b"), settings);
         luceneC = new Lucene("coreC", new File(this.tmpDir, "c"), settingsLuceneC);
 
-        multiLucene = new MultiLucene(new Lucene[] {luceneA, luceneB, luceneC});
+        multiLucene = new MultiLucene(new ArrayList<Lucene>() {{ add(luceneA); add(luceneB); add(luceneC);}});
 
         addDocument(luceneA, "A",      new HashMap() {{put("A", 1);}}, new HashMap() {{put("M", "false"); put("Q", "false"); put("U", "false"); put("S", "1");}});
         addDocument(luceneA, "A-U",    new HashMap() {{put("A", 2 );}}, new HashMap() {{put("M", "false"); put("Q", "false"); put("U", "true" ); put("S", "2");}});

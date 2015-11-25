@@ -98,6 +98,25 @@ public class ComposedQuery {
                 }
             }
         }
+        if (json.containsKey("otherCoreFacetFilters")) {
+            JsonObject filterQueries = json.getJsonObject("otherCoreFacetFilters");
+            for (String coreName : filterQueries.keySet()) {
+                JsonArray queries = filterQueries.getJsonArray(coreName);
+                for (int i = 0; i < queries.size(); i++) {
+                    cq.addOtherCoreFacetFilter(coreName, QueryStringToQuery.convertToQuery(queries.getJsonObject(i)));
+                }
+            }
+        }
+        if (json.containsKey("drilldownQueries")) {
+            JsonObject filterQueries = json.getJsonObject("drilldownQueries");
+            for (String coreName : filterQueries.keySet()) {
+                JsonArray ddQueries = filterQueries.getJsonArray(coreName);
+                for (int i = 0; i < ddQueries.size(); i++) {
+                    JsonArray ddQuery = ddQueries.getJsonArray(i);
+                    cq.addDrilldownQuery(coreName, ddQuery.getString(0), ddQuery.getString(1));
+                }
+            }
+        }
         cq.sort = QueryStringToQuery.convertToSort(json.getJsonArray("sortKeys"));
         if (json.containsKey("facets")) {
             JsonObject jsonFacets = json.getJsonObject("facets");

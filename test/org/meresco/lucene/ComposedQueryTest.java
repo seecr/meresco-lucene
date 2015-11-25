@@ -31,6 +31,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.StringReader;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -87,7 +88,18 @@ public class ComposedQueryTest {
                             .add("term", Json.createObjectBuilder()
                                 .add("field", "field")
                                 .add("value", "value0")))))
-
+                .add("otherCoreFacetFilters", Json.createObjectBuilder()
+                    .add("coreA", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder()
+                            .add("type", "TermQuery")
+                            .add("term", Json.createObjectBuilder()
+                                .add("field", "field")
+                                .add("value", "value0")))))
+                .add("drilldownQueries", Json.createObjectBuilder()
+                    .add("coreA", Json.createArrayBuilder()
+                        .add(Json.createArrayBuilder()
+                            .add("ddField")
+                            .add("ddValue"))))
                 .add("facets", Json.createObjectBuilder()
                     .add("coreA", Json.createArrayBuilder()
                         .add(Json.createObjectBuilder()
@@ -129,6 +141,14 @@ public class ComposedQueryTest {
         assertEquals(1, facetsB.size());
         assertEquals("fieldB", facetsB.get(0).fieldname);
         assertEquals(5, facetsB.get(0).maxTerms);
+        
+        List<Query> otherCoreFacetFilters = q.otherCoreFacetFiltersFor("coreA");
+        assertEquals(1, otherCoreFacetFilters.size());
+        assertEquals(new TermQuery(new Term("field", "value0")), otherCoreFacetFilters.get(0));
+        
+        Map<String, String> drilldownQueries = q.drilldownQueriesFor("coreA");
+        assertEquals(1, drilldownQueries.size());
+        assertEquals("ddValue", drilldownQueries.get("ddField"));
     }
 
     @Test

@@ -51,7 +51,7 @@ from lucenesettingstest import LuceneSettingsTest
 from lucene2test import LuceneTest
 from adaptertolucenequerytest import AdapterToLuceneQueryTest
 # from multilucenetest import MultiLuceneTest
-from queryexpressiontolucenequerystringtest import QueryExpressionToLuceneQueryStringTest
+from queryexpressiontolucenequerydicttest import QueryExpressionToLuceneQueryDictTest
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
 from suggestionindextest import SuggestionIndexTest
 from termnumeratortest import TermNumeratorTest

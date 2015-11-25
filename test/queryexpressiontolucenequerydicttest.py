@@ -24,16 +24,15 @@
 #
 ## end license ##
 
-from meresco.components.json import JsonDict
 from meresco.lucene import LuceneSettings, DrilldownField
 from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELD, FieldRegistry, LONGFIELD, INTFIELD, STRINGFIELD
-from meresco.lucene.queryexpressiontolucenequerystring import QueryExpressionToLuceneQueryString
+from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 from cqlparser import cqlToExpression, parseString as parseCql, UnsupportedCQL
 from cqlparser.cqltoexpression import QueryExpression
 from seecr.test import SeecrTestCase
 
 
-class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
+class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
     def testTermQuery(self):
         self.assertConversion({
             "type": "TermQuery",
@@ -42,7 +41,7 @@ class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
                 "value": "value",
             }
         }, QueryExpression.searchterm("field", "=", "value"))
-        self.assertConversion('{"term": {"field": "field", "value": "value"}, "type": "TermQuery"}', QueryExpression.searchterm("field", "=", "value"))
+        self.assertConversion({"term": {"field": "field", "value": "value"}, "type": "TermQuery"}, QueryExpression.searchterm("field", "=", "value"))
 
 
     def testRightHandSideIsLowercase(self):
@@ -410,7 +409,7 @@ class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
             settings.fieldRegistry = FieldRegistry()
             settings.fieldRegistry.register("intField", fieldDefinition=INTFIELD)
             settings.fieldRegistry.register("longField", fieldDefinition=LONGFIELD)
-        converter = QueryExpressionToLuceneQueryString(
+        converter = QueryExpressionToLuceneQueryDict(
             unqualifiedTermFields=unqualifiedFields,
             luceneSettings=settings,
             ignoreStemmingForWords=getattr(self, '_ignoredStemmingForWords', None)
@@ -419,8 +418,6 @@ class QueryExpressionToLuceneQueryStringTest(SeecrTestCase):
 
     def assertConversion(self, expected, expression=None, cql=None):
         result = self.convert(expression=expression, cql=cql)
-        if not isinstance(expected, basestring):
-            result = JsonDict.loads(result)
         self.assertEquals(expected, result)
 
 def termQuery(field, value, boost=None):

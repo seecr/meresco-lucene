@@ -34,13 +34,13 @@ from seecr.utils.generatorutils import consume
 from meresco.lucene.composedquery import ComposedQuery
 
 from meresco.lucene import LuceneSettings
-from meresco.lucene.queryexpressiontolucenequerystring import QueryExpressionToLuceneQueryString
+from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 
 
 class AdapterToLuceneQueryTest(TestCase):
     def setUp(self):
-        coreAConverter = QueryExpressionToLuceneQueryString([('fieldA', 1.0)], luceneSettings=LuceneSettings())
-        coreBConverter = QueryExpressionToLuceneQueryString([('fieldB', 1.0)], luceneSettings=LuceneSettings())
+        coreAConverter = QueryExpressionToLuceneQueryDict([('fieldA', 1.0)], luceneSettings=LuceneSettings())
+        coreBConverter = QueryExpressionToLuceneQueryDict([('fieldB', 1.0)], luceneSettings=LuceneSettings())
         self.converter = AdapterToLuceneQuery(defaultCore='A', coreConverters=dict(A=coreAConverter, B=coreBConverter))
         self.observer = CallTrace('Query responder', methods={'executeQuery': executeQueryMock})
         self.dna = be((Observable(),
@@ -58,8 +58,8 @@ class AdapterToLuceneQueryTest(TestCase):
         q.validate()
         consume(self.dna.any.executeComposedQuery(query=q))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
-        self.assertEquals("""'{"type": "TermQuery", "term": {"field": "fieldA", "value": "valueaq"}, "boost": 1.0}'""", repr(q.queryFor('A')))
-        self.assertEquals("""'{"type": "TermQuery", "term": {"field": "fieldB", "value": "valuebq"}, "boost": 1.0}'""", repr(q.queryFor('B')))
+        self.assertEquals("{'type': 'TermQuery', 'term': {'field': 'fieldA', 'value': u'valueaq'}, 'boost': 1.0}", repr(q.queryFor('A')))
+        self.assertEquals("{'type': 'TermQuery', 'term': {'field': 'fieldB', 'value': u'valuebq'}, 'boost': 1.0}", repr(q.queryFor('B')))
 
 
 def executeQueryMock(luceneQuery, *args, **kwargs):

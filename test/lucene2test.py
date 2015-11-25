@@ -28,7 +28,7 @@ from seecr.utils.generatorutils import returnValueFromGenerator
 from meresco.components.json import JsonDict, JsonList
 from meresco.lucene import Lucene, LuceneSettings
 from meresco.lucene.fieldregistry import FieldRegistry
-from meresco.lucene.queryexpressiontolucenequerystring import QueryExpressionToLuceneQueryString
+from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 from weightless.core import consume
 from cqlparser import cqlToExpression
 from simplejson import loads
@@ -76,7 +76,7 @@ class LuceneTest(SeecrTestCase):
                     {"fieldname": "facet", "path": [], "terms": [{"term": "term", "count": 1}]}
                 ]
             }).dumps()
-        query = QueryExpressionToLuceneQueryString([], LuceneSettings()).convert(cqlToExpression("field=value"))
+        query = QueryExpressionToLuceneQueryDict([], LuceneSettings()).convert(cqlToExpression("field=value"))
         response = returnValueFromGenerator(self._lucene.executeQuery(luceneQuery=query, start=1, stop=5, facets=[dict(maxTerms=10, fieldname='facet')], sortKeys=[dict(sortBy='field', sortDescending=False)]))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/query/', self.post[0]['path'])

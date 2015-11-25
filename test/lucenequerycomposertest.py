@@ -32,7 +32,6 @@ from meresco.lucene.lucenequerycomposer import LuceneQueryComposer
 
 from meresco.lucene.fieldregistry import FieldRegistry, INTFIELD, LONGFIELD
 from meresco.lucene import LuceneSettings
-from simplejson import loads
 
 
 class LuceneQueryComposerTest(TestCase):
@@ -48,6 +47,6 @@ class LuceneQueryComposerTest(TestCase):
 
     def assertConversion(self, expected, input):
         result = self.composer.compose(parseCql(input))
-        self.assertEquals(expected, loads(result))
+        self.assertEquals(expected, result)
         # self.assertEquals(expected, result, "expected %s['%s'], but got %s['%s']" % (repr(expected), str(expected), repr(result), str(result)))
 

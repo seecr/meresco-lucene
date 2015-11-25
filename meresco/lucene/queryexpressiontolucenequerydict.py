@@ -34,7 +34,7 @@ from org.meresco.lucene.analysis import MerescoStandardAnalyzer
 from meresco.components.json import JsonDict
 
 
-class QueryExpressionToLuceneQueryString(Observable):
+class QueryExpressionToLuceneQueryDict(Observable):
     def __init__(self, unqualifiedTermFields, luceneSettings, ignoreStemmingForWords=None):
         Observable.__init__(self)
         self._unqualifiedTermFields = unqualifiedTermFields
@@ -53,7 +53,7 @@ class QueryExpressionToLuceneQueryString(Observable):
         raise StopIteration(response)
 
     def convert(self, expression):
-        return JsonDict(self._expression(expression)).dumps()
+        return JsonDict(self._expression(expression))
 
     def __call__(self, expression):
         return self.convert(expression)

@@ -26,12 +26,12 @@
 
 
 from cqlparser.cqltoexpression import cqlToExpression
-from meresco.lucene.queryexpressiontolucenequerystring import QueryExpressionToLuceneQueryString
+from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 
 
 class LuceneQueryComposer(object):
     def __init__(self, **kwargs):
-        self._queryExpressionToLuceneQuery = QueryExpressionToLuceneQueryString(**kwargs)
+        self._queryExpressionToLuceneQuery = QueryExpressionToLuceneQueryDict(**kwargs)
 
     def compose(self, ast):
         return self._queryExpressionToLuceneQuery.convert(cqlToExpression(ast))

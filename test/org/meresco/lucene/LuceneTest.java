@@ -152,6 +152,12 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(2, result.drilldownData.get(0).terms.get(0).value.intValue());
         assertEquals(1, result.drilldownData.get(0).terms.get(1).value.intValue());
 
+        facets.get(0).maxTerms = 0;
+        result = lucene.executeQuery(new MatchAllDocsQuery(), facets);
+        assertEquals(3, result.total);
+        assertEquals(1, result.drilldownData.size());
+        assertEquals(2, result.drilldownData.get(0).terms.size());
+        
         assertEquals(result.drilldownData, lucene.facets(facets, null, null, null));
     }
 

@@ -314,7 +314,7 @@ public class Lucene {
         for (FacetRequest facet : facets) {
             DrilldownData dd = new DrilldownData(facet.fieldname);
 
-            FacetResult result = facetCollector.getTopChildren(facet.maxTerms, facet.fieldname, facet.path);
+            FacetResult result = facetCollector.getTopChildren(facet.maxTerms == 0 ? Integer.MAX_VALUE : facet.maxTerms, facet.fieldname, facet.path);
             if (result == null)
                 continue;
             for (LabelAndValue l : result.labelValues) {

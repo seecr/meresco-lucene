@@ -509,7 +509,7 @@ def _termsFromFacetResult(facetResult, facet, path, hierarchical=False):
     for l in r.labelValues:
         termDict = dict(term=str(l.label), count=l.value.intValue())
         if hierarchical:
-            subterms = _termsFromFacetResult(facetResult, facet, path + [termDict['term']])
+            subterms = _termsFromFacetResult(facetResult, facet, path + [termDict['term']], hierarchical=hierarchical)
             if subterms:
                 termDict['subterms'] = subterms
         terms.append(termDict)

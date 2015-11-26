@@ -166,7 +166,7 @@ class _FieldDefinition(object):
         field = dict(
             type=self.type,
             name=name,
-            value=value,
+            value=self.pythonType(value),
         )
         if termVectors:
             field['termVectors'] = True

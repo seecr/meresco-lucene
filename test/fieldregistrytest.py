@@ -25,7 +25,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.fieldregistry import FieldRegistry, STRINGFIELD_STORED, NO_TERMS_FREQUENCY_FIELD, STRINGFIELD, TEXTFIELD, LONGFIELD, INTFIELD
+from meresco.lucene.fieldregistry import FieldRegistry, STRINGFIELD_STORED, NO_TERMS_FREQUENCY_FIELD, STRINGFIELD, TEXTFIELD, LONGFIELD, INTFIELD, NUMERICFIELD
 from meresco.lucene import DrilldownField
 import warnings
 
@@ -64,6 +64,16 @@ class FieldRegistryTest(SeecrTestCase):
                 "type": "NoTermsFrequencyField",
                 "name": "fieldname",
                 "value": "value",
+            }, field)
+
+    def testNumericField(self):
+        registry = FieldRegistry()
+        registry.register('fieldname', NUMERICFIELD)
+        field = registry.createField('fieldname', '2010')
+        self.assertEquals({
+                "type": "NumericField",
+                "name": "fieldname",
+                "value": 2010,
             }, field)
 
     def testPhraseQueryPossible(self):

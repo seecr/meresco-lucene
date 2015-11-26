@@ -74,7 +74,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                 {
                     "name": "__numeric__.field6",
                     "type": "NumericField",
-                    "value": "12345"
+                    "value": 12345
                 },
                 {
                     "name": "untokenized.field4",

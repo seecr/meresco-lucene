@@ -117,9 +117,9 @@ public class SettingsHandler extends AbstractHandler {
                 facetsConfig.setHierarchical(dim, drilldownField.getBoolean("hierarchical"));
             if (drilldownField.get("multiValued") != null)
                 facetsConfig.setMultiValued(dim, drilldownField.getBoolean("multiValued"));
-            JsonValue fieldname = drilldownField.get("fieldname");
-            if (fieldname != null && fieldname != JsonValue.NULL)
-                facetsConfig.setIndexFieldName(dim, fieldname.toString());
+            String fieldname = drilldownField.getString("fieldname", null);
+            if (fieldname != null && fieldname != null)
+                facetsConfig.setIndexFieldName(dim, fieldname);
         }
     }
 

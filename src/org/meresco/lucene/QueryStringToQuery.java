@@ -209,8 +209,8 @@ public class QueryStringToQuery {
     }
 
     private static Term createTerm(JsonObject term) {
-        JsonValue type = term.get("type");
-        if (type != null && type.toString().equals("DrillDown")) {
+        String type = term.getString("type", null);
+        if (type != null && type.equals("DrillDown")) {
             JsonArray jsonPath = term.getJsonArray("path");
             String[] path = new String[jsonPath.size()];
             for (int i = 0; i < jsonPath.size(); i++) {

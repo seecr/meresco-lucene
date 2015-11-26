@@ -438,7 +438,8 @@ class Lucene(Observable):
                     terms=_termsFromFacetResult(
                             facetResult=facetResult,
                             facet=f,
-                            path=path
+                            path=path,
+                            hierarchical=self._fieldRegistry.isHierarchicalDrilldown(f['fieldname'])
                         )))
         return result
 
@@ -500,16 +501,17 @@ def chainFilters(filters, logic):
 
 millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 millisecs
 
-def _termsFromFacetResult(facetResult, facet, path):
+def _termsFromFacetResult(facetResult, facet, path, hierarchical=False):
     r = facetResult.getTopChildren(facet['maxTerms'] or Integer.MAX_VALUE, facet['fieldname'], path)
     if r is None:
         return []
     terms = []
     for l in r.labelValues:
         termDict = dict(term=str(l.label), count=l.value.intValue())
-        subterms = _termsFromFacetResult(facetResult, facet, path + [termDict['term']])
-        if subterms:
-            termDict['subterms'] = subterms
+        if hierarchical:
+            subterms = _termsFromFacetResult(facetResult, facet, path + [termDict['term']])
+            if subterms:
+                termDict['subterms'] = subterms
         terms.append(termDict)
     return terms
 

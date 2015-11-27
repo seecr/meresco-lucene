@@ -28,6 +28,7 @@ package org.meresco.lucene;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -44,8 +45,13 @@ public class LuceneResponseToJson {
         response.addHit("id1", 0.1f);
         response.addHit("id2", 0.2f);
         LuceneResponse.DrilldownData dd = new DrilldownData("field");
-        dd.addTerm(new LabelAndValue("value1", 1));
-        dd.addTerm(new LabelAndValue("value2", 5));
+        List<DrilldownData.Term> terms = new ArrayList<DrilldownData.Term>();
+        terms.add(new DrilldownData.Term("value1", 1));
+        DrilldownData.Term t = new DrilldownData.Term("value2", 5);
+        t.subTerms = new ArrayList<DrilldownData.Term>();
+        t.subTerms.add(new DrilldownData.Term("subValue2", 1));
+        terms.add(t);
+        dd.terms = terms;
         response.drilldownData = new ArrayList<LuceneResponse.DrilldownData>();
         response.drilldownData.add(dd);
         JsonObject jsonResponse = response.toJson();
@@ -61,8 +67,16 @@ public class LuceneResponseToJson {
         assertEquals(1, ddData.size());
         assertEquals("field", ddData.getJsonObject(0).getString("fieldname"));
         assertEquals(0, ddData.getJsonObject(0).getJsonArray("path").size());
-        assertEquals("value1", ddData.getJsonObject(0).getJsonArray("terms").getJsonObject(0).getString("term"));
-        assertEquals(1, ddData.getJsonObject(0).getJsonArray("terms").getJsonObject(0).getInt("count"));
+        JsonArray ddTerms = ddData.getJsonObject(0).getJsonArray("terms");
+        assertEquals("value1", ddTerms.getJsonObject(0).getString("term"));
+        assertEquals(1, ddTerms.getJsonObject(0).getInt("count"));
+        JsonArray subterms = ddTerms.getJsonObject(0).getJsonArray("subterms");
+        assertEquals(null, subterms);
+        
+        JsonArray subterms2 = ddTerms.getJsonObject(1).getJsonArray("subterms");
+        assertEquals(1, subterms2.size());
+        assertEquals("subValue2", subterms2.getJsonObject(0).getString("term"));
+        assertEquals(1, subterms2.getJsonObject(0).getInt("count"));
     }
 
 }

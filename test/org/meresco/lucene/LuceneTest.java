@@ -139,9 +139,9 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals("first item0", result.drilldownData.get(0).terms.get(0).label);
         assertEquals("first item1", result.drilldownData.get(0).terms.get(1).label);
         assertEquals("first item2", result.drilldownData.get(0).terms.get(2).label);
-        assertEquals(1, result.drilldownData.get(0).terms.get(0).value.intValue());
-        assertEquals(1, result.drilldownData.get(0).terms.get(1).value.intValue());
-        assertEquals(1, result.drilldownData.get(0).terms.get(2).value.intValue());
+        assertEquals(1, result.drilldownData.get(0).terms.get(0).count);
+        assertEquals(1, result.drilldownData.get(0).terms.get(1).count);
+        assertEquals(1, result.drilldownData.get(0).terms.get(2).count);
 
         facets = new ArrayList<FacetRequest>();
         facets.add(new FacetRequest("facet-field3", 10));
@@ -152,8 +152,8 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(2, result.drilldownData.get(0).terms.size());
         assertEquals("second item", result.drilldownData.get(0).terms.get(0).label);
         assertEquals("other value", result.drilldownData.get(0).terms.get(1).label);
-        assertEquals(2, result.drilldownData.get(0).terms.get(0).value.intValue());
-        assertEquals(1, result.drilldownData.get(0).terms.get(1).value.intValue());
+        assertEquals(2, result.drilldownData.get(0).terms.get(0).count);
+        assertEquals(1, result.drilldownData.get(0).terms.get(1).count);
 
         facets.get(0).maxTerms = 0;
         result = lucene.executeQuery(new MatchAllDocsQuery(), facets);

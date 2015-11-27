@@ -63,20 +63,38 @@ public class LuceneResponse {
     public static class DrilldownData {
         public String fieldname;
         public String[] path = new String[0];
-        public ArrayList<LabelAndValue> terms = new ArrayList<LabelAndValue>();
+        public List<Term> terms;
 
         public DrilldownData(String fieldname) {
             this.fieldname = fieldname;
         }
-        public void addTerm(LabelAndValue term) {
-            terms.add(term);
-        }
+        
         public boolean equals(Object object) {
             if(object instanceof DrilldownData){
                 DrilldownData ddObject = (DrilldownData) object;
                 return ddObject.fieldname.equals(fieldname) && Arrays.equals(ddObject.path, path) && ddObject.terms.equals(terms);
             } else {
                 return false;
+            }
+        }
+        
+        public static class Term {
+            public final String label;
+            public final int count;
+            public List<Term> subTerms;
+            
+            public Term(String label, int count) {
+                this.label = label;
+                this.count = count;
+            }
+        
+            public boolean equals(Object object) {
+                if(object instanceof Term){
+                    Term term = (Term) object;
+                    return term.label.equals(label) && term.count == count && ((term.subTerms == null && subTerms == null) || term.subTerms.equals(subTerms));
+                } else {
+                    return false;
+                }
             }
         }
     }
@@ -97,19 +115,26 @@ public class LuceneResponse {
         if (drilldownData.size() > 0) {
             JsonArrayBuilder ddArray = Json.createArrayBuilder();
             for (DrilldownData dd : drilldownData) {
-                JsonArrayBuilder termArray = Json.createArrayBuilder();
-                for (LabelAndValue term : dd.terms) {
-                    termArray.add(Json.createObjectBuilder()
-                            .add("term", term.label)
-                            .add("count", term.value.intValue()));
-                }
                 ddArray.add(Json.createObjectBuilder()
                         .add("fieldname", dd.fieldname)
                         .add("path", Json.createArrayBuilder())
-                        .add("terms", termArray));
+                        .add("terms", jsonTermList(dd.terms)));
             }
             jsonBuilder.add("drilldownData", ddArray);
         }
         return jsonBuilder.build();
+    }
+
+    private JsonArrayBuilder jsonTermList(List<DrilldownData.Term> terms) {
+        JsonArrayBuilder termArray = Json.createArrayBuilder();
+        for (DrilldownData.Term term : terms) {
+            JsonObjectBuilder termDict = Json.createObjectBuilder()
+                    .add("term", term.label)
+                    .add("count", term.count);
+            if (term.subTerms != null)
+                termDict.add("subterms", jsonTermList(term.subTerms));
+            termArray.add(termDict);
+        }
+        return termArray;
     }
 }

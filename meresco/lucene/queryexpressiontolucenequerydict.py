@@ -162,8 +162,10 @@ class QueryExpressionToLuceneQueryDict(Observable):
     def _createStringTerm(self, field, value):
         if self._fieldRegistry.isDrilldownField(field):
             if self._fieldRegistry.isHierarchicalDrilldown(field):
-                value = value.split('>')
-            return dict(field=field, path=[value], type="DrillDown")
+                path = value.split('>')
+            else:
+                path = [value]
+            return dict(field=field, path=path, type="DrillDown")
         return dict(field=field, value=value)
 
 def rangeQuery(rangeQueryType, field, lowerTerm, upperTerm, includeLower, includeUpper):

@@ -163,6 +163,7 @@ class LuceneTest(IntegrationTestCase):
         drilldown = result[0]
         self.assertEquals('untokenized.fieldHier', drilldown['fieldname'])
         self.assertEquals(set([('parent0', 50), ('parent1', 50)]), set([(t['term'], t['count']) for t in drilldown['terms']]))
+        self.assertEquals(set([('child0', 17), ('child1', 17), ('child2', 16)]), set([(t['term'], t['count']) for t in drilldown['terms'][0]['subterms']]))
 
     def testFieldHierarchicalSearch(self):
         response = self.doSruQuery('untokenized.fieldHier exact "parent0>child1>grandchild2"', facet='untokenized.fieldHier', drilldownFormat='json')

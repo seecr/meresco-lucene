@@ -44,6 +44,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetResult;
+import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.CachedOrdinalsReader;
@@ -327,16 +328,29 @@ public class Lucene {
         List<DrilldownData> drilldownData = new ArrayList<DrilldownData>();
         for (FacetRequest facet : facets) {
             DrilldownData dd = new DrilldownData(facet.fieldname);
-
-            FacetResult result = facetCollector.getTopChildren(facet.maxTerms == 0 ? Integer.MAX_VALUE : facet.maxTerms, facet.fieldname, facet.path);
-            if (result == null)
-                continue;
-            for (LabelAndValue l : result.labelValues) {
-                dd.addTerm(l);
-            }
-            drilldownData.add(dd);
+            dd.terms = drilldownDataFromFacetResult(facetCollector, facet, facet.path, this.facetsConfig.getDimConfig(facet.fieldname).hierarchical);
+            if (dd != null)
+                drilldownData.add(dd);
         }
         return drilldownData;
+    }
+    
+    public List<DrilldownData.Term> drilldownDataFromFacetResult(FacetSuperCollector facetCollector, FacetRequest facet, String[] path, boolean hierarchical) throws IOException {
+        FacetResult result = facetCollector.getTopChildren(facet.maxTerms == 0 ? Integer.MAX_VALUE : facet.maxTerms, facet.fieldname, path);
+        if (result == null)
+            return null;
+        List<DrilldownData.Term> terms = new ArrayList<DrilldownData.Term>();
+        for (LabelAndValue l : result.labelValues) {
+            DrilldownData.Term term = new DrilldownData.Term(l.label, l.value.intValue());
+            if (hierarchical) {
+                String[] newPath = new String[path.length + 1];
+                System.arraycopy(path, 0, newPath, 0, path.length);
+                newPath[newPath.length - 1] = l.label;
+                term.subTerms = drilldownDataFromFacetResult(facetCollector, facet, newPath, hierarchical);
+            }
+            terms.add(term);
+        }
+        return terms;
     }
 
     public List<TermCount> termsForField(String field, String prefix, int limit) throws Exception {

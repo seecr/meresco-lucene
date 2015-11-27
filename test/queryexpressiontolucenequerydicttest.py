@@ -355,8 +355,9 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
         self.assertConversion(q, cql='longField <= 3')
 
     def testDrilldownFieldQuery(self):
-        self.fieldRegistry = FieldRegistry([DrilldownField('field')])
+        self.fieldRegistry = FieldRegistry([DrilldownField('field', hierarchical=True)])
         self.assertConversion(dict(type="TermQuery", term=dict(field="field", path=["value"], type="DrillDown")), cql="field = value")
+        self.assertConversion(dict(type="TermQuery", term=dict(field="field", path=["value", "value1"], type="DrillDown")), cql="field = \"value>value1\"")
 
     def testExcludeUnqualifiedFieldForWhichNoPhraseQueryIsPossibleInCaseOfPhraseQuery(self):
         self.fieldRegistry = FieldRegistry()

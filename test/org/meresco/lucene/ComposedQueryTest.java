@@ -101,7 +101,7 @@ public class ComposedQueryTest {
                     .add("coreA", Json.createArrayBuilder()
                         .add(Json.createArrayBuilder()
                             .add("ddField")
-                            .add("ddValue"))))
+                            .add(Json.createArrayBuilder().add("ddValue")))))
                 .add("facets", Json.createObjectBuilder()
                     .add("coreA", Json.createArrayBuilder()
                         .add(Json.createObjectBuilder()
@@ -152,9 +152,9 @@ public class ComposedQueryTest {
         assertEquals(1, otherCoreFacetFilters.size());
         assertEquals(new TermQuery(new Term("field", "value0")), otherCoreFacetFilters.get(0));
         
-        Map<String, String> drilldownQueries = q.drilldownQueriesFor("coreA");
+        Map<String, String[]> drilldownQueries = q.drilldownQueriesFor("coreA");
         assertEquals(1, drilldownQueries.size());
-        assertEquals("ddValue", drilldownQueries.get("ddField"));
+        assertArrayEquals(new String[] {"ddValue"}, drilldownQueries.get("ddField"));
     }
 
     @Test

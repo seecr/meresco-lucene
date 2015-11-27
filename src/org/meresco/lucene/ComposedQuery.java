@@ -36,6 +36,7 @@ import java.util.Set;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonString;
 import javax.json.JsonValue;
 
 import org.apache.lucene.search.Query;
@@ -49,7 +50,7 @@ public class ComposedQuery {
     private Map<String, Query> queries = new HashMap<String, Query>();
     public Map<String, List<Query>> filterQueries = new HashMap<String, List<Query>>();
     private Map<String, List<FacetRequest>> facets = new HashMap<String, List<FacetRequest>>();
-    private Map<String, Map<String, String>> drilldownQueries = new HashMap<String, Map<String, String>>();
+    private Map<String, Map<String, String[]>> drilldownQueries = new HashMap<String, Map<String, String[]>>();
     private Map<String, List<Query>> otherCoreFacetsFilter = new HashMap<String, List<Query>>();
     private List<Unite> unites = new ArrayList<Unite>();
     public int start = 0;
@@ -111,7 +112,11 @@ public class ComposedQuery {
                 JsonArray ddQueries = filterQueries.getJsonArray(coreName);
                 for (int i = 0; i < ddQueries.size(); i++) {
                     JsonArray ddQuery = ddQueries.getJsonArray(i);
-                    cq.addDrilldownQuery(coreName, ddQuery.getString(0), ddQuery.getString(1));
+                    JsonArray jsonPath = ddQuery.getJsonArray(1);
+                    String[] path = new String[jsonPath.size()];
+                    for (int j=0; j < jsonPath.size(); j++)
+                        path[j]= jsonPath.getString(j); 
+                    cq.addDrilldownQuery(coreName, ddQuery.getString(0), path);
                 }
             }
         }
@@ -172,7 +177,7 @@ public class ComposedQuery {
         return this.facets.get(core);
     }
 
-    public Map<String, String> drilldownQueriesFor(String core) {
+    public Map<String, String[]> drilldownQueriesFor(String core) {
         return this.drilldownQueries.get(core);
     }
     
@@ -220,11 +225,11 @@ public class ComposedQuery {
         }
     }
 
-    public void addDrilldownQuery(String coreName, String dim, String value) {
+    public void addDrilldownQuery(String coreName, String dim, String... value) {
         if (drilldownQueries.containsKey(coreName))
             drilldownQueries.get(coreName).put(dim, value);
         else {
-            Map<String, String> fieldValuesMap = new HashMap<String, String>();
+            Map<String, String[]> fieldValuesMap = new HashMap<String, String[]>();
             fieldValuesMap.put(dim, value);
             drilldownQueries.put(coreName, fieldValuesMap);
         }

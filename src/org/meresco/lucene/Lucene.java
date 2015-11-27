@@ -205,7 +205,7 @@ public class Lucene {
         return executeQuery(query, 0, 10, null, facets, null, null, null);
     }
 
-    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, List<Filter> filters, Collection<KeySuperCollector> keyCollectors, Map<String, String> drilldownQueries) throws Exception {
+    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, List<Filter> filters, Collection<KeySuperCollector> keyCollectors, Map<String, String[]> drilldownQueries) throws Exception {
         long t0 = System.currentTimeMillis();
         Collectors collectors = createCollectors(start, stop, sort, facets, keyCollectors);
 
@@ -225,7 +225,7 @@ public class Lucene {
         return response;
     }
 
-    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, Map<String, String> drilldownQueries, Filter filter) throws Exception {
+    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, Map<String, String[]> drilldownQueries, Filter filter) throws Exception {
         FacetSuperCollector facetCollector = facetCollector(facets);
         if (facetCollector == null)
             return new ArrayList<DrilldownData>();
@@ -432,7 +432,7 @@ public class Lucene {
         return keyCollector.getCollectedKeys();
     }
     
-    public Query createDrilldownQuery(Query luceneQuery, Map<String, String> drilldownQueries) {
+    public Query createDrilldownQuery(Query luceneQuery, Map<String, String[]> drilldownQueries) {
         BooleanQuery q = new BooleanQuery(true);
         if (luceneQuery != null)
             q.add(luceneQuery, Occur.MUST);

@@ -108,6 +108,14 @@ public class QueryConverter {
         for (int i = 0; i < facets.size(); i++) {
             JsonObject facet = facets.getJsonObject(i);
             FacetRequest fr = new FacetRequest(facet.getString("fieldname"), facet.getInt("maxTerms"));
+            if (facet.containsKey("path")) {
+                JsonArray jsonPath = facet.getJsonArray("path");
+                String[] path = new String[jsonPath.size()];
+                for (int j=0; j<path.length; j++)
+                    path[j] = jsonPath.getString(j); 
+                fr.path = path;
+            }
+            
             facetRequests.add(fr);
         }
         return facetRequests;

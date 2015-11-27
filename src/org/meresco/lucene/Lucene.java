@@ -328,9 +328,11 @@ public class Lucene {
         List<DrilldownData> drilldownData = new ArrayList<DrilldownData>();
         for (FacetRequest facet : facets) {
             DrilldownData dd = new DrilldownData(facet.fieldname);
-            dd.terms = drilldownDataFromFacetResult(facetCollector, facet, facet.path, this.facetsConfig.getDimConfig(facet.fieldname).hierarchical);
-            if (dd != null)
+            List<DrilldownData.Term> terms = drilldownDataFromFacetResult(facetCollector, facet, facet.path, this.facetsConfig.getDimConfig(facet.fieldname).hierarchical);
+            if (terms != null) {
+                dd.terms = terms;
                 drilldownData.add(dd);
+            }
         }
         return drilldownData;
     }

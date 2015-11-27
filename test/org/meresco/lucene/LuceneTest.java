@@ -163,6 +163,29 @@ public class LuceneTest extends SeecrTestCase {
         
         assertEquals(result.drilldownData, lucene.facets(facets, null, null, null));
     }
+    
+    @Test
+    public void testHierarchicalFacets() throws Exception {
+        Document doc1 = new Document();
+        doc1.add(new StringField("field1", "id0", Store.NO));
+        doc1.add(new FacetField("facet-field", "first", "second"));
+        doc1.add(new FacetField("facet-field", "subfirst", "subsecond"));
+        this.lucene.facetsConfig.setHierarchical("facet-field", true);
+        this.lucene.facetsConfig.setMultiValued("facet-field", true);
+        this.lucene.addDocument("id1", doc1);
+        
+        ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
+        FacetRequest facet = new FacetRequest("facet-field", 10);
+        facet.path = new String[] {"first"};
+        facets.add(facet);
+        
+        LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery(), facets);
+        assertEquals(1, result.total);
+        assertEquals(1, result.drilldownData.size());
+        assertEquals("facet-field", result.drilldownData.get(0).fieldname);
+        assertEquals(1, result.drilldownData.get(0).terms.size());
+        assertEquals("second", result.drilldownData.get(0).terms.get(0).label);
+    }
 
     @Test
     public void testFacetsInDifferentIndexFieldName() throws Exception {

@@ -25,7 +25,7 @@
 
 package org.meresco.lucene;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.StringReader;
 import java.util.List;
@@ -315,6 +315,9 @@ public class QueryConverterTest {
                 .add("facets", Json.createArrayBuilder()
                         .add(Json.createObjectBuilder()
                                 .add("fieldname", "fieldname")
+                                .add("path", Json.createArrayBuilder()
+                                    .add("value1")
+                                    .add("subvalue2"))
                                 .add("maxTerms", 10)))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
@@ -323,6 +326,7 @@ public class QueryConverterTest {
         assertEquals(1, facets.size());
         assertEquals("fieldname", facets.get(0).fieldname);
         assertEquals(10, facets.get(0).maxTerms);
+        assertArrayEquals(new String[] {"value1", "subvalue2"}, facets.get(0).path);
     }
 
     @Test

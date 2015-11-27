@@ -115,9 +115,12 @@ public class LuceneResponse {
         if (drilldownData.size() > 0) {
             JsonArrayBuilder ddArray = Json.createArrayBuilder();
             for (DrilldownData dd : drilldownData) {
+                JsonArrayBuilder path = Json.createArrayBuilder();
+                for (String p : dd.path)
+                    path.add(p);
                 ddArray.add(Json.createObjectBuilder()
                         .add("fieldname", dd.fieldname)
-                        .add("path", Json.createArrayBuilder())
+                        .add("path", path)
                         .add("terms", jsonTermList(dd.terms)));
             }
             jsonBuilder.add("drilldownData", ddArray);

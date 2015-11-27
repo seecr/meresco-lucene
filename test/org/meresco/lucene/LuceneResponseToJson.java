@@ -79,4 +79,23 @@ public class LuceneResponseToJson {
         assertEquals(1, subterms2.getJsonObject(0).getInt("count"));
     }
 
+    @Test
+    public void testHierarchicalDrilldown() {
+        LuceneResponse response = new LuceneResponse(2);
+        LuceneResponse.DrilldownData dd = new DrilldownData("field");
+        List<DrilldownData.Term> terms = new ArrayList<DrilldownData.Term>();
+        terms.add(new DrilldownData.Term("value1", 1));
+        dd.path = new String[] {"subpath"};
+        dd.terms = terms;
+        response.drilldownData = new ArrayList<LuceneResponse.DrilldownData>();
+        response.drilldownData.add(dd);
+        JsonObject jsonResponse = response.toJson();
+        JsonArray ddData = jsonResponse.getJsonArray("drilldownData");
+        assertEquals(1, ddData.size());
+        assertEquals("field", ddData.getJsonObject(0).getString("fieldname"));
+        assertEquals("subpath", ddData.getJsonObject(0).getJsonArray("path").getString(0));
+        JsonArray ddTerms = ddData.getJsonObject(0).getJsonArray("terms");
+        assertEquals("value1", ddTerms.getJsonObject(0).getString("term"));
+        assertEquals(1, ddTerms.getJsonObject(0).getInt("count"));
+    }
 }

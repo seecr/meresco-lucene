@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
@@ -47,6 +48,7 @@ import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneSettings;
 import org.meresco.lucene.analysis.MerescoDutchStemmingAnalyzer;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
+import org.meresco.lucene.search.TermFrequencySimilarity;
 
 public class SettingsHandler extends AbstractHandler {
 
@@ -131,6 +133,8 @@ public class SettingsHandler extends AbstractHandler {
                 if (k1 != null && b != null)
                     return new BM25Similarity((float) k1.doubleValue(), (float) b.doubleValue());
                 return new BM25Similarity();
+            case "TermFrequencySimilarity": // TODO: test
+                return new TermFrequencySimilarity();
         }
         return null;
     }
@@ -146,6 +150,8 @@ public class SettingsHandler extends AbstractHandler {
                 return new MerescoDutchStemmingAnalyzer(fields);
             case "MerescoStandardAnalyzer":
                 return new MerescoStandardAnalyzer();
+            case "WhitespaceAnalyzer":// TODO: test
+                return new WhitespaceAnalyzer();
         }
         return null;
     }

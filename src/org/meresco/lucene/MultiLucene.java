@@ -30,19 +30,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.facet.DrillDownQuery;
-import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.OpenBitSet;
 import org.meresco.lucene.ComposedQuery.Unite;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.queries.KeyFilter;
+import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
+import org.meresco.lucene.search.join.ScoreSuperCollector;
 
 public class MultiLucene {
 
@@ -65,7 +62,7 @@ public class MultiLucene {
         Query resultCoreQuery = luceneQueryForCore(resultCoreName, query);
         if (resultCoreQuery == null)
             resultCoreQuery = new MatchAllDocsQuery();
-        return this.lucenes.get(resultCoreName).executeQuery(resultCoreQuery, query.start, query.stop, query.sort, query.facetsFor(resultCoreName), null, query.filterQueries.get(resultCoreName), null, query.drilldownQueriesFor(resultCoreName));
+        return this.lucenes.get(resultCoreName).executeQuery(resultCoreQuery, query.start, query.stop, query.sort, query.facetsFor(resultCoreName), null, query.filterQueries.get(resultCoreName), null, null, query.drilldownQueriesFor(resultCoreName));
     }
 
     private LuceneResponse multipleCoreQuery(ComposedQuery query) throws Exception {
@@ -87,7 +84,7 @@ public class MultiLucene {
         Query resultCoreQuery = luceneQueryForCore(resultCoreName, query);
         if (resultCoreQuery == null)
                 resultCoreQuery = new MatchAllDocsQuery();
-//        aggregateScoreCollectors = self._createAggregateScoreCollectors(query)
+        List<AggregateScoreSuperCollector> aggregateScoreCollectors = createAggregateScoreCollectors(query);
         Map<String, KeySuperCollector> keyCollectors = new HashMap<String, KeySuperCollector>();
         for (String keyName : query.keyNames(resultCoreName)) {
             keyCollectors.put(keyName, new KeySuperCollector(keyName));
@@ -101,6 +98,7 @@ public class MultiLucene {
                 query.facetsFor(resultCoreName),
                 resultFilters,
                 null, // TODO: filterQueries??
+                aggregateScoreCollectors,
                 keyCollectors.values(),
                 query.drilldownQueriesFor(resultCoreName)
             );
@@ -119,12 +117,6 @@ public class MultiLucene {
                         query.drilldownQueriesFor(otherCoreName),
                         keyFilter
                     ));
-//                result.drilldownData.extend((yield self.any[otherCoreName].facets(
-//                    facets=query.facetsFor(otherCoreName),
-//                    filterQueries=query.queriesFor(otherCoreName) + query.otherCoreFacetFiltersFor(otherCoreName),
-//                    drilldownQueries=query.drilldownQueriesFor(otherCoreName),
-//                    filters=[keyFilter]
-//                )))
             }
         }
 
@@ -192,5 +184,26 @@ public class MultiLucene {
         for (Lucene lucene : this.lucenes.values())
             queryConverters.put(lucene.name, lucene.getQueryConverter());
         return queryConverters;
+    }
+    
+    public List<AggregateScoreSuperCollector> createAggregateScoreCollectors(ComposedQuery query) throws Exception {
+        Map<String, List<ScoreSuperCollector>> scoreCollectors = new HashMap<String, List<ScoreSuperCollector>>();
+        for (String coreName : query.cores) {
+            String resultsKeyName = query.keyName(query.resultsFrom, coreName);
+            Query rankQuery = query.rankQueryFor(coreName);
+            if (rankQuery != null) {
+                ScoreSuperCollector scoreCollector = this.lucenes.get(coreName).scoreCollector(query.keyName(coreName, query.resultsFrom), rankQuery);
+                if (!scoreCollectors.containsKey(resultsKeyName))
+                    scoreCollectors.put(resultsKeyName, new ArrayList<ScoreSuperCollector>());
+                scoreCollectors.get(resultsKeyName).add(scoreCollector);
+            }
+        }
+        List<AggregateScoreSuperCollector> aggregateScoreCollectors = new ArrayList<AggregateScoreSuperCollector>();
+        for (String keyName : scoreCollectors.keySet()) {
+            List<ScoreSuperCollector> scoreCollectorsForKey = scoreCollectors.get(keyName);
+            if (scoreCollectorsForKey.size() > 0)
+                aggregateScoreCollectors.add(new AggregateScoreSuperCollector(keyName, scoreCollectorsForKey));
+        }
+        return aggregateScoreCollectors;
     }
 }

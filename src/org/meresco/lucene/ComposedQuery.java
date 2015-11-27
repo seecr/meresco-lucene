@@ -41,6 +41,7 @@ import javax.json.JsonValue;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 
 public class ComposedQuery {
@@ -52,6 +53,7 @@ public class ComposedQuery {
     private Map<String, List<FacetRequest>> facets = new HashMap<String, List<FacetRequest>>();
     private Map<String, Map<String, String[]>> drilldownQueries = new HashMap<String, Map<String, String[]>>();
     private Map<String, List<Query>> otherCoreFacetsFilter = new HashMap<String, List<Query>>();
+    private Map<String, Query> rankQueries = new HashMap<String, Query>();
     private List<Unite> unites = new ArrayList<Unite>();
     public int start = 0;
     public int stop = 10;
@@ -128,7 +130,6 @@ public class ComposedQuery {
                     cq.addFacet(coreName, facetRequest);
             }
         }
-
         if (json.containsKey("matches")) {
             JsonObject matches = json.getJsonObject("matches");
             for (String match : matches.keySet()) {
@@ -144,6 +145,12 @@ public class ComposedQuery {
                     cq.addMatch(coreNames[0], coreNames[1], keyName2, keyName1);
                 }
 
+            }
+        }
+        if (json.containsKey("rankQueries")) {
+            JsonObject rankQueries = json.getJsonObject("rankQueries");
+            for (String coreName : rankQueries.keySet()) {
+                cq.setRankQuery(coreName, converters.get(coreName).convertToQuery(rankQueries.getJsonObject(coreName)));
             }
         }
         return cq;
@@ -187,6 +194,10 @@ public class ComposedQuery {
         return this.otherCoreFacetsFilter.get(core);
     }
     
+    public Query rankQueryFor(String core) {
+        return this.rankQueries.get(core);
+    }
+    
     public List<Unite> getUnites() {
         return this.unites;
     }
@@ -213,7 +224,6 @@ public class ComposedQuery {
     public void setCoreQuery(String coreName, Query query) {
         this.queries.put(coreName, query);
     }
-
 
     public void addFilterQuery(String coreName, Query query) {
         if (filterQueries.containsKey(coreName))
@@ -257,6 +267,10 @@ public class ComposedQuery {
             facets.add(facetRequest);
             this.facets.put(coreName, facets);
         }
+    }
+    
+    public void setRankQuery(String core, Query query) {
+        this.rankQueries.put(core, query);
     }
 
     static class Match {

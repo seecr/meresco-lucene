@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -84,7 +85,9 @@ import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.TopDocSuperCollector;
 import org.meresco.lucene.search.TopFieldSuperCollector;
 import org.meresco.lucene.search.TopScoreDocSuperCollector;
+import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
+import org.meresco.lucene.search.join.ScoreSuperCollector;
 
 public class Lucene {
 
@@ -198,20 +201,20 @@ public class Lucene {
     }
 
     public LuceneResponse executeQuery(Query query) throws Exception {
-        return executeQuery(query, 0, 10, null, null, null, null, null, null);
+        return executeQuery(query, 0, 10, null, null, null, null, null, null, null);
     }
 
     public LuceneResponse executeQuery(Query query, int start, int stop) throws Exception {
-        return executeQuery(query, start, stop, null, null, null, null, null, null);
+        return executeQuery(query, start, stop, null, null, null, null, null, null, null);
     }
 
     public LuceneResponse executeQuery(Query query, List<FacetRequest> facets) throws Exception {
-        return executeQuery(query, 0, 10, null, facets, null, null, null, null);
+        return executeQuery(query, 0, 10, null, facets, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, List<Filter> filters, List<Query> filterQueries, Collection<KeySuperCollector> keyCollectors, Map<String, String[]> drilldownQueries) throws Exception {
+    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, List<Filter> filters, List<Query> filterQueries, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors, Map<String, String[]> drilldownQueries) throws Exception {
         long t0 = System.currentTimeMillis();
-        Collectors collectors = createCollectors(start, stop, sort, facets, keyCollectors);
+        Collectors collectors = createCollectors(start, stop, sort, facets, keyCollectors, scoreCollectors);
 
         Filter f = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Filter[0]));
 
@@ -259,7 +262,7 @@ public class Lucene {
         return indexAndTaxo.searcher().doc(docID);
     }
 
-    private Collectors createCollectors(int start, int stop, Sort sort, List<FacetRequest> facets, Collection<KeySuperCollector> keyCollectors) {
+    private Collectors createCollectors(int start, int stop, Sort sort, List<FacetRequest> facets, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors) {
         Collectors allCollectors = new Collectors();
         allCollectors.topCollector = topCollector(start, stop, sort);
         allCollectors.facetCollector = facetCollector(facets);
@@ -272,6 +275,13 @@ public class Lucene {
         if (keyCollectors != null)
             collectors.addAll(keyCollectors);
         allCollectors.root = new MultiSuperCollector(collectors);
+        
+        if (scoreCollectors != null && scoreCollectors.size() > 0) {
+            for (AggregateScoreSuperCollector scoreCollector : scoreCollectors) {
+                scoreCollector.setDelegate(allCollectors.root);
+                allCollectors.root = scoreCollector;
+            }
+        }
         return allCollectors;
     }
 
@@ -449,5 +459,16 @@ public class Lucene {
 
     public QueryConverter getQueryConverter() {
         return new QueryConverter(this.facetsConfig);
+    }
+    
+    public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Exception {
+//        return self._scoreCollectorCache.get((keyName, query))
+        return doScoreCollecting(keyName, query);
+    }
+    
+    public ScoreSuperCollector doScoreCollecting(String keyName, Query query) throws Exception {
+        ScoreSuperCollector scoreCollector = new ScoreSuperCollector(keyName);
+        indexAndTaxo.searcher().search(query, null, scoreCollector);
+        return scoreCollector;
     }
 }

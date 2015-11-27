@@ -35,16 +35,20 @@ if [ -z "$libDir" ]; then
     libDir=$(dirname $mydir)/lib
 fi
 
-rm -rf $buildDir
-mkdir $buildDir
-rm -rf $libDir
-mkdir -p $libDir
+rm -rf $buildDir $libDir
+mkdir --parents $buildDir $libDir
+
+pythonVersion=$(python --version 2>&1 | awk '{print $2}' | cut -d. -f-2)
 
 javac=/usr/lib/jvm/java-1.7.0-openjdk.x86_64/bin/javac
-luceneJarDir=/usr/lib64/python2.6/site-packages/lucene
+if [ ! -f "$javac" ]; then
+    javac=/usr/lib/jvm/java-1.7.0/bin/javac
+fi
+
+luceneJarDir=/usr/lib64/python${pythonVersion}/site-packages/lucene
 if [ -f /etc/debian_version ]; then
     javac=/usr/lib/jvm/java-7-openjdk-amd64/bin/javac
-    luceneJarDir=/usr/lib/python2.7/dist-packages/lucene
+    luceneJarDir=/usr/lib/python${pythonVersion}/dist-packages/lucene
 fi
 
 LUCENEVERSION=4.10.1
@@ -69,15 +73,12 @@ python -m jcc.__main__ \
     --build \
     --install
 
-rootLibDir=$mydir/root/usr/lib64/python2.6/site-packages/meresco_lucene
+rootLibDir=$mydir/root/usr/lib64/python${pythonVersion}/site-packages/meresco_lucene
 if [ -f /etc/debian_version ]; then
-    rootLibDir=$mydir/root/usr/local/lib/python2.7/dist-packages/meresco_lucene
+    rootLibDir=$mydir/root/usr/local/lib/python${pythonVersion}/dist-packages/meresco_lucene
 fi
 
 mv ${rootLibDir} $libDir/
 
-
-rm -rf $buildDir
-rm -rf $mydir/root
-rm -rf $mydir/meresco_lucene.egg-info
+rm -rf $buildDir $mydir/root $mydir/meresco_lucene.egg-info
 

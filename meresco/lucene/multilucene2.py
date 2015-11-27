@@ -53,6 +53,11 @@ class MultiLucene(Observable):
         jsonDict = JsonDict()
         for k, v in query.asDict().items():
             jsonDict[k.replace("_", "")] = v
+        for sortKey in query.sortKeys:
+            coreName = sortKey.get('core', query.resultsFrom)
+            fieldRegistry = self.call[coreName].getFieldRegistry()
+            sortKey["type"] = fieldRegistry.sortFieldType(sortKey["sortBy"])
+
         responseDict = (yield self._send(jsonDict=jsonDict, path='/query/'))
         raise StopIteration(luceneResponseFromDict(responseDict))
         yield

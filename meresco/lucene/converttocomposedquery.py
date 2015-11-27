@@ -73,7 +73,8 @@ class ConvertToComposedQuery(Observable):
                 setattr(cq, key, kwargs[key])
 
         coreQuery, filters = self._extraFilterQueries.convert(query, self._resultsFrom)
-        cq.setCoreQuery(core=self._resultsFrom, query=coreQuery)
+        if coreQuery:
+            cq.setCoreQuery(core=self._resultsFrom, query=coreQuery)
         for core, aFilter in ((core, aFilter) for core, filters in filters.items() for aFilter in filters):
             cq.addFilterQuery(core, aFilter)
 

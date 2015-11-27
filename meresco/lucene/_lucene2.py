@@ -104,6 +104,9 @@ class Lucene(Observable):
         raise StopIteration(LuceneResponse(total=len(fieldnames), hits=fieldnames))
         yield
 
+    def getFieldRegistry(self):
+        return self._fieldRegistry
+
     def numDocs(self):
         raise StopIteration((yield self._send(path='/numDocs/')))
 
@@ -136,7 +139,7 @@ class Lucene(Observable):
 
 def luceneResponseFromDict(responseDict):
     hits = [Hit(**hit) for hit in responseDict['hits']]
-    response = LuceneResponse(total=responseDict["total"], queryTime=responseDict["queryTime"], hits=hits)
+    response = LuceneResponse(total=responseDict["total"], queryTime=responseDict["queryTime"], hits=hits, drilldownData=[])
     if "drilldownData" in responseDict:
         response.drilldownData = responseDict['drilldownData']
     return response

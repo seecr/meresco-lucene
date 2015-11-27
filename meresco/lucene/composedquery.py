@@ -39,7 +39,10 @@ class ComposedQuery(object):
         self._unites = []
         self._sortKeys = []
         self.resultsFrom = resultsFromCore
-        self.setCoreQuery(resultsFromCore, query=query)
+        if query:
+            self.setCoreQuery(resultsFromCore, query=query)
+        else:
+            self.cores.add(resultsFromCore)
 
     def setCoreQuery(self, core, query, filterQueries=None, facets=None):
         self.cores.add(core)

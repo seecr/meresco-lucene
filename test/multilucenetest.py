@@ -42,84 +42,6 @@ from lucenetest import createDocument
 
 class MultiLuceneTest(SeecrTestCase):
 
-    def setUp(self):
-        SeecrTestCase.setUp(self)
-        self.registry = FieldRegistry(drilldownFields=[DrilldownField('cat_%s' % vowel) for vowel in ['M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U']])
-        self.registry.register('intField', fieldDefinition=INTFIELD)
-        settings = LuceneSettings(verbose=False, fieldRegistry=self.registry)
-        settingsLuceneC = LuceneSettings(verbose=False, similarity=TermFrequencySimilarity(), fieldRegistry=self.registry)
-
-        self.luceneA = Lucene(join(self.tempdir, 'a'), name='coreA', reactor=CallTrace(), settings=settings)
-        self.luceneB = Lucene(join(self.tempdir, 'b'), name='coreB', reactor=CallTrace(), settings=settings)
-        self.luceneC = Lucene(join(self.tempdir, 'c'), name='coreC', reactor=CallTrace(), settings=settingsLuceneC)
-        self.dna = be((Observable(),
-            (MultiLucene(defaultCore='coreA'),
-                (self.luceneA,),
-                (self.luceneB,),
-                (self.luceneC,),
-            )
-        ))
-
-        # +---------------------------------+   +---------------------------------+  +----------------------+
-        # |              ______             |   |                                 |  |                    C |
-        # |         ____/      \____     A  |   |    __________                B  |  |      ____            |
-        # |        /   /\   Q  /\   \       |   |   /    N     \                  |  |     /    \           |
-        # |       /   /  \    /  \   \      |   |  /   ____     \                 |  |    |   R  |          |
-        # |      /   |    \  /    |   \     |   | |   /    \     |                |  |     \ ___/           |
-        # |     /     \    \/    /     \    |   | |  |  M __|____|_____           |  |                      |
-        # |    /       \   /\   /       \   |   | |   \__/_/     |     \          |  |                      |
-        # |   |         \_|__|_/         |  |   |  \    |       /      |          |  |                      |
-        # |   |    U      |  |     M     |  |   |   \___|______/    ___|_______   |  |                      |
-        # |   |           \  /           |  |   |       |          /   |       \  |  |                      |
-        # |    \           \/           /   |   |       |   O     /   _|__      \ |  |                      |
-        # |     \          /\          /    |   |        \_______|___/_/  \     | |  |                      |
-        # |      \        /  \        /     |   |                |  |  M   | P  | |  |                      |
-        # |       \______/    \______/      |   |                |   \____/     | |  |                      |
-        # |                                 |   |                 \            /  |  |                      |
-        # |                                 |   |                  \__________/   |  |                      |
-        # +---------------------------------+   +---------------------------------+  +----------------------+
-
-        k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12 = range(1,13)
-        self.addDocument(self.luceneA, identifier='A',      keys=[('A', k1 )], fields=[('M', 'false'), ('Q', 'false'), ('U', 'false'), ('S', '1')])
-        self.addDocument(self.luceneA, identifier='A-U',    keys=[('A', k2 )], fields=[('M', 'false'), ('Q', 'false'), ('U', 'true' ), ('S', '2')])
-        self.addDocument(self.luceneA, identifier='A-Q',    keys=[('A', k3 )], fields=[('M', 'false'), ('Q', 'true' ), ('U', 'false'), ('S', '3')])
-        self.addDocument(self.luceneA, identifier='A-QU',   keys=[('A', k4 )], fields=[('M', 'false'), ('Q', 'true' ), ('U', 'true' ), ('S', '4')])
-        self.addDocument(self.luceneA, identifier='A-M',    keys=[('A', k5 ), ('C', k5)], fields=[('M', 'true' ), ('Q', 'false'), ('U', 'false'), ('S', '5')])
-        self.addDocument(self.luceneA, identifier='A-MU',   keys=[('A', k6 ), ('C', k12)], fields=[('M', 'true' ), ('Q', 'false'), ('U', 'true' ), ('S', '6')])
-        self.addDocument(self.luceneA, identifier='A-MQ',   keys=[('A', k7 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'false'), ('S', '7')])
-        self.addDocument(self.luceneA, identifier='A-MQU',  keys=[('A', k8 )], fields=[('M', 'true' ), ('Q', 'true' ), ('U', 'true' ), ('S', '8')])
-
-        self.addDocument(self.luceneB, identifier='B-N>A-M',   keys=[('B', k5 ), ('D', k5)], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'A'), ('intField', 1)])
-        self.addDocument(self.luceneB, identifier='B-N>A-MU',  keys=[('B', k6 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false'), ('T', 'B'), ('intField', 2)])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQ',  keys=[('B', k7 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'C'), ('intField', 3)])
-        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', k8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false'), ('T', 'D'), ('intField', 4)])
-        self.addDocument(self.luceneB, identifier='B-N',       keys=[('B', k9 )], fields=[('N', 'true' ), ('O', 'true' ), ('P', 'false'), ('T', 'E'), ('intField', 5)])
-        self.addDocument(self.luceneB, identifier='B',         keys=[('B', k10)], fields=[('N', 'false'), ('O', 'false'), ('P', 'false'), ('T', 'F'), ('intField', 6)])
-        self.addDocument(self.luceneB, identifier='B-P>A-M',   keys=[('B', k5 )], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' ), ('T', 'G'), ('intField', 7)])
-        self.addDocument(self.luceneB, identifier='B-P>A-MU',  keys=[('B', k6 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' ), ('T', 'H'), ('intField', 8)])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQ',  keys=[('B', k7 )], fields=[('N', 'false'), ('O', 'false' ), ('P', 'true' ), ('T', 'I'), ('intField', 9)])
-        self.addDocument(self.luceneB, identifier='B-P>A-MQU', keys=[('B', k8 )], fields=[('N', 'false'), ('O', 'false'), ('P', 'true' ), ('T', 'J'), ('intField', 10)])
-        self.addDocument(self.luceneB, identifier='B-P',       keys=[('B', k11)], fields=[('N', 'false'), ('O', 'true' ), ('P', 'true' ), ('T', 'K'), ('intField', 11)])
-
-        self.addDocument(self.luceneC, identifier='C-R', keys=[('C', k5), ('C2', k12)], fields=[('R', 'true')])
-        self.addDocument(self.luceneC, identifier='C-S', keys=[('C', k8)], fields=[('S', 'true')])
-        self.addDocument(self.luceneC, identifier='C-S2', keys=[('C', k7)], fields=[('S', 'false')])
-
-        self.luceneA._realCommit()
-        self.luceneB._realCommit()
-        self.luceneC._realCommit()
-        settings.commitCount = 1
-        settingsLuceneC.commitCount = 1
-
-    def tearDown(self):
-        self.luceneA.close()
-        self.luceneB.close()
-        self.luceneC.close()
-        SeecrTestCase.tearDown(self)
-
-    def hitIds(self, hits):
-        return set([hit.id for hit in hits])
-
     def testMultipleJoinQueriesKeepsCachesWithinMaxSize(self):
         for i in xrange(25):
             self.addDocument(self.luceneB, identifier=str(i), keys=[('X', i)], fields=[('Y', str(i))])
@@ -362,28 +284,6 @@ class MultiLuceneTest(SeecrTestCase):
         result = retval(self.dna.any.executeComposedQuery(q))
         self.assertEquals(set(['A-U', 'A-QU', 'A-MU', 'A-MQU', 'A-M']), self.hitIds(result.hits))
 
-
-    def testRankQuery(self):
-        q = ComposedQuery('coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
-        q.setRankQuery(core='coreC', query=luceneQueryFromCql('S=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(4, result.total)
-        self.assertEquals([u'A-MQU', 'A-M', 'A-MU', u'A-MQ'], [hit.id for hit in result.hits])
-
-    def testMultipleRankQuery(self):
-        q = ComposedQuery('coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
-        q.setRankQuery(core='coreA', query=luceneQueryFromCql('Q=true'))
-        q.setRankQuery(core='coreC', query=luceneQueryFromCql('S=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(4, result.total)
-        self.assertEquals([u'A-MQU', u'A-MQ', 'A-M', 'A-MU'], [hit.id for hit in result.hits])
-
     def XXX_NOT_YET_IMPLEMENTED_testRankQueryInSingleCoreQuery(self):
         q = ComposedQuery('coreA', query=MatchAllDocsQuery())
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
@@ -463,46 +363,6 @@ class MultiLuceneTest(SeecrTestCase):
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
         result = retval(self.dna.any.executeComposedQuery(q))
         self.assertEquals(4, len(result.hits))
-
-    def testTwoCoreQueryWithThirdCoreDrilldownWithOtherCore(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=MatchAllDocsQuery())
-        q.addFacet(core='coreC', facet=dict(fieldname='cat_R', maxTerms=10))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'C'), dict(core='coreC', key=KEY_PREFIX+'C2'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(4, len(result.hits))
-        self.assertEquals(set(['A-M', 'A-MQ', 'A-MU', 'A-MQU']), set(h.id for h in result.hits))
-        self.assertEquals([{
-                'terms': [
-                    {'count': 1, 'term': u'true'},
-                ],
-                'path': [],
-                'fieldname': u'cat_R'
-            }], result.drilldownData)
-
-    def testFilterQueryInTwoDifferentCores(self):
-        q = ComposedQuery('coreA')
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'C'), dict(core='coreC', key=KEY_PREFIX+'C2'))
-        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=MatchAllDocsQuery())
-        q.addFilterQuery(core='coreB', query=luceneQueryFromCql('N=true'))
-        q.addFilterQuery(core='coreC', query=MatchAllDocsQuery())
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(1, len(result.hits))
-
-    def testScoreCollectorOnDifferentKeys(self):
-        q = ComposedQuery('coreA', query=MatchAllDocsQuery())
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'C'), dict(core='coreC', key=KEY_PREFIX+'C2'))
-        q.setRankQuery(core='coreB', query=luceneQueryFromCql('N=true'))
-        q.setRankQuery(core='coreC', query=luceneQueryFromCql('R=true'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(8, result.total)
-        self.assertEqual('A-MU', result.hits[0].id)
-        self.assertTrue(result.hits[0].score > result.hits[1].score)
 
     def testJoinSort(self):
         cq = ComposedQuery('coreA')

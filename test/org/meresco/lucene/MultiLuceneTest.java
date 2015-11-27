@@ -124,6 +124,15 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals(4, result.total);
         compareHits(result, "A-Q", "A-QU", "A-MQ", "A-MQU");
     }
+    
+    @Test
+    public void testQueryOneIndexWithComposedQueryWithFilterQueries() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.addFilterQuery("coreA", new TermQuery(new Term("Q", "true")));
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(4, result.total);
+        compareHits(result, "A-Q", "A-QU", "A-MQ", "A-MQU");
+    }
 
     @Test
     public void testJoinQuery() throws Exception {

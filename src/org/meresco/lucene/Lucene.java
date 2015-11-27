@@ -198,18 +198,22 @@ public class Lucene {
     }
 
     public LuceneResponse executeQuery(Query query) throws Exception {
-        return executeQuery(query, 0, 10, null, null, null, null, null);
+        return executeQuery(query, 0, 10, null, null, null, null, null, null);
+    }
+
+    public LuceneResponse executeQuery(Query query, int start, int stop) throws Exception {
+        return executeQuery(query, start, stop, null, null, null, null, null, null);
     }
 
     public LuceneResponse executeQuery(Query query, List<FacetRequest> facets) throws Exception {
-        return executeQuery(query, 0, 10, null, facets, null, null, null);
+        return executeQuery(query, 0, 10, null, facets, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, List<Filter> filters, Collection<KeySuperCollector> keyCollectors, Map<String, String[]> drilldownQueries) throws Exception {
+    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, List<Filter> filters, List<Query> filterQueries, Collection<KeySuperCollector> keyCollectors, Map<String, String[]> drilldownQueries) throws Exception {
         long t0 = System.currentTimeMillis();
         Collectors collectors = createCollectors(start, stop, sort, facets, keyCollectors);
 
-        Filter f = filtersFor(null, filters == null ? null : filters.toArray(new Filter[0]));
+        Filter f = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Filter[0]));
 
         if (drilldownQueries != null) 
             query = createDrilldownQuery(query, drilldownQueries);

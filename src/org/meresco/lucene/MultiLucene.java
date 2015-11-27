@@ -63,7 +63,9 @@ public class MultiLucene {
     private LuceneResponse singleCoreQuery(ComposedQuery query) throws Exception {
         String resultCoreName = query.resultsFrom;
         Query resultCoreQuery = luceneQueryForCore(resultCoreName, query);
-        return this.lucenes.get(resultCoreName).executeQuery(resultCoreQuery, query.start, query.stop, query.sort, query.facetsFor(resultCoreName), null, null, query.drilldownQueriesFor(resultCoreName));
+        if (resultCoreQuery == null)
+            resultCoreQuery = new MatchAllDocsQuery();
+        return this.lucenes.get(resultCoreName).executeQuery(resultCoreQuery, query.start, query.stop, query.sort, query.facetsFor(resultCoreName), null, query.filterQueries.get(resultCoreName), null, query.drilldownQueriesFor(resultCoreName));
     }
 
     private LuceneResponse multipleCoreQuery(ComposedQuery query) throws Exception {
@@ -98,6 +100,7 @@ public class MultiLucene {
                 query.sort,
                 query.facetsFor(resultCoreName),
                 resultFilters,
+                null, // TODO: filterQueries??
                 keyCollectors.values(),
                 query.drilldownQueriesFor(resultCoreName)
             );

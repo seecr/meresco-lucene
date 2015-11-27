@@ -48,7 +48,7 @@ public class ComposedQueryHandler extends AbstractHandler {
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         LuceneResponse luceneResponse = new LuceneResponse(0);
         try {
-            ComposedQuery q = ComposedQuery.fromJsonString(request.getReader());
+            ComposedQuery q = ComposedQuery.fromJsonString(request.getReader(), this.multiLucene.getQueryConverters());
             luceneResponse = this.multiLucene.executeComposedQuery(q);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

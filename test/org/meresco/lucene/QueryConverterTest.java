@@ -35,6 +35,7 @@ import javax.json.JsonObject;
 import javax.json.JsonValue;
 
 import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -47,9 +48,12 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.junit.Test;
-import org.meresco.lucene.QueryStringToQuery.FacetRequest;
+import org.meresco.lucene.QueryConverter.FacetRequest;
 
-public class QueryStringToQueryTest {
+public class QueryConverterTest {
+
+
+    private QueryConverter queryConverter = new QueryConverter(new FacetsConfig());
 
     @Test
     public void testTermQuery() {
@@ -60,7 +64,7 @@ public class QueryStringToQueryTest {
                         .add("field", "field")
                         .add("value", "value")))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         assertEquals(new TermQuery(new Term("field", "value")), q.query);
     }
 
@@ -74,7 +78,7 @@ public class QueryStringToQueryTest {
                         .add("field", "field")
                         .add("value", "value")))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         TermQuery query = new TermQuery(new Term("field", "value"));
         query.setBoost(2.0f);
         assertEquals(query, q.query);
@@ -86,7 +90,7 @@ public class QueryStringToQueryTest {
                 .add("query", Json.createObjectBuilder()
                         .add("type", "MatchAllDocsQuery"))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         assertEquals(new MatchAllDocsQuery(), q.query);
     }
 
@@ -111,7 +115,7 @@ public class QueryStringToQueryTest {
                                     .add("field", "oField")
                                     .add("value", "value")))))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         TermQuery aQuery = new TermQuery(new Term("aField", "value"));
         aQuery.setBoost(1.0f);
         TermQuery oQuery = new TermQuery(new Term("oField", "value"));
@@ -143,7 +147,7 @@ public class QueryStringToQueryTest {
                                     .add("field", "oField")
                                     .add("value", "value")))))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         TermQuery aQuery = new TermQuery(new Term("aField", "value"));
         aQuery.setBoost(1.0f);
         TermQuery oQuery = new TermQuery(new Term("oField", "value"));
@@ -163,7 +167,7 @@ public class QueryStringToQueryTest {
                         .add("field", "field")
                         .add("value", "???*")))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         WildcardQuery query = new WildcardQuery(new Term("field", "???*"));
         assertEquals(query, q.query);
     }
@@ -177,7 +181,7 @@ public class QueryStringToQueryTest {
                         .add("field", "field")
                         .add("value", "fiet")))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         PrefixQuery query = new PrefixQuery(new Term("field", "fiet"));
         assertEquals(query, q.query);
     }
@@ -195,7 +199,7 @@ public class QueryStringToQueryTest {
                             .add("field", "field")
                             .add("value", "query"))))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         PhraseQuery query = new PhraseQuery();
         query.add(new Term("field", "phrase"));
         query.add(new Term("field", "query"));
@@ -214,7 +218,7 @@ public class QueryStringToQueryTest {
                     .add("includeLower", JsonValue.FALSE)
                     .add("includeUpper", JsonValue.FALSE))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         TermRangeQuery query = TermRangeQuery.newStringRange("field", "value", null, false, false);
         assertEquals(query, q.query);
     }
@@ -231,7 +235,7 @@ public class QueryStringToQueryTest {
                     .add("includeLower", JsonValue.TRUE)
                     .add("includeUpper", JsonValue.TRUE))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         TermRangeQuery query = TermRangeQuery.newStringRange("field", null, "value", true, true);
         assertEquals(query, q.query);
     }
@@ -248,7 +252,7 @@ public class QueryStringToQueryTest {
                     .add("includeLower", JsonValue.FALSE)
                     .add("includeUpper", JsonValue.TRUE))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         NumericRangeQuery<Integer> query = NumericRangeQuery.newIntRange("field", 1, 5, false, true);
         assertEquals(query, q.query);
     }
@@ -265,7 +269,7 @@ public class QueryStringToQueryTest {
                     .add("includeLower", JsonValue.FALSE)
                     .add("includeUpper", JsonValue.TRUE))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         NumericRangeQuery<Long> query = NumericRangeQuery.newLongRange("field", 1L, 5L, false, true);
         assertEquals(query, q.query);
     }
@@ -282,7 +286,7 @@ public class QueryStringToQueryTest {
                     .add("includeLower", JsonValue.FALSE)
                     .add("includeUpper", JsonValue.TRUE))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         NumericRangeQuery<Double> query = NumericRangeQuery.newDoubleRange("field", 1.0, 5.0, false, true);
         assertEquals(query, q.query);
     }
@@ -298,7 +302,7 @@ public class QueryStringToQueryTest {
                             .add("value"))
                         .add("type", "DrillDown")))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         TermQuery query = new TermQuery(DrillDownQuery.term("$facets", "dd-field", "value"));
         assertEquals(query, q.query);
     }
@@ -313,7 +317,7 @@ public class QueryStringToQueryTest {
                                 .add("fieldname", "fieldname")
                                 .add("maxTerms", 10)))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         assertEquals(new MatchAllDocsQuery(), q.query);
         List<FacetRequest> facets = q.facets;
         assertEquals(1, facets.size());
@@ -344,7 +348,7 @@ public class QueryStringToQueryTest {
                                 .add("missingValue", "STRING_FIRST")
                                 .add("sortDescending", true)))
                 .build();
-        QueryStringToQuery q = new QueryStringToQuery(new StringReader(json.toString()));
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         assertEquals(new MatchAllDocsQuery(), q.query);
         SortField[] sortFields = q.sort.getSort();
         assertEquals(4, sortFields.length);

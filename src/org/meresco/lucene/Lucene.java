@@ -77,7 +77,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
-import org.meresco.lucene.QueryStringToQuery.FacetRequest;
+import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.MultiSuperCollector;
 import org.meresco.lucene.search.SuperCollector;
@@ -441,5 +441,9 @@ public class Lucene {
             q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(field))), Occur.MUST); 
         }
         return q;
+    }
+
+    public QueryConverter getQueryConverter() {
+        return new QueryConverter(this.facetsConfig);
     }
 }

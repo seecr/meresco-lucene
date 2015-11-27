@@ -35,7 +35,8 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;
-import org.meresco.lucene.QueryStringToQuery;
+import org.meresco.lucene.QueryData;
+import org.meresco.lucene.QueryConverter;
 
 public class QueryHandler extends AbstractHandler {
 
@@ -49,7 +50,7 @@ public class QueryHandler extends AbstractHandler {
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         LuceneResponse luceneResponse = new LuceneResponse(0);
         try {
-            QueryStringToQuery q = new QueryStringToQuery(request.getReader());
+            QueryData q = new QueryData(request.getReader(), this.lucene.getQueryConverter());
             luceneResponse = this.lucene.executeQuery(q.query, q.start, q.stop, q.sort, q.facets, null, null, null);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

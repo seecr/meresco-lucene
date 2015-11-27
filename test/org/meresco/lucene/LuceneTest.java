@@ -49,7 +49,7 @@ import org.apache.lucene.util.OpenBitSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.Lucene.TermCount;
-import org.meresco.lucene.QueryStringToQuery.FacetRequest;
+import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.join.KeySuperCollector;
 
 public class LuceneTest extends SeecrTestCase {

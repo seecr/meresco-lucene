@@ -29,6 +29,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.io.StringReader;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,11 +37,12 @@ import java.util.Map;
 import javax.json.Json;
 import javax.json.JsonObject;
 
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
-import org.meresco.lucene.QueryStringToQuery.FacetRequest;
+import org.meresco.lucene.QueryConverter.FacetRequest;
 
 public class ComposedQueryTest {
 
@@ -110,7 +112,11 @@ public class ComposedQueryTest {
                             .add("fieldname", "fieldB")
                             .add("maxTerms", 5))))
                 .build();
-        ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()));
+        Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
+            put("coreA", new QueryConverter(new FacetsConfig()));
+            put("coreB", new QueryConverter(new FacetsConfig()));
+        }};
+        ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         assertEquals("coreA", q.resultsFrom);
         assertEquals(1, q.start);
         assertEquals(10, q.stop);
@@ -156,7 +162,10 @@ public class ComposedQueryTest {
         JsonObject json = Json.createObjectBuilder()
                     .add("resultsFrom", "coreA")
                     .build();
-        ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()));
+        Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
+            put("coreA", new QueryConverter(new FacetsConfig()));
+        }};
+        ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         assertEquals(0, q.start);
         assertEquals(10, q.stop);
     }

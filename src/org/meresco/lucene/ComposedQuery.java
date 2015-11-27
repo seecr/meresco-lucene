@@ -36,13 +36,11 @@ import java.util.Set;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
-import org.apache.lucene.facet.DrillDownQuery;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TermQuery;
-import org.meresco.lucene.QueryStringToQuery.FacetRequest;
+import org.meresco.lucene.QueryConverter.FacetRequest;
 
 public class ComposedQuery {
 
@@ -68,14 +66,14 @@ public class ComposedQuery {
         this.queries.put(resultsFrom, query);
     }
 
-    public static ComposedQuery fromJsonString(Reader jsonStringReader) {
+    public static ComposedQuery fromJsonString(Reader jsonStringReader, Map<String, QueryConverter> converters) {
         if (jsonStringReader == null)
             return null;
         JsonObject json = Json.createReader(jsonStringReader).readObject();
         ComposedQuery cq = new ComposedQuery(json.getString("resultsFrom"));
-        if (json.containsKey("start"))
+        if (json.containsKey("start") && json.get("start") != JsonValue.NULL)
             cq.start = json.getInt("start");
-        if (json.containsKey("stop"))
+        if (json.containsKey("stop") && json.get("stop") != JsonValue.NULL)
             cq.stop = json.getInt("stop");
         if (json.containsKey("cores")) {
             JsonArray jsonCores = json.getJsonArray("cores");
@@ -86,7 +84,7 @@ public class ComposedQuery {
         if (json.containsKey("queries")) {
             JsonObject queries = json.getJsonObject("queries");
             for (String core : queries.keySet()) {
-                cq.setCoreQuery(core, QueryStringToQuery.convertToQuery(queries.getJsonObject(core)));
+                cq.setCoreQuery(core, converters.get(core).convertToQuery(queries.getJsonObject(core)));
             }
         }
         if (json.containsKey("filterQueries")) {
@@ -94,7 +92,7 @@ public class ComposedQuery {
             for (String coreName : filterQueries.keySet()) {
                 JsonArray queries = filterQueries.getJsonArray(coreName);
                 for (int i = 0; i < queries.size(); i++) {
-                    cq.addFilterQuery(coreName, QueryStringToQuery.convertToQuery(queries.getJsonObject(i)));
+                    cq.addFilterQuery(coreName, converters.get(coreName).convertToQuery(queries.getJsonObject(i)));
                 }
             }
         }
@@ -103,7 +101,7 @@ public class ComposedQuery {
             for (String coreName : filterQueries.keySet()) {
                 JsonArray queries = filterQueries.getJsonArray(coreName);
                 for (int i = 0; i < queries.size(); i++) {
-                    cq.addOtherCoreFacetFilter(coreName, QueryStringToQuery.convertToQuery(queries.getJsonObject(i)));
+                    cq.addOtherCoreFacetFilter(coreName, converters.get(coreName).convertToQuery(queries.getJsonObject(i)));
                 }
             }
         }
@@ -117,11 +115,11 @@ public class ComposedQuery {
                 }
             }
         }
-        cq.sort = QueryStringToQuery.convertToSort(json.getJsonArray("sortKeys"));
+        cq.sort = new QueryConverter(null).convertToSort(json.getJsonArray("sortKeys"));
         if (json.containsKey("facets")) {
             JsonObject jsonFacets = json.getJsonObject("facets");
             for (String coreName : jsonFacets.keySet()) {
-                for (FacetRequest facetRequest : QueryStringToQuery.convertToFacets(jsonFacets.getJsonArray(coreName)))
+                for (FacetRequest facetRequest : converters.get(coreName).convertToFacets(jsonFacets.getJsonArray(coreName)))
                     cq.addFacet(coreName, facetRequest);
             }
         }

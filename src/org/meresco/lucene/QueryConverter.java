@@ -25,16 +25,15 @@
 
 package org.meresco.lucene;
 
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
 import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -49,25 +48,15 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 
-public class QueryStringToQuery {
+public class QueryConverter {
 
-    public Query query;
-    public List<FacetRequest> facets;
-    public int start;
-    public int stop;
-    public Sort sort;
-    public ComposedQuery composedQuery;
+    private FacetsConfig facetsConfig;
 
-    public QueryStringToQuery(Reader queryReader) {
-        JsonObject object = Json.createReader(queryReader).readObject();
-        this.query = convertToQuery(object.getJsonObject("query"));
-        this.facets = convertToFacets(object.getJsonArray("facets"));
-        this.start = object.getInt("start", 0);
-        this.stop = object.getInt("stop", 10);
-        this.sort = convertToSort(object.getJsonArray("sortKeys"));
+    public QueryConverter(FacetsConfig facetsConfig) {
+        this.facetsConfig = facetsConfig;
     }
 
-    static Sort convertToSort(JsonArray sortKeys) {
+    Sort convertToSort(JsonArray sortKeys) {
         if (sortKeys == null || sortKeys.size() == 0)
             return null;
         SortField[] sortFields = new SortField[sortKeys.size()];
@@ -88,7 +77,7 @@ public class QueryStringToQuery {
         return new Sort(sortFields);
     }
 
-    private static Object missingSortValue(String missingValue) {
+    private Object missingSortValue(String missingValue) {
         if (missingValue == null)
             return null;
         if (missingValue.equals("STRING_FIRST"))
@@ -98,7 +87,7 @@ public class QueryStringToQuery {
         return null;
     }
 
-    private static SortField.Type typeForSortField(String type) {
+    private SortField.Type typeForSortField(String type) {
         switch (type) {
             case "String":
                 return SortField.Type.STRING;
@@ -112,7 +101,7 @@ public class QueryStringToQuery {
         return null;
     }
 
-    static List<FacetRequest> convertToFacets(JsonArray facets) {
+    List<FacetRequest> convertToFacets(JsonArray facets) {
         if (facets == null)
             return null;
         List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
@@ -124,7 +113,7 @@ public class QueryStringToQuery {
         return facetRequests;
     }
 
-    static Query convertToQuery(JsonObject query) {
+    Query convertToQuery(JsonObject query) {
         if (query == null)
             return null;
         Query q;
@@ -158,7 +147,7 @@ public class QueryStringToQuery {
         return q;
     }
 
-    private static Query createPhraseQuery(JsonObject query) {
+    private Query createPhraseQuery(JsonObject query) {
         PhraseQuery q = new PhraseQuery();
         JsonArray terms = query.getJsonArray("terms");
         for (int i = 0; i < terms.size(); i++) {
@@ -167,7 +156,7 @@ public class QueryStringToQuery {
         return q;
     }
 
-    private static Query createBooleanQuery(JsonObject query) {
+    private Query createBooleanQuery(JsonObject query) {
         BooleanQuery q = new BooleanQuery();
         JsonArray clauses = query.getJsonArray("clauses");
         for (int i = 0; i < clauses.size(); i++) {
@@ -177,7 +166,7 @@ public class QueryStringToQuery {
         return q;
     }
 
-    private static Query createRangeQuery(JsonObject query) {
+    private Query createRangeQuery(JsonObject query) {
         String field = query.getString("field");
         boolean includeLower = query.getBoolean("includeLower");
         boolean includeUpper = query.getBoolean("includeUpper");
@@ -196,7 +185,7 @@ public class QueryStringToQuery {
         return null;
     }
 
-    private static Occur occurForString(String occur) {
+    private Occur occurForString(String occur) {
         switch (occur) {
             case "SHOULD":
                 return Occur.SHOULD;
@@ -208,7 +197,7 @@ public class QueryStringToQuery {
         return null;
     }
 
-    private static Term createTerm(JsonObject term) {
+    private Term createTerm(JsonObject term) {
         String type = term.getString("type", null);
         if (type != null && type.equals("DrillDown")) {
             JsonArray jsonPath = term.getJsonArray("path");
@@ -216,11 +205,16 @@ public class QueryStringToQuery {
             for (int i = 0; i < jsonPath.size(); i++) {
                 path[i] = jsonPath.getString(i);
             }
-            return DrillDownQuery.term("$facets", term.getString("field"), path);
+            return createDrilldownTerm(term.getString("field"), path);
         }
         return new Term(term.getString("field"), term.getString("value"));
     }
 
+    public Term createDrilldownTerm(String field, String... path) {
+        String indexFieldName = facetsConfig.getDimConfig(field).indexFieldName;
+        return DrillDownQuery.term(indexFieldName, field, path);
+    }
+    
     public static class FacetRequest {
         public String fieldname;
         public int maxTerms;

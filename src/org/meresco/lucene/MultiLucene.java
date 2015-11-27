@@ -30,22 +30,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.facet.DrillDownQuery;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.OpenBitSet;
 import org.meresco.lucene.ComposedQuery.Unite;
-import org.meresco.lucene.QueryStringToQuery.FacetRequest;
+import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.queries.KeyFilter;
 import org.meresco.lucene.search.join.KeySuperCollector;
 
 public class MultiLucene {
 
     private Map<String, Lucene> lucenes = new HashMap<String, Lucene>();
-
+    
     public MultiLucene(List<Lucene> lucenes) {
-        for (Lucene lucene : lucenes)
+        for (Lucene lucene : lucenes) {
             this.lucenes.put(lucene.name, lucene);
+        }
     }
 
     public LuceneResponse executeComposedQuery(ComposedQuery q) throws Exception {
@@ -164,7 +170,7 @@ public class MultiLucene {
             luceneQuery = lucenes.get(coreName).createDrilldownQuery(luceneQuery, ddQueries);
         return luceneQuery;
     }
-
+    
     private Map<String, OpenBitSet> coreQueries(String coreName, String otherCoreName, ComposedQuery query, Map<String, OpenBitSet> keysForKeyName) throws Exception {
         Query luceneQuery = luceneQueryForCore(coreName, query);
         if (luceneQuery != null) {
@@ -176,5 +182,12 @@ public class MultiLucene {
                 keysForKeyName.put(otherKeyName, collectedKeys);
         }
         return keysForKeyName;
+    }
+    
+    public Map<String, QueryConverter> getQueryConverters() {
+        Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>();
+        for (Lucene lucene : this.lucenes.values())
+            queryConverters.put(lucene.name, lucene.getQueryConverter());
+        return queryConverters;
     }
 }

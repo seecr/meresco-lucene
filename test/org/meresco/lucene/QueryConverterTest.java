@@ -376,4 +376,22 @@ public class QueryConverterTest {
         assertEquals(true, sortFields[3].getReverse());
         assertEquals(SortField.STRING_FIRST, sortFields[3].missingValue);
     }
+    
+    @Test
+    public void testSuggestionRequest() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "MatchAllDocsQuery"))  
+                .add("suggestionRequest", Json.createObjectBuilder()
+                    .add("field", "field1")
+                    .add("count", 2)
+                    .add("suggests", Json.createArrayBuilder()
+                        .add("valeu")))
+                .build();
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
+        assertEquals("field1", q.suggestionRequest.field);
+        assertEquals(2, q.suggestionRequest.count);
+        assertArrayEquals(new String[] {"valeu"}, q.suggestionRequest.suggests.toArray(new String[0]));
+        
+    }
 }

@@ -120,6 +120,18 @@ public class QueryConverter {
         }
         return facetRequests;
     }
+    
+
+    public SuggestionRequest convertToSuggestionRequest(JsonObject suggestionRequest) {
+        if (suggestionRequest == null)
+            return null;
+        SuggestionRequest sugRequest = new SuggestionRequest(suggestionRequest.getString("field"), suggestionRequest.getInt("count"));
+        JsonArray suggests = suggestionRequest.getJsonArray("suggests");
+        for (int i=0; i < suggests.size(); i++) {
+            sugRequest.suggests.add(suggests.getString(i));
+        }
+        return sugRequest;
+    }
 
     Query convertToQuery(JsonObject query) {
         if (query == null)
@@ -234,4 +246,19 @@ public class QueryConverter {
         }
     }
 
+    public static class SuggestionRequest {
+        public String field;
+        public int count;
+        List<String> suggests = new ArrayList<>();
+        
+        public SuggestionRequest(String field, int count) {
+            this.field = field;
+            this.count = count;
+        }
+
+        public void add(String suggest) {
+            suggests.add(suggest);
+        }
+
+    }
 }

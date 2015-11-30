@@ -64,9 +64,10 @@ class LuceneServerTest(IntegrationTestCase):
 
         header, body = postRequest(self.serverPort, self._path + '/query/', data=JsonDict(query=dict(type="MatchAllDocsQuery"), facets=[{"fieldname": "fieldname", "maxTerms": 10}]).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
-        response = loads(body)
-        self.assertEqual(1, response['total'])
-        self.assertEqual([{'path': [], 'fieldname': 'fieldname', 'terms': [{'count': 1, 'term': 'value'}]}], response['drilldownData'])
+        jsonResponse = loads(body)
+        self.assertEqual(1, jsonResponse['total'])
+        self.assertEqual([{'path': [], 'fieldname': 'fieldname', 'terms': [{'count': 1, 'term': 'value'}]}], jsonResponse['drilldownData'])
+        self.assertTrue("facetTime" in jsonResponse["times"])
 
     def testPrefixSearch(self):
         data = JsonList([
@@ -79,3 +80,15 @@ class LuceneServerTest(IntegrationTestCase):
 
         header, body = postRequest(self.serverPort, self._path + '/prefixSearch/?fieldname=prefixField&prefix=val', parse=False)
         self.assertEqual([['value0', 1], ['value1', 1], ['value2', 1]], loads(body))
+
+    def testSuggestionRequest(self):
+        data = JsonList([
+                {"type": "TextField", "name": "field", "value": "value"},
+            ]).dumps()
+        header, body = postRequest(self.serverPort, self._path + '/update/?identifier=id1', data=data)
+        self.assertTrue("200 OK" in header.upper(), header)
+
+        header, body = postRequest(self.serverPort, self._path + '/query/', parse=False, data=JsonDict(query=dict(type="MatchAllDocsQuery"), suggestionRequest=dict(field="field", count=1, suggests=['valeu'])).dumps())
+        jsonResponse = loads(body)
+        self.assertEqual({'valeu': ['value']}, jsonResponse["suggestions"])
+        self.assertTrue("suggestionTime" in jsonResponse["times"])

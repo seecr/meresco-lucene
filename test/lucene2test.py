@@ -74,17 +74,26 @@ class LuceneTest(SeecrTestCase):
                 "hits": [{"id": "record:1", "score": 0.1234}],
                 "drilldownData": [
                     {"fieldname": "facet", "path": [], "terms": [{"term": "term", "count": 1}]}
-                ]
+                ],
+                "suggestions": {
+                    "valeu": ["value"]
+                }
             }).dumps()
         query = QueryExpressionToLuceneQueryDict([], LuceneSettings()).convert(cqlToExpression("field=value"))
-        response = returnValueFromGenerator(self._lucene.executeQuery(luceneQuery=query, start=1, stop=5, facets=[dict(maxTerms=10, fieldname='facet')], sortKeys=[dict(sortBy='field', sortDescending=False)]))
+        response = returnValueFromGenerator(self._lucene.executeQuery(
+                    luceneQuery=query, start=1, stop=5,
+                    facets=[dict(maxTerms=10, fieldname='facet')],
+                    sortKeys=[dict(sortBy='field', sortDescending=False)],
+                    suggestionRequest=dict(suggests=['valeu'], count=2, field='field1')
+                ))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/query/', self.post[0]['path'])
         self.assertEqual({
                     "start": 1, "stop": 5,
                     "query": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"},
                     "facets": [{"fieldname": "facet", "maxTerms": 10}],
-                    "sortKeys": [{"sortBy": "field", "sortDescending": False, "type": "String"}]
+                    "sortKeys": [{"sortBy": "field", "sortDescending": False, "type": "String"}],
+                    "suggestionRequest": dict(suggests=['valeu'], count=2, field='field1')
                 }, loads(self.post[0]['data']))
         self.assertEqual(887, response.total)
         self.assertEqual(6, response.queryTime)
@@ -94,6 +103,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEqual([
                 {"fieldname": "facet", "path": [], "terms": [{"term": "term", "count": 1}]}
             ], response.drilldownData)
+        self.assertEqual({'valeu': ['value']}, response.suggestions)
 
     def testPrefixSearch(self):
         self.response = JsonList([["value0", 1], ["value1", 2]]).dumps()

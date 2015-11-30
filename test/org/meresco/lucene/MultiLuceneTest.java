@@ -79,30 +79,30 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         multiLucene = new MultiLucene(new ArrayList<Lucene>() {{ add(luceneA); add(luceneB); add(luceneC);}});
 
-        addDocument(luceneA, "A",      new HashMap() {{put("A", 1);}}, new HashMap() {{put("M", "false"); put("Q", "false"); put("U", "false"); put("S", "1");}});
-        addDocument(luceneA, "A-U",    new HashMap() {{put("A", 2 );}}, new HashMap() {{put("M", "false"); put("Q", "false"); put("U", "true" ); put("S", "2");}});
-        addDocument(luceneA, "A-Q",    new HashMap() {{put("A", 3 );}}, new HashMap() {{put("M", "false"); put("Q", "true" ); put("U", "false"); put("S", "3");}});
-        addDocument(luceneA, "A-QU",   new HashMap() {{put("A", 4 );}}, new HashMap() {{put("M", "false"); put("Q", "true" ); put("U", "true" ); put("S", "4");}});
-        addDocument(luceneA, "A-M",    new HashMap() {{put("A", 5 ); put("C", 5);}}, new HashMap() {{put("M", "true" ); put("Q", "false"); put("U", "false"); put("S", "5");}});
-        addDocument(luceneA, "A-MU",   new HashMap() {{put("A", 6 ); put("C", 12);}}, new HashMap() {{put("M", "true" ); put("Q", "false"); put("U", "true" ); put("S", "6");}});
-        addDocument(luceneA, "A-MQ",   new HashMap() {{put("A", 7 );}}, new HashMap() {{put("M", "true" ); put("Q", "true" ); put("U", "false"); put("S", "7");}});
-        addDocument(luceneA, "A-MQU",  new HashMap() {{put("A", 8 );}}, new HashMap() {{put("M", "true" ); put("Q", "true" ); put("U", "true" ); put("S", "8");}});
+        LuceneTest.addDocument(luceneA, "A",      new HashMap() {{put("A", 1);}}, new HashMap() {{put("M", "false"); put("Q", "false"); put("U", "false"); put("S", "1");}});
+        LuceneTest.addDocument(luceneA, "A-U",    new HashMap() {{put("A", 2 );}}, new HashMap() {{put("M", "false"); put("Q", "false"); put("U", "true" ); put("S", "2");}});
+        LuceneTest.addDocument(luceneA, "A-Q",    new HashMap() {{put("A", 3 );}}, new HashMap() {{put("M", "false"); put("Q", "true" ); put("U", "false"); put("S", "3");}});
+        LuceneTest.addDocument(luceneA, "A-QU",   new HashMap() {{put("A", 4 );}}, new HashMap() {{put("M", "false"); put("Q", "true" ); put("U", "true" ); put("S", "4");}});
+        LuceneTest.addDocument(luceneA, "A-M",    new HashMap() {{put("A", 5 ); put("C", 5);}}, new HashMap() {{put("M", "true" ); put("Q", "false"); put("U", "false"); put("S", "5");}});
+        LuceneTest.addDocument(luceneA, "A-MU",   new HashMap() {{put("A", 6 ); put("C", 12);}}, new HashMap() {{put("M", "true" ); put("Q", "false"); put("U", "true" ); put("S", "6");}});
+        LuceneTest.addDocument(luceneA, "A-MQ",   new HashMap() {{put("A", 7 );}}, new HashMap() {{put("M", "true" ); put("Q", "true" ); put("U", "false"); put("S", "7");}});
+        LuceneTest.addDocument(luceneA, "A-MQU",  new HashMap() {{put("A", 8 );}}, new HashMap() {{put("M", "true" ); put("Q", "true" ); put("U", "true" ); put("S", "8");}});
 
-        addDocument(luceneB, "B-N>A-M",   new HashMap() {{put("B", 5 ); put("D", 5);}}, new HashMap() {{put("N", "true" ); put("O", "true" ); put("P", "false"); put("T", "A"); put("intField", "1");}});
-        addDocument(luceneB, "B-N>A-MU",  new HashMap() {{put("B", 6 );}}, new HashMap() {{put("N", "true" ); put("O", "false"); put("P", "false"); put("T", "B"); put("intField", "2");}});
-        addDocument(luceneB, "B-N>A-MQ",  new HashMap() {{put("B", 7 );}}, new HashMap() {{put("N", "true" ); put("O", "true" ); put("P", "false"); put("T", "C"); put("intField", "3");}});
-        addDocument(luceneB, "B-N>A-MQU", new HashMap() {{put("B", 8 );}}, new HashMap() {{put("N", "true" ); put("O", "false"); put("P", "false"); put("T", "D"); put("intField", "4");}});
-        addDocument(luceneB, "B-N",       new HashMap() {{put("B", 9 );}}, new HashMap() {{put("N", "true" ); put("O", "true" ); put("P", "false"); put("T", "E"); put("intField", "5");}});
-        addDocument(luceneB, "B",         new HashMap() {{put("B", 10);}}, new HashMap() {{put("N", "false"); put("O", "false"); put("P", "false"); put("T", "F"); put("intField", "6");}});
-        addDocument(luceneB, "B-P>A-M",   new HashMap() {{put("B", 5 );}}, new HashMap() {{put("N", "false"); put("O", "true" ); put("P", "true" ); put("T", "G"); put("intField", "7");}});
-        addDocument(luceneB, "B-P>A-MU",  new HashMap() {{put("B", 6 );}}, new HashMap() {{put("N", "false"); put("O", "false"); put("P", "true" ); put("T", "H"); put("intField", "8");}});
-        addDocument(luceneB, "B-P>A-MQ",  new HashMap() {{put("B", 7 );}}, new HashMap() {{put("N", "false"); put("O", "false" ); put("P", "true" ); put("T", "I"); put("intField", "9");}});
-        addDocument(luceneB, "B-P>A-MQU", new HashMap() {{put("B", 8 );}}, new HashMap() {{put("N", "false"); put("O", "false"); put("P", "true" ); put("T", "J"); put("intField", "10");}});
-        addDocument(luceneB, "B-P",       new HashMap() {{put("B", 11);}}, new HashMap() {{put("N", "false"); put("O", "true" ); put("P", "true" ); put("T", "K"); put("intField", "11");}});
+        LuceneTest.addDocument(luceneB, "B-N>A-M",   new HashMap() {{put("B", 5 ); put("D", 5);}}, new HashMap() {{put("N", "true" ); put("O", "true" ); put("P", "false"); put("T", "A"); put("intField", "1");}});
+        LuceneTest.addDocument(luceneB, "B-N>A-MU",  new HashMap() {{put("B", 6 );}}, new HashMap() {{put("N", "true" ); put("O", "false"); put("P", "false"); put("T", "B"); put("intField", "2");}});
+        LuceneTest.addDocument(luceneB, "B-N>A-MQ",  new HashMap() {{put("B", 7 );}}, new HashMap() {{put("N", "true" ); put("O", "true" ); put("P", "false"); put("T", "C"); put("intField", "3");}});
+        LuceneTest.addDocument(luceneB, "B-N>A-MQU", new HashMap() {{put("B", 8 );}}, new HashMap() {{put("N", "true" ); put("O", "false"); put("P", "false"); put("T", "D"); put("intField", "4");}});
+        LuceneTest.addDocument(luceneB, "B-N",       new HashMap() {{put("B", 9 );}}, new HashMap() {{put("N", "true" ); put("O", "true" ); put("P", "false"); put("T", "E"); put("intField", "5");}});
+        LuceneTest.addDocument(luceneB, "B",         new HashMap() {{put("B", 10);}}, new HashMap() {{put("N", "false"); put("O", "false"); put("P", "false"); put("T", "F"); put("intField", "6");}});
+        LuceneTest.addDocument(luceneB, "B-P>A-M",   new HashMap() {{put("B", 5 );}}, new HashMap() {{put("N", "false"); put("O", "true" ); put("P", "true" ); put("T", "G"); put("intField", "7");}});
+        LuceneTest.addDocument(luceneB, "B-P>A-MU",  new HashMap() {{put("B", 6 );}}, new HashMap() {{put("N", "false"); put("O", "false"); put("P", "true" ); put("T", "H"); put("intField", "8");}});
+        LuceneTest.addDocument(luceneB, "B-P>A-MQ",  new HashMap() {{put("B", 7 );}}, new HashMap() {{put("N", "false"); put("O", "false" ); put("P", "true" ); put("T", "I"); put("intField", "9");}});
+        LuceneTest.addDocument(luceneB, "B-P>A-MQU", new HashMap() {{put("B", 8 );}}, new HashMap() {{put("N", "false"); put("O", "false"); put("P", "true" ); put("T", "J"); put("intField", "10");}});
+        LuceneTest.addDocument(luceneB, "B-P",       new HashMap() {{put("B", 11);}}, new HashMap() {{put("N", "false"); put("O", "true" ); put("P", "true" ); put("T", "K"); put("intField", "11");}});
 
-        addDocument(luceneC, "C-R", new HashMap() {{put("C", 5); put("C2", 12);}}, new HashMap() {{put("R", "true");}});
-        addDocument(luceneC, "C-S", new HashMap() {{put("C", 8);}}, new HashMap() {{put("S", "true");}});
-        addDocument(luceneC, "C-S2", new HashMap() {{put("C", 7);}}, new HashMap() {{put("S", "false");}});
+        LuceneTest.addDocument(luceneC, "C-R", new HashMap() {{put("C", 5); put("C2", 12);}}, new HashMap() {{put("R", "true");}});
+        LuceneTest.addDocument(luceneC, "C-S", new HashMap() {{put("C", 8);}}, new HashMap() {{put("S", "true");}});
+        LuceneTest.addDocument(luceneC, "C-S2", new HashMap() {{put("C", 7);}}, new HashMap() {{put("S", "false");}});
 
         luceneA.realCommit();
         luceneB.realCommit();
@@ -125,7 +125,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
-        compareHits(result, "A-Q", "A-QU", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-Q", "A-QU", "A-MQ", "A-MQU");
     }
 
     @Test
@@ -134,7 +134,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.addFilterQuery("coreA", new TermQuery(new Term("Q", "true")));
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
-        compareHits(result, "A-Q", "A-QU", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-Q", "A-QU", "A-MQ", "A-MQU");
     }
 
     @Test
@@ -144,7 +144,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.addMatch("coreA", "coreB", "A", "B");
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
-        compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
     }
 
 //    testMultipleJoinQueriesKeepsCachesWithinMaxSize
@@ -156,7 +156,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
-        compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
     }
 //    testInfoOnQuery
 
@@ -295,7 +295,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
-        compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
 
         assertEquals(2, result.drilldownData.size());
         DrilldownData catN = result.drilldownData.get(0);
@@ -323,7 +323,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
-        compareHits(result, "A-QU", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-QU", "A-MQ", "A-MQU");
     }
 //    testUniteResultFromTwoIndexesCached
 //    testUniteResultFromTwoIndexesCachedAfterUpdate
@@ -335,7 +335,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
-        compareHits(result, "A-QU", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-QU", "A-MQ", "A-MQU");
     }
 
     @Test
@@ -351,7 +351,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
-        compareHits(result, "A-QU", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-QU", "A-MQ", "A-MQU");
 
         assertEquals(4, result.drilldownData.size());
         DrilldownData catQ = result.drilldownData.get(0);
@@ -391,7 +391,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(2, result.total);
-        compareHits(result, "A-M", "A-MQ");
+        LuceneTest.compareHits(result, "A-M", "A-MQ");
 
         assertEquals(2, result.drilldownData.size());
         DrilldownData catN = result.drilldownData.get(0);
@@ -420,7 +420,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(2, result.total);
-        compareHits(result, "A-M", "A-MQ");
+        LuceneTest.compareHits(result, "A-M", "A-MQ");
 
         assertEquals(2, result.drilldownData.size());
         DrilldownData catN = result.drilldownData.get(0);
@@ -444,7 +444,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
-        compareHits(result, "A-QU", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-QU", "A-MQ", "A-MQU");
     }
 
     @Test
@@ -457,19 +457,19 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.sort = new Sort(new SortField("S", SortField.Type.STRING, false));
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
-        compareHits(result, "A-QU", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-QU", "A-MQ", "A-MQU");
 
         q.sort = new Sort(new SortField("S", SortField.Type.STRING, true));
         q.stop = 2;
         result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
-        compareHits(result, "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-MQ", "A-MQU");
 
         q.start = 1;
         q.stop = 10;
         result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
-        compareHits(result, "A-MQ", "A-QU");
+        LuceneTest.compareHits(result, "A-MQ", "A-QU");
     }
 //    testCachingCollectorsAfterUpdate
 //    testCachingCollectorsAfterUpdateInSegmentWithMultipleDocuments
@@ -483,7 +483,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(1, result.total);
-        compareHits(result, "A-M");
+        LuceneTest.compareHits(result, "A-M");
     }
 
     @Test
@@ -494,7 +494,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(1, result.total);
-        compareHits(result, "A-M");
+        LuceneTest.compareHits(result, "A-M");
     }
 
     @Test
@@ -510,7 +510,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(1, result.total);
-        compareHits(result, "A-M");
+        LuceneTest.compareHits(result, "A-M");
         assertEquals(3, result.drilldownData.size());
         assertEquals("cat_M", result.drilldownData.get(0).fieldname);
         assertEquals(1, result.drilldownData.get(0).terms.size());
@@ -537,7 +537,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
-        compareHitsOrdered(result, "A-MQU", "A-M", "A-MU", "A-MQ");
+        LuceneTest.compareHitsOrdered(result, "A-MQU", "A-M", "A-MU", "A-MQ");
     }
 
     @Test
@@ -552,7 +552,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
-        compareHitsOrdered(result, "A-MQU", "A-MQ", "A-M", "A-MU");
+        LuceneTest.compareHitsOrdered(result, "A-MQU", "A-MQ", "A-M", "A-MU");
     }
 //    testScoreCollectorCacheInvalidation
 //    testNullIteratorOfPForDeltaIsIgnoredInFinalKeySet
@@ -569,7 +569,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.addMatch("coreA", "coreC", "C", "C2");
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
-        compareHits(result, "A-M", "A-MQ", "A-MU", "A-MQU");
+        LuceneTest.compareHits(result, "A-M", "A-MQ", "A-MU", "A-MQU");
         assertEquals(1, result.drilldownData.size());
         assertEquals("cat_R", result.drilldownData.get(0).fieldname);
         assertEquals(1, result.drilldownData.get(0).terms.size());
@@ -606,38 +606,5 @@ public class MultiLuceneTest extends SeecrTestCase {
 //    testJoinSort
 //    testSortWithJoinField
 
-    private void compareHits(LuceneResponse response, String... hitIds) {
-        Set<String> responseHitIds = new HashSet<String>();
-        for (Hit hit : response.hits)
-            responseHitIds.add(hit.id);
-        Set<String> expectedHitIds = new HashSet<String>();
-        for (String hitId : hitIds)
-            expectedHitIds.add(hitId);
-        assertEquals(expectedHitIds, responseHitIds);
-    }
-
-    private void compareHitsOrdered(LuceneResponse response, String... hitIds) {
-        List<String> responseHitIds = new ArrayList<String>();
-        for (Hit hit : response.hits)
-            responseHitIds.add(hit.id);
-        List<String> expectedHitIds = new ArrayList<String>();
-        for (String hitId : hitIds)
-            expectedHitIds.add(hitId);
-        assertEquals(expectedHitIds, responseHitIds);
-    }
-
-    private void addDocument(Lucene lucene, String identifier, Map<String, Integer> keys, Map<String, String> fields) throws IOException {
-        Document doc = new Document();
-        for (String keyField : keys.keySet())
-            doc.add(new NumericDocValuesField(keyField, keys.get(keyField)));
-        for (String fieldname : fields.keySet())
-            if (fieldname.equals("intField"))
-                doc.add(new IntField(fieldname, Integer.parseInt(fields.get(fieldname)), Store.NO));
-            else {
-                doc.add(new StringField(fieldname, fields.get(fieldname), Store.NO));
-                doc.add(new FacetField("cat_" + fieldname, fields.get(fieldname)));
-            }
-        lucene.addDocument(identifier, doc);
-        lucene.commit();
-    }
+    
 }

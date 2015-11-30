@@ -65,6 +65,9 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.queries.ChainedFilter;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.spell.DirectSpellChecker;
+import org.apache.lucene.search.spell.SpellChecker;
+import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingWrapperFilter;
 import org.apache.lucene.search.Filter;
@@ -80,6 +83,7 @@ import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.QueryConverter.SuggestionRequest;
 import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.MultiSuperCollector;
 import org.meresco.lucene.search.SuperCollector;
@@ -89,6 +93,8 @@ import org.meresco.lucene.search.TopScoreDocSuperCollector;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
+
+import com.sun.corba.se.spi.orbutil.fsm.Guard.Result;
 
 public class Lucene {
 
@@ -103,6 +109,7 @@ public class Lucene {
     public String name;
     private File stateDir;
     private Map<String, CachedOrdinalsReader> cachedOrdinalsReader = new HashMap<String, CachedOrdinalsReader>();
+    private DirectSpellChecker spellChecker = new DirectSpellChecker();
 
     public Lucene(String name, File stateDir) {
         this.name = name;
@@ -202,18 +209,18 @@ public class Lucene {
     }
 
     public LuceneResponse executeQuery(Query query) throws Exception {
-        return executeQuery(query, 0, 10, null, null, null, null, null, null, null);
+        return executeQuery(query, 0, 10, null, null, null, null, null, null, null, null);
     }
 
     public LuceneResponse executeQuery(Query query, int start, int stop) throws Exception {
-        return executeQuery(query, start, stop, null, null, null, null, null, null, null);
+        return executeQuery(query, start, stop, null, null, null, null, null, null, null, null);
     }
 
     public LuceneResponse executeQuery(Query query, List<FacetRequest> facets) throws Exception {
-        return executeQuery(query, 0, 10, null, facets, null, null, null, null, null);
+        return executeQuery(query, 0, 10, null, facets, null, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, List<Filter> filters, List<Query> filterQueries, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors, Map<String, String[]> drilldownQueries) throws Exception {
+    public LuceneResponse executeQuery(Query query, int start, int stop, Sort sort, List<FacetRequest> facets, SuggestionRequest suggestion, List<Query> filterQueries, Map<String, String[]> drilldownQueries, List<Filter> filters, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws Exception {
         long t0 = System.currentTimeMillis();
         Collectors collectors = createCollectors(start, stop, sort, facets, keyCollectors, scoreCollectors);
 
@@ -226,9 +233,21 @@ public class Lucene {
         for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(stop == 0 ? 1 : start).scoreDocs) { //TODO: temp fix for start/stop = 0
             response.addHit(getDocument(scoreDoc.doc).get(ID_FIELD), scoreDoc.score);
         }
-        if (collectors.facetCollector != null)
+        if (collectors.facetCollector != null) {
+            long t1 = System.currentTimeMillis();
             response.drilldownData = facetResult(collectors.facetCollector, facets);
+            response.times.put("facetTime", System.currentTimeMillis() - t1);
+        }
 
+        if (suggestion != null) {
+            long t1 = System.currentTimeMillis();
+            HashMap<String, SuggestWord[]> result = new HashMap<>();  
+            for (String suggest : suggestion.suggests)
+                result.put(suggest, suggest(suggest, suggestion.count, suggestion.field));
+            response.times.put("suggestionTime", System.currentTimeMillis() - t1);
+            response.suggestions = result;
+        }
+        
         response.queryTime = System.currentTimeMillis() - t0;
         return response;
     }
@@ -487,5 +506,9 @@ public class Lucene {
         ScoreSuperCollector scoreCollector = new ScoreSuperCollector(keyName);
         indexAndTaxo.searcher().search(query, null, scoreCollector);
         return scoreCollector;
+    }
+
+    public SuggestWord[] suggest(String term, int count, String field) throws IOException {
+        return spellChecker.suggestSimilar(new Term(field, term), count, indexAndTaxo.searcher().getIndexReader());
     }
 }

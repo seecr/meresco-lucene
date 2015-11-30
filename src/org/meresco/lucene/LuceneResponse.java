@@ -27,20 +27,26 @@ package org.meresco.lucene;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.xml.ws.Response;
 
 import org.apache.lucene.facet.LabelAndValue;
+import org.apache.lucene.search.spell.SuggestWord;
 
 public class LuceneResponse {
     public int total;
-    public ArrayList<Hit> hits = new ArrayList<Hit>();
-    public List<DrilldownData> drilldownData = new ArrayList<DrilldownData>();
+    public ArrayList<Hit> hits = new ArrayList<>();
+    public List<DrilldownData> drilldownData = new ArrayList<>();
     public long queryTime = 0;
+    public Map<String,SuggestWord[]> suggestions = new HashMap<>();
+    public Map<String, Long> times = new HashMap<>();
 
     public LuceneResponse(int totalHits) {
         total = totalHits;
@@ -124,6 +130,24 @@ public class LuceneResponse {
                         .add("terms", jsonTermList(dd.terms)));
             }
             jsonBuilder.add("drilldownData", ddArray);
+        }
+        
+        if (times.size() > 0) {
+            JsonObjectBuilder timesDict = Json.createObjectBuilder();
+            for (String name : times.keySet())
+                timesDict.add(name, times.get(name));
+            jsonBuilder.add("times", timesDict);
+        }
+        if (suggestions.size() > 0) {
+            JsonObjectBuilder suggestionsDict = Json.createObjectBuilder();
+            for (String suggest : suggestions.keySet()) {
+                JsonArrayBuilder suggestionArray = Json.createArrayBuilder();
+                for (SuggestWord suggestion : suggestions.get(suggest)) {
+                    suggestionArray.add(suggestion.string);
+                }
+                suggestionsDict.add(suggest, suggestionArray);
+            }
+            jsonBuilder.add("suggestions", suggestionsDict);
         }
         return jsonBuilder.build();
     }

@@ -34,6 +34,7 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 import org.apache.lucene.facet.LabelAndValue;
+import org.apache.lucene.search.spell.SuggestWord;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 
@@ -54,15 +55,23 @@ public class LuceneResponseToJson {
         dd.terms = terms;
         response.drilldownData = new ArrayList<LuceneResponse.DrilldownData>();
         response.drilldownData.add(dd);
+        
+        response.times.put("facetTime", 12L);
+        SuggestWord sug1 = new SuggestWord();
+        sug1.string = "value";
+        response.suggestions.put("valeu", new SuggestWord[] {sug1});
+        
         JsonObject jsonResponse = response.toJson();
         assertEquals(2, jsonResponse.getInt("total"));
         assertEquals(0, jsonResponse.getInt("queryTime"));
+        
         JsonArray hits = jsonResponse.getJsonArray("hits");
         assertEquals(2, hits.size());
         assertEquals("id1", hits.getJsonObject(0).getString("id"));
         assertEquals(0.1, hits.getJsonObject(0).getJsonNumber("score").doubleValue(), 0.0001);
         assertEquals("id2", hits.getJsonObject(1).getString("id"));
         assertEquals(0.2, hits.getJsonObject(1).getJsonNumber("score").doubleValue(), 0.0001);
+        
         JsonArray ddData = jsonResponse.getJsonArray("drilldownData");
         assertEquals(1, ddData.size());
         assertEquals("field", ddData.getJsonObject(0).getString("fieldname"));
@@ -72,11 +81,20 @@ public class LuceneResponseToJson {
         assertEquals(1, ddTerms.getJsonObject(0).getInt("count"));
         JsonArray subterms = ddTerms.getJsonObject(0).getJsonArray("subterms");
         assertEquals(null, subterms);
-        
         JsonArray subterms2 = ddTerms.getJsonObject(1).getJsonArray("subterms");
         assertEquals(1, subterms2.size());
         assertEquals("subValue2", subterms2.getJsonObject(0).getString("term"));
         assertEquals(1, subterms2.getJsonObject(0).getInt("count"));
+        
+        JsonObject times = jsonResponse.getJsonObject("times");
+        assertEquals(1, times.size());
+        assertEquals(12L, times.getJsonNumber("facetTime").longValue());
+        
+        JsonObject suggestions = jsonResponse.getJsonObject("suggestions");
+        assertEquals(1, suggestions.size());
+        JsonArray suggestionsValeu = suggestions.getJsonArray("valeu");
+        assertEquals(1, suggestionsValeu.size());
+        assertEquals("value", suggestionsValeu.getString(0));
     }
 
     @Test

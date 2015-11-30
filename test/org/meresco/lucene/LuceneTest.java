@@ -31,15 +31,21 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -47,11 +53,14 @@ import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.util.OpenBitSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.internal.runners.statements.Fail;
 import org.meresco.lucene.Lucene.TermCount;
+import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
@@ -249,7 +258,7 @@ public class LuceneTest extends SeecrTestCase {
 
         Sort sort = new Sort();
         sort.setSort(new SortField("field1", SortField.Type.STRING, false));
-        LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null, null, null, null, null, null);
+        LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null, null, null, null, null, null, null);
         assertEquals(3, result.total);
         assertEquals("id1", result.hits.get(0).id);
         assertEquals("id2", result.hits.get(1).id);
@@ -257,7 +266,7 @@ public class LuceneTest extends SeecrTestCase {
 
         sort = new Sort();
         sort.setSort(new SortField("field1", SortField.Type.STRING, true));
-        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null, null, null, null, null, null);
+        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null, null, null, null, null, null, null);
         assertEquals(3, result.total);
         assertEquals("id3", result.hits.get(0).id);
         assertEquals("id2", result.hits.get(1).id);
@@ -339,7 +348,7 @@ public class LuceneTest extends SeecrTestCase {
 
         assertEquals(2, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0).total);
         final Filter f = new QueryWrapperFilter(new TermQuery(new Term("field1", "value1")));
-        assertEquals(1, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, new ArrayList<Filter>() {{ add(f); }}, null, null, null, null).total);
+        assertEquals(1, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, null, null, new ArrayList<Filter>() {{ add(f); }}, null, null).total);
     }
     
     @SuppressWarnings("serial")
@@ -355,7 +364,7 @@ public class LuceneTest extends SeecrTestCase {
 
         assertEquals(2, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0).total);
         final Query f = new TermQuery(new Term("field1", "value1"));
-        assertEquals(1, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, new ArrayList<Query>() {{ add(f); }}, null, null, null).total);
+        assertEquals(1, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, new ArrayList<Query>() {{ add(f); }}, null, null, null, null).total);
     }
 
     @SuppressWarnings("serial")
@@ -371,7 +380,7 @@ public class LuceneTest extends SeecrTestCase {
         lucene.addDocument("id2", doc2);
 
         final KeySuperCollector k = new KeySuperCollector("field1");
-        assertEquals(2, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k); }}, null).total);
+        assertEquals(2, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, null, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k); }}).total);
 
         OpenBitSet collectedKeys = k.getCollectedKeys();
         assertEquals(false, collectedKeys.get(0));
@@ -382,7 +391,7 @@ public class LuceneTest extends SeecrTestCase {
 
         final KeySuperCollector k1 = new KeySuperCollector("field1");
         TermQuery field0Query = new TermQuery(new Term("field0", "value"));
-        assertEquals(1, lucene.executeQuery(field0Query, 0, 0, null, null, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k1); }}, null).total);
+        assertEquals(1, lucene.executeQuery(field0Query, 0, 0, null, null, null, null, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k1); }}).total);
 
         OpenBitSet keysWithFilter = k1.getCollectedKeys();
         assertEquals(false, keysWithFilter.get(0));
@@ -410,7 +419,7 @@ public class LuceneTest extends SeecrTestCase {
         
         final AggregateScoreSuperCollector aggregator = new AggregateScoreSuperCollector("field1", new ArrayList<ScoreSuperCollector>() {{add(scoreCollector);}});
         ArrayList<AggregateScoreSuperCollector> aggregators = new ArrayList<AggregateScoreSuperCollector>() {{add(aggregator);}};
-        LuceneResponse result = this.lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, null, null, null, null, aggregators, null, null);
+        LuceneResponse result = this.lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, null, null, null, null, null, null, aggregators, null);
         assertEquals(2, result.total);
         assertEquals(2, result.hits.get(0).score, 0);
         assertEquals(2, result.hits.get(1).score, 0);
@@ -481,5 +490,62 @@ public class LuceneTest extends SeecrTestCase {
         fieldnames = lucene.drilldownFieldnames(50, "cat");
         assertEquals(2, fieldnames.size());
         assertEquals(new ArrayList<String>() {{ add("cat 2"); add("cat 1");}}, fieldnames);
+    }
+    
+    @SuppressWarnings("serial")
+    @Test
+    public void testSuggestions() throws Exception {
+        addDocument(lucene, "id:0", null, new HashMap() {{put("field1", "value0"); put("field2", "value2" ); put("field5", "value2" );}});
+        BooleanQuery q = new BooleanQuery();
+        q.add(new TermQuery(new Term("value0")), Occur.MUST);
+        q.add(new TermQuery(new Term("valeu")), Occur.MUST);
+        
+        assertEquals("value2", lucene.suggest("value0", 2, "field5")[0].string);
+        assertEquals("value2", lucene.suggest("valeu", 2, "field5")[0].string);
+        
+        QueryConverter.SuggestionRequest sr = new QueryConverter.SuggestionRequest("field5", 2);
+        sr.add("value0");
+        sr.add("valeu");
+        LuceneResponse response = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, null, null, sr, null, null, null, null, null);
+        compareHits(response, "id:0");
+        HashMap<String, SuggestWord[]> suggestions = new HashMap<>();
+        assertEquals("value2", response.suggestions.get("value0")[0].string);
+        assertEquals("value2", response.suggestions.get("valeu")[0].string);
+    }
+    
+    public static void compareHits(LuceneResponse response, String... hitIds) {
+        Set<String> responseHitIds = new HashSet<String>();
+        for (Hit hit : response.hits)
+            responseHitIds.add(hit.id);
+        Set<String> expectedHitIds = new HashSet<String>();
+        for (String hitId : hitIds)
+            expectedHitIds.add(hitId);
+        assertEquals(expectedHitIds, responseHitIds);
+    }
+
+    public static void compareHitsOrdered(LuceneResponse response, String... hitIds) {
+        List<String> responseHitIds = new ArrayList<String>();
+        for (Hit hit : response.hits)
+            responseHitIds.add(hit.id);
+        List<String> expectedHitIds = new ArrayList<String>();
+        for (String hitId : hitIds)
+            expectedHitIds.add(hitId);
+        assertEquals(expectedHitIds, responseHitIds);
+    }
+
+    public static void addDocument(Lucene lucene, String identifier, Map<String, Integer> keys, Map<String, String> fields) throws IOException {
+        Document doc = new Document();
+        if (keys != null)
+            for (String keyField : keys.keySet())
+                doc.add(new NumericDocValuesField(keyField, keys.get(keyField)));
+        for (String fieldname : fields.keySet())
+            if (fieldname.equals("intField"))
+                doc.add(new IntField(fieldname, Integer.parseInt(fields.get(fieldname)), Store.NO));
+            else {
+                doc.add(new StringField(fieldname, fields.get(fieldname), Store.NO));
+                doc.add(new FacetField("cat_" + fieldname, fields.get(fieldname)));
+            }
+        lucene.addDocument(identifier, doc);
+        lucene.commit();
     }
 }

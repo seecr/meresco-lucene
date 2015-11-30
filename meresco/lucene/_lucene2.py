@@ -59,7 +59,7 @@ class Lucene(Observable):
     def delete(self, identifier):
         yield self._send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
 
-    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, sortKeys=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, sortKeys=None, suggestionRequest=None, **kwargs):
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
 
@@ -71,6 +71,7 @@ class Lucene(Observable):
             stop=stop,
             facets=facets or [],
             sortKeys=sortKeys or [],
+            suggestionRequest=suggestionRequest or {}
         )
         responseDict = (yield self._send(jsonDict=jsonDict, path='/query/'))
         raise StopIteration(luceneResponseFromDict(responseDict))
@@ -142,6 +143,8 @@ def luceneResponseFromDict(responseDict):
     response = LuceneResponse(total=responseDict["total"], queryTime=responseDict["queryTime"], hits=hits, drilldownData=[])
     if "drilldownData" in responseDict:
         response.drilldownData = responseDict['drilldownData']
+    if "suggestions" in responseDict:
+        response.suggestions = responseDict['suggestions']
     return response
 
 millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 millisecs

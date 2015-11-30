@@ -61,29 +61,6 @@ class LuceneTest(LuceneTestCase):
         self.assertEquals(0, result.total)
         self.assertTrue(hasattr(result, 'times'))
 
-    def testAdd1Document(self):
-        document = Document()
-        document.add(TextField('title', 'The title', Field.Store.NO))
-        retval(self.lucene.addDocument(identifier="identifier", document=document))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
-        self.assertEquals(1, result.total)
-        self.assertEquals(['identifier'], self.hitIds(result.hits))
-        result = retval(self.lucene.executeQuery(TermQuery(Term("title", 'title'))))
-        self.assertEquals(1, result.total)
-        result = retval(self.lucene.executeQuery(TermQuery(Term("title", 'the'))))
-        self.assertEquals(1, result.total)
-        self.assertTrue(result.queryTime > 0.0001, result.asJson())
-        self.assertEquals({'query': {
-                'drilldownQueries': None,
-                'facets': None,
-                'filterQueries': None,
-                'luceneQuery': 'title:the',
-                'start': 0,
-                'stop': 10,
-                'suggestionRequest': None
-            },
-            'type': 'Query'}, result.info)
-
     def testAdd1DocumentWithReadonlyLucene(self):
         settings = LuceneSettings(commitTimeout=1, verbose=False, readonly=True)
         readOnlyLucene = Lucene(
@@ -105,61 +82,12 @@ class LuceneTest(LuceneTestCase):
         readOnlyLucene.close()
         readOnlyLucene = None
 
-    def testAddAndDeleteDocument(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=Document()))
-        retval(self.lucene.addDocument(identifier="id:1", document=Document()))
-        retval(self.lucene.addDocument(identifier="id:2", document=Document()))
-        retval(self.lucene.delete(identifier="id:1"))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
-        self.assertEquals(2, result.total)
-        self.assertEquals(set(['id:0', 'id:2']), set(self.hitIds(result.hits)))
-
     def testAddDocumentWithoutIdentifier(self):
         retval(self.lucene.addDocument(document=Document()))
         retval(self.lucene.addDocument(document=Document()))
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(2, result.total)
         self.assertEquals([None, None], self.hitIds(result.hits))
-
-    def testAddCommitAfterTimeout(self):
-        self.lucene.close()
-        self._defaultSettings.commitTimeout = 42
-        self._defaultSettings.commitCount = 3
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, settings=self._defaultSettings)
-        retval(self.lucene.addDocument(identifier="id:0", document=Document()))
-        self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
-        self.assertEquals(42, self._reactor.calledMethods[0].kwargs['seconds'])
-        commit = self._reactor.calledMethods[0].kwargs['callback']
-        self._reactor.calledMethods.reset()
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
-        self.assertEquals(0, result.total)
-        commit()
-        self.assertEquals([], self._reactor.calledMethodNames())
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
-        self.assertEquals(1, result.total)
-
-    def testAddAndCommitCount3(self):
-        self.lucene.close()
-        self._defaultSettings.commitTimeout = 42
-        self._defaultSettings.commitCount = 3
-        self.lucene = Lucene(join(self.tempdir, 'lucene'), reactor=self._reactor, settings=self._defaultSettings)
-        token = object()
-        self._reactor.returnValues['addTimer'] = token
-        retval(self.lucene.addDocument(identifier="id:0", document=Document()))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
-        self.assertEquals(0, result.total)
-        self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
-        self.assertEquals(42, self._reactor.calledMethods[0].kwargs['seconds'])
-
-        retval(self.lucene.addDocument(identifier="id:1", document=Document()))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
-        self.assertEquals(0, result.total)
-        self.assertEquals(['addTimer'], self._reactor.calledMethodNames())
-        retval(self.lucene.addDocument(identifier="id:2", document=Document()))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
-        self.assertEquals(3, result.total)
-        self.assertEquals(['addTimer', 'removeTimer'], self._reactor.calledMethodNames())
-        self.assertEquals(token, self._reactor.calledMethods[1].kwargs['token'])
 
     def testForceCommit(self):
         self.lucene.close()
@@ -176,105 +104,6 @@ class LuceneTest(LuceneTestCase):
         self.assertEquals(['removeTimer'], self._reactor.calledMethodNames())
         result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
         self.assertEquals(1, result.total)
-
-    def testAddTwiceUpdatesDocument(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([
-                ('field0', 'value0'),
-                ('field1', 'value1'),
-            ])))
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([
-                ('field1', 'value1'),
-            ])))
-        result = retval(self.lucene.executeQuery(TermQuery(Term('field1', 'value1'))))
-        self.assertEquals(1, result.total)
-        result = retval(self.lucene.executeQuery(TermQuery(Term('field0', 'value0'))))
-        self.assertEquals(0, result.total)
-
-    def testSorting(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([
-                ('field0', 'AA'),
-                ('field1', 'ZZ'),
-                ('field2', 'AA'),
-                ('field3', 'X'),
-            ])))
-        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([
-                ('field0', 'BB'),
-                ('field1', 'AA'),
-                ('field2', 'ZZ'),
-                ('field3', 'X X'),
-            ])))
-        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([
-                ('field0', 'CC'),
-                ('field1', 'ZZ'),
-                ('field3', 'X X X'),
-            ])))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field0', sortDescending=False)]))
-        self.assertEquals(3, result.total)
-        self.assertEquals(['id:0', 'id:1', 'id:2'], self.hitIds(result.hits))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field0', sortDescending=True)]))
-        self.assertEquals(['id:2', 'id:1', 'id:0'], self.hitIds(result.hits))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field1', sortDescending=True), dict(sortBy='field0', sortDescending=True)]))
-        self.assertEquals(['id:2', 'id:0', 'id:1'], self.hitIds(result.hits))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field2', sortDescending=True)]))
-        self.assertEquals(['id:1', 'id:0', 'id:2'], self.hitIds(result.hits))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), sortKeys=[dict(sortBy='field2', sortDescending=False)]))
-        self.assertEquals(['id:0', 'id:1', 'id:2'], self.hitIds(result.hits))
-
-        result = retval(self.lucene.executeQuery(TermQuery(Term('field3', 'x')), sortKeys=[dict(sortBy='score', sortDescending=True), dict(sortBy='field1', sortDescending=True)]))
-        self.assertEquals(['id:2', 'id:1', 'id:0'], self.hitIds(result.hits))
-
-
-    def testStartStop(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'ishallnotbetokenizedA')])))
-        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'ishallnotbetokenizedB')])))
-        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'ishallnotbetokenizedC')])))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), start=1, stop=10, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
-        self.assertEquals(3, result.total)
-        self.assertEquals(['id:1', 'id:2'], self.hitIds(result.hits))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), start=0, stop=2, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
-        self.assertEquals(['id:0', 'id:1'], self.hitIds(result.hits))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), start=0, stop=0, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
-        self.assertEquals(3, result.total)
-        self.assertEquals([], self.hitIds(result.hits))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), start=2, stop=2, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
-        self.assertEquals(3, result.total)
-        self.assertEquals([], self.hitIds(result.hits))
-
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), start=1, stop=2, sortKeys=[dict(sortBy='field1', sortDescending=False)]))
-        self.assertEquals(3, result.total)
-        self.assertEquals(['id:1'], self.hitIds(result.hits))
-
-    def testFacets(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('facet-field2', 'first item0'), ('facet-field3', 'second item')])))
-        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'id:1')], facets=[('facet-field2', 'first item1'), ('facet-field3', 'other value')])))
-        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'id:2')], facets=[('facet-field2', 'first item2'), ('facet-field3', 'second item')])))
-
-        self.assertEquals(set([u'$facets', u'__id__', u'field1']), set(self.lucene._index.fieldnames()))
-
-        # does not crash!!!
-        retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='facet-field2')]))
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery()))
-        self.assertEquals([], result.drilldownData)
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='facet-field2')]))
-
-        self.assertEquals([{
-                'fieldname': 'facet-field2',
-                'path': [],
-                'terms': [
-                    {'term': 'first item0', 'count': 1},
-                    {'term': 'first item1', 'count': 1},
-                    {'term': 'first item2', 'count': 1},
-                ],
-            }],result.drilldownData)
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), facets=[dict(maxTerms=10, fieldname='facet-field3')]))
-        self.assertEquals([{
-                'fieldname': 'facet-field3',
-                'path': [],
-                'terms': [
-                    {'term': 'second item', 'count': 2},
-                    {'term': 'other value', 'count': 1},
-                ],
-            }],result.drilldownData)
 
     def testFacetsInMultipleFields(self):
         retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'id:0')], facets=[('facet-field2', 'first item0'), ('facet-field3', 'second item')])))
@@ -429,28 +258,12 @@ class LuceneTest(LuceneTestCase):
         self.assertEquals(2, result.total)
         self.assertEquals(set(['id:0', 'id:6']), set(self.hitIds(result.hits)))
 
-    def testPrefixSearch(self):
-        response = retval(self.lucene.prefixSearch(fieldname='field1', prefix='valu'))
-        self.assertEquals([], response.hits)
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0')])))
-        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value1')])))
-        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value1')])))
-        response = retval(self.lucene.prefixSearch(fieldname='field1', prefix='valu'))
-        self.assertEquals(['value1', 'value0'], response.hits)
-        self.assertTrue(response.queryTime > 0, response.asJson())
-
     def testPrefixSearchForIntField(self):
         retval(self.lucene.addDocument(identifier='id:0', document=createDocument([('intField', 1)])))
         for i in xrange(5):
             retval(self.lucene.addDocument(identifier='id:%s' % (i+20), document=createDocument([('intField', i+20)])))
         response = retval(self.lucene.prefixSearch(fieldname='intField', prefix=None))
         self.assertEquals([0, 0, 0, 24, 23, 22, 21, 20, 1], response.hits) # No fix for the 0's yet
-
-    def testSuggestions(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field5', 'value2')])))
-        response = retval(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), suggestionRequest=dict(count=2, query="value0 and valeu", field="field5")))
-        self.assertEquals(['id:0'], self.hitIds(response.hits))
-        self.assertEquals({'value0': (0, 6, ['value2']), 'valeu': (11, 16, ['value2'])}, response.suggestions)
 
     def testRangeQuery(self):
         for f in ['aap', 'noot', 'mies', 'vis', 'vuur', 'boom']:
@@ -468,24 +281,6 @@ class LuceneTest(LuceneTestCase):
         luceneQuery = LuceneQueryComposer(unqualifiedTermFields=[], luceneSettings=LuceneSettings()).compose(parseCql('field >= mies'))
         response = retval(self.lucene.executeQuery(luceneQuery=luceneQuery))
         self.assertEquals(set(['id:mies', 'id:noot', 'id:vis', 'id:vuur']), set(self.hitIds(response.hits)))
-
-    def testFieldnames(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field0', 'value0')])))
-        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value0')])))
-        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value0')])))
-        response = retval(self.lucene.fieldnames())
-        self.assertEquals(set([IDFIELD, 'field0', 'field1']), set(response.hits))
-        self.assertEquals(3, response.total)
-
-    def testDrilldownFieldnames(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field0', 'value0')], facets=[("cat", "cat-A"), ("cat", "cat-B")])))
-        retval(self.lucene.addDocument(identifier="id:1", document=createDocument([('field1', 'value0')], facets=[("cat", "cat-A"), ("cat2", "cat-B")])))
-        retval(self.lucene.addDocument(identifier="id:2", document=createDocument([('field1', 'value0')], facets=[("cat2", "cat-A"), ("cat3", "cat-B")])))
-        response = retval(self.lucene.drilldownFieldnames())
-        self.assertEquals(set(['cat', 'cat2', 'cat3']), set(response.hits))
-        self.assertEquals(3, response.total)
-        response = retval(self.lucene.drilldownFieldnames(['cat']))
-        self.assertEquals(set(['cat-A', 'cat-B']), set(response.hits))
 
     def testFilterCaching(self):
         for i in range(10):

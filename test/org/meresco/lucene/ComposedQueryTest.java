@@ -58,6 +58,11 @@ public class ComposedQueryTest {
                                 .add("sortBy", "fieldname")
                                 .add("type", "String")
                                 .add("sortDescending", false)))
+                .add("suggestionRequest", Json.createObjectBuilder()
+                        .add("field", "field1")
+                        .add("count", 2)
+                        .add("suggests", Json.createArrayBuilder()
+                            .add("valeu")))
                 .add("cores", Json.createArrayBuilder()
                     .add("coreA")
                     .add("coreB"))
@@ -164,6 +169,10 @@ public class ComposedQueryTest {
         
         Query rankQuery = q.rankQueryFor("coreA");
         assertEquals(new TermQuery(new Term("field", "value0")), rankQuery);
+        
+        assertEquals("field1", q.suggestionRequest.field);
+        assertEquals(2, q.suggestionRequest.count);
+        assertArrayEquals(new String[] {"valeu"}, q.suggestionRequest.suggests.toArray(new String[0]));
     }
 
     @Test

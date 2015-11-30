@@ -43,6 +43,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.QueryConverter.SuggestionRequest;
 
 public class ComposedQuery {
 
@@ -58,6 +59,7 @@ public class ComposedQuery {
     public int start = 0;
     public int stop = 10;
     public Sort sort;
+    public SuggestionRequest suggestionRequest;
     public List<Match> matches = new ArrayList<Match>();
 
     public ComposedQuery(String resultsFrom) {
@@ -78,6 +80,8 @@ public class ComposedQuery {
             cq.start = json.getInt("start");
         if (json.containsKey("stop") && json.get("stop") != JsonValue.NULL)
             cq.stop = json.getInt("stop");
+        if (json.containsKey("suggestionRequest") && json.get("suggestionRequest") != JsonValue.NULL)
+            cq.suggestionRequest = converters.get(cq.resultsFrom).convertToSuggestionRequest(json.getJsonObject("suggestionRequest"));
         if (json.containsKey("cores")) {
             JsonArray jsonCores = json.getJsonArray("cores");
             for (int i = 0; i < jsonCores.size(); i++) {

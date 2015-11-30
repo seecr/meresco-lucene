@@ -157,6 +157,18 @@ public class ComposedQuery {
                 cq.setRankQuery(coreName, converters.get(coreName).convertToQuery(rankQueries.getJsonObject(coreName)));
             }
         }
+        if (json.containsKey("unites")) {
+            JsonArray unites = json.getJsonArray("unites");
+            for (int i = 0; i < unites.size(); i++) {
+                JsonArray A = unites.getJsonObject(i).getJsonArray("A");
+                JsonArray B = unites.getJsonObject(i).getJsonArray("B");
+                String core1 = A.getString(0);
+                Query query1 = converters.get(core1).convertToQuery(A.getJsonObject(1));
+                String core2 = B.getString(0);
+                Query query2 = converters.get(core2).convertToQuery(B.getJsonObject(1));
+                cq.addUnite(core1, query1, core2, query2);
+            }
+        }
         return cq;
     }
 

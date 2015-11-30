@@ -42,6 +42,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
+import org.meresco.lucene.ComposedQuery.Unite;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 
 public class ComposedQueryTest {
@@ -186,5 +187,55 @@ public class ComposedQueryTest {
         ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         assertEquals(0, q.queryData.start);
         assertEquals(10, q.queryData.stop);
+    }
+    
+    @SuppressWarnings("serial")
+    @Test
+    public void testUnite() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("resultsFrom", "coreA")
+                .add("cores", Json.createArrayBuilder()
+                    .add("coreA")
+                    .add("coreB"))
+                .add("matches", Json.createObjectBuilder()
+                    .add("coreA->coreB", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder()
+                            .add("core", "coreA")
+                            .add("uniqueKey", "keyA"))
+                        .add(Json.createObjectBuilder()
+                            .add("core", "coreB")
+                            .add("key", "keyB"))
+                    )
+                )
+                .add("unites", Json.createArrayBuilder()
+                    .add(Json.createObjectBuilder()
+                        .add("A", Json.createArrayBuilder()
+                            .add("summary")
+                            .add(Json.createObjectBuilder()
+                                .add("type", "TermQuery")
+                                .add("term", Json.createObjectBuilder()
+                                    .add("field", "field")
+                                    .add("value", "value0"))))
+                        .add("B", Json.createArrayBuilder()
+                            .add("holding")
+                            .add(Json.createObjectBuilder()
+                                .add("type", "TermQuery")
+                                .add("term", Json.createObjectBuilder()
+                                    .add("field", "field2")
+                                    .add("value", "value1")))) 
+                    ))
+                .build();
+        Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
+            put("summary", new QueryConverter(new FacetsConfig()));
+            put("holding", new QueryConverter(new FacetsConfig()));
+        }};
+        ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
+        List<Unite> unites = q.getUnites();
+        assertEquals(1, unites.size());
+        Unite unite = unites.get(0);
+        assertEquals("summary", unite.coreA);
+        assertEquals("holding", unite.coreB);
+        assertEquals(new TermQuery(new Term("field", "value0")), unite.queryA);
+        assertEquals(new TermQuery(new Term("field2", "value1")), unite.queryB);
     }
 }

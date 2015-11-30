@@ -53,7 +53,9 @@ import org.junit.Test;
 import org.junit.internal.runners.statements.Fail;
 import org.meresco.lucene.Lucene.TermCount;
 import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
+import org.meresco.lucene.search.join.ScoreSuperCollector;
 
 public class LuceneTest extends SeecrTestCase {
 
@@ -393,7 +395,25 @@ public class LuceneTest extends SeecrTestCase {
     @SuppressWarnings("serial")
     @Test
     public void testQueryWithScoreCollectors() throws Exception {
-        fail();
+        Document doc1 = new Document();
+        doc1.add(new StringField("field0", "value", Store.NO));
+        doc1.add(new NumericDocValuesField("field1", 1));
+        lucene.addDocument("id1", doc1);
+
+        Document doc2 = new Document();
+        doc2.add(new NumericDocValuesField("field1", 2));
+        lucene.addDocument("id2", doc2);
+
+        final ScoreSuperCollector scoreCollector = this.lucene.scoreCollector("field1", new MatchAllDocsQuery());
+        assertEquals(1.0, scoreCollector.score(1), 0);
+        assertEquals(1.0, scoreCollector.score(2), 0);
+        
+        final AggregateScoreSuperCollector aggregator = new AggregateScoreSuperCollector("field1", new ArrayList<ScoreSuperCollector>() {{add(scoreCollector);}});
+        ArrayList<AggregateScoreSuperCollector> aggregators = new ArrayList<AggregateScoreSuperCollector>() {{add(aggregator);}};
+        LuceneResponse result = this.lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, null, null, null, null, aggregators, null, null);
+        assertEquals(2, result.total);
+        assertEquals(2, result.hits.get(0).score, 0);
+        assertEquals(2, result.hits.get(1).score, 0);
     }
     
     @Test

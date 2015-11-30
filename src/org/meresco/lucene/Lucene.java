@@ -474,12 +474,12 @@ public class Lucene {
         return q;
     }
 
-    public QueryConverter getQueryConverter() {
+    public QueryConverter getQueryConverter() { // TODO: Test?
         return new QueryConverter(this.facetsConfig);
     }
     
     public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Exception {
-//        return self._scoreCollectorCache.get((keyName, query))
+// TODO:        return self._scoreCollectorCache.get((keyName, query))
         return doScoreCollecting(keyName, query);
     }
     

@@ -91,7 +91,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         assertEquals(1, topDocsResult.scoreDocs.length);
 
         int docId = topDocsResult.scoreDocs[0].doc;
-        DeDupFilterSubCollector.Key key = c.keyForDocId(docId);
+        DeDupFilterSuperCollector.Key key = c.keyForDocId(docId);
         String identifier = lucene.getDocument(key.getDocId()).get(Lucene.ID_FIELD);
         assertEquals("urn:2", identifier);
         assertEquals(2, key.getCount());

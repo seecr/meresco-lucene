@@ -43,8 +43,8 @@ public class LuceneResponseToJson {
     @Test
     public void test() {
         LuceneResponse response = new LuceneResponse(2);
-        response.addHit("id1", 0.1f);
-        response.addHit("id2", 0.2f);
+        response.addHit(new LuceneResponse.Hit("id1", 0.1f));
+        response.addHit(new LuceneResponse.Hit("id2", 0.2f));
         LuceneResponse.DrilldownData dd = new DrilldownData("field");
         List<DrilldownData.Term> terms = new ArrayList<DrilldownData.Term>();
         terms.add(new DrilldownData.Term("value1", 1));
@@ -115,5 +115,48 @@ public class LuceneResponseToJson {
         JsonArray ddTerms = ddData.getJsonObject(0).getJsonArray("terms");
         assertEquals("value1", ddTerms.getJsonObject(0).getString("term"));
         assertEquals(1, ddTerms.getJsonObject(0).getInt("count"));
+    }
+    
+    @Test
+    public void testDedup() {
+        LuceneResponse response = new LuceneResponse(2);
+        LuceneResponse.Hit hit1 = new LuceneResponse.Hit("id1", 0.1f);
+        hit1.duplicateField = "__key__";
+        hit1.duplicateCount = 2;
+        response.addHit(hit1);
+        LuceneResponse.Hit hit2 = new LuceneResponse.Hit("id2", 0.2f);
+        hit2.duplicateField = "__key__";
+        hit2.duplicateCount = 5;
+        response.addHit(hit2);
+        
+        JsonArray hits = response.toJson().getJsonArray("hits");
+        assertEquals(2, hits.size());
+        JsonObject duplicateCount = hits.getJsonObject(0).getJsonObject("duplicateCount");
+        assertEquals(2, duplicateCount.getInt("__key__"));
+        duplicateCount = hits.getJsonObject(1).getJsonObject("duplicateCount");
+        assertEquals(5, duplicateCount.getInt("__key__"));
+    }
+    
+    @SuppressWarnings("serial")
+    @Test
+    public void testGrouping() {
+        LuceneResponse response = new LuceneResponse(2);
+        LuceneResponse.Hit hit1 = new LuceneResponse.Hit("id1", 0.1f);
+        hit1.groupingField = "__key__";
+        hit1.duplicates = new ArrayList<String>() {{ add("id1"); add("id3"); }};
+        response.addHit(hit1);
+        LuceneResponse.Hit hit2 = new LuceneResponse.Hit("id2", 0.2f);
+        hit2.groupingField = "__key__";
+        hit2.duplicates = new ArrayList<String>() {{ add("id2"); }};
+        response.addHit(hit2);
+        
+        JsonArray hits = response.toJson().getJsonArray("hits");
+        assertEquals(2, hits.size());
+        JsonObject duplicates = hits.getJsonObject(0).getJsonObject("duplicates");
+        assertEquals(2, duplicates.getJsonArray("__key__").size());
+        assertEquals("id1", duplicates.getJsonArray("__key__").getJsonObject(0).getString("id"));
+        assertEquals("id3", duplicates.getJsonArray("__key__").getJsonObject(1).getString("id"));
+        duplicates = hits.getJsonObject(1).getJsonObject("duplicates");
+        assertEquals(1, duplicates.getJsonArray("__key__").size());
     }
 }

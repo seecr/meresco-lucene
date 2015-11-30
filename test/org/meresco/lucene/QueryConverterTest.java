@@ -392,6 +392,18 @@ public class QueryConverterTest {
         assertEquals("field1", q.suggestionRequest.field);
         assertEquals(2, q.suggestionRequest.count);
         assertArrayEquals(new String[] {"valeu"}, q.suggestionRequest.suggests.toArray(new String[0]));
-        
+    }
+    
+    @Test
+    public void testDedup() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "MatchAllDocsQuery"))
+                .add("dedupField", "__key__")
+                .add("dedupSortField", "__key__.date")
+                .build();
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
+        assertEquals("__key__", q.dedupField);
+        assertEquals("__key__.date", q.dedupSortField);
     }
 }

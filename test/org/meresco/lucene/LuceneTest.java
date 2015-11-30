@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
@@ -65,6 +66,8 @@ import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
+
+import com.sun.corba.se.spi.orbutil.fsm.Guard.Result;
 
 public class LuceneTest extends SeecrTestCase {
 
@@ -258,7 +261,9 @@ public class LuceneTest extends SeecrTestCase {
 
         Sort sort = new Sort();
         sort.setSort(new SortField("field1", SortField.Type.STRING, false));
-        LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null, null, null, null, null, null, null);
+        QueryData q = new QueryData();
+        q.sort = sort;
+        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
         assertEquals(3, result.total);
         assertEquals("id1", result.hits.get(0).id);
         assertEquals("id2", result.hits.get(1).id);
@@ -266,7 +271,8 @@ public class LuceneTest extends SeecrTestCase {
 
         sort = new Sort();
         sort.setSort(new SortField("field1", SortField.Type.STRING, true));
-        result = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, sort, null, null, null, null, null, null, null);
+        q.sort = sort;
+        result = lucene.executeQuery(q, null, null, null, null, null);
         assertEquals(3, result.total);
         assertEquals("id3", result.hits.get(0).id);
         assertEquals("id2", result.hits.get(1).id);
@@ -348,7 +354,7 @@ public class LuceneTest extends SeecrTestCase {
 
         assertEquals(2, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0).total);
         final Filter f = new QueryWrapperFilter(new TermQuery(new Term("field1", "value1")));
-        assertEquals(1, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, null, null, new ArrayList<Filter>() {{ add(f); }}, null, null).total);
+        assertEquals(1, lucene.executeQuery(new QueryData(), null, null, new ArrayList<Filter>() {{ add(f); }}, null, null).total);
     }
     
     @SuppressWarnings("serial")
@@ -364,7 +370,7 @@ public class LuceneTest extends SeecrTestCase {
 
         assertEquals(2, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0).total);
         final Query f = new TermQuery(new Term("field1", "value1"));
-        assertEquals(1, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, new ArrayList<Query>() {{ add(f); }}, null, null, null, null).total);
+        assertEquals(1, lucene.executeQuery(new QueryData(), new ArrayList<Query>() {{ add(f); }}, null, null, null, null).total);
     }
 
     @SuppressWarnings("serial")
@@ -380,7 +386,7 @@ public class LuceneTest extends SeecrTestCase {
         lucene.addDocument("id2", doc2);
 
         final KeySuperCollector k = new KeySuperCollector("field1");
-        assertEquals(2, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0, null, null, null, null, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k); }}).total);
+        assertEquals(2, lucene.executeQuery(new QueryData(), null, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k); }}).total);
 
         OpenBitSet collectedKeys = k.getCollectedKeys();
         assertEquals(false, collectedKeys.get(0));
@@ -391,7 +397,9 @@ public class LuceneTest extends SeecrTestCase {
 
         final KeySuperCollector k1 = new KeySuperCollector("field1");
         TermQuery field0Query = new TermQuery(new Term("field0", "value"));
-        assertEquals(1, lucene.executeQuery(field0Query, 0, 0, null, null, null, null, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k1); }}).total);
+        QueryData q = new QueryData();
+        q.query = field0Query;
+        assertEquals(1, lucene.executeQuery(q, null, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k1); }}).total);
 
         OpenBitSet keysWithFilter = k1.getCollectedKeys();
         assertEquals(false, keysWithFilter.get(0));
@@ -419,7 +427,7 @@ public class LuceneTest extends SeecrTestCase {
         
         final AggregateScoreSuperCollector aggregator = new AggregateScoreSuperCollector("field1", new ArrayList<ScoreSuperCollector>() {{add(scoreCollector);}});
         ArrayList<AggregateScoreSuperCollector> aggregators = new ArrayList<AggregateScoreSuperCollector>() {{add(aggregator);}};
-        LuceneResponse result = this.lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, null, null, null, null, null, null, aggregators, null);
+        LuceneResponse result = this.lucene.executeQuery(new QueryData(), null, null, null, aggregators, null);
         assertEquals(2, result.total);
         assertEquals(2, result.hits.get(0).score, 0);
         assertEquals(2, result.hits.get(1).score, 0);
@@ -496,9 +504,6 @@ public class LuceneTest extends SeecrTestCase {
     @Test
     public void testSuggestions() throws Exception {
         addDocument(lucene, "id:0", null, new HashMap() {{put("field1", "value0"); put("field2", "value2" ); put("field5", "value2" );}});
-        BooleanQuery q = new BooleanQuery();
-        q.add(new TermQuery(new Term("value0")), Occur.MUST);
-        q.add(new TermQuery(new Term("valeu")), Occur.MUST);
         
         assertEquals("value2", lucene.suggest("value0", 2, "field5")[0].string);
         assertEquals("value2", lucene.suggest("valeu", 2, "field5")[0].string);
@@ -506,11 +511,107 @@ public class LuceneTest extends SeecrTestCase {
         QueryConverter.SuggestionRequest sr = new QueryConverter.SuggestionRequest("field5", 2);
         sr.add("value0");
         sr.add("valeu");
-        LuceneResponse response = lucene.executeQuery(new MatchAllDocsQuery(), 0, 10, null, null, sr, null, null, null, null, null);
+        QueryData q = new QueryData();
+        q.suggestionRequest = sr;
+        LuceneResponse response = lucene.executeQuery(q, null, null, null, null, null);
         compareHits(response, "id:0");
         HashMap<String, SuggestWord[]> suggestions = new HashMap<>();
         assertEquals("value2", response.suggestions.get("value0")[0].string);
         assertEquals("value2", response.suggestions.get("valeu")[0].string);
+    }
+    
+    @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
+    @Test
+    public void testDedupFilterCollectorSortedByField() throws Exception {
+        addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42); put("__key__.date", 2012);}}, new HashMap() {{put("field0", "v0"); put("A", "cat-A");}});
+        addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42); put("__key__.date", 2013);}}, new HashMap() {{put("field0", "v1"); put("A", "cat-A");}}); //first hit of 3 duplicates
+        addDocument(lucene, "urn:3", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v2"); put("A", "cat-A");}});
+        addDocument(lucene, "urn:4", null, new HashMap() {{put("field0", "v3"); put("A", "cat-A");}});
+        QueryData q = new QueryData();
+        q.query = new MatchAllDocsQuery();
+        q.facets = new ArrayList<FacetRequest>() {{add(new FacetRequest("cat_A", 10));}};
+        q.dedupField = "__key__";
+        q.dedupSortField = "__key__.date";
+        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        // expected two hits: "urn:2" (3x) and "urn:4" in no particular order
+        assertEquals(2, result.total);
+        assertEquals(4, result.totalWithDuplicates);
+        compareHits(result, "urn:2", "urn:4");
+        assertEquals("__key__", result.hits.get(0).duplicateField);
+        assertEquals(3, result.hits.get(0).duplicateCount);
+        assertEquals(1, result.hits.get(1).duplicateCount);
+        assertEquals("cat-A", result.drilldownData.get(0).terms.get(0).label);
+        assertEquals(4, result.drilldownData.get(0).terms.get(0).count);
+    }
+    
+    @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
+    @Test
+    public void testGroupingCollector() throws Exception {
+        addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
+        addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
+        addDocument(lucene, "urn:3", new HashMap() {{put("__key__", 43);}}, new HashMap() {{put("field0", "v2");}});
+        addDocument(lucene, "urn:4", null, new HashMap() {{put("field0", "v3");}});
+        
+        QueryData q = new QueryData();
+        q.stop = 3;
+        q.groupingField = "__key__";
+        q.sort = new Sort(new SortField("field0", SortField.Type.STRING));
+        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        // expected two hits: "urn:2" (3x) and "urn:4" in no particular order
+        assertEquals(4, result.total);
+        compareHits(result, "urn:1", "urn:3", "urn:4");
+        assertEquals("__key__", result.hits.get(0).groupingField);
+        assertEquals(new ArrayList<String>() {{ add("urn:1"); add("urn:2"); }}, result.hits.get(0).duplicates);
+        assertEquals(new ArrayList<String>() {{ add("urn:3"); }}, result.hits.get(1).duplicates);
+        assertEquals(new ArrayList<String>() {{ add("urn:4"); }}, result.hits.get(2).duplicates);
+    }
+    
+    @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
+    @Test
+    public void testGroupingOnNonExistingField() throws Exception {
+        addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
+        addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
+        addDocument(lucene, "urn:3", new HashMap() {{put("__key__", 43);}}, new HashMap() {{put("field0", "v2");}});
+        addDocument(lucene, "urn:4", null, new HashMap() {{put("field0", "v3");}});
+     
+        QueryData q = new QueryData();
+        q.groupingField = "__other_key__";
+        q.stop = 3;
+        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        assertEquals(4, result.total);
+        assertEquals(3, result.hits.size());
+    }
+    
+    @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
+    @Test
+    public void testDontGroupIfMaxResultsAreLessThanTotalRecords() throws Exception {
+        addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
+        addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
+
+        QueryData q = new QueryData();
+        q.groupingField = "__key__";
+        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        
+        assertEquals(2, result.total);
+        compareHits(result, "urn:1", "urn:2");
+        assertEquals(new ArrayList<String>() {{ add("urn:1"); }}, result.hits.get(0).duplicates);
+        assertEquals(new ArrayList<String>() {{ add("urn:2"); }}, result.hits.get(1).duplicates);
+    }
+    
+    @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
+    @Test
+    public void testGroupingCollectorReturnsMaxHitAfterGrouping() throws Exception {
+        addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
+        addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
+        for (int i=3; i<11; i++)
+            addDocument(lucene, "urn:" + i, null, new HashMap() {{put("field0", "v0");}});
+        
+        QueryData q = new QueryData();
+        q.groupingField = "__key__";
+        q.stop = 5;
+        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        assertEquals(10, result.total);
+        assertEquals(5, result.hits.size());
     }
     
     public static void compareHits(LuceneResponse response, String... hitIds) {

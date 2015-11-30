@@ -39,10 +39,12 @@ import javax.xml.ws.Response;
 
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.search.spell.SuggestWord;
+import org.meresco.lucene.LuceneResponse.Hit;
 
 public class LuceneResponse {
     public int total;
-    public ArrayList<Hit> hits = new ArrayList<>();
+    public int totalWithDuplicates;
+    public List<Hit> hits = new ArrayList<>();
     public List<DrilldownData> drilldownData = new ArrayList<>();
     public long queryTime = 0;
     public Map<String,SuggestWord[]> suggestions = new HashMap<>();
@@ -52,18 +54,24 @@ public class LuceneResponse {
         total = totalHits;
     }
 
-    public void addHit(String id, float score) {
-        hits.add(new Hit(id, score));
+    public void addHit(Hit hit) {
+        hits.add(hit);
     }
 
     public static class Hit {
         public String id;
         public float score;
+        public String duplicateField;
+        public int duplicateCount;
+        public List<String> duplicates;
+        public String groupingField;
 
         public Hit(String id, float score) {
             this.id = id;
             this.score = score;
         }
+
+        public Hit() {}
     }
 
     public static class DrilldownData {
@@ -112,9 +120,21 @@ public class LuceneResponse {
 
         JsonArrayBuilder hitsArray = Json.createArrayBuilder();
         for (Hit hit : hits) {
-            hitsArray.add(Json.createObjectBuilder()
+            JsonObjectBuilder hitBuilder = Json.createObjectBuilder()
                     .add("id", hit.id)
-                    .add("score", hit.score));
+                    .add("score", hit.score);
+            if (hit.duplicateField != null) {
+                hitBuilder.add("duplicateCount", Json.createObjectBuilder()
+                    .add(hit.duplicateField, hit.duplicateCount));
+            }
+            if (hit.groupingField != null) {
+                JsonArrayBuilder duplicatesBuilder = Json.createArrayBuilder();
+                for (String id : hit.duplicates)
+                    duplicatesBuilder.add(Json.createObjectBuilder().add("id", id));
+                hitBuilder.add("duplicates", Json.createObjectBuilder()
+                    .add(hit.groupingField, duplicatesBuilder));
+            }
+            hitsArray.add(hitBuilder);
         }
         jsonBuilder.add("hits", hitsArray);
 

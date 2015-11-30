@@ -71,7 +71,11 @@ class LuceneTest(SeecrTestCase):
         self.response = JsonDict({
                 "total": 887,
                 "queryTime": 6,
-                "hits": [{"id": "record:1", "score": 0.1234}],
+                "hits": [{
+                        "id": "record:1", "score": 0.1234,
+                        "duplicateCount": {"__key__": 2},
+                        "duplicates": {"__grouping_key__": [{"id": 'record:1'}, {"id": 'record:2'}]}
+                    }],
                 "drilldownData": [
                     {"fieldname": "facet", "path": [], "terms": [{"term": "term", "count": 1}]}
                 ],
@@ -84,7 +88,9 @@ class LuceneTest(SeecrTestCase):
                     luceneQuery=query, start=1, stop=5,
                     facets=[dict(maxTerms=10, fieldname='facet')],
                     sortKeys=[dict(sortBy='field', sortDescending=False)],
-                    suggestionRequest=dict(suggests=['valeu'], count=2, field='field1')
+                    suggestionRequest=dict(suggests=['valeu'], count=2, field='field1'),
+                    dedupField="__key__",
+                    groupingField="__grouping_key__",
                 ))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/query/', self.post[0]['path'])
@@ -93,13 +99,17 @@ class LuceneTest(SeecrTestCase):
                     "query": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"},
                     "facets": [{"fieldname": "facet", "maxTerms": 10}],
                     "sortKeys": [{"sortBy": "field", "sortDescending": False, "type": "String"}],
-                    "suggestionRequest": dict(suggests=['valeu'], count=2, field='field1')
+                    "suggestionRequest": dict(suggests=['valeu'], count=2, field='field1'),
+                    "dedupField": "__key__",
+                    "dedupSortField": None,
+                    "groupingField": "__grouping_key__"
                 }, loads(self.post[0]['data']))
         self.assertEqual(887, response.total)
         self.assertEqual(6, response.queryTime)
         self.assertEqual(1, len(response.hits))
         self.assertEqual("record:1", response.hits[0].id)
         self.assertEqual(0.1234, response.hits[0].score)
+        self.assertEqual(dict(__key__=2), response.hits[0].duplicateCount)
         self.assertEqual([
                 {"fieldname": "facet", "path": [], "terms": [{"term": "term", "count": 1}]}
             ], response.drilldownData)

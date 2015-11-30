@@ -51,7 +51,7 @@ public class QueryHandler extends AbstractHandler {
         LuceneResponse luceneResponse = new LuceneResponse(0);
         try {
             QueryData q = new QueryData(request.getReader(), this.lucene.getQueryConverter());
-            luceneResponse = this.lucene.executeQuery(q.query, q.start, q.stop, q.sort, q.facets, q.suggestionRequest, null, null, null, null, null);
+            luceneResponse = this.lucene.executeQuery(q, null, null, null, null, null);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write(Utils.getStackTrace(e));

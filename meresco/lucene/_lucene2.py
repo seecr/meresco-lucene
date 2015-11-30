@@ -59,7 +59,7 @@ class Lucene(Observable):
     def delete(self, identifier):
         yield self._send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
 
-    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, sortKeys=None, suggestionRequest=None, **kwargs):
+    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, sortKeys=None, suggestionRequest=None, dedupField=None, dedupSortField=None, groupingField=None, **kwargs):
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
 
@@ -71,6 +71,9 @@ class Lucene(Observable):
             stop=stop,
             facets=facets or [],
             sortKeys=sortKeys or [],
+            dedupField=dedupField,
+            dedupSortField=dedupSortField,
+            groupingField=groupingField,
         )
         if suggestionRequest:
             jsonDict["suggestionRequest"] = suggestionRequest

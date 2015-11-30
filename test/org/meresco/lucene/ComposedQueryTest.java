@@ -129,12 +129,12 @@ public class ComposedQueryTest {
         }};
         ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         assertEquals("coreA", q.resultsFrom);
-        assertEquals(1, q.start);
-        assertEquals(10, q.stop);
+        assertEquals(1, q.queryData.start);
+        assertEquals(10, q.queryData.stop);
         assertEquals(new HashSet<String>() {{add("coreA"); add("coreB");}}, q.cores);
         assertEquals(new TermQuery(new Term("field", "value0")), q.queryFor("coreA"));
         assertEquals(new TermQuery(new Term("field", "value1")), q.queryFor("coreB"));
-        assertEquals(1, q.sort.getSort().length);
+        assertEquals(1, q.queryData.sort.getSort().length);
 
         assertEquals("keyA", q.keyName("coreA", "coreB"));
         assertEquals("keyB", q.keyName("coreB", "coreA"));
@@ -170,9 +170,9 @@ public class ComposedQueryTest {
         Query rankQuery = q.rankQueryFor("coreA");
         assertEquals(new TermQuery(new Term("field", "value0")), rankQuery);
         
-        assertEquals("field1", q.suggestionRequest.field);
-        assertEquals(2, q.suggestionRequest.count);
-        assertArrayEquals(new String[] {"valeu"}, q.suggestionRequest.suggests.toArray(new String[0]));
+        assertEquals("field1", q.queryData.suggestionRequest.field);
+        assertEquals(2, q.queryData.suggestionRequest.count);
+        assertArrayEquals(new String[] {"valeu"}, q.queryData.suggestionRequest.suggests.toArray(new String[0]));
     }
 
     @Test
@@ -184,7 +184,7 @@ public class ComposedQueryTest {
             put("coreA", new QueryConverter(new FacetsConfig()));
         }};
         ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
-        assertEquals(0, q.start);
-        assertEquals(10, q.stop);
+        assertEquals(0, q.queryData.start);
+        assertEquals(10, q.queryData.stop);
     }
 }

@@ -56,12 +56,9 @@ public class ComposedQuery {
     private Map<String, List<Query>> otherCoreFacetsFilter = new HashMap<String, List<Query>>();
     private Map<String, Query> rankQueries = new HashMap<String, Query>();
     private List<Unite> unites = new ArrayList<Unite>();
-    public int start = 0;
-    public int stop = 10;
-    public Sort sort;
-    public SuggestionRequest suggestionRequest;
     public List<Match> matches = new ArrayList<Match>();
-
+    public QueryData queryData = new QueryData();
+    
     public ComposedQuery(String resultsFrom) {
         this.resultsFrom = resultsFrom;
     }
@@ -77,11 +74,15 @@ public class ComposedQuery {
         JsonObject json = Json.createReader(jsonStringReader).readObject();
         ComposedQuery cq = new ComposedQuery(json.getString("resultsFrom"));
         if (json.containsKey("start") && json.get("start") != JsonValue.NULL)
-            cq.start = json.getInt("start");
+            cq.queryData.start = json.getInt("start");
         if (json.containsKey("stop") && json.get("stop") != JsonValue.NULL)
-            cq.stop = json.getInt("stop");
+            cq.queryData.stop = json.getInt("stop");
         if (json.containsKey("suggestionRequest") && json.get("suggestionRequest") != JsonValue.NULL)
-            cq.suggestionRequest = converters.get(cq.resultsFrom).convertToSuggestionRequest(json.getJsonObject("suggestionRequest"));
+            cq.queryData.suggestionRequest = converters.get(cq.resultsFrom).convertToSuggestionRequest(json.getJsonObject("suggestionRequest"));
+        cq.queryData.sort = new QueryConverter(null).convertToSort(json.getJsonArray("sortKeys"));
+        cq.queryData.dedupField = json.getString("dedupField", null);
+        cq.queryData.dedupSortField = json.getString("dedupSortField", null);
+        cq.queryData.groupingField = json.getString("groupingField", null);
         if (json.containsKey("cores")) {
             JsonArray jsonCores = json.getJsonArray("cores");
             for (int i = 0; i < jsonCores.size(); i++) {
@@ -126,7 +127,6 @@ public class ComposedQuery {
                 }
             }
         }
-        cq.sort = new QueryConverter(null).convertToSort(json.getJsonArray("sortKeys"));
         if (json.containsKey("facets")) {
             JsonObject jsonFacets = json.getJsonObject("facets");
             for (String coreName : jsonFacets.keySet()) {

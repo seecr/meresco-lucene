@@ -454,19 +454,19 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.setCoreQuery("coreB", null);
         q.addMatch("coreA", "coreB", "A", "B");
         q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
-        q.sort = new Sort(new SortField("S", SortField.Type.STRING, false));
+        q.queryData.sort = new Sort(new SortField("S", SortField.Type.STRING, false));
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
         LuceneTest.compareHits(result, "A-QU", "A-MQ", "A-MQU");
 
-        q.sort = new Sort(new SortField("S", SortField.Type.STRING, true));
-        q.stop = 2;
+        q.queryData.sort = new Sort(new SortField("S", SortField.Type.STRING, true));
+        q.queryData.stop = 2;
         result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
         LuceneTest.compareHits(result, "A-MQ", "A-MQU");
 
-        q.start = 1;
-        q.stop = 10;
+        q.queryData.start = 1;
+        q.queryData.stop = 10;
         result = multiLucene.executeComposedQuery(q);
         assertEquals(3, result.total);
         LuceneTest.compareHits(result, "A-MQ", "A-QU");

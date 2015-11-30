@@ -535,7 +535,7 @@ public class LuceneTest extends SeecrTestCase {
         LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
         // expected two hits: "urn:2" (3x) and "urn:4" in no particular order
         assertEquals(2, result.total);
-        assertEquals(4, result.totalWithDuplicates);
+        assertEquals(4, (int) result.totalWithDuplicates);
         compareHits(result, "urn:2", "urn:4");
         assertEquals("__key__", result.hits.get(0).duplicateField);
         assertEquals(3, result.hits.get(0).duplicateCount);

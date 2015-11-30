@@ -120,6 +120,7 @@ public class LuceneResponseToJson {
     @Test
     public void testDedup() {
         LuceneResponse response = new LuceneResponse(2);
+        response.totalWithDuplicates = 5;
         LuceneResponse.Hit hit1 = new LuceneResponse.Hit("id1", 0.1f);
         hit1.duplicateField = "__key__";
         hit1.duplicateCount = 2;
@@ -129,7 +130,9 @@ public class LuceneResponseToJson {
         hit2.duplicateCount = 5;
         response.addHit(hit2);
         
-        JsonArray hits = response.toJson().getJsonArray("hits");
+        JsonObject json = response.toJson();
+        assertEquals(5, json.getInt("totalWithDuplicates"));
+        JsonArray hits = json.getJsonArray("hits");
         assertEquals(2, hits.size());
         JsonObject duplicateCount = hits.getJsonObject(0).getJsonObject("duplicateCount");
         assertEquals(2, duplicateCount.getInt("__key__"));

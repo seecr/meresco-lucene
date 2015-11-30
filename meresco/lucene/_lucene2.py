@@ -145,6 +145,8 @@ class Lucene(Observable):
 def luceneResponseFromDict(responseDict):
     hits = [Hit(**hit) for hit in responseDict['hits']]
     response = LuceneResponse(total=responseDict["total"], queryTime=responseDict["queryTime"], hits=hits, drilldownData=[])
+    if "totalWithDuplicates" in responseDict:
+        response.totalWithDuplicates = responseDict['totalWithDuplicates']
     if "drilldownData" in responseDict:
         response.drilldownData = responseDict['drilldownData']
     if "suggestions" in responseDict:

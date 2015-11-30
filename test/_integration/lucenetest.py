@@ -140,12 +140,16 @@ class LuceneTest(IntegrationTestCase):
     def testDedup(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
         response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.field", core="main", stop=3, sortKeys=[{'sortBy': '__id__', 'sortDescending': False}])
+        self.assertEqual(100, response.total)
+        self.assertEqual(100, response.totalWithDuplicates)
         self.assertEquals(
             [('record:1', 1), ('record:10', 1), ('record:100', 1)],
             [(hit.id, hit.duplicateCount['__key__.field']) for hit in response.hits]
         )
 
         response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.groupfield", dedupSortField="__id__", core="main2", stop=3, sortKeys=[{'sortBy': '__id__', 'sortDescending': False}])
+        self.assertEqual(10, response.total)
+        self.assertEqual(1000, response.totalWithDuplicates)
         self.assertEquals(
             [('record:100', 100), ('record:1000', 100), ('record:200', 100)],
             [(hit.id, hit.duplicateCount['__key__.groupfield']) for hit in response.hits]

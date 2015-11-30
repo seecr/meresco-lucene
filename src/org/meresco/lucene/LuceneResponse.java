@@ -43,7 +43,7 @@ import org.meresco.lucene.LuceneResponse.Hit;
 
 public class LuceneResponse {
     public int total;
-    public int totalWithDuplicates;
+    public Integer totalWithDuplicates;
     public List<Hit> hits = new ArrayList<>();
     public List<DrilldownData> drilldownData = new ArrayList<>();
     public long queryTime = 0;
@@ -137,6 +137,10 @@ public class LuceneResponse {
             hitsArray.add(hitBuilder);
         }
         jsonBuilder.add("hits", hitsArray);
+        
+        if (totalWithDuplicates != null) {
+            jsonBuilder.add("totalWithDuplicates", totalWithDuplicates);
+        }
 
         if (drilldownData.size() > 0) {
             JsonArrayBuilder ddArray = Json.createArrayBuilder();

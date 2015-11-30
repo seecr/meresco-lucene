@@ -71,8 +71,9 @@ class Lucene(Observable):
             stop=stop,
             facets=facets or [],
             sortKeys=sortKeys or [],
-            suggestionRequest=suggestionRequest or {}
         )
+        if suggestionRequest:
+            jsonDict["suggestionRequest"] = suggestionRequest
         responseDict = (yield self._send(jsonDict=jsonDict, path='/query/'))
         raise StopIteration(luceneResponseFromDict(responseDict))
         yield

@@ -160,7 +160,7 @@ public class MultiLucene {
 
     private Query luceneQueryForCore(String coreName, ComposedQuery query) {
         Query luceneQuery = query.queryFor(coreName);
-        Map<String, String[]> ddQueries = query.drilldownQueriesFor(coreName);
+        List<String[]> ddQueries = query.drilldownQueriesFor(coreName);
         if (ddQueries != null && ddQueries.size() > 0)
             luceneQuery = lucenes.get(coreName).createDrilldownQuery(luceneQuery, ddQueries);
         return luceneQuery;

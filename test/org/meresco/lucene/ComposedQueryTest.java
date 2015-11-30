@@ -164,9 +164,10 @@ public class ComposedQueryTest {
         assertEquals(1, otherCoreFacetFilters.size());
         assertEquals(new TermQuery(new Term("field", "value0")), otherCoreFacetFilters.get(0));
         
-        Map<String, String[]> drilldownQueries = q.drilldownQueriesFor("coreA");
-        assertEquals(1, drilldownQueries.size());
-        assertArrayEquals(new String[] {"ddValue"}, drilldownQueries.get("ddField"));
+        List<String[]> drilldownQueries = q.drilldownQueriesFor("coreA");
+        assertEquals(2, drilldownQueries.size());
+        assertArrayEquals(new String[] {"ddField"}, drilldownQueries.get(0));
+        assertArrayEquals(new String[] {"ddValue"}, drilldownQueries.get(1));
         
         Query rankQuery = q.rankQueryFor("coreA");
         assertEquals(new TermQuery(new Term("field", "value0")), rankQuery);

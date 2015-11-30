@@ -216,6 +216,16 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
+    public void testMultipleDrilldownQueries() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.addDrilldownQuery("coreA", "cat_Q", "true");
+        q.addDrilldownQuery("coreA", "cat_Q", "false");
+        
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(0, result.total);
+    }
+    
+    @Test
     public void testJoinFacetWithJoinDrilldownQueryFilters() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));

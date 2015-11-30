@@ -227,7 +227,7 @@ public class Lucene {
         return executeQuery(q, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, Map<String, String[]> drilldownQueries, List<Filter> filters, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws IOException, InterruptedException, ExecutionException {
+    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Filter> filters, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws IOException, InterruptedException, ExecutionException {
         int totalHits;
         List<LuceneResponse.Hit> hits;
         Collectors collectors = null;
@@ -329,7 +329,7 @@ public class Lucene {
         return hits;
     }
 
-    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, Map<String, String[]> drilldownQueries, Filter filter) throws Exception {
+    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, List<String[]> drilldownQueries, Filter filter) throws Exception {
         FacetSuperCollector facetCollector = facetCollector(facets);
         if (facetCollector == null)
             return new ArrayList<DrilldownData>();
@@ -573,13 +573,14 @@ public class Lucene {
         return keyCollector.getCollectedKeys();
     }
     
-    public Query createDrilldownQuery(Query luceneQuery, Map<String, String[]> drilldownQueries) {
+    public Query createDrilldownQuery(Query luceneQuery, List<String[]> drilldownQueries) {
         BooleanQuery q = new BooleanQuery(true);
         if (luceneQuery != null)
             q.add(luceneQuery, Occur.MUST);
-        for (String field : drilldownQueries.keySet()) {
+        for (int i = 0; i<drilldownQueries.size(); i+=2) {
+            String field = drilldownQueries.get(i)[0];
             String indexFieldName = facetsConfig.getDimConfig(field).indexFieldName;
-            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(field))), Occur.MUST); 
+            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(i+1))), Occur.MUST); 
         }
         return q;
     }

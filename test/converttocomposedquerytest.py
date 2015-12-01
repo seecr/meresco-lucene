@@ -69,7 +69,6 @@ class ConvertToComposedQueryTest(SeecrTestCase):
                         dedupByDefault=dedupByDefault,
                         groupingFieldName=groupingFieldName,
                         drilldownFieldnamesTranslate=lambda name: 'prefix.' + name if name == 'toBePrefixed' else name,
-                        clusterFieldNames=['title', 'creator', 'contributor']
                     ),
                     (self.observer,)
                 )
@@ -313,19 +312,9 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals([('prefix.toBePrefixed', ['path3'])], cq.drilldownQueriesFor('otherCore'))
 
     def testClustering(self):
-        consume(self.tree.all.updateConfig(config={}, indexConfig=dict(clustering={
-            'fields': {
-                'title': {'fieldname': 'title', 'weight': 1.5, 'filterValue': None},
-                'creator': {'fieldname': 'creator', 'weight': 1.1, 'filterValue': None}
-            }
-        })))
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-clustering': ['true']}))
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEqual({
-            'fields': {
-                'creator': {'filterValue': None, 'fieldname': 'creator', 'weight': 1.1},
-                'title': {'filterValue': None, 'fieldname': 'title', 'weight': 1.5}
-            }}, cq.clusteringConfig)
+        self.assertTrue(cq.clustering)
 
     def testIgnoreCorePrefixForResultCore(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('defaultCore.field=value')))

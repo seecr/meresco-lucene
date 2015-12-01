@@ -58,7 +58,7 @@ public class LuceneSettings {
     public int commitTimeout = 10;
     public int commitCount = 100000;
     public FacetsConfig facetsConfig = new FacetsConfig();
-    public double clusteringEPS = 0.4;
+    public double clusteringEps = 0.4;
     public int clusteringMinPoints = 1;
     public int clusterMoreRecords = 100;
     public List<ClusterField> clusterFields = new ArrayList<>();

@@ -150,3 +150,36 @@ class LuceneTest(SeecrTestCase):
         result = returnValueFromGenerator(self._lucene.drilldownFieldnames(limit=1, path=['xyz', 'abc', 'field']))
         self.assertEqual(["field1", "field2"], result.hits)
         self.assertEqual({"data": None, "path": "/lucene/drilldownFieldnames/?dim=xyz&limit=1&path=abc&path=field"}, self.post[-1])
+
+    def testUpdateSettings(self):
+        # settings = self.lucene.getSettings()
+        # self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4, 'clusteringMinPoints': 1}, settings)
+
+        clusterFields = [
+                {"filterValue": None, "fieldname": "untokenized.dcterms:isFormatOf.uri", "weight": 0}
+            ]
+        self._lucene.setSettings(similarity=dict(name="bm25", k1=1.0, b=2.0), numberOfConcurrentTasks=10, clusterMoreRecords=200, clusteringEps=1.0, clusteringMinPoints=2, clusterFields=clusterFields)
+        self.assertEqual(1, len(self.post))
+        self.assertEqual('/lucene/settings/', self.post[0]['path'])
+        self.assertEqual({
+                "numberOfConcurrentTasks": 10,
+                "clusterMoreRecords": 200,
+                "clusteringEps": 1.0,
+                "clusteringMinPoints": 2,
+                "similarity": dict(type="BM25Similarity", k1=1.0, b=2.0),
+                "clusterFields": [
+                        {"filterValue": None, "fieldname": "untokenized.dcterms:isFormatOf.uri", "weight": 0}
+                    ]
+            }, loads(self.post[0]['data']))
+        # settings = self.lucene.getSettings()
+        # self.assertEquals({'numberOfConcurrentTasks': 10, 'similarity': u'BM25(k1=1.0,b=2.0)', 'clusterMoreRecords': 200, 'clusteringEps': 1.0, 'clusteringMinPoints': 2}, settings)
+
+        self._lucene.setSettings(numberOfConcurrentTasks=5, similarity=None, clusterMoreRecords=None, clusteringEps=None)
+        self.assertEqual(2, len(self.post))
+        self.assertEqual('/lucene/settings/', self.post[1]['path'])
+        self.assertEqual({
+                "numberOfConcurrentTasks": 5,
+            }, loads(self.post[1]['data']))
+
+        # settings = self.lucene.getSettings()
+        # self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4, 'clusteringMinPoints': 1}, settings)

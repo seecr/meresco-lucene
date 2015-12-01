@@ -27,6 +27,8 @@ package org.meresco.lucene.http;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -46,6 +48,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneSettings;
+import org.meresco.lucene.LuceneSettings.ClusterField;
 import org.meresco.lucene.analysis.MerescoDutchStemmingAnalyzer;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
 import org.meresco.lucene.search.TermFrequencySimilarity;
@@ -55,6 +58,7 @@ public class SettingsHandler extends AbstractHandler {
     private Lucene lucene;
 
     public SettingsHandler(Lucene lucene) {
+        //TODO: test this class
         this.lucene = lucene;
     }
 
@@ -98,6 +102,15 @@ public class SettingsHandler extends AbstractHandler {
                 case "numberOfConcurrentTasks":
                     settings.numberOfConcurrentTasks = object.getInt(key);
                     break;
+                case "clusteringEps":
+                    settings.clusteringEps = object.getJsonNumber(key).doubleValue();
+                    break;
+                case "clusteringMinPoints":
+                    settings.clusteringMinPoints = object.getInt(key);
+                    break;
+                case "clusterMoreRecords":
+                    settings.clusterMoreRecords  = object.getInt(key);
+                    break;
                 case "analyzer":
                     settings.analyzer = getAnalyzer(object.getJsonObject(key));
                     break;
@@ -106,9 +119,23 @@ public class SettingsHandler extends AbstractHandler {
                     break;
                 case "drilldownFields":
                     updateDrilldownFields(settings.facetsConfig, object.getJsonArray(key));
+                    break;
+                case "clusterFields":
+                    updateClusterFields(settings, object.getJsonArray(key));
+                    break;
             }
         }
 
+    }
+
+    private static void updateClusterFields(LuceneSettings settings, JsonArray jsonClusterFields) {
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        for (int i=0; i<jsonClusterFields.size(); i++) {
+            JsonObject clusterField = jsonClusterFields.getJsonObject(i);
+            String filterValue = clusterField.getString("filterValue", null);
+            clusterFields.add(new ClusterField(clusterField.getString("fieldname"), clusterField.getJsonNumber("weight").doubleValue(), filterValue));
+        }
+        settings.clusterFields = clusterFields;
     }
 
     private static void updateDrilldownFields(FacetsConfig facetsConfig, JsonArray drilldownFields) {

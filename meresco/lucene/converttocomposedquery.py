@@ -36,7 +36,7 @@ from meresco.lucene.extractfilterqueries import ExtractFilterQueries
 
 
 class ConvertToComposedQuery(Observable):
-    def __init__(self, resultsFrom, matches=None, dedupFieldName=None, dedupSortFieldName=None, dedupByDefault=True, groupingFieldName=None, clusterFieldNames=None, drilldownFieldnamesTranslate=lambda s: s):
+    def __init__(self, resultsFrom, matches=None, dedupFieldName=None, dedupSortFieldName=None, dedupByDefault=True, groupingFieldName=None, drilldownFieldnamesTranslate=lambda s: s):
         Observable.__init__(self)
         self._resultsFrom = resultsFrom
         self._matches = matches or []
@@ -45,18 +45,15 @@ class ConvertToComposedQuery(Observable):
         self._dedupSortFieldName = dedupSortFieldName
         self._dedupByDefault = dedupByDefault
         self._groupingFieldName = groupingFieldName
-        self._clusteringConfig = {}
         self._drilldownFieldnamesTranslate = drilldownFieldnamesTranslate
-        self._clusterFieldNames = clusterFieldNames or []
         self._groupingEnabled = bool(self._groupingFieldName)
-        self._clusteringEnabled = bool(self._clusteringConfig)
+        self._clusteringEnabled = True
         self._extraFilterQueries = ExtractFilterQueries(self._cores)
 
     @asyncnoreturnvalue
     def updateConfig(self, config, indexConfig=None, **kwargs):
         self._groupingEnabled = bool(self._groupingFieldName) and 'grouping' not in config.get('features_disabled', [])
-        self._clusteringConfig = indexConfig.get('clustering', {}) if indexConfig else {}
-        self._clusteringEnabled = bool(self._clusteringConfig) and 'clustering' not in config.get('features_disabled', [])
+        self._clusteringEnabled = 'clustering' not in config.get('features_disabled', [])
 
     def executeQuery(self, query=None, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, sortKeys=None, **kwargs):
         if 'cqlAbstractSyntaxTree' in kwargs:
@@ -108,7 +105,7 @@ class ConvertToComposedQuery(Observable):
                 setattr(cq, "groupingField", self._groupingFieldName)
 
         if self._clusteringEnabled and 'true' == extraArguments.get('x-clustering', [None])[0]:
-            setattr(cq, "clusteringConfig", self._clusteringConfig)
+            setattr(cq, "clustering", True)
 
         fieldTranslations = {}
         for drilldownField in (facets or []):

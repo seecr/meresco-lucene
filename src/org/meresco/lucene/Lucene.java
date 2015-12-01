@@ -677,7 +677,7 @@ public class Lucene {
     }
 
     double interpolateEpsilon(int hits, int slice) {
-        double eps = settings.clusteringEPS * (hits - slice) / settings.clusterMoreRecords;
-        return Math.max(Math.min(eps, settings.clusteringEPS), 0.0);
+        double eps = settings.clusteringEps * (hits - slice) / settings.clusterMoreRecords;
+        return Math.max(Math.min(eps, settings.clusteringEps), 0.0);
     }
 }

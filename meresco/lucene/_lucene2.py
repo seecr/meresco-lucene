@@ -47,8 +47,21 @@ class Lucene(Observable):
     def observer_init(self):
         consume(self._send(jsonDict=self.settings.asPostDict(), path="/settings/", synchronous=True))
 
-    def setSettings(self, clusteringEps=None, clusteringMinPoints=None, clusterMoreRecords=None, **kwargs):
-        pass
+    def setSettings(self, clusteringEps=None, clusteringMinPoints=None, clusterMoreRecords=None, similarity=None, numberOfConcurrentTasks=None, clusterFields=None):
+        settingsDict = JsonDict()
+        if numberOfConcurrentTasks:
+            settingsDict["numberOfConcurrentTasks"] = numberOfConcurrentTasks
+        if clusterMoreRecords:
+            settingsDict["clusterMoreRecords"] = clusterMoreRecords
+        if clusteringEps:
+            settingsDict["clusteringEps"] = clusteringEps
+        if clusteringMinPoints:
+            settingsDict["clusteringMinPoints"] = clusteringMinPoints
+        if clusterFields:
+            settingsDict["clusterFields"] = clusterFields
+        if similarity:
+            settingsDict["similarity"] = dict(type="BM25Similarity", k1=similarity['k1'], b=similarity['b'])
+        consume(self._send(jsonDict=settingsDict, path="/settings/", synchronous=True))
 
     def getSettings(self):
         return dict()

@@ -35,7 +35,6 @@ import org.apache.lucene.store.Directory;
 import org.meresco.lucene.search.SuperIndexSearcher;
 
 public class IndexAndTaxanomy {
-    private int numberOfConcurrentTasks;
     DirectoryReader reader;
     DirectoryTaxonomyReader taxoReader;
     private ExecutorService executor = null;
@@ -44,7 +43,6 @@ public class IndexAndTaxanomy {
     private LuceneSettings settings;
 
     public IndexAndTaxanomy(Directory indexDirectory, Directory taxoDirectory, LuceneSettings settings) throws IOException {
-        this.numberOfConcurrentTasks = settings.numberOfConcurrentTasks;
         this.reader = DirectoryReader.open(indexDirectory);
         this.taxoReader = new DirectoryTaxonomyReader(taxoDirectory);
         this.settings = settings;
@@ -71,8 +69,8 @@ public class IndexAndTaxanomy {
 
         if (this.executor != null)
             this.executor.shutdown();
-        this.executor  = Executors.newFixedThreadPool(this.numberOfConcurrentTasks);
-        this.searcher = new SuperIndexSearcher(this.reader, this.executor, this.numberOfConcurrentTasks);
+        this.executor  = Executors.newFixedThreadPool(this.settings.numberOfConcurrentTasks);
+        this.searcher = new SuperIndexSearcher(this.reader, this.executor, this.settings.numberOfConcurrentTasks);
         this.searcher.setSimilarity(this.settings.similarity);
         return this.searcher;
     }

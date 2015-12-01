@@ -186,7 +186,7 @@ class ComposedQuery(object):
         self._otherCoreFacetFilters = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._otherCoreFacetFilters.items())
 
     def otherKwargs(self):
-        return dict(start=self.start, stop=self.stop, sortKeys=self._sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, groupingField=self.groupingField, clusteringConfig=self.clusteringConfig, storedFields=self.storedFields)
+        return dict(start=self.start, stop=self.stop, sortKeys=self._sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, groupingField=self.groupingField, clustering=self.clustering, storedFields=self.storedFields)
 
     def _prop(name, defaultValue=None):
         def fget(self):
@@ -201,7 +201,7 @@ class ComposedQuery(object):
     dedupField = property(**_prop('dedupField'))
     dedupSortField = property(**_prop('dedupSortField'))
     groupingField = property(**_prop('groupingField'))
-    clusteringConfig = property(**_prop('clusteringConfig'))
+    clustering = property(**_prop('clustering'))
     storedFields = property(**_prop('storedFields'))
 
     def asDict(self):

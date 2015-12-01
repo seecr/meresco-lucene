@@ -749,7 +749,7 @@ public class LuceneTest extends SeecrTestCase {
         doc.add(new Field("termvector", "noot", fieldType));
         lucene.addDocument("id:3", doc);
 
-        settings.clusteringEPS = 10.0;
+        settings.clusteringEps = 10.0;
         List<ClusterField> clusterFields = new ArrayList<ClusterField>();
         clusterFields.add(new ClusterField("termvector", 1.0, null));
         lucene.getSettings().clusterFields = clusterFields;

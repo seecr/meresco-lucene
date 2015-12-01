@@ -61,7 +61,7 @@ class Lucene(Observable):
             settingsDict["clusterFields"] = clusterFields
         if similarity:
             settingsDict["similarity"] = dict(type="BM25Similarity", k1=similarity['k1'], b=similarity['b'])
-        consume(self._send(jsonDict=settingsDict, path="/settings/", synchronous=True))
+        yield self._send(jsonDict=settingsDict, path="/settings/")
 
     def getSettings(self):
         return dict()
@@ -139,8 +139,10 @@ class Lucene(Observable):
             inner.numDocs = self.numDocs
 
     def _send(self, path, jsonDict=None, synchronous=False):
+        if jsonDict is None:
+            raise StopIteration(None)
         path = "/" + self._name + path
-        response = yield self._post(path=path, data=jsonDict.dumps() if jsonDict else None, synchronous=synchronous)
+        response = yield self._post(path=path, data=jsonDict.dumps(), synchronous=synchronous)
         raise StopIteration(loads(response) if response else None)
 
     def _post(self, path, data, synchronous=False):

@@ -158,7 +158,7 @@ class LuceneTest(SeecrTestCase):
         clusterFields = [
                 {"filterValue": None, "fieldname": "untokenized.dcterms:isFormatOf.uri", "weight": 0}
             ]
-        self._lucene.setSettings(similarity=dict(name="bm25", k1=1.0, b=2.0), numberOfConcurrentTasks=10, clusterMoreRecords=200, clusteringEps=1.0, clusteringMinPoints=2, clusterFields=clusterFields)
+        consume(self._lucene.setSettings(similarity=dict(name="bm25", k1=1.0, b=2.0), numberOfConcurrentTasks=10, clusterMoreRecords=200, clusteringEps=1.0, clusteringMinPoints=2, clusterFields=clusterFields))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/settings/', self.post[0]['path'])
         self.assertEqual({
@@ -174,7 +174,7 @@ class LuceneTest(SeecrTestCase):
         # settings = self.lucene.getSettings()
         # self.assertEquals({'numberOfConcurrentTasks': 10, 'similarity': u'BM25(k1=1.0,b=2.0)', 'clusterMoreRecords': 200, 'clusteringEps': 1.0, 'clusteringMinPoints': 2}, settings)
 
-        self._lucene.setSettings(numberOfConcurrentTasks=5, similarity=None, clusterMoreRecords=None, clusteringEps=None)
+        consume(self._lucene.setSettings(numberOfConcurrentTasks=5, similarity=None, clusterMoreRecords=None, clusteringEps=None))
         self.assertEqual(2, len(self.post))
         self.assertEqual('/lucene/settings/', self.post[1]['path'])
         self.assertEqual({

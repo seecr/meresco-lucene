@@ -215,6 +215,10 @@ public class Lucene {
         indexAndTaxo.reopen();
     }
 
+    public LuceneResponse executeQuery(QueryData q) throws Exception {
+        return executeQuery(q, null, null, null, null, null);
+    }
+    
     public LuceneResponse executeQuery(Query query) throws Exception {
         QueryData q = new QueryData();
         q.query = query;

@@ -25,8 +25,7 @@
 
 package org.meresco.lucene;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -70,6 +69,7 @@ import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.LuceneSettings.ClusterField;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
+import org.meresco.lucene.search.MerescoCluster.TermScore;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
@@ -268,7 +268,7 @@ public class LuceneTest extends SeecrTestCase {
         sort.setSort(new SortField("field1", SortField.Type.STRING, false));
         QueryData q = new QueryData();
         q.sort = sort;
-        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        LuceneResponse result = lucene.executeQuery(q);
         assertEquals(3, result.total);
         assertEquals("id1", result.hits.get(0).id);
         assertEquals("id2", result.hits.get(1).id);
@@ -277,7 +277,7 @@ public class LuceneTest extends SeecrTestCase {
         sort = new Sort();
         sort.setSort(new SortField("field1", SortField.Type.STRING, true));
         q.sort = sort;
-        result = lucene.executeQuery(q, null, null, null, null, null);
+        result = lucene.executeQuery(q);
         assertEquals(3, result.total);
         assertEquals("id3", result.hits.get(0).id);
         assertEquals("id2", result.hits.get(1).id);
@@ -518,7 +518,7 @@ public class LuceneTest extends SeecrTestCase {
         sr.add("valeu");
         QueryData q = new QueryData();
         q.suggestionRequest = sr;
-        LuceneResponse response = lucene.executeQuery(q, null, null, null, null, null);
+        LuceneResponse response = lucene.executeQuery(q);
         compareHits(response, "id:0");
         assertEquals("value2", response.suggestions.get("value0")[0].string);
         assertEquals("value2", response.suggestions.get("valeu")[0].string);
@@ -536,7 +536,7 @@ public class LuceneTest extends SeecrTestCase {
         q.facets = new ArrayList<FacetRequest>() {{add(new FacetRequest("cat_A", 10));}};
         q.dedupField = "__key__";
         q.dedupSortField = "__key__.date";
-        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        LuceneResponse result = lucene.executeQuery(q);
         // expected two hits: "urn:2" (3x) and "urn:4" in no particular order
         assertEquals(2, result.total);
         assertEquals(4, (int) result.totalWithDuplicates);
@@ -562,7 +562,7 @@ public class LuceneTest extends SeecrTestCase {
         q.stop = 3;
         q.groupingField = "__key__";
         q.sort = new Sort(new SortField("field0", SortField.Type.STRING));
-        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        LuceneResponse result = lucene.executeQuery(q);
         // expected two hits: "urn:2" (3x) and "urn:4" in no particular order
         assertEquals(4, result.total);
         compareHits(result, "urn:1", "urn:3", "urn:4");
@@ -586,7 +586,7 @@ public class LuceneTest extends SeecrTestCase {
         QueryData q = new QueryData();
         q.groupingField = "__other_key__";
         q.stop = 3;
-        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        LuceneResponse result = lucene.executeQuery(q);
         assertEquals(4, result.total);
         assertEquals(3, result.hits.size());
     }
@@ -599,7 +599,7 @@ public class LuceneTest extends SeecrTestCase {
 
         QueryData q = new QueryData();
         q.groupingField = "__key__";
-        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        LuceneResponse result = lucene.executeQuery(q);
 
         assertEquals(2, result.total);
         compareHits(result, "urn:1", "urn:2");
@@ -620,7 +620,7 @@ public class LuceneTest extends SeecrTestCase {
         QueryData q = new QueryData();
         q.groupingField = "__key__";
         q.stop = 5;
-        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        LuceneResponse result = lucene.executeQuery(q);
         assertEquals(10, result.total);
         assertEquals(5, result.hits.size());
     }
@@ -655,20 +655,20 @@ public class LuceneTest extends SeecrTestCase {
         List<ClusterField> clusterFields = new ArrayList<ClusterField>();
         clusterFields.add(new ClusterField("termvector", 1.0, "vuur"));
         lucene.getSettings().clusterFields = clusterFields;
-        
+
         FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
         fieldType.setStoreTermVectors(true);
-        
+
         for (int i=0; i<5; i++) {
             Document doc = new Document();
             doc.add(new Field("termvector", "aap noot vuur " + i, fieldType));
             lucene.addDocument("id:" + i, doc);
         }
         lucene.addDocument("id:6", new Document());
-        
+
         QueryData q = new QueryData();
         q.clustering = true;
-        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        LuceneResponse result = lucene.executeQuery(q);
         assertEquals(2, result.hits.size());
         ClusterHit hit0 = (ClusterHit) result.hits.get(0);
         ClusterHit hit1 = (ClusterHit) result.hits.get(1);
@@ -681,7 +681,266 @@ public class LuceneTest extends SeecrTestCase {
         Collections.sort(ids);
         assertEquals(new ArrayList<String>() {{add("id:0"); add("id:1"); add("id:2"); add("id:3"); add("id:4");}}, ids);
     }
-    
+
+
+    @Test
+    public void testClusteringShowOnlyRequestTop() throws Exception {
+        FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
+        fieldType.setStoreTermVectors(true);
+
+        for (int i=0; i<5; i++) {
+            Document doc = new Document();
+            doc.add(new Field("termvector", "aap noot vuur " + i, fieldType));
+            lucene.addDocument("id:" + i, doc);
+        }
+        for (int i=5; i<10; i++) {
+            Document doc = new Document();
+            doc.add(new Field("termvector", "something", fieldType));
+            lucene.addDocument("id:" + i, doc);
+        }
+        for (int i=10; i<15; i++) {
+            Document doc = new Document();
+            doc.add(new Field("termvector", "totally other data with more text", fieldType));
+            lucene.addDocument("id:" + i, doc);
+        }
+        QueryData q = new QueryData();
+        q.clustering = true;
+        q.start = 0;
+        q.stop = 2;
+
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector", 1.0, null));
+        lucene.getSettings().clusterFields = clusterFields;
+
+        LuceneResponse result = lucene.executeQuery(q);
+        assertEquals(15, result.total);
+        assertEquals(2, result.hits.size());
+    }
+
+    @SuppressWarnings("serial")
+    @Test
+    public void testClusteringRanksMostRelevantOfGroup() throws Exception {
+        LuceneSettings settings = lucene.getSettings();
+        lucene.close();
+        lucene = new Lucene(this.tmpDir, settings) {
+            @Override
+            double interpolateEpsilon(int hits, int slice) {
+                return 10.0;
+            }
+        };
+
+        FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
+        fieldType.setStoreTermVectors(true);
+        Document doc = new Document();
+        doc.add(new Field("termvector", "aap", fieldType));
+        doc.add(new Field("termvector", "noot", fieldType));
+        doc.add(new Field("termvector", "mies", fieldType));
+        doc.add(new Field("termvector", "vuur", fieldType));
+        lucene.addDocument("id:1", doc);
+
+        doc = new Document();
+        doc.add(new Field("termvector", "aap", fieldType));
+        doc.add(new Field("termvector", "noot", fieldType));
+        doc.add(new Field("termvector", "mies", fieldType));
+        lucene.addDocument("id:2", doc);
+
+        doc = new Document();
+        doc.add(new Field("termvector", "aap", fieldType));
+        doc.add(new Field("termvector", "noot", fieldType));
+        lucene.addDocument("id:3", doc);
+
+        settings.clusteringEPS = 10.0;
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector", 1.0, null));
+        lucene.getSettings().clusterFields = clusterFields;
+
+        QueryData q = new QueryData();
+        q.clustering = true;
+        LuceneResponse result = lucene.executeQuery(q);
+        assertEquals(3, result.total);
+        assertEquals(1, result.hits.size());
+        ClusterHit hit0 = (ClusterHit) result.hits.get(0);
+        List<String> ids = new ArrayList<>();
+        for (DocScore scoreDoc : hit0.topDocs) {
+            ids.add(scoreDoc.identifier);
+        }
+        List<String> terms = new ArrayList<>();
+        for (TermScore termScore : hit0.topTerms) {
+            terms.add(termScore.term);
+        }
+        assertEquals(new ArrayList<String>() {{add("id:1"); add("id:2"); add("id:3");}}, ids);
+        assertEquals(new ArrayList<String>() {{add("aap"); add("noot"); add("mies"); add("vuur");}}, terms);
+    }
+
+    @Test
+    public void testClusteringWinsOverGroupingAndDedup() throws Exception {
+        FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
+        fieldType.setStoreTermVectors(true);
+
+        for (int i=0; i<15; i++) {
+            Document doc = new Document();
+            doc.add(new Field("termvector", "aap noot vuur", fieldType));
+            lucene.addDocument("id:" + i, doc);
+        }
+        Document doc = new Document();
+        doc.add(new Field("termvector", "something else", fieldType));
+        lucene.addDocument("id:95", doc);
+        doc = new Document();
+        doc.add(new Field("termvector", "totally other data with more text", fieldType));
+        lucene.addDocument("id:96", doc);
+        doc = new Document();
+        doc.add(new Field("termvector", "this is again a record", fieldType));
+        lucene.addDocument("id:97", doc);
+        doc = new Document();
+        doc.add(new Field("termvector", "and this is also just something", fieldType));
+        lucene.addDocument("id:98", doc);
+        QueryData q = new QueryData();
+        q.clustering = true;
+        q.dedupField = "dedupField";
+        q.start = 0;
+        q.stop = 5;
+
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector", 1.0, null));
+        lucene.getSettings().clusterFields = clusterFields;
+
+        LuceneResponse result = lucene.executeQuery(q);
+        assertEquals(5, result.hits.size());
+        assertTrue(result.hits.get(0) instanceof ClusterHit);
+    }
+
+    @Test
+    public void testClusterOnMultipleFields() throws Exception {
+        FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
+        fieldType.setStoreTermVectors(true);
+        for (int i=0; i<15; i++) {
+            Document doc = new Document();
+            doc.add(new Field("termvector1", "aap noot vuur", fieldType));
+            lucene.addDocument("id:" + i, doc);
+        }
+
+        Document doc = new Document();
+        doc.add(new Field("termvector1", "aap noot vuur", fieldType));
+        doc.add(new Field("termvector2", "mies water", fieldType));
+        lucene.addDocument("id:100", doc);
+
+        doc = new Document();
+        doc.add(new Field("termvector1", "aap vuur", fieldType));
+        doc.add(new Field("termvector2", "mies", fieldType));
+        lucene.addDocument("id:200", doc);
+
+        doc = new Document();
+        doc.add(new Field("termvector2", "iets", fieldType));
+        lucene.addDocument("id:300", doc);
+
+        lucene.addDocument("id:400", new Document());
+
+        QueryData q = new QueryData();
+        q.clustering = true;
+        q.start = 0;
+        q.stop = 10;
+
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector1", 1.0, null));
+        lucene.getSettings().clusterFields = clusterFields;
+        
+        LuceneResponse result = lucene.executeQuery(q);
+        assertEquals(4, result.hits.size());
+        for (Hit hit : result.hits) {
+            ClusterHit clusterHit = (ClusterHit) hit;
+            boolean id0 = false;
+            boolean id100 = false;
+            for (DocScore docScore : clusterHit.topDocs) {
+                if (docScore.identifier.equals("id:0"))
+                    id0 = true;
+                if (docScore.identifier.equals("id:100"))
+                    id100 = true;
+            }
+            if (id0)
+                assertTrue(id100);
+        }
+
+        clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector1", 1.0, null));
+        clusterFields.add(new ClusterField("termvector2", 1.0, null));
+        lucene.getSettings().clusterFields = clusterFields;
+        
+        result = lucene.executeQuery(q);
+        assertEquals(5, result.hits.size());
+        for (Hit hit : result.hits) {
+            ClusterHit clusterHit = (ClusterHit) hit;
+            boolean id0 = false;
+            boolean id100 = false;
+            for (DocScore docScore : clusterHit.topDocs) {
+                if (docScore.identifier.equals("id:0"))
+                    id0 = true;
+                if (docScore.identifier.equals("id:100"))
+                    id100 = true;
+            }
+            if (id0)
+                assertFalse(id100);
+        }
+    }
+
+    @Test
+    public void testCollectUntilStopWithForGrouping() throws Exception {
+        for (int i=0; i<20; i++) {
+            Document doc = new Document();
+            doc.add(new NumericDocValuesField("__key__", 42L));
+            doc.add(new IntField("sort", i, Field.Store.NO));
+            lucene.addDocument("id:" + i, doc);
+        }
+        Document doc = new Document();
+        doc.add(new StringField("sort", "100", Field.Store.NO));
+        lucene.addDocument("id:100", doc);
+
+        QueryData q = new QueryData();
+        q.groupingField = "__key__";
+        q.start = 0;
+        q.stop = 2;
+        q.sort = new Sort(new SortField("sort", SortField.Type.INT));
+        LuceneResponse result = lucene.executeQuery(q);
+        assertEquals(21, result.total);
+        assertEquals(2, result.hits.size());
+
+        q.stop = 5;
+        result = lucene.executeQuery(q);
+        assertEquals(21, result.total);
+        assertEquals(2, result.hits.size());
+    }
+
+    @Test
+    public void testReturnNoMoreThanStopForGrouping() throws Exception {
+        for (int i=0; i<50; i++)
+            lucene.addDocument("id:" + i, new Document());
+        lucene.addDocument("id:100", new Document());
+
+        QueryData q = new QueryData();
+        q.groupingField = "__key__";
+        q.start = 5;
+        q.stop = 7;
+        q.sort = new Sort(new SortField("sort", SortField.Type.STRING));
+        LuceneResponse result = lucene.executeQuery(q);
+        assertEquals(51, result.total);
+        assertEquals(2, result.hits.size());
+    }
+
+    @Test
+    public void testReturnNoMoreThanStopForClustering() throws Exception {
+        for (int i=0; i<50; i++)
+            lucene.addDocument("id:" + i, new Document());
+        lucene.addDocument("id:100", new Document());
+
+        QueryData q = new QueryData();
+        q.clustering = true;
+        q.start = 5;
+        q.stop = 7;
+        q.sort = new Sort(new SortField("sort", SortField.Type.STRING));
+        LuceneResponse result = lucene.executeQuery(q);
+        assertEquals(51, result.total);
+        assertEquals(2, result.hits.size());
+    }
+
     public static void compareHits(LuceneResponse response, String... hitIds) {
         Set<String> responseHitIds = new HashSet<String>();
         for (Hit hit : response.hits)

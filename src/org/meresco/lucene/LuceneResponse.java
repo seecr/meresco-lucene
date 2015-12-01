@@ -40,6 +40,9 @@ import javax.xml.ws.Response;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.meresco.lucene.LuceneResponse.Hit;
+import org.meresco.lucene.search.MerescoCluster;
+import org.meresco.lucene.search.MerescoCluster.DocScore;
+import org.meresco.lucene.search.MerescoCluster.TermScore;
 
 public class LuceneResponse {
     public int total;
@@ -61,17 +64,36 @@ public class LuceneResponse {
     public static class Hit {
         public String id;
         public float score;
-        public String duplicateField;
-        public int duplicateCount;
-        public List<String> duplicates;
-        public String groupingField;
-
+        
         public Hit(String id, float score) {
             this.id = id;
             this.score = score;
         }
 
         public Hit() {}
+    }
+    
+    public static class DedupHit extends Hit {
+        public DedupHit(String id, float score) {
+            super(id, score);
+        }
+        public String duplicateField;
+        public int duplicateCount;
+    }
+    
+    public static class GroupingHit extends Hit {
+        public List<String> duplicates;
+        public String groupingField;
+        public GroupingHit(String id, float score) {
+            super(id, score);
+        }
+    }
+    public static class ClusterHit extends Hit {
+        public MerescoCluster.DocScore[] topDocs;
+        public MerescoCluster.TermScore[] topTerms;
+        public ClusterHit(String id, float score) {
+            super(id, score);
+        }
     }
 
     public static class DrilldownData {
@@ -123,16 +145,34 @@ public class LuceneResponse {
             JsonObjectBuilder hitBuilder = Json.createObjectBuilder()
                     .add("id", hit.id)
                     .add("score", hit.score);
-            if (hit.duplicateField != null) {
+            if (hit instanceof DedupHit) {
+                DedupHit dedupHit = (DedupHit) hit; 
                 hitBuilder.add("duplicateCount", Json.createObjectBuilder()
-                    .add(hit.duplicateField, hit.duplicateCount));
-            }
-            if (hit.groupingField != null) {
+                    .add(dedupHit.duplicateField, dedupHit.duplicateCount));
+            } else if (hit instanceof GroupingHit) {
+                GroupingHit groupingHit = (GroupingHit) hit;
                 JsonArrayBuilder duplicatesBuilder = Json.createArrayBuilder();
-                for (String id : hit.duplicates)
+                for (String id : groupingHit.duplicates)
                     duplicatesBuilder.add(Json.createObjectBuilder().add("id", id));
                 hitBuilder.add("duplicates", Json.createObjectBuilder()
-                    .add(hit.groupingField, duplicatesBuilder));
+                    .add(groupingHit.groupingField, duplicatesBuilder));
+            } else if (hit instanceof ClusterHit) {
+                ClusterHit clusterHit = (ClusterHit) hit;
+                JsonArrayBuilder topDocsBuilder = Json.createArrayBuilder();
+                for (DocScore docScore : clusterHit.topDocs) {
+                    topDocsBuilder.add(Json.createObjectBuilder()
+                        .add("id", docScore.identifier)
+                        .add("score", docScore.score));
+                }
+                JsonArrayBuilder topTermsBuilder = Json.createArrayBuilder();
+                for (TermScore termScore : clusterHit.topTerms) {
+                    topTermsBuilder.add(Json.createObjectBuilder()
+                        .add("term", termScore.term)
+                        .add("score", termScore.score));
+                }
+                hitBuilder.add("duplicates", Json.createObjectBuilder()
+                        .add("topDocs", topDocsBuilder)
+                        .add("topTerms", topTermsBuilder));
             }
             hitsArray.add(hitBuilder);
         }

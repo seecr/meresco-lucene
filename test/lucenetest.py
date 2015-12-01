@@ -413,36 +413,6 @@ class LuceneTest(LuceneTestCase):
         settings = self.lucene.getSettings()
         self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4, 'clusteringMinPoints': 1}, settings)
 
-    def testClusteringOnVectors(self):
-        factory = FieldRegistry(termVectorFields=['termvector'])
-        for i in range(5):
-            doc = Document()
-            doc.add(factory.createField("termvector", "aap noot vuur %s" % i))
-            consume(self.lucene.addDocument(identifier="id:%s" % i, document=doc))
-        doc = Document()
-        consume(self.lucene.addDocument(identifier="id:6", document=doc))
-        self.lucene.commit()
-
-        self.lucene._interpolateEpsilon = lambda *args: 0.4
-        result = retval(self.lucene.executeQuery(MatchAllDocsQuery(), clusteringConfig={'fields': {'termvector': {'fieldname': "termvector", 'weight': 1.0, 'filterValue': 'vuur'}}}))
-        self.assertEquals(2, len(result.hits))
-        duplicates = [sorted([t['id'] for t in h.duplicates['topDocs']]) for h in result.hits]
-        self.assertEqual(sorted([[], ['id:0', 'id:1', 'id:2', 'id:3', 'id:4']]), sorted(duplicates))
-
-    def testInterpolateEps(self):
-        self.assertEquals(0, self.lucene._interpolateEpsilon( 0, 10))
-        self.assertEquals(0, self.lucene._interpolateEpsilon( 10, 10))
-        self.assertEquals(0.004, self.lucene._interpolateEpsilon( 11, 10))
-        self.assertEquals(0.4, self.lucene._interpolateEpsilon(110, 10))
-        self.assertEquals(0.4, self.lucene._interpolateEpsilon(111, 10))
-
-        self.assertEquals(0, self.lucene._interpolateEpsilon(0, 20))
-        self.assertEquals(0, self.lucene._interpolateEpsilon(20, 20))
-        self.assertEquals(0.004, self.lucene._interpolateEpsilon(21, 20))
-        self.assertEquals(0.32, self.lucene._interpolateEpsilon(100, 20))
-        self.assertEquals(0.4, self.lucene._interpolateEpsilon(120, 20))
-        self.assertEquals(0.4, self.lucene._interpolateEpsilon(121, 20))
-
     def testClusteringShowOnlyRequestTop(self):
         factory = FieldRegistry(termVectorFields=['termvector'])
         for i in range(5):

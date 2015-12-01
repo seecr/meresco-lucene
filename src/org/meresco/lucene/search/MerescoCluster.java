@@ -11,11 +11,12 @@ public final class MerescoCluster {
     }
 
     public static final class DocScore {
-        public final int id;
+        public final int docId;
         public final double score;
-
-        public DocScore(int id, double score) {
-            this.id = id;
+        public String identifier;
+        
+        public DocScore(int docId, double score) {
+            this.docId = docId;
             this.score = score;
         }
     }

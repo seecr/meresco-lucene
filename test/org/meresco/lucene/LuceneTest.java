@@ -25,12 +25,13 @@
 
 package org.meresco.lucene;
 
-import static org.junit.Assert.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,35 +40,39 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.util.OpenBitSet;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.internal.runners.statements.Fail;
 import org.meresco.lucene.Lucene.TermCount;
+import org.meresco.lucene.LuceneResponse.ClusterHit;
+import org.meresco.lucene.LuceneResponse.DedupHit;
+import org.meresco.lucene.LuceneResponse.GroupingHit;
 import org.meresco.lucene.LuceneResponse.Hit;
+import org.meresco.lucene.LuceneSettings.ClusterField;
 import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
-
-import com.sun.corba.se.spi.orbutil.fsm.Guard.Result;
 
 public class LuceneTest extends SeecrTestCase {
 
@@ -174,10 +179,10 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(3, result.total);
         assertEquals(1, result.drilldownData.size());
         assertEquals(2, result.drilldownData.get(0).terms.size());
-        
+
         assertEquals(result.drilldownData, lucene.facets(facets, null, null, null));
     }
-    
+
     @Test
     public void testHierarchicalFacets() throws Exception {
         Document doc1 = new Document();
@@ -187,12 +192,12 @@ public class LuceneTest extends SeecrTestCase {
         this.lucene.facetsConfig.setHierarchical("facet-field", true);
         this.lucene.facetsConfig.setMultiValued("facet-field", true);
         this.lucene.addDocument("id1", doc1);
-        
+
         ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
         FacetRequest facet = new FacetRequest("facet-field", 10);
         facet.path = new String[] {"first"};
         facets.add(facet);
-        
+
         LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery(), facets);
         assertEquals(1, result.total);
         assertEquals(1, result.drilldownData.size());
@@ -356,7 +361,7 @@ public class LuceneTest extends SeecrTestCase {
         final Filter f = new QueryWrapperFilter(new TermQuery(new Term("field1", "value1")));
         assertEquals(1, lucene.executeQuery(new QueryData(), null, null, new ArrayList<Filter>() {{ add(f); }}, null, null).total);
     }
-    
+
     @SuppressWarnings("serial")
     @Test
     public void testQueryWithFilterQuery() throws Exception {
@@ -424,7 +429,7 @@ public class LuceneTest extends SeecrTestCase {
         final ScoreSuperCollector scoreCollector = this.lucene.scoreCollector("field1", new MatchAllDocsQuery());
         assertEquals(1.0, scoreCollector.score(1), 0);
         assertEquals(1.0, scoreCollector.score(2), 0);
-        
+
         final AggregateScoreSuperCollector aggregator = new AggregateScoreSuperCollector("field1", new ArrayList<ScoreSuperCollector>() {{add(scoreCollector);}});
         ArrayList<AggregateScoreSuperCollector> aggregators = new ArrayList<AggregateScoreSuperCollector>() {{add(aggregator);}};
         LuceneResponse result = this.lucene.executeQuery(new QueryData(), null, null, null, aggregators, null);
@@ -432,7 +437,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(2, result.hits.get(0).score, 0);
         assertEquals(2, result.hits.get(1).score, 0);
     }
-    
+
     @Test
     public void testPrefixSearch() throws Exception {
         Document doc1 = new Document();
@@ -499,15 +504,15 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(2, fieldnames.size());
         assertEquals(new ArrayList<String>() {{ add("cat 2"); add("cat 1");}}, fieldnames);
     }
-    
-    @SuppressWarnings("serial")
+
+    @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
     @Test
     public void testSuggestions() throws Exception {
         addDocument(lucene, "id:0", null, new HashMap() {{put("field1", "value0"); put("field2", "value2" ); put("field5", "value2" );}});
-        
+
         assertEquals("value2", lucene.suggest("value0", 2, "field5")[0].string);
         assertEquals("value2", lucene.suggest("valeu", 2, "field5")[0].string);
-        
+
         QueryConverter.SuggestionRequest sr = new QueryConverter.SuggestionRequest("field5", 2);
         sr.add("value0");
         sr.add("valeu");
@@ -515,11 +520,10 @@ public class LuceneTest extends SeecrTestCase {
         q.suggestionRequest = sr;
         LuceneResponse response = lucene.executeQuery(q, null, null, null, null, null);
         compareHits(response, "id:0");
-        HashMap<String, SuggestWord[]> suggestions = new HashMap<>();
         assertEquals("value2", response.suggestions.get("value0")[0].string);
         assertEquals("value2", response.suggestions.get("valeu")[0].string);
     }
-    
+
     @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
     @Test
     public void testDedupFilterCollectorSortedByField() throws Exception {
@@ -537,13 +541,15 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(2, result.total);
         assertEquals(4, (int) result.totalWithDuplicates);
         compareHits(result, "urn:2", "urn:4");
-        assertEquals("__key__", result.hits.get(0).duplicateField);
-        assertEquals(3, result.hits.get(0).duplicateCount);
-        assertEquals(1, result.hits.get(1).duplicateCount);
+        DedupHit hit0 = (DedupHit) result.hits.get(0);
+        DedupHit hit1 = (DedupHit) result.hits.get(1);
+        assertEquals("__key__", hit0.duplicateField);
+        assertEquals(3, hit0.duplicateCount);
+        assertEquals(1, hit1.duplicateCount);
         assertEquals("cat-A", result.drilldownData.get(0).terms.get(0).label);
         assertEquals(4, result.drilldownData.get(0).terms.get(0).count);
     }
-    
+
     @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
     @Test
     public void testGroupingCollector() throws Exception {
@@ -551,7 +557,7 @@ public class LuceneTest extends SeecrTestCase {
         addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
         addDocument(lucene, "urn:3", new HashMap() {{put("__key__", 43);}}, new HashMap() {{put("field0", "v2");}});
         addDocument(lucene, "urn:4", null, new HashMap() {{put("field0", "v3");}});
-        
+
         QueryData q = new QueryData();
         q.stop = 3;
         q.groupingField = "__key__";
@@ -560,12 +566,15 @@ public class LuceneTest extends SeecrTestCase {
         // expected two hits: "urn:2" (3x) and "urn:4" in no particular order
         assertEquals(4, result.total);
         compareHits(result, "urn:1", "urn:3", "urn:4");
-        assertEquals("__key__", result.hits.get(0).groupingField);
-        assertEquals(new ArrayList<String>() {{ add("urn:1"); add("urn:2"); }}, result.hits.get(0).duplicates);
-        assertEquals(new ArrayList<String>() {{ add("urn:3"); }}, result.hits.get(1).duplicates);
-        assertEquals(new ArrayList<String>() {{ add("urn:4"); }}, result.hits.get(2).duplicates);
+        GroupingHit hit0 = (GroupingHit) result.hits.get(0);
+        GroupingHit hit1 = (GroupingHit) result.hits.get(1);
+        GroupingHit hit2 = (GroupingHit) result.hits.get(2);
+        assertEquals("__key__", hit0.groupingField);
+        assertEquals(new ArrayList<String>() {{ add("urn:1"); add("urn:2"); }}, hit0.duplicates);
+        assertEquals(new ArrayList<String>() {{ add("urn:3"); }}, hit1.duplicates);
+        assertEquals(new ArrayList<String>() {{ add("urn:4"); }}, hit2.duplicates);
     }
-    
+
     @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
     @Test
     public void testGroupingOnNonExistingField() throws Exception {
@@ -573,7 +582,7 @@ public class LuceneTest extends SeecrTestCase {
         addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
         addDocument(lucene, "urn:3", new HashMap() {{put("__key__", 43);}}, new HashMap() {{put("field0", "v2");}});
         addDocument(lucene, "urn:4", null, new HashMap() {{put("field0", "v3");}});
-     
+
         QueryData q = new QueryData();
         q.groupingField = "__other_key__";
         q.stop = 3;
@@ -581,7 +590,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(4, result.total);
         assertEquals(3, result.hits.size());
     }
-    
+
     @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
     @Test
     public void testDontGroupIfMaxResultsAreLessThanTotalRecords() throws Exception {
@@ -591,13 +600,15 @@ public class LuceneTest extends SeecrTestCase {
         QueryData q = new QueryData();
         q.groupingField = "__key__";
         LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
-        
+
         assertEquals(2, result.total);
         compareHits(result, "urn:1", "urn:2");
-        assertEquals(new ArrayList<String>() {{ add("urn:1"); }}, result.hits.get(0).duplicates);
-        assertEquals(new ArrayList<String>() {{ add("urn:2"); }}, result.hits.get(1).duplicates);
+        GroupingHit hit0 = (GroupingHit) result.hits.get(0);
+        GroupingHit hit1 = (GroupingHit) result.hits.get(1);
+        assertEquals(new ArrayList<String>() {{ add("urn:1"); }}, hit0.duplicates);
+        assertEquals(new ArrayList<String>() {{ add("urn:2"); }}, hit1.duplicates);
     }
-    
+
     @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
     @Test
     public void testGroupingCollectorReturnsMaxHitAfterGrouping() throws Exception {
@@ -605,13 +616,70 @@ public class LuceneTest extends SeecrTestCase {
         addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
         for (int i=3; i<11; i++)
             addDocument(lucene, "urn:" + i, null, new HashMap() {{put("field0", "v0");}});
-        
+
         QueryData q = new QueryData();
         q.groupingField = "__key__";
         q.stop = 5;
         LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
         assertEquals(10, result.total);
         assertEquals(5, result.hits.size());
+    }
+
+    @Test
+    public void testInterpolateEps() {
+        assertEquals(0, lucene.interpolateEpsilon( 0, 10), 0);
+        assertEquals(0, lucene.interpolateEpsilon( 10, 10), 0);
+        assertEquals(0.004, lucene.interpolateEpsilon( 11, 10), 0);
+        assertEquals(0.4, lucene.interpolateEpsilon(110, 10), 0);
+        assertEquals(0.4, lucene.interpolateEpsilon(111, 10), 0);
+
+        assertEquals(0, lucene.interpolateEpsilon(0, 20), 0);
+        assertEquals(0, lucene.interpolateEpsilon(20, 20), 0);
+        assertEquals(0.004, lucene.interpolateEpsilon(21, 20), 0);
+        assertEquals(0.32, lucene.interpolateEpsilon(100, 20), 0);
+        assertEquals(0.4, lucene.interpolateEpsilon(120, 20), 0);
+        assertEquals(0.4, lucene.interpolateEpsilon(121, 20), 0);
+    }
+
+    @SuppressWarnings("serial")
+    @Test
+    public void testClusteringOnVectors() throws IOException, Exception {
+        LuceneSettings settings = lucene.getSettings();
+        lucene.close();
+        lucene = new Lucene(this.tmpDir, settings) {
+            @Override
+            double interpolateEpsilon(int hits, int slice) {
+                return 0.4;
+            }
+        };
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector", 1.0, "vuur"));
+        lucene.getSettings().clusterFields = clusterFields;
+        
+        FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
+        fieldType.setStoreTermVectors(true);
+        
+        for (int i=0; i<5; i++) {
+            Document doc = new Document();
+            doc.add(new Field("termvector", "aap noot vuur " + i, fieldType));
+            lucene.addDocument("id:" + i, doc);
+        }
+        lucene.addDocument("id:6", new Document());
+        
+        QueryData q = new QueryData();
+        q.clustering = true;
+        LuceneResponse result = lucene.executeQuery(q, null, null, null, null, null);
+        assertEquals(2, result.hits.size());
+        ClusterHit hit0 = (ClusterHit) result.hits.get(0);
+        ClusterHit hit1 = (ClusterHit) result.hits.get(1);
+        assertEquals(0, hit0.topDocs.length);
+        assertEquals(5, hit1.topDocs.length);
+        List<String> ids = new ArrayList<>();
+        for (DocScore scoreDoc : hit1.topDocs) {
+            ids.add(scoreDoc.identifier);
+        }
+        Collections.sort(ids);
+        assertEquals(new ArrayList<String>() {{add("id:0"); add("id:1"); add("id:2"); add("id:3"); add("id:4");}}, ids);
     }
     
     public static void compareHits(LuceneResponse response, String... hitIds) {

@@ -91,6 +91,7 @@ class LuceneTest(SeecrTestCase):
                     suggestionRequest=dict(suggests=['valeu'], count=2, field='field1'),
                     dedupField="__key__",
                     groupingField="__grouping_key__",
+                    clustering=True,
                 ))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/query/', self.post[0]['path'])
@@ -102,7 +103,8 @@ class LuceneTest(SeecrTestCase):
                     "suggestionRequest": dict(suggests=['valeu'], count=2, field='field1'),
                     "dedupField": "__key__",
                     "dedupSortField": None,
-                    "groupingField": "__grouping_key__"
+                    "groupingField": "__grouping_key__",
+                    "clustering": True,
                 }, loads(self.post[0]['data']))
         self.assertEqual(887, response.total)
         self.assertEqual(6, response.queryTime)

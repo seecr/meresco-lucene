@@ -25,14 +25,30 @@
 
 package org.meresco.lucene;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
+import org.meresco.lucene.LuceneSettings.ClusterField;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
 
 public class LuceneSettings {
 
+    public static class ClusterField {
+        public String fieldname;
+        public double weight;
+        public String filterValue;
+        
+        public ClusterField(String fieldname, double weight, String filterValue) {
+            this.fieldname = fieldname;
+            this.weight = weight;
+            this.filterValue = filterValue;
+        }
+    }
+    
     public Similarity similarity = new BM25Similarity();
     public Analyzer analyzer = new MerescoStandardAnalyzer();
     public int maxMergeAtOnce = 2;
@@ -42,4 +58,8 @@ public class LuceneSettings {
     public int commitTimeout = 10;
     public int commitCount = 100000;
     public FacetsConfig facetsConfig = new FacetsConfig();
+    public double clusteringEPS = 0.4;
+    public int clusteringMinPoints = 1;
+    public int clusterMoreRecords = 100;
+    public List<ClusterField> clusterFields = new ArrayList<>();
 }

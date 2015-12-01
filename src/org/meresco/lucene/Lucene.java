@@ -73,18 +73,27 @@ import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spell.DirectSpellChecker;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
+import org.meresco.lucene.LuceneResponse.ClusterHit;
+import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.LuceneResponse.Hit;
+import org.meresco.lucene.LuceneResponse.GroupingHit;
+import org.meresco.lucene.LuceneSettings.ClusterField;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.DeDupFilterSuperCollector;
 import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.GroupSuperCollector;
+import org.meresco.lucene.search.MerescoCluster;
+import org.meresco.lucene.search.MerescoCluster.DocScore;
+import org.meresco.lucene.search.MerescoCluster.TermScore;
+import org.meresco.lucene.search.MerescoClusterer;
 import org.meresco.lucene.search.MultiSuperCollector;
 import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.TopDocSuperCollector;
@@ -231,8 +240,8 @@ public class Lucene {
         int totalHits;
         List<LuceneResponse.Hit> hits;
         Collectors collectors = null;
+        Map<String, Long> times = new HashMap<>();
         long t0 = System.currentTimeMillis();
-        long searchTime = 0;
         int topCollectorStop = q.stop;
         while (true) {
             collectors = createCollectors(q, topCollectorStop, keyCollectors, scoreCollectors);
@@ -243,18 +252,25 @@ public class Lucene {
                 query = createDrilldownQuery(query, drilldownQueries);
             long t1 = System.currentTimeMillis();
             indexAndTaxo.searcher().search(query, f, collectors.root);
-            searchTime = System.currentTimeMillis() - t1;
+            times.put("searchTime", System.currentTimeMillis() - t1);
             
             totalHits = collectors.topCollector.getTotalHits();
-            hits = topDocsResponse(q, collectors);
-                    
+            if (q.clustering) {
+                t1 = System.currentTimeMillis();
+                hits = clusterTopDocsResponse(q, collectors);
+                times.put("totalClusterTime", System.currentTimeMillis() - t1);
+            } else {
+                t1 = System.currentTimeMillis();
+                hits = topDocsResponse(q, collectors);
+                times.put("topDocsTime", System.currentTimeMillis() - t1);
+            }
+            
             if (hits.size() == q.stop - q.start || topCollectorStop >= totalHits)
                 break;
             topCollectorStop *= 10;
         }
             
         LuceneResponse response = new LuceneResponse(totalHits);
-        response.times.put("searchTime", searchTime);
         if (collectors.dedupCollector != null)
             response.totalWithDuplicates = collectors.dedupCollector.getTotalHits();
         
@@ -263,7 +279,7 @@ public class Lucene {
         if (collectors.facetCollector != null) {
             long t1 = System.currentTimeMillis();
             response.drilldownData = facetResult(collectors.facetCollector, q.facets);
-            response.times.put("facetTime", System.currentTimeMillis() - t1);
+            times.put("facetTime", System.currentTimeMillis() - t1);
         }
 
         if (q.suggestionRequest != null) {
@@ -271,12 +287,59 @@ public class Lucene {
             HashMap<String, SuggestWord[]> result = new HashMap<>();  
             for (String suggest : q.suggestionRequest.suggests)
                 result.put(suggest, suggest(suggest, q.suggestionRequest.count, q.suggestionRequest.field));
-            response.times.put("suggestionTime", System.currentTimeMillis() - t1);
+            times.put("suggestionTime", System.currentTimeMillis() - t1);
             response.suggestions = result;
         }
-        
+        response.times = times;
         response.queryTime = System.currentTimeMillis() - t0;
         return response;
+    }
+
+    private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors) throws IOException {
+        int totalHits = collectors.topCollector.getTotalHits();
+                
+        List<LuceneResponse.Hit> hits = new ArrayList<>();
+        double epsilon = interpolateEpsilon(totalHits, q.stop - q.start);
+        MerescoClusterer clusterer = new MerescoClusterer(indexAndTaxo.reader, epsilon, settings.clusteringMinPoints);
+        for (ClusterField clusterField : settings.clusterFields)
+            clusterer.registerField(clusterField.fieldname, clusterField.weight, clusterField.filterValue);
+        TopDocs topDocs = collectors.topCollector.topDocs(q.start);
+        long t0 = System.currentTimeMillis();
+        clusterer.processTopDocs(topDocs);
+        //times['processTopDocsForClustering'] = millis(time() - t0)
+        t0 = System.currentTimeMillis();
+        clusterer.finish();
+//        times['clusteringAlgorithm'] = millis(time() - t0)
+        int count = q.start;
+        HashSet<Integer> seenDocIds = new HashSet<>();
+        t0 = System.currentTimeMillis();
+        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+            if (count >= q.stop)
+                break;
+            if (seenDocIds.contains(scoreDoc.doc))
+                continue;
+            MerescoCluster cluster = clusterer.cluster(scoreDoc.doc);
+            DocScore[] clusterTopDocs = cluster == null ? new DocScore[0] : cluster.topDocs;
+            
+            List<Integer> clusteredDocIds = new ArrayList<>();
+            if (cluster == null)
+                clusteredDocIds.add(scoreDoc.doc);
+            else {
+                for (DocScore ds : clusterTopDocs) {
+                    clusteredDocIds.add(ds.docId);
+                }
+            }
+            seenDocIds.addAll(clusteredDocIds);
+            ClusterHit hit = new ClusterHit(getDocument(clusteredDocIds.get(0)).get(ID_FIELD), scoreDoc.score);
+            hit.topDocs = clusterTopDocs;
+            for (DocScore docScore : hit.topDocs)
+                docScore.identifier = getDocument(docScore.docId).get(ID_FIELD);
+            hit.topTerms = cluster == null ? new TermScore[0] : cluster.topTerms;
+            hits.add(hit);
+            count += 1;
+        }
+//        times['collectClusters'] = millis(time() - t0)
+        return hits;
     }
 
     private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws IOException {
@@ -291,17 +354,18 @@ public class Lucene {
         for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(q.stop == 0 ? 1 : q.start).scoreDocs) { //TODO: temp fix for start/stop = 0
             if (count >= q.stop)
                 break;
-            LuceneResponse.Hit hit = new LuceneResponse.Hit();
             if (dedupCollector != null) {
                 DeDupFilterSuperCollector.Key keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc);
                 int newDocId = keyForDocId == null ? scoreDoc.doc : keyForDocId.getDocId();
-                hit.id = getDocument(newDocId).get(ID_FIELD);
+                DedupHit hit = new DedupHit(getDocument(newDocId).get(ID_FIELD), scoreDoc.score);
                 hit.duplicateField = dedupCollector.getKeyName();
                 hit.duplicateCount = 1;
                 if (keyForDocId != null)
                     hit.duplicateCount = keyForDocId.getCount();
+                hit.score = scoreDoc.score;
+                hits.add(hit);
             } else if (groupingCollector != null) { 
-                hit.id = getDocument(scoreDoc.doc).get(ID_FIELD);
+                GroupingHit hit = new GroupingHit(getDocument(scoreDoc.doc).get(ID_FIELD), scoreDoc.score);
                 if (seenIds.contains(hit.id))
                     continue;
                 
@@ -319,11 +383,12 @@ public class Lucene {
                 seenIds.addAll(duplicateIds);
                 hit.groupingField = groupingCollector.getKeyName();
                 hit.duplicates = duplicateIds;
+                hit.score = scoreDoc.score;
+                hits.add(hit);
             } else {
-                hit.id = getDocument(scoreDoc.doc).get(ID_FIELD);
+                Hit hit = new Hit(getDocument(scoreDoc.doc).get(ID_FIELD), scoreDoc.score);
+                hits.add(hit);
             }
-            hit.score = scoreDoc.score;
-            hits.add(hit);
             count++;
         }
         return hits;
@@ -362,7 +427,10 @@ public class Lucene {
     private Collectors createCollectors(QueryData q, int stop, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors) {
         Collectors allCollectors = new Collectors();
         SuperCollector<?> resultsCollector;
-        if (q.groupingField != null) {
+        if (q.clustering) {
+            allCollectors.topCollector = topCollector(q.start, stop + settings.clusterMoreRecords, q.sort);
+            resultsCollector = allCollectors.topCollector;
+        } else if (q.groupingField != null) {
             allCollectors.topCollector = topCollector(q.start, stop * 10, q.sort);
             allCollectors.groupingCollector = new GroupSuperCollector(q.groupingField, allCollectors.topCollector);
             resultsCollector = allCollectors.groupingCollector;
@@ -602,5 +670,10 @@ public class Lucene {
 
     public SuggestWord[] suggest(String term, int count, String field) throws IOException {
         return spellChecker.suggestSimilar(new Term(field, term), count, indexAndTaxo.searcher().getIndexReader());
+    }
+
+    double interpolateEpsilon(int hits, int slice) {
+        double eps = settings.clusteringEPS * (hits - slice) / settings.clusterMoreRecords;
+        return Math.max(Math.min(eps, settings.clusteringEPS), 0.0);
     }
 }

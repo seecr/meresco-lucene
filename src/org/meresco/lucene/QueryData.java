@@ -23,6 +23,7 @@ public class QueryData {
     public String dedupField;
     public String dedupSortField;
     public String groupingField;
+    public boolean clustering;
 
     public QueryData(Reader queryReader, QueryConverter converter) {
         JsonObject object = Json.createReader(queryReader).readObject();
@@ -35,6 +36,7 @@ public class QueryData {
         this.dedupField = object.getString("dedupField", null);
         this.dedupSortField = object.getString("dedupSortField", null);
         this.groupingField = object.getString("groupingField", null);
+        this.clustering = object.getBoolean("clustering", false);
     }
 
     public QueryData() {

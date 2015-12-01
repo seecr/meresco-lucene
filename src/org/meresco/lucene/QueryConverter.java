@@ -50,6 +50,8 @@ import org.apache.lucene.search.WildcardQuery;
 
 public class QueryConverter {
 
+    private static final String SORT_ON_SCORE = "score";
+    
     private FacetsConfig facetsConfig;
 
     public QueryConverter(FacetsConfig facetsConfig) {
@@ -65,7 +67,7 @@ public class QueryConverter {
             String sortBy = sortKey.getString("sortBy");
             boolean sortDescending = sortKey.getBoolean("sortDescending", false);
             SortField field;
-            if (sortBy.equals("score"))
+            if (sortBy.equals(SORT_ON_SCORE))
                 field = new SortField(null, SortField.Type.SCORE, sortDescending);
             else
                 field = new SortField(sortBy, typeForSortField(sortKey.getString("type")), sortDescending);

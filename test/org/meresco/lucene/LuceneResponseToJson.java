@@ -36,7 +36,14 @@ import javax.json.JsonObject;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.junit.Test;
+import org.meresco.lucene.LuceneResponse.ClusterHit;
+import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
+import org.meresco.lucene.LuceneResponse.GroupingHit;
+import org.meresco.lucene.search.MerescoCluster;
+import org.meresco.lucene.search.MerescoCluster.TermScore;
+import org.meresco.lucene.search.MerescoClusterer;
+import org.meresco.lucene.search.MerescoCluster.DocScore;
 
 public class LuceneResponseToJson {
 
@@ -121,11 +128,11 @@ public class LuceneResponseToJson {
     public void testDedup() {
         LuceneResponse response = new LuceneResponse(2);
         response.totalWithDuplicates = 5;
-        LuceneResponse.Hit hit1 = new LuceneResponse.Hit("id1", 0.1f);
+        DedupHit hit1 = new DedupHit("id1", 0.1f);
         hit1.duplicateField = "__key__";
         hit1.duplicateCount = 2;
         response.addHit(hit1);
-        LuceneResponse.Hit hit2 = new LuceneResponse.Hit("id2", 0.2f);
+        DedupHit hit2 = new DedupHit("id2", 0.2f);
         hit2.duplicateField = "__key__";
         hit2.duplicateCount = 5;
         response.addHit(hit2);
@@ -144,11 +151,11 @@ public class LuceneResponseToJson {
     @Test
     public void testGrouping() {
         LuceneResponse response = new LuceneResponse(2);
-        LuceneResponse.Hit hit1 = new LuceneResponse.Hit("id1", 0.1f);
+        GroupingHit hit1 = new GroupingHit("id1", 0.1f);
         hit1.groupingField = "__key__";
         hit1.duplicates = new ArrayList<String>() {{ add("id1"); add("id3"); }};
         response.addHit(hit1);
-        LuceneResponse.Hit hit2 = new LuceneResponse.Hit("id2", 0.2f);
+        GroupingHit hit2 = new GroupingHit("id2", 0.2f);
         hit2.groupingField = "__key__";
         hit2.duplicates = new ArrayList<String>() {{ add("id2"); }};
         response.addHit(hit2);
@@ -161,5 +168,33 @@ public class LuceneResponseToJson {
         assertEquals("id3", duplicates.getJsonArray("__key__").getJsonObject(1).getString("id"));
         duplicates = hits.getJsonObject(1).getJsonObject("duplicates");
         assertEquals(1, duplicates.getJsonArray("__key__").size());
+    }
+    
+    @Test
+    public void testClustering() {
+        LuceneResponse response = new LuceneResponse(2);
+        ClusterHit hit1 = new ClusterHit("id1", 0.1f);
+        hit1.topDocs = new MerescoCluster.DocScore[] { new DocScore(0, 0.1f), new DocScore(1, 0.2f) };
+        hit1.topDocs[0].identifier = "id1";
+        hit1.topDocs[1].identifier = "id2";
+        hit1.topTerms = new MerescoCluster.TermScore[] { new TermScore("term1", 0), new TermScore("term2", 1) };
+        response.addHit(hit1);
+        
+        JsonArray hits = response.toJson().getJsonArray("hits");
+        assertEquals(1, hits.size());
+        JsonObject duplicates = hits.getJsonObject(0).getJsonObject("duplicates");
+        JsonArray topDocs = duplicates.getJsonArray("topDocs");
+        assertEquals(2, topDocs.size());
+        assertEquals("id1", topDocs.getJsonObject(0).getString("id"));
+        assertEquals(0.1, topDocs.getJsonObject(0).getJsonNumber("score").doubleValue(), 0.000001);
+        assertEquals("id2", topDocs.getJsonObject(1).getString("id"));
+        assertEquals(0.2, topDocs.getJsonObject(1).getJsonNumber("score").doubleValue(), 0.000001);
+        
+        JsonArray topTerms = duplicates.getJsonArray("topTerms");
+        assertEquals(1, topTerms.size());
+        assertEquals("term1", topTerms.getJsonObject(0).getString("term"));
+        assertEquals(0, topTerms.getJsonObject(0).getJsonNumber("score").doubleValue(), 0);
+        assertEquals("term2", topTerms.getJsonObject(1).getString("term"));
+        assertEquals(1, topTerms.getJsonObject(1).getJsonNumber("score").doubleValue(), 0);
     }
 }

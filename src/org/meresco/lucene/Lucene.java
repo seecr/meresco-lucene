@@ -257,7 +257,7 @@ public class Lucene {
             totalHits = collectors.topCollector.getTotalHits();
             if (q.clustering) {
                 t1 = System.currentTimeMillis();
-                hits = clusterTopDocsResponse(q, collectors);
+                hits = clusterTopDocsResponse(q, collectors, times);
                 times.put("totalClusterTime", System.currentTimeMillis() - t1);
             } else {
                 t1 = System.currentTimeMillis();
@@ -295,7 +295,7 @@ public class Lucene {
         return response;
     }
 
-    private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors) throws IOException {
+    private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times) throws IOException {
         int totalHits = collectors.topCollector.getTotalHits();
                 
         List<LuceneResponse.Hit> hits = new ArrayList<>();
@@ -306,10 +306,10 @@ public class Lucene {
         TopDocs topDocs = collectors.topCollector.topDocs(q.start);
         long t0 = System.currentTimeMillis();
         clusterer.processTopDocs(topDocs);
-        //times['processTopDocsForClustering'] = millis(time() - t0)
+        times.put("processTopDocsForClustering", System.currentTimeMillis() - t0);
         t0 = System.currentTimeMillis();
         clusterer.finish();
-//        times['clusteringAlgorithm'] = millis(time() - t0)
+        times.put("clusteringAlgorithm", System.currentTimeMillis() - t0);
         int count = q.start;
         HashSet<Integer> seenDocIds = new HashSet<>();
         t0 = System.currentTimeMillis();
@@ -338,7 +338,7 @@ public class Lucene {
             hits.add(hit);
             count += 1;
         }
-//        times['collectClusters'] = millis(time() - t0)
+        times.put("collectClusters", System.currentTimeMillis() - t0);
         return hits;
     }
 

@@ -191,7 +191,7 @@ public class LuceneResponseToJson {
         assertEquals(0.2, topDocs.getJsonObject(1).getJsonNumber("score").doubleValue(), 0.000001);
         
         JsonArray topTerms = duplicates.getJsonArray("topTerms");
-        assertEquals(1, topTerms.size());
+        assertEquals(2, topTerms.size());
         assertEquals("term1", topTerms.getJsonObject(0).getString("term"));
         assertEquals(0, topTerms.getJsonObject(0).getJsonNumber("score").doubleValue(), 0);
         assertEquals("term2", topTerms.getJsonObject(1).getString("term"));

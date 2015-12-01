@@ -170,6 +170,12 @@ public class Lucene {
         indexWriter.close();
     }
 
+    public void addDocument(Document doc) throws IOException {
+        doc = facetsConfig.build(taxoWriter, doc);
+        indexWriter.addDocument(doc);
+        commit();
+    }
+    
     public void addDocument(String identifier, Document doc) throws IOException {
         doc.add(new StringField(ID_FIELD, identifier, Store.YES));
         doc = facetsConfig.build(taxoWriter, doc);

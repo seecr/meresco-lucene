@@ -96,6 +96,17 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1, response.hits.size());
         assertEquals("id1", response.hits.get(0).id);
     }
+    
+    @Test
+    public void testAddDocumentWithoutIdentifier() throws Exception {
+        Document doc = new Document();
+        doc.add(new StringField("naam", "waarde", Store.NO));
+        lucene.addDocument(doc);
+        LuceneResponse response = lucene.executeQuery(new MatchAllDocsQuery());
+        assertEquals(1, response.total);
+        assertEquals(1, response.hits.size());
+        assertEquals(null, response.hits.get(0).id);
+    }
 
     @Test
     public void testAddDeleteDocument() throws Exception {

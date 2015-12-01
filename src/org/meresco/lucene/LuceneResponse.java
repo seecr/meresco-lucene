@@ -35,6 +35,7 @@ import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonValue;
 import javax.xml.ws.Response;
 
 import org.apache.lucene.facet.LabelAndValue;
@@ -143,8 +144,12 @@ public class LuceneResponse {
         JsonArrayBuilder hitsArray = Json.createArrayBuilder();
         for (Hit hit : hits) {
             JsonObjectBuilder hitBuilder = Json.createObjectBuilder()
-                    .add("id", hit.id)
                     .add("score", hit.score);
+            if (hit.id == null)
+                hitBuilder.add("id", JsonValue.NULL);
+            else
+                hitBuilder.add("id", hit.id);
+                    
             if (hit instanceof DedupHit) {
                 DedupHit dedupHit = (DedupHit) hit; 
                 hitBuilder.add("duplicateCount", Json.createObjectBuilder()

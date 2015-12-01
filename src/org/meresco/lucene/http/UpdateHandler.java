@@ -47,10 +47,13 @@ public class UpdateHandler extends AbstractHandler {
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        String identifier = request.getParameter("identifier");
         try {
           Document document = new DocumentStringToDocument(request.getReader()).convert();
-          this.lucene.addDocument(identifier, document);
+          if (request.getParameterMap().containsKey("identifier"))
+              this.lucene.addDocument(request.getParameter("identifier"), document);
+          else
+              this.lucene.addDocument(document);
+              
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write(Utils.getStackTrace(e));

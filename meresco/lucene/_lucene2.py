@@ -67,8 +67,9 @@ class Lucene(Observable):
     def getSettings(self):
         return dict()
 
-    def addDocument(self, identifier, fields):
-        yield self._send(jsonDict=JsonList(fields), path='/update/?{}'.format(urlencode(dict(identifier=identifier))))
+    def addDocument(self, fields, identifier=None):
+        args = urlencode(dict(identifier=identifier)) if identifier else ''
+        yield self._send(jsonDict=JsonList(fields), path='/update/?{}'.format(args))
 
     def delete(self, identifier):
         yield self._send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))

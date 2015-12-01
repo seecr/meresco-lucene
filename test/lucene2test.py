@@ -61,6 +61,14 @@ class LuceneTest(SeecrTestCase):
         self.assertEqual('/lucene/update/?identifier=id1', self.post[0]['path'])
         self.assertEqual('[{"type": "TextField", "name": "id", "value": "id1"}]', self.post[0]['data'])
 
+    def testAddWithoutIdentifier(self):
+        registry = FieldRegistry()
+        fields = [registry.createField("id", "id1")]
+        consume(self._lucene.addDocument(fields=fields))
+        self.assertEqual(1, len(self.post))
+        self.assertEqual('/lucene/update/?', self.post[0]['path'])
+        self.assertEqual('[{"type": "TextField", "name": "id", "value": "id1"}]', self.post[0]['data'])
+
     def testDelete(self):
         consume(self._lucene.delete(identifier='id1'))
         self.assertEqual(1, len(self.post))

@@ -32,6 +32,7 @@ import java.util.List;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.search.spell.SuggestWord;
@@ -196,5 +197,14 @@ public class LuceneResponseToJson {
         assertEquals(0, topTerms.getJsonObject(0).getJsonNumber("score").doubleValue(), 0);
         assertEquals("term2", topTerms.getJsonObject(1).getString("term"));
         assertEquals(1, topTerms.getJsonObject(1).getJsonNumber("score").doubleValue(), 0);
+    }
+    
+    @Test
+    public void testHitWithoutId() {
+        LuceneResponse response = new LuceneResponse(1);
+        response.addHit(new LuceneResponse.Hit(null, 0.1f));
+        
+        JsonObject json = response.toJson();
+        assertEquals(JsonValue.NULL, json.getJsonArray("hits").getJsonObject(0).get("id"));
     }
 }

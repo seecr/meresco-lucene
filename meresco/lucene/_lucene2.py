@@ -65,8 +65,7 @@ class Lucene(Observable):
             yield self._send(jsonDict=settingsDict, path="/settings/")
 
     def getSettings(self):
-        result = yield self._read(path='/settings/')
-        raise StopIteration(loads(result))
+        raise StopIteration((yield self._read(path='/settings/')))
 
     def addDocument(self, fields, identifier=None):
         args = urlencode(dict(identifier=identifier)) if identifier else ''

@@ -168,7 +168,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEqual({"data": None, "path": "/lucene/drilldownFieldnames/?dim=xyz&limit=1&path=abc&path=field"}, self.post[-1])
 
     def testUpdateSettings(self):
-        self.response = JsonDict(numberOfConcurrentTasks=6, similarity="BM25(k1=1.2,b=0.75)", clusterMoreRecords=100, clusteringEps=0.4, clusteringMinPoints=1).dumps()
+        self.response = JsonDict(numberOfConcurrentTasks=6, similarity="BM25(k1=1.2,b=0.75)", clusterMoreRecords=100, clusteringEps=0.4, clusteringMinPoints=1)
         settings = returnValueFromGenerator(self._lucene.getSettings())
         self.assertEqual(['/settings/'], self.read)
         self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4, 'clusteringMinPoints': 1}, settings)
@@ -176,6 +176,7 @@ class LuceneTest(SeecrTestCase):
         clusterFields = [
                 {"filterValue": None, "fieldname": "untokenized.dcterms:isFormatOf.uri", "weight": 0}
             ]
+        self.response = ""
         consume(self._lucene.setSettings(similarity=dict(name="bm25", k1=1.0, b=2.0), numberOfConcurrentTasks=10, clusterMoreRecords=200, clusteringEps=1.0, clusteringMinPoints=2, clusterFields=clusterFields))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/settings/', self.post[0]['path'])

@@ -30,7 +30,7 @@ from meresco.core import Observable
 from meresco.lucene import LuceneResponse
 from meresco.lucene.hit import Hit
 from weightless.core import consume
-from weightless.http import httppost
+from weightless.http import httppost, httpget
 from simplejson import loads
 from urllib2 import urlopen
 
@@ -65,7 +65,8 @@ class Lucene(Observable):
             yield self._send(jsonDict=settingsDict, path="/settings/")
 
     def getSettings(self):
-        return dict()
+        result = yield self._read(path='/settings/')
+        raise StopIteration(loads(result))
 
     def addDocument(self, fields, identifier=None):
         args = urlencode(dict(identifier=identifier)) if identifier else ''
@@ -145,6 +146,11 @@ class Lucene(Observable):
         response = yield self._post(path=path, data=jsonDict.dumps() if jsonDict else None, synchronous=synchronous)
         raise StopIteration(loads(response) if response else None)
 
+    def _read(self, path):
+        path = "/" + self._name + path
+        response = yield self._get(path=path)
+        raise StopIteration(loads(response) if response else None)
+
     def _post(self, path, data, synchronous=False):
         if synchronous:
             body = urlopen("http://{}:{}{}".format(self._host, self._port, path), data=data).read()
@@ -152,6 +158,12 @@ class Lucene(Observable):
             response = yield httppost(host=self._host, port=self._port, request=path, body=data)
             header, body = response.split(CRLF * 2, 1)
             self._verify20x(header, response)
+        raise StopIteration(body)
+
+    def _get(self, path):
+        response = yield httpget(host=self._host, port=self._port, request=path)
+        header, body = response.split(CRLF * 2, 1)
+        self._verify20x(header, response)
         raise StopIteration(body)
 
     def _verify20x(self, header, response):

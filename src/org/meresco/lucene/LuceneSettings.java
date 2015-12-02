@@ -28,11 +28,13 @@ package org.meresco.lucene;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.json.Json;
+import javax.json.JsonObject;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
-import org.meresco.lucene.LuceneSettings.ClusterField;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
 
 public class LuceneSettings {
@@ -41,14 +43,14 @@ public class LuceneSettings {
         public String fieldname;
         public double weight;
         public String filterValue;
-        
+
         public ClusterField(String fieldname, double weight, String filterValue) {
             this.fieldname = fieldname;
             this.weight = weight;
             this.filterValue = filterValue;
         }
     }
-    
+
     public Similarity similarity = new BM25Similarity();
     public Analyzer analyzer = new MerescoStandardAnalyzer();
     public int maxMergeAtOnce = 2;
@@ -62,4 +64,19 @@ public class LuceneSettings {
     public int clusteringMinPoints = 1;
     public int clusterMoreRecords = 100;
     public List<ClusterField> clusterFields = new ArrayList<>();
+
+    public JsonObject asJson() {
+        JsonObject json = Json.createObjectBuilder()
+            .add("similarity", similarity.toString())
+            .add("maxMergeAtOnce", maxMergeAtOnce)
+            .add("segmentsPerTier", segmentsPerTier)
+            .add("lruTaxonomyWriterCacheSize", lruTaxonomyWriterCacheSize)
+            .add("numberOfConcurrentTasks", numberOfConcurrentTasks)
+            .add("commitTimeout", commitTimeout)
+            .add("clusteringEps", clusteringEps)
+            .add("clusteringMinPoints", clusteringMinPoints)
+            .add("clusterMoreRecords", clusterMoreRecords)
+            .build();
+        return json;
+    }
 }

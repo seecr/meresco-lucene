@@ -24,7 +24,7 @@
 ## end license ##
 
 from seecr.test import IntegrationTestCase
-from seecr.test.utils import postRequest
+from seecr.test.utils import postRequest, getRequest
 from meresco.components.json import JsonList, JsonDict
 from simplejson import loads
 
@@ -92,3 +92,18 @@ class LuceneServerTest(IntegrationTestCase):
         jsonResponse = loads(body)
         self.assertEqual({'valeu': ['value']}, jsonResponse["suggestions"])
         self.assertTrue("suggestionTime" in jsonResponse["times"])
+
+    def testSettings(self):
+        header, body = getRequest(self.serverPort, self._path + '/settings/', parse=False)
+        self.assertTrue("200 OK" in header.upper(), header)
+        self.assertEqual({
+                'similarity': 'BM25(k1=1.2,b=0.75)',
+                'clusterMoreRecords': 100,
+                'clusteringEps': 0.4,
+                'clusteringMinPoints': 1,
+                'commitTimeout': 10,
+                'lruTaxonomyWriterCacheSize': 4000,
+                'maxMergeAtOnce': 2,
+                'numberOfConcurrentTasks': 6,
+                'segmentsPerTier': 8.0
+            }, loads(body))

@@ -68,9 +68,14 @@ public class SettingsHandler extends AbstractHandler {
             LuceneSettings settings = lucene.getSettings();
             if (settings == null)
                 settings = new LuceneSettings();
-            updateSettings(settings, request.getReader());
-            if (lucene.getSettings() == null)
-                lucene.initSettings(settings);
+            if (request.getMethod() == "POST") {
+                updateSettings(settings, request.getReader());
+                if (lucene.getSettings() == null)
+                    lucene.initSettings(settings);
+            } else {
+                response.setContentType("application/json");
+                response.getWriter().write(settings.asJson().toString());
+            }
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write(Utils.getStackTrace(e));

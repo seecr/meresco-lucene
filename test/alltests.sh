@@ -52,7 +52,11 @@ for pycmd in $pyversions; do
     $pycmd _alltests.py "$@"
 done
 
-BUILDDIR=../build/
+if [ -n "$@" ]; then
+    exit
+fi
+
+BUILDDIR=../build
 test -d ${BUILDDIR} && rm -rf ${BUILDDIR}
 mkdir ${BUILDDIR}
 

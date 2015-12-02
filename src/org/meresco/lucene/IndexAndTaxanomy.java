@@ -46,7 +46,7 @@ public class IndexAndTaxanomy {
         this.reader = DirectoryReader.open(indexDirectory);
         this.taxoReader = new DirectoryTaxonomyReader(taxoDirectory);
         this.settings = settings;
-        this.executor  = Executors.newFixedThreadPool(1000);
+        this.executor = Executors.newFixedThreadPool(100);
     }
 
     public boolean reopen() throws IOException {

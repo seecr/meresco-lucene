@@ -72,6 +72,7 @@ public class LuceneSettings {
             .add("segmentsPerTier", segmentsPerTier)
             .add("lruTaxonomyWriterCacheSize", lruTaxonomyWriterCacheSize)
             .add("numberOfConcurrentTasks", numberOfConcurrentTasks)
+            .add("commitCount", commitCount)
             .add("commitTimeout", commitTimeout)
             .add("clusteringEps", clusteringEps)
             .add("clusteringMinPoints", clusteringMinPoints)

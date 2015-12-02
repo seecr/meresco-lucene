@@ -101,6 +101,7 @@ class LuceneServerTest(IntegrationTestCase):
                 'clusterMoreRecords': 100,
                 'clusteringEps': 0.4,
                 'clusteringMinPoints': 1,
+                'commitCount': 1,
                 'commitTimeout': 10,
                 'lruTaxonomyWriterCacheSize': 4000,
                 'maxMergeAtOnce': 2,

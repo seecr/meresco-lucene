@@ -49,6 +49,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -57,6 +58,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.util.OpenBitSet;
 import org.junit.Before;
@@ -71,6 +73,7 @@ import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
+import org.meresco.lucene.search.join.KeyCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
 
@@ -409,7 +412,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(true, collectedKeys.get(1));
         assertEquals(true, collectedKeys.get(2));
         assertEquals(false, collectedKeys.get(3));
-        assertEquals(collectedKeys, lucene.collectKeys(null, "field1", new MatchAllDocsQuery()));
+        assertEquals(collectedKeys, lucene.collectKeys(null, "field1", new MatchAllDocsQuery(), false));
 
         final KeySuperCollector k1 = new KeySuperCollector("field1");
         TermQuery field0Query = new TermQuery(new Term("field0", "value"));
@@ -951,7 +954,106 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(51, result.total);
         assertEquals(2, result.hits.size());
     }
-
+    
+    @SuppressWarnings("serial")
+    @Test
+    public void testFilterCaching() throws Exception {
+        for (int i=0; i<10; i++) {
+            final int j = i;
+            addDocument(lucene, "id:" + i, null, new HashMap<String, String>() {{put("field" + j, "value0");}});
+        }
+        final BooleanQuery query = new BooleanQuery();
+        for (int i=0; i<100; i++)
+            query.add(new TermQuery(new Term("field" + i, "value0")), Occur.SHOULD);
+        LuceneResponse response = lucene.executeQuery(new QueryData(), new ArrayList<Query>() {{ add(query); }}, null, null, null, null);
+        LuceneResponse responseWithCaching = lucene.executeQuery(new QueryData(), new ArrayList<Query>() {{ add(query); }}, null, null, null, null);
+        assertTrue(responseWithCaching.queryTime < response.queryTime);
+    }
+    
+    @Test
+    public void testScoreCollectorCaching() throws Exception {
+        lucene.getSettings().commitCount = 1000;
+        for (int i=0; i<100; i++) {
+            Document doc1 = new Document();
+            doc1.add(new StringField("field0", "value", Store.NO));
+            doc1.add(new NumericDocValuesField("field1", i));
+            lucene.addDocument("id" + i, doc1);
+        }        
+        lucene.realCommit();
+        
+        long t0 = System.currentTimeMillis();
+        ScoreSuperCollector scoreCollector1 = this.lucene.scoreCollector("field1", new MatchAllDocsQuery());
+        long t1 = System.currentTimeMillis();
+        ScoreSuperCollector scoreCollector2 = this.lucene.scoreCollector("field1", new MatchAllDocsQuery());
+        long t2 = System.currentTimeMillis();
+        assertTrue(t2 - t1 <= t1 - t0);
+        assertTrue(t2 - t1 < 2);
+        assertEquals(0, scoreCollector1.score(100), 0);
+        assertSame(scoreCollector1, scoreCollector2);
+        
+        Document doc3 = new Document();
+        doc3.add(new NumericDocValuesField("field1", 100));
+        lucene.addDocument("id3", doc3);
+        lucene.realCommit();
+        scoreCollector1 = this.lucene.scoreCollector("field1", new MatchAllDocsQuery());
+        assertEquals(1.0, scoreCollector1.score(100), 0);
+        assertNotSame(scoreCollector1, scoreCollector2);
+    }
+    
+    @Test
+    public void testKeyCollectorCaching() throws Exception {
+        lucene.getSettings().commitCount = 1000;
+        for (int i=0; i<100; i++) {
+            Document doc1 = new Document();
+            doc1.add(new StringField("field0", "value", Store.NO));
+            doc1.add(new NumericDocValuesField("field1", i));
+            lucene.addDocument("id" + i, doc1);
+        }        
+        lucene.realCommit();
+        long t0 = System.currentTimeMillis();
+        OpenBitSet keys1 = this.lucene.collectKeys(new MatchAllDocsQuery(), "field1", null);
+        long t1 = System.currentTimeMillis();
+        OpenBitSet keys2 = this.lucene.collectKeys(new MatchAllDocsQuery(), "field1", null);
+        long t2 = System.currentTimeMillis();
+        assertTrue(t2 - t1 <= t1 - t0);
+        assertTrue(t2 - t1 < 2);
+        assertTrue(keys1.get(1));
+        assertTrue(keys1.get(2));
+        assertFalse(keys1.get(100));
+        assertSame(keys1, keys2);
+        
+        Document doc3 = new Document();
+        doc3.add(new NumericDocValuesField("field1", 100));
+        lucene.addDocument("id3", doc3);
+        lucene.realCommit();
+        keys1 = this.lucene.collectKeys(new MatchAllDocsQuery(), "field1", null);
+        assertTrue(keys1.get(1));
+        assertTrue(keys1.get(2));
+        assertTrue(keys1.get(100));
+        assertNotSame(keys1, keys2);
+    }
+    
+    @Test
+    public void testDontClearCachesIfNothingChanged() throws Exception {
+        Document doc1 = new Document();
+        doc1.add(new NumericDocValuesField("keyfield", 1));
+        lucene.addDocument("id1", doc1);
+        ScoreSuperCollector scoreCollector1 = lucene.scoreCollector("keyfield", new MatchAllDocsQuery());
+        OpenBitSet keys1 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
+        lucene.realCommit();
+        lucene.realCommit();
+        ScoreSuperCollector scoreCollector2 = lucene.scoreCollector("keyfield", new MatchAllDocsQuery());
+        OpenBitSet keys2 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
+        assertSame(scoreCollector1, scoreCollector2);
+        assertSame(keys1, keys2);
+        lucene.addDocument("id1", new Document());
+        lucene.realCommit();
+        ScoreSuperCollector scoreCollector3 = lucene.scoreCollector("keyfield", new MatchAllDocsQuery());
+        OpenBitSet keys3 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
+        assertNotSame(scoreCollector1, scoreCollector3);
+        assertNotSame(keys1, keys3);
+    }
+    
     public static void compareHits(LuceneResponse response, String... hitIds) {
         Set<String> responseHitIds = new HashSet<String>();
         for (Hit hit : response.hits)

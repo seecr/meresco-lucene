@@ -39,6 +39,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutionException;
 
+import org.apache.commons.collections4.map.LRUMap;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -83,8 +84,8 @@ import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
-import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.LuceneResponse.GroupingHit;
+import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.LuceneSettings.ClusterField;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.DeDupFilterSuperCollector;
@@ -117,6 +118,9 @@ public class Lucene {
     private File stateDir;
     private Map<String, CachedOrdinalsReader> cachedOrdinalsReader = new HashMap<String, CachedOrdinalsReader>();
     private DirectSpellChecker spellChecker = new DirectSpellChecker();
+    private LRUMap<Query, Filter> filterCache;
+    private LRUMap<KeyNameQuery, ScoreSuperCollector> scoreCollectorCache;
+    private LRUMap<KeyNameQuery, OpenBitSet> keyCollectorCache;
 
     public Lucene(String name, File stateDir) {
         this.name = name;
@@ -158,6 +162,10 @@ public class Lucene {
 
         indexAndTaxo = new IndexAndTaxanomy(indexDirectory, taxoDirectory, settings);
         facetsConfig = settings.facetsConfig;
+        
+        filterCache = new LRUMap<Query, Filter>(50);
+        scoreCollectorCache = new LRUMap<KeyNameQuery, ScoreSuperCollector>(50);
+        keyCollectorCache = new LRUMap<KeyNameQuery, OpenBitSet>(50);
     }
 
     public LuceneSettings getSettings() {
@@ -218,7 +226,10 @@ public class Lucene {
         }
         indexWriter.commit();
         taxoWriter.commit();
-        indexAndTaxo.reopen();
+        if (indexAndTaxo.reopen()) {
+            scoreCollectorCache.clear();
+            keyCollectorCache.clear();
+        }
     }
 
     public LuceneResponse executeQuery(QueryData q) throws Exception {
@@ -416,11 +427,20 @@ public class Lucene {
         return facetResult(facetCollector, facets);
     }
 
+    public Filter filterQuery(Query query) {
+        if (filterCache.containsKey(query)) {
+            return filterCache.get(query);
+        }
+        CachingWrapperFilter filter = new CachingWrapperFilter(new QueryWrapperFilter(query));
+        filterCache.put(query, filter);
+        return filter;
+    }
+    
     private Filter filtersFor(List<Query> filterQueries, Filter... filter) {
         List<Filter> filters = new ArrayList<Filter>();
         if (filterQueries != null)
             for (Query query : filterQueries)
-                filters.add(new CachingWrapperFilter(new QueryWrapperFilter(query))); //TODO: Use filterCache
+                filters.add(filterQuery(query));
         if (filter != null)
             for (Filter f : filter)
                 if (f != null)
@@ -575,23 +595,6 @@ public class Lucene {
         return terms;
     }
 
-    public static class Collectors {
-        public GroupSuperCollector groupingCollector;
-        public DeDupFilterSuperCollector dedupCollector;
-        public TopDocSuperCollector topCollector;
-        public FacetSuperCollector facetCollector;
-        public SuperCollector<?> root;
-    }
-
-    public class TermCount {
-        public String term;
-        public int count;
-        public TermCount(String term, int count) {
-            this.term = term;
-            this.count = count;
-        }
-    }
-
     public int numDocs() {
         return this.indexWriter.numDocs();
     }
@@ -640,6 +643,16 @@ public class Lucene {
     }
 
     public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Exception {
+        if (cacheCollectedKeys) {
+            KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, filterQuery);
+            if (keyCollectorCache.containsKey(keyNameQuery))
+                return keyCollectorCache.get(keyNameQuery);
+            else {
+                OpenBitSet keys = doCollectKeys(filterQuery, keyName, query);
+                keyCollectorCache.put(keyNameQuery, keys);
+                return keys;
+            }
+        }
         return doCollectKeys(filterQuery, keyName, query);
     }
 
@@ -668,8 +681,14 @@ public class Lucene {
     }
     
     public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Exception {
-// TODO:        return self._scoreCollectorCache.get((keyName, query))
-        return doScoreCollecting(keyName, query);
+        KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, query);
+        if (scoreCollectorCache.containsKey(keyNameQuery))
+            return scoreCollectorCache.get(keyNameQuery);
+        else {
+            ScoreSuperCollector scoreCollector = doScoreCollecting(keyName, query);
+            scoreCollectorCache.put(keyNameQuery, scoreCollector);
+            return scoreCollector;
+        }
     }
     
     public ScoreSuperCollector doScoreCollecting(String keyName, Query query) throws Exception {
@@ -686,4 +705,47 @@ public class Lucene {
         double eps = settings.clusteringEps * (hits - slice) / settings.clusterMoreRecords;
         return Math.max(Math.min(eps, settings.clusteringEps), 0.0);
     }
+    
+
+    public static class Collectors {
+        public GroupSuperCollector groupingCollector;
+        public DeDupFilterSuperCollector dedupCollector;
+        public TopDocSuperCollector topCollector;
+        public FacetSuperCollector facetCollector;
+        public SuperCollector<?> root;
+    }
+
+    public class TermCount {
+        public String term;
+        public int count;
+        public TermCount(String term, int count) {
+            this.term = term;
+            this.count = count;
+        }
+    }
+    
+    private static class KeyNameQuery {
+        private String keyName;
+        private Query query;
+
+        public KeyNameQuery(String keyName, Query query) {
+            this.keyName = keyName;
+            this.query = query;
+        }
+        
+        @Override
+        public int hashCode() {
+            return keyName.hashCode() + 127 * query.hashCode();
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof KeyNameQuery){
+                KeyNameQuery other = (KeyNameQuery)obj;
+                return other.keyName.equals(keyName) && other.query.equals(query);
+            }
+            return false;
+        }
+    }
+
 }

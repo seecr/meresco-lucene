@@ -282,15 +282,6 @@ class LuceneTest(LuceneTestCase):
         response = retval(self.lucene.executeQuery(luceneQuery=luceneQuery))
         self.assertEquals(set(['id:mies', 'id:noot', 'id:vis', 'id:vuur']), set(self.hitIds(response.hits)))
 
-    def testFilterCaching(self):
-        for i in range(10):
-            retval(self.lucene.addDocument(identifier="id:%s" % i, document=createDocument([('field%s' % i, 'value0')])))
-        query = BooleanQuery()
-        [query.add(TermQuery(Term("field%s" % i, "value0")), BooleanClause.Occur.SHOULD) for i in range(100)]
-        response = retval(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
-        responseWithCaching = retval(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), filterQueries=[query]))
-        self.assertTrue(responseWithCaching.queryTime < response.queryTime)
-
     def testHandleShutdown(self):
         document = Document()
         document.add(TextField('title', 'The title', Field.Store.NO))
@@ -422,21 +413,6 @@ class LuceneTest(LuceneTestCase):
         self.assertEqual(1, result.total)
         self.assertEqual('id1', result.hits[0].id)
         self.assertEqual(['this field is stored'], result.hits[0].storedField)
-
-    def testDontClearCachesIfNothingChanged(self):
-        consume(self.lucene.addDocument(identifier='id1', document=Document()))
-        self.lucene.scoreCollector('keyfield', MatchAllDocsQuery())
-        self.lucene.collectKeys(MatchAllDocsQuery(), 'keyfield')
-        self.assertEqual(1, self.lucene._scoreCollectorCache.length())
-        self.assertEqual(1, self.lucene._collectedKeysCache.length())
-        self.lucene.commit()
-        self.lucene.commit()
-        self.assertEqual(1, self.lucene._scoreCollectorCache.length())
-        self.assertEqual(1, self.lucene._collectedKeysCache.length())
-        consume(self.lucene.addDocument(identifier='id1', document=Document()))
-        self.lucene.commit()
-        self.assertEqual(0, self.lucene._scoreCollectorCache.length())
-        self.assertEqual(0, self.lucene._collectedKeysCache.length())
 
 def facets(**fields):
     return [dict(fieldname=name, maxTerms=max_) for name, max_ in fields.items()]

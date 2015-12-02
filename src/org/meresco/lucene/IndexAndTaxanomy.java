@@ -46,6 +46,7 @@ public class IndexAndTaxanomy {
         this.reader = DirectoryReader.open(indexDirectory);
         this.taxoReader = new DirectoryTaxonomyReader(taxoDirectory);
         this.settings = settings;
+        this.executor  = Executors.newFixedThreadPool(1000);
     }
 
     public boolean reopen() throws IOException {
@@ -66,12 +67,9 @@ public class IndexAndTaxanomy {
     public SuperIndexSearcher searcher() {
         if (!this.reopenSearcher)
             return this.searcher;
-
-        if (this.executor != null)
-            this.executor.shutdown();
-        this.executor  = Executors.newFixedThreadPool(this.settings.numberOfConcurrentTasks);
         this.searcher = new SuperIndexSearcher(this.reader, this.executor, this.settings.numberOfConcurrentTasks);
         this.searcher.setSimilarity(this.settings.similarity);
+        this.reopenSearcher = false;
         return this.searcher;
     }
 

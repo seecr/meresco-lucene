@@ -35,6 +35,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -617,6 +618,13 @@ public class LuceneTest extends SeecrTestCase {
 
         assertEquals(2, result.total);
         compareHits(result, "urn:1", "urn:2");
+        
+        Collections.sort(result.hits, new Comparator<Hit>() {
+            @Override
+            public int compare(Hit o1, Hit o2) {
+                return o1.id.compareTo(o2.id);
+            }
+        });
         GroupingHit hit0 = (GroupingHit) result.hits.get(0);
         GroupingHit hit1 = (GroupingHit) result.hits.get(1);
         assertEquals(new ArrayList<String>() {{ add("urn:1"); }}, hit0.duplicates);

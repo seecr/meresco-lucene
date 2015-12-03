@@ -24,12 +24,11 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from seecr.utils.generatorutils import returnValueFromGenerator
 from meresco.components.json import JsonDict, JsonList
 from meresco.lucene import Lucene, LuceneSettings
 from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
-from weightless.core import consume
+from weightless.core import consume, retval
 from cqlparser import cqlToExpression
 from simplejson import loads
 
@@ -100,7 +99,7 @@ class LuceneTest(SeecrTestCase):
                 }
             }).dumps()
         query = QueryExpressionToLuceneQueryDict([], LuceneSettings()).convert(cqlToExpression("field=value"))
-        response = returnValueFromGenerator(self._lucene.executeQuery(
+        response = retval(self._lucene.executeQuery(
                     luceneQuery=query, start=1, stop=5,
                     facets=[dict(maxTerms=10, fieldname='facet')],
                     sortKeys=[dict(sortBy='field', sortDescending=False)],
@@ -135,41 +134,41 @@ class LuceneTest(SeecrTestCase):
 
     def testPrefixSearch(self):
         self.response = JsonList([["value0", 1], ["value1", 2]]).dumps()
-        response = returnValueFromGenerator(self._lucene.prefixSearch(fieldname='field1', prefix='valu'))
+        response = retval(self._lucene.prefixSearch(fieldname='field1', prefix='valu'))
         self.assertEquals(['value1', 'value0'], response.hits)
 
-        response = returnValueFromGenerator(self._lucene.prefixSearch(fieldname='field1', prefix='valu', showCount=True))
+        response = retval(self._lucene.prefixSearch(fieldname='field1', prefix='valu', showCount=True))
         self.assertEquals([('value1', 2), ('value0', 1)], response.hits)
 
     def testNumDocs(self):
         self.response = "150"
-        result = returnValueFromGenerator(self._lucene.numDocs())
+        result = retval(self._lucene.numDocs())
         self.assertEqual(150, result)
         self.assertEqual([{'data': None, 'path': '/lucene/numDocs/'}], self.post)
 
     def testFieldnames(self):
         self.response = '["field1", "field2"]'
-        result = returnValueFromGenerator(self._lucene.fieldnames())
+        result = retval(self._lucene.fieldnames())
         self.assertEqual(["field1", "field2"], result.hits)
         self.assertEqual([{"data": None, "path": "/lucene/fieldnames/"}], self.post)
 
     def testDrilldownFieldnames(self):
         self.response = '["field1", "field2"]'
-        result = returnValueFromGenerator(self._lucene.drilldownFieldnames())
+        result = retval(self._lucene.drilldownFieldnames())
         self.assertEqual(["field1", "field2"], result.hits)
         self.assertEqual([{"data": None, "path": "/lucene/drilldownFieldnames/?limit=50"}], self.post)
 
-        result = returnValueFromGenerator(self._lucene.drilldownFieldnames(limit=1, path=['field']))
+        result = retval(self._lucene.drilldownFieldnames(limit=1, path=['field']))
         self.assertEqual(["field1", "field2"], result.hits)
         self.assertEqual({"data": None, "path": "/lucene/drilldownFieldnames/?dim=field&limit=1"}, self.post[-1])
 
-        result = returnValueFromGenerator(self._lucene.drilldownFieldnames(limit=1, path=['xyz', 'abc', 'field']))
+        result = retval(self._lucene.drilldownFieldnames(limit=1, path=['xyz', 'abc', 'field']))
         self.assertEqual(["field1", "field2"], result.hits)
         self.assertEqual({"data": None, "path": "/lucene/drilldownFieldnames/?dim=xyz&limit=1&path=abc&path=field"}, self.post[-1])
 
     def testUpdateSettings(self):
         self.response = JsonDict(numberOfConcurrentTasks=6, similarity="BM25(k1=1.2,b=0.75)", clusterMoreRecords=100, clusteringEps=0.4, clusteringMinPoints=1)
-        settings = returnValueFromGenerator(self._lucene.getSettings())
+        settings = retval(self._lucene.getSettings())
         self.assertEqual(['/settings/'], self.read)
         self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clusterMoreRecords': 100, 'clusteringEps': 0.4, 'clusteringMinPoints': 1}, settings)
 

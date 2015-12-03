@@ -29,8 +29,7 @@ from seecr.test import CallTrace
 from cqlparser import cqlToExpression
 from meresco.lucene.adaptertolucenequery import AdapterToLuceneQuery
 from meresco.core import Observable
-from weightless.core import be
-from seecr.utils.generatorutils import consume
+from weightless.core import be, consume
 from meresco.lucene.composedquery import ComposedQuery
 
 from meresco.lucene import LuceneSettings

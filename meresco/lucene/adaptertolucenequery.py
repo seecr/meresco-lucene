@@ -25,7 +25,6 @@
 ## end license ##
 
 from meresco.core import Transparent
-from seecr.utils.generatorutils import generatorReturn
 from cqlparser.cqltoexpression import cqlToExpression
 
 class AdapterToLuceneQuery(Transparent):
@@ -46,9 +45,9 @@ class AdapterToLuceneQuery(Transparent):
         if filterQueries:
             filterQueries = [convertMethod(cqlToExpression(ast)) for ast in filterQueries]
         response = yield self.any.executeQuery(core=core, luceneQuery=convertMethod(expression), filterQueries=filterQueries, **kwargs)
-        generatorReturn(response)
+        raise StopIteration(response)
 
     def executeComposedQuery(self, query):
         query.convertWith(**self._converts)
         response = yield self.any.executeComposedQuery(query=query)
-        generatorReturn(response)
+        raise StopIteration(response)

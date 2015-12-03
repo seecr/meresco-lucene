@@ -27,9 +27,7 @@
 from remote import LuceneRemote
 from meresco.core import Observable
 from socket import socket
-from seecr.utils.generatorutils import generatorReturn
-
-from seecr.utils.generatorutils import returnValueFromGenerator
+from weightless.core import retval
 
 class SynchronousRemote(object):
     def __init__(self, **kwargs):
@@ -39,25 +37,25 @@ class SynchronousRemote(object):
         self._observable.addObserver(self._remote)
 
     def prefixSearch(self, **kwargs):
-        return returnValueFromGenerator(self._observable.any.unknown(message='prefixSearch', **kwargs))
+        return retval(self._observable.any.unknown(message='prefixSearch', **kwargs))
 
     def fieldnames(self, **kwargs):
-        return returnValueFromGenerator(self._observable.any.unknown(message='fieldnames', **kwargs))
+        return retval(self._observable.any.unknown(message='fieldnames', **kwargs))
 
     def drilldownFieldnames(self, **kwargs):
-        return returnValueFromGenerator(self._observable.any.unknown(message='drilldownFieldnames', **kwargs))
+        return retval(self._observable.any.unknown(message='drilldownFieldnames', **kwargs))
 
     def executeQuery(self, *args, **kwargs):
         if len(args) == 1:
             kwargs['query'] = args[0]
         if 'cqlAbstractSyntaxTree' in kwargs:
             kwargs['query'] = kwargs.pop('cqlAbstractSyntaxTree')
-        return returnValueFromGenerator(self._observable.any.unknown(message='executeQuery', **kwargs))
+        return retval(self._observable.any.unknown(message='executeQuery', **kwargs))
 
     def executeComposedQuery(self, *args, **kwargs):
         if len(args) == 1:
             kwargs['query'] = args[0]
-        return returnValueFromGenerator(self._observable.any.unknown(message='executeComposedQuery', **kwargs))
+        return retval(self._observable.any.unknown(message='executeComposedQuery', **kwargs))
 
     def _httppost(self, host, port, request, body, headers):
         sok = _socket(host, port)
@@ -73,7 +71,7 @@ class SynchronousRemote(object):
             while totalBytesSent != len(sendBuffer):
                 bytesSent = sok.send(sendBuffer[totalBytesSent:])
                 totalBytesSent += bytesSent
-            generatorReturn(receiveFromSocket(sok))
+            raise StopIteration(receiveFromSocket(sok))
             yield
         finally:
             sok.close()

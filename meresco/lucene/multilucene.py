@@ -30,8 +30,6 @@ from meresco.components.http.utils import CRLF
 from meresco.components.json import JsonDict
 from meresco.core import Observable
 
-from seecr.utils.generatorutils import generatorReturn
-
 from simplejson import loads
 from _lucene import luceneResponseFromDict
 
@@ -46,7 +44,7 @@ class MultiLucene(Observable):
     def executeQuery(self, core=None, **kwargs):
         coreName = self._defaultCore if core is None else core
         response = yield self.any[coreName].executeQuery(**kwargs)
-        generatorReturn(response)
+        raise StopIteration(response)
 
     def executeComposedQuery(self, query):
         jsonDict = JsonDict()

@@ -9,8 +9,9 @@
 # Copyright (C) 2007-2009 Stichting Kennisnet Ict op school. http://www.kennisnetictopschool.nl
 # Copyright (C) 2009-2010 Delft University of Technology http://www.tudelft.nl
 # Copyright (C) 2009 Tilburg University http://www.uvt.nl
-# Copyright (C) 2012-2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2012-2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2012-2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -73,7 +74,7 @@ setup(
     author = 'Seecr (Seek You Too B.V.)',
     author_email = 'info@seecr.nl',
     description = 'A set of components and tools to integrate Lucene into Meresco',
-    long_description = '"Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco',
+    long_description = '"Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco',
     license = 'GPLv2',
     platforms = 'all',
 )

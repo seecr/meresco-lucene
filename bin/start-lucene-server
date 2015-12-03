@@ -24,12 +24,16 @@
 #
 ## end license ##
 
-from os import execv, environ
+from os import execv, environ, system
 from sys import argv
 from glob import glob
 
-LUCENE_JARS = glob("/usr/share/java/lucene-*.jar")
-from os import system
+USR_SHARE_JAVA_DIR='/usr/share/java'
+LUCENE_JARS = glob("{0}/lucene-*.jar".format(USR_SHARE_JAVA_DIR))
+if 'SEECRTEST_USR_SHARE' in environ and environ['SEECRTEST_USR_SHARE']:
+    USR_SHARE_JAVA_DIR = environ['SEECRTEST_USR_SHARE'] + '/java'
+MY_JARS = glob('{0}/meresco-lucene/*.jar'.format(USR_SHARE_JAVA_DIR))
+
 from os.path import dirname, abspath                         #DO_NOT_DISTRIBUTE
 projectdir = dirname(dirname(abspath(__file__)))             #DO_NOT_DISTRIBUTE
 status = system("cd %s; ./build.sh"  % projectdir)           #DO_NOT_DISTRIBUTE
@@ -46,8 +50,8 @@ if not [arg for arg in XOptions if arg.startswith('-Xmx')]:
     XOptions.append('-Xmx4G')
 
 java = '/usr/bin/java'
-# if 'JAVA_BIN' in environ and environ['JAVA_BIN']:
-    # java = environ['JAVA_BIN'] + "/java"
+if 'JAVA_BIN' in environ and environ['JAVA_BIN']:
+    java = environ['JAVA_BIN'] + "/java"
 
 if system("%s -version 2>&1 | grep '1.7' > /dev/null" % java) != 0:
     print "Java version should be java 7; You could specify a different java with JAVA_BIN"

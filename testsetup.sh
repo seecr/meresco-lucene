@@ -3,8 +3,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2012-2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2012-2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -27,19 +28,27 @@
 set -o errexit
 rm -rf tmp build
 mydir=$(cd $(dirname $0); pwd)
-source /usr/share/seecr-test/functions
+source /usr/share/seecr-tools/functions.d/test
 
-pyversions="2.6"
-if distro_is_debian_wheezy; then
-    pyversions="2.6 2.7"
+if [ -e /usr/bin/python2.6 ]; then
+    pyversions="python2.6"
 fi
-
+if [ -e /usr/bin/python2.7 ]; then
+    pyversions="python2.7"
+fi
 VERSION="x.y.z"
 
 for pyversion in $pyversions; do
     definePythonVars $pyversion
     echo "###### $pyversion, $PYTHON"
     (cd $mydir/src; ./build.sh ${SITEPACKAGES}/meresco/lucene)
+    (
+        cd $mydir
+        mkdir --parents tmp/usr/share/java/meresco-lucene
+        cp jars/*.jar tmp/usr/share/java/meresco-lucene/
+        ./build.sh "$VERSION"
+        mv meresco-lucene-${VERSION}.jar tmp/usr/share/java/meresco-lucene/
+    )
     ${PYTHON} setup.py install --root tmp
 done
 cp -r test tmp/test
@@ -49,6 +58,7 @@ find tmp -name '*.py' -exec sed -r -e "
     sX^usrSharePath.*=.*XusrSharePath = '${mydir}/tmp/usr/share/meresco-lucene'X;
     " -i '{}' \;
 
+export SEECRTEST_USR_SHARE="${mydir}/tmp/usr/share"
 runtests "$@"
 rm -rf tmp build
 

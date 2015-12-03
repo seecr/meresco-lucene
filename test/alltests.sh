@@ -52,8 +52,14 @@ for pycmd in $pyversions; do
     $pycmd _alltests.py "$@"
 done
 
-if [ "$#" != "0" ] ; then
+if [ $# -ne 0 ] ; then
     exit
+fi
+
+RUNJAVATESTS="False"
+RUNJAVATESTS="True"   #DO_NOT_DISTRIBUTE
+if [ "${RUNJAVATESTS}" == "False" ]; then
+    exit 0
 fi
 
 BUILDDIR=../build

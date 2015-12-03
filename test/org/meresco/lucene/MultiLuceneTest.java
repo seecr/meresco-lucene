@@ -30,6 +30,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 
 import org.apache.lucene.index.Term;
@@ -507,6 +509,12 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(1, result.total);
         LuceneTest.compareHits(result, "A-M");
+        Collections.sort(result.drilldownData, new Comparator<DrilldownData>(){
+			@Override
+			public int compare(DrilldownData o1, DrilldownData o2) {
+				return o1.fieldname.compareTo(o2.fieldname);
+			}
+        });
         assertEquals(3, result.drilldownData.size());
         assertEquals("cat_M", result.drilldownData.get(0).fieldname);
         assertEquals(1, result.drilldownData.get(0).terms.size());

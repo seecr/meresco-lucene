@@ -5,3 +5,4 @@ build
 *.pyc
 .project
 /ecl-bin/
+meresco-lucene.jar

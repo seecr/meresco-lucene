@@ -34,7 +34,6 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
-import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
@@ -42,9 +41,8 @@ import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.LuceneResponse.GroupingHit;
 import org.meresco.lucene.search.MerescoCluster;
-import org.meresco.lucene.search.MerescoCluster.TermScore;
-import org.meresco.lucene.search.MerescoClusterer;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
+import org.meresco.lucene.search.MerescoCluster.TermScore;
 
 public class LuceneResponseToJsonTest {
 

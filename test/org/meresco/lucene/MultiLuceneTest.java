@@ -25,26 +25,13 @@
 
 package org.meresco.lucene;
 
-import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.facet.DrillDownQuery;
-import org.apache.lucene.facet.FacetField;
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
@@ -54,7 +41,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
-import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 

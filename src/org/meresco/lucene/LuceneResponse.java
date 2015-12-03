@@ -36,11 +36,8 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
-import javax.xml.ws.Response;
 
-import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.search.spell.SuggestWord;
-import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;

@@ -177,6 +177,7 @@ public class ComposedQueryTest {
         assertArrayEquals(new String[] {"valeu"}, q.queryData.suggestionRequest.suggests.toArray(new String[0]));
     }
 
+    @SuppressWarnings("serial")
     @Test
     public void testStartStopNotRequired() throws Exception {
         JsonObject json = Json.createObjectBuilder()

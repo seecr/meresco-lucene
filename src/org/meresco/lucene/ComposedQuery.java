@@ -36,14 +36,10 @@ import java.util.Set;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
-import javax.json.JsonString;
 import javax.json.JsonValue;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.TermQuery;
 import org.meresco.lucene.QueryConverter.FacetRequest;
-import org.meresco.lucene.QueryConverter.SuggestionRequest;
 
 public class ComposedQuery {
 

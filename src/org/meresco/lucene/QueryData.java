@@ -6,7 +6,6 @@ import java.util.List;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -40,6 +39,6 @@ public class QueryData {
     }
 
     public QueryData() {
-        // TODO Auto-generated constructor stub
+       
     }
 }

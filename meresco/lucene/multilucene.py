@@ -24,25 +24,23 @@
 #
 ## end license ##
 
-from time import time
-
 from weightless.core import DeclineMessage
+from weightless.http import httppost
+from meresco.components.http.utils import CRLF
+from meresco.components.json import JsonDict
 from meresco.core import Observable
 
 from seecr.utils.generatorutils import generatorReturn
 
-from org.apache.lucene.search import MatchAllDocsQuery
-# from org.meresco.lucene.search.join import KeySuperCollector, AggregateScoreSuperCollector, ScoreSuperCollector
-# from org.meresco.lucene.queries import KeyFilter
-# from org.meresco.lucene.search import JoinSortCollector, JoinSortField
-from java.util import ArrayList
-
-from _lucene2 import millis
+from simplejson import loads
+from _lucene import luceneResponseFromDict
 
 
 class MultiLucene(Observable):
-    def __init__(self, defaultCore):
+    def __init__(self, host, port, defaultCore):
         Observable.__init__(self)
+        self._host = host
+        self._port = port
         self._defaultCore = defaultCore
 
     def executeQuery(self, core=None, **kwargs):
@@ -51,138 +49,29 @@ class MultiLucene(Observable):
         generatorReturn(response)
 
     def executeComposedQuery(self, query):
-        query.validate()
-        if query.isSingleCoreQuery():
-            response = yield self._sinqleQuery(query)
-            generatorReturn(response)
-        response = yield self._multipleCoreQuery(query)
-        response.info = query.infoDict()
-        generatorReturn(response)
+        jsonDict = JsonDict()
+        for k, v in query.asDict().items():
+            jsonDict[k.replace("_", "")] = v
+        for sortKey in query.sortKeys:
+            coreName = sortKey.get('core', query.resultsFrom)
+            self.call[coreName].updateSortKey(sortKey)
+        responseDict = (yield self._send(jsonDict=jsonDict, path='/query/'))
+        raise StopIteration(luceneResponseFromDict(responseDict))
+        yield
 
-    def _sinqleQuery(self, query):
-        t0 = time()
-        resultCoreName = query.resultsFrom
-        resultCoreQuery = query.queryFor(core=resultCoreName)
-        if resultCoreQuery is None:
-            resultCoreQuery = MatchAllDocsQuery()
-        result = yield self.any[resultCoreName].executeQuery(
-                luceneQuery=resultCoreQuery,
-                facets=query.facetsFor(resultCoreName),
-                filterQueries=query.filterQueriesFor(resultCoreName),
-                drilldownQueries=query.drilldownQueriesFor(resultCoreName),
-                **query.otherKwargs()
-            )
-        result.queryTime = millis(time() - t0)
-        generatorReturn(result)
+    def _send(self, path, jsonDict=None):
+        response = yield self._post(path=path, data=jsonDict.dumps() if jsonDict else None)
+        raise StopIteration(loads(response) if response else None)
 
-    def _multipleCoreQuery(self, query):
-        t0 = time()
-        resultCoreName = query.resultsFrom
-        otherCoreNames = [coreName for coreName in query.cores if coreName != resultCoreName]
+    def _post(self, path, data):
+        response = yield httppost(host=self._host, port=self._port, request=path, body=data)
+        header, body = response.split(CRLF * 2, 1)
+        self._verify20x(header, response)
+        raise StopIteration(body)
 
-        finalKeys = self._uniteFilter(query)
-        for otherCoreName in otherCoreNames:
-            finalKeys = self._coreQueries(otherCoreName, resultCoreName, query, finalKeys)
-
-        resultFilters = []
-        for keyName, keys in finalKeys.items():
-            resultFilters.append(KeyFilter(keys, keyName))
-
-        resultCoreQuery = self._luceneQueryForCore(resultCoreName, query)
-        aggregateScoreCollectors = self._createAggregateScoreCollectors(query)
-        keyCollectors = dict()
-        for keyName in query.keyNames(resultCoreName):
-            keyCollectors[keyName] = KeySuperCollector(keyName)
-
-        joinSortCollectors = dict()
-        for i, sortKey in enumerate(query.sortKeys):
-            coreName = sortKey.get('core', resultCoreName)
-            if coreName != resultCoreName:
-                if coreName not in joinSortCollectors:
-                    joinSortCollectors[coreName] = joinSortCollector = JoinSortCollector(query.keyName(resultCoreName, coreName), query.keyName(coreName, resultCoreName))
-                    self.call[coreName].search(query=MatchAllDocsQuery(), collector=joinSortCollector)
-                fieldRegistry = self.call[coreName].getFieldRegistry()
-                sortField = JoinSortField(sortKey['sortBy'], fieldRegistry.sortFieldType(sortKey['sortBy']), sortKey['sortDescending'], joinSortCollectors[sortKey['core']])
-                missingValue = sortKey.get('missingValue', fieldRegistry.defaultMissingValueForSort(sortKey['sortBy'], sortKey['sortDescending']))
-                sortField.setMissingValue(missingValue)
-                query.sortKeys[i] = sortField
-
-        result = yield self.any[resultCoreName].executeQuery(
-                luceneQuery=resultCoreQuery or MatchAllDocsQuery(),
-                filters=resultFilters,
-                facets=query.facetsFor(resultCoreName),
-                scoreCollectors=aggregateScoreCollectors,
-                keyCollectors=keyCollectors.values(),
-                **query.otherKwargs()
-            )
-
-        for otherCoreName in otherCoreNames:
-            if query.facetsFor(otherCoreName):
-                coreKey = query.keyName(resultCoreName, otherCoreName)
-                keyFilter = KeyFilter(keyCollectors[coreKey].getCollectedKeys(), query.keyName(otherCoreName, resultCoreName))
-                result.drilldownData.extend((yield self.any[otherCoreName].facets(
-                    facets=query.facetsFor(otherCoreName),
-                    filterQueries=query.queriesFor(otherCoreName) + query.otherCoreFacetFiltersFor(otherCoreName),
-                    drilldownQueries=query.drilldownQueriesFor(otherCoreName),
-                    filters=[keyFilter]
-                )))
-
-        result.queryTime = millis(time() - t0)
-        generatorReturn(result)
-
-    def _uniteFilter(self, query):
-        keys = dict()
-        for unite in query.unites:
-            for uniteSpec, keyNameResult in unite.queries():
-                collectedKeys = self.call[uniteSpec['core']].collectKeys(uniteSpec['query'], uniteSpec['keyName'])
-                if keyNameResult not in keys:
-                    keys[keyNameResult] = collectedKeys.clone()
-                else:
-                    keys[keyNameResult].union(collectedKeys)
-        for core, qs in query.filterQueries:
-            for q in qs:
-                keyNameResult = query.keyName(query.resultsFrom, core)
-                keyNameOther = query.keyName(core, query.resultsFrom)
-                collectedKeys = self.call[core].collectKeys(q, keyNameOther)
-                if keyNameResult not in keys:
-                    keys[keyNameResult] = collectedKeys.clone()
-                else:
-                    keys[keyNameResult].intersect(collectedKeys)
-        return keys
-
-    def _coreQueries(self, coreName, otherCoreName, query, keysForKeyName):
-        luceneQuery = self._luceneQueryForCore(coreName, query)
-        if luceneQuery:
-            collectedKeys = self.call[coreName].collectKeys(filter=None, keyName=query.keyName(coreName, otherCoreName), query=luceneQuery, cacheCollectedKeys=False)
-            otherKeyName = query.keyName(otherCoreName, coreName)
-            if otherKeyName in keysForKeyName:
-                keysForKeyName[otherKeyName].intersect(collectedKeys)
-            else:
-                keysForKeyName[otherKeyName] = collectedKeys
-        return keysForKeyName
-
-    def _luceneQueryForCore(self, coreName, query):
-        luceneQuery = query.queryFor(coreName)
-        ddQueries = query.drilldownQueriesFor(coreName)
-        if ddQueries:
-            luceneQuery = self.call[coreName].createDrilldownQuery(luceneQuery, ddQueries)
-        return luceneQuery
-
-    def _createAggregateScoreCollectors(self, query):
-        scoreCollectors = dict()
-        for coreName in query.cores:
-            resultsKeyName = query.keyName(query.resultsFrom, coreName)
-            rankQuery = query.rankQueryFor(coreName)
-            if rankQuery:
-                scoreCollector = self.call[coreName].scoreCollector(keyName=query.keyName(coreName, query.resultsFrom), query=rankQuery)
-                if resultsKeyName not in scoreCollectors:
-                    scoreCollectors[resultsKeyName] = ArrayList().of_(ScoreSuperCollector)
-                scoreCollectors[resultsKeyName].add(scoreCollector)
-        aggregateScoreCollectors = []
-        for keyName, scoreCollectorList in scoreCollectors.items():
-            if scoreCollectorList.size() > 0:
-                aggregateScoreCollectors.append(AggregateScoreSuperCollector(keyName, scoreCollectorList))
-        return aggregateScoreCollectors
+    def _verify20x(self, header, response):
+        if not header.startswith('HTTP/1.1 20'):
+            raise IOError("Expected status 'HTTP/1.1 20x' from Lucene server, but got: " + response)
 
     def any_unknown(self, message, **kwargs):
         if message in ['prefixSearch', 'fieldnames', 'drilldownFieldnames']:

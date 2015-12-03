@@ -63,6 +63,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.OpenBitSet;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.Lucene.TermCount;
@@ -90,6 +91,12 @@ public class LuceneTest extends SeecrTestCase {
         lucene = new Lucene(this.tmpDir, settings);
     }
 
+    @After
+    public void tearDown() throws Exception {
+        lucene.close();
+        super.tearDown();
+    }
+    
     @Test
     public void testAddDocument() throws Exception {
         Document doc = new Document();

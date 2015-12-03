@@ -172,7 +172,9 @@ public class Lucene {
         return this.settings;
     }
 
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
+        if (commitTimer != null)
+            commitTimer.cancel();
         indexAndTaxo.close();
         taxoWriter.close();
         indexWriter.close();

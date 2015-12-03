@@ -74,12 +74,18 @@ class Lucene(Observable):
     def delete(self, identifier):
         yield self._send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
 
+    def updateSortKey(self, sortKey):
+        missingValue = self._fieldRegistry.defaultMissingValueForSort(sortKey["sortBy"], sortKey["sortDescending"])
+        if missingValue:
+            sortKey["missingValue"] = missingValue
+        sortKey["type"] = self._fieldRegistry.sortFieldType(sortKey["sortBy"])
+
     def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, sortKeys=None, suggestionRequest=None, dedupField=None, dedupSortField=None, groupingField=None, clustering=False, **kwargs):
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
 
         for sortKey in sortKeys or []:
-            sortKey["type"] = self._fieldRegistry.sortFieldType(sortKey["sortBy"])
+            self.updateSortKey(sortKey)
         jsonDict = JsonDict(
             query=luceneQuery,
             start=start,

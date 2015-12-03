@@ -87,6 +87,15 @@ class LuceneTest(IntegrationTestCase):
         records = xpath(body, '//srw:recordIdentifier/text()')
         self.assertEquals(['record:%s' % i for i in xrange(100,90, -1)], records)
 
+    def testSortKeysWithMissingValues(self):
+        body = self.doSruQuery('*', sortKeys='field4,,1')
+        records = xpath(body, '//srw:recordIdentifier/text()')
+        self.assertEquals('record:1', records[0])
+
+        body = self.doSruQuery('*', sortKeys='field4,,0')
+        records = xpath(body, '//srw:recordIdentifier/text()')
+        self.assertEquals('record:1', records[0])
+
     def testFacet(self):
         body = self.doSruQuery('*', facet='untokenized.field2')
         ddItems = xpath(body, "//drilldown:term-drilldown/drilldown:navigator[@name='untokenized.field2']/drilldown:item")
@@ -136,6 +145,20 @@ class LuceneTest(IntegrationTestCase):
                     {'count': 19, 'term': 'value9'},
                 ]
             }], response.drilldownData)
+
+    def testJoinWithSortAndMissingValue(self):
+        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
+        q = ComposedQuery('main', query=cqlToExpression('*'))
+        q.addMatch(dict(core='main', uniqueKey=KEY_PREFIX+'field'), dict(core='main2', key=KEY_PREFIX+'field'))
+        q.addFacet(core='main2', facet=dict(fieldname='untokenized.field2', maxTerms=5))
+        q.addSortKey(dict(core="main", sortBy="field4", sortDescending=True))
+        response = remote.executeComposedQuery(query=q)
+        self.assertEqual("record:1", response.hits[0].id)
+        del q._sortKeys[:]
+        q.addSortKey(dict(core="main", sortBy="field4", sortDescending=False))
+        response = remote.executeComposedQuery(query=q)
+        self.assertEqual("record:1", response.hits[0].id)
+
 
     def testDedup(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')

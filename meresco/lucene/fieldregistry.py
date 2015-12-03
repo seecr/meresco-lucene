@@ -80,11 +80,6 @@ class FieldRegistry(object):
                 indexFieldName=indexFieldName
             )
 
-    # def indexFieldNames(self, fieldnames=None):
-    #     if fieldnames is None:
-    #         return set(self._indexFieldNames.values())
-    #     return set(self._indexFieldNames[f] for f in fieldnames if f in self._indexFieldNames or self.isDrilldownField(f))
-
     def isDrilldownField(self, fieldname):
         if self._isDrilldownFieldFunction(fieldname):
             # Side effect will only happen when using the _isDrilldownFieldFunction

@@ -52,7 +52,7 @@ for pycmd in $pyversions; do
     $pycmd _alltests.py "$@"
 done
 
-if [ -n "$@" ]; then
+if [ "$#" != "0" ] ; then
     exit
 fi
 

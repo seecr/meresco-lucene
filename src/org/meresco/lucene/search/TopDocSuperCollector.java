@@ -27,7 +27,6 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 

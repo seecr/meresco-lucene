@@ -48,13 +48,13 @@ public class SuperIndexSearcher extends IndexSearcher {
         super(reader);
         this.executor = executor;
         this.grouped_leaves = this.group_leaves(reader.leaves(), tasks);
-        for (List<AtomicReaderContext> l : this.grouped_leaves) {
-            int t = 0;
-            for (AtomicReaderContext ctx : l)
-                t += ctx.reader().numDocs();
-            // System.out.print(" " + t + " ");
-        }
-        // System.out.println();
+//        for (List<AtomicReaderContext> l : this.grouped_leaves) {
+//            int t = 0;
+//            for (AtomicReaderContext ctx : l)
+//                t += ctx.reader().numDocs();
+//             System.out.print(" " + t + " ");
+//        }
+//        System.out.println();
     }
 
     private List<List<AtomicReaderContext>> group_leaves(List<AtomicReaderContext> leaves, int tasks) {

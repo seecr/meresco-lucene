@@ -27,7 +27,6 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.TopScoreDocCollector;
 
 public class TopScoreDocSuperCollector extends TopDocSuperCollector {

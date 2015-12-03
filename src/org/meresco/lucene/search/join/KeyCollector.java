@@ -28,7 +28,6 @@ package org.meresco.lucene.search.join;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;
 import org.meresco.lucene.search.SubCollector;

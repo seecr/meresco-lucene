@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -118,9 +119,9 @@ public class Lucene {
     private File stateDir;
     private Map<String, CachedOrdinalsReader> cachedOrdinalsReader = new HashMap<String, CachedOrdinalsReader>();
     private DirectSpellChecker spellChecker = new DirectSpellChecker();
-    private LRUMap<Query, Filter> filterCache;
-    private LRUMap<KeyNameQuery, ScoreSuperCollector> scoreCollectorCache;
-    private LRUMap<KeyNameQuery, OpenBitSet> keyCollectorCache;
+    private Map<Query, Filter> filterCache;
+    private Map<KeyNameQuery, ScoreSuperCollector> scoreCollectorCache;
+    private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
 
     public Lucene(String name, File stateDir) {
         this.name = name;
@@ -163,9 +164,9 @@ public class Lucene {
         indexAndTaxo = new IndexAndTaxanomy(indexDirectory, taxoDirectory, settings);
         facetsConfig = settings.facetsConfig;
         
-        filterCache = new LRUMap<Query, Filter>(50);
-        scoreCollectorCache = new LRUMap<KeyNameQuery, ScoreSuperCollector>(50);
-        keyCollectorCache = new LRUMap<KeyNameQuery, OpenBitSet>(50);
+        filterCache = Collections.synchronizedMap(new LRUMap<Query, Filter>(50));
+        scoreCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, ScoreSuperCollector>(50));
+        keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
     }
 
     public LuceneSettings getSettings() {
@@ -430,8 +431,9 @@ public class Lucene {
     }
 
     public Filter filterQuery(Query query) {
-        if (filterCache.containsKey(query)) {
-            return filterCache.get(query);
+        Filter f = filterCache.get(query);
+        if (f != null) {
+            return f;
         }
         CachingWrapperFilter filter = new CachingWrapperFilter(new QueryWrapperFilter(query));
         filterCache.put(query, filter);
@@ -647,13 +649,12 @@ public class Lucene {
     public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Exception {
         if (cacheCollectedKeys) {
             KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, filterQuery);
-            if (keyCollectorCache.containsKey(keyNameQuery))
-                return keyCollectorCache.get(keyNameQuery);
-            else {
-                OpenBitSet keys = doCollectKeys(filterQuery, keyName, query);
+            OpenBitSet keys = keyCollectorCache.get(keyNameQuery);
+            if (keys == null) {
+                keys = doCollectKeys(filterQuery, keyName, query);
                 keyCollectorCache.put(keyNameQuery, keys);
-                return keys;
             }
+            return keys;
         }
         return doCollectKeys(filterQuery, keyName, query);
     }
@@ -684,13 +685,12 @@ public class Lucene {
     
     public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Exception {
         KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, query);
-        if (scoreCollectorCache.containsKey(keyNameQuery))
-            return scoreCollectorCache.get(keyNameQuery);
-        else {
-            ScoreSuperCollector scoreCollector = doScoreCollecting(keyName, query);
-            scoreCollectorCache.put(keyNameQuery, scoreCollector);
-            return scoreCollector;
+        ScoreSuperCollector scoreCollector = scoreCollectorCache.get(keyNameQuery);
+        if (scoreCollector == null) {
+            scoreCollector = doScoreCollecting(keyName, query);
+            scoreCollectorCache.put(keyNameQuery, scoreCollector);    
         }
+        return scoreCollector;
     }
     
     public ScoreSuperCollector doScoreCollecting(String keyName, Query query) throws Exception {

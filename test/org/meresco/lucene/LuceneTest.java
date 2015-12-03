@@ -563,6 +563,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(2, result.total);
         assertEquals(4, (int) result.totalWithDuplicates);
         compareHits(result, "urn:2", "urn:4");
+        Collections.sort(result.hits);
         DedupHit hit0 = (DedupHit) result.hits.get(0);
         DedupHit hit1 = (DedupHit) result.hits.get(1);
         assertEquals("__key__", hit0.duplicateField);
@@ -626,12 +627,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(2, result.total);
         compareHits(result, "urn:1", "urn:2");
         
-        Collections.sort(result.hits, new Comparator<Hit>() {
-            @Override
-            public int compare(Hit o1, Hit o2) {
-                return o1.id.compareTo(o2.id);
-            }
-        });
+        Collections.sort(result.hits);
         GroupingHit hit0 = (GroupingHit) result.hits.get(0);
         GroupingHit hit1 = (GroupingHit) result.hits.get(1);
         assertEquals(new ArrayList<String>() {{ add("urn:1"); }}, hit0.duplicates);

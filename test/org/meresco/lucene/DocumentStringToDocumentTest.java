@@ -49,10 +49,6 @@ import org.meresco.lucene.DocumentStringToDocument;
 
 public class DocumentStringToDocumentTest {
 
-    @Before
-    public void setUp() throws Exception {
-    }
-
     @Test
     public void testStringField() {
         JsonArray json = Json.createArrayBuilder()

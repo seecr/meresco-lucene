@@ -59,7 +59,7 @@ public class LuceneResponse {
         hits.add(hit);
     }
 
-    public static class Hit {
+    public static class Hit implements Comparable<Hit> {
         public String id;
         public float score;
         
@@ -69,6 +69,11 @@ public class LuceneResponse {
         }
 
         public Hit() {}
+
+        @Override
+        public int compareTo(Hit o) {
+            return id.compareTo(o.id);
+        }
     }
     
     public static class DedupHit extends Hit {

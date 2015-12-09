@@ -86,6 +86,7 @@ class LuceneTest(SeecrTestCase):
         self.response = JsonDict({
                 "total": 887,
                 "queryTime": 6,
+                "times": {"searchTime": 3},
                 "hits": [{
                         "id": "record:1", "score": 0.1234,
                         "duplicateCount": {"__key__": 2},
@@ -123,6 +124,7 @@ class LuceneTest(SeecrTestCase):
                 }, loads(self.post[0]['data']))
         self.assertEqual(887, response.total)
         self.assertEqual(6, response.queryTime)
+        self.assertEqual({'searchTime': 3}, response.times)
         self.assertEqual(1, len(response.hits))
         self.assertEqual("record:1", response.hits[0].id)
         self.assertEqual(0.1234, response.hits[0].score)

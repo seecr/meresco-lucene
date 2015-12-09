@@ -52,6 +52,8 @@ class LuceneServerTest(IntegrationTestCase):
         self.assertTrue("200 OK" in header.upper(), header)
         response = loads(body)
         self.assertEqual(1, response['total'])
+        self.assertTrue("queryTime" in response)
+        self.assertTrue("times" in response)
         self.assertEqual([{'id': 'id1', 'score': 0.28768208622932434}], response['hits'])
 
     def testFacets(self):

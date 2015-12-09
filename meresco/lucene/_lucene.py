@@ -184,6 +184,8 @@ def luceneResponseFromDict(responseDict):
         response.drilldownData = responseDict['drilldownData']
     if "suggestions" in responseDict:
         response.suggestions = responseDict['suggestions']
+    if "times" in responseDict:
+        response.times = responseDict['times']
     return response
 
 millis = lambda seconds: int(seconds * 1000) or 1 # nobody believes less than 1 millisecs

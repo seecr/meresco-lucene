@@ -75,7 +75,7 @@ public class MerescoClustererTest extends SeecrTestCase {
             lucene.addDocument("id:" + i, doc);
         }
         lucene.commit();
-        IndexReader reader = lucene.indexAndTaxo.searcher().getIndexReader();
+        IndexReader reader = lucene.manager.acquire().searcher.getIndexReader();
         collector = new MerescoClusterer(reader, 0.5);
     }
 

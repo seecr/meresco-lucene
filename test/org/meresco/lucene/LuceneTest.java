@@ -143,6 +143,15 @@ public class LuceneTest extends SeecrTestCase {
         result = lucene.executeQuery(new TermQuery(new Term("field1", "value1")));
         assertEquals(0, result.total);
     }
+    
+    @Test
+    public void testTwoQueries() throws Exception {
+        LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery());
+        assertEquals(0, result.total);
+        
+        result = lucene.executeQuery(new MatchAllDocsQuery());
+        assertEquals(0, result.total);
+    }
 
     @Test
     public void testFacets() throws Exception {

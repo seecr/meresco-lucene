@@ -51,12 +51,15 @@ import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.CachedOrdinalsReader;
 import org.apache.lucene.facet.taxonomy.DocValuesOrdinalsReader;
 import org.apache.lucene.facet.taxonomy.OrdinalsReader;
+import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager;
+import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
@@ -72,6 +75,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.ReferenceManager.RefreshListener;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
@@ -98,6 +102,7 @@ import org.meresco.lucene.search.MerescoCluster.TermScore;
 import org.meresco.lucene.search.MerescoClusterer;
 import org.meresco.lucene.search.MultiSuperCollector;
 import org.meresco.lucene.search.SuperCollector;
+import org.meresco.lucene.search.SuperIndexSearcher;
 import org.meresco.lucene.search.TopDocSuperCollector;
 import org.meresco.lucene.search.TopFieldSuperCollector;
 import org.meresco.lucene.search.TopScoreDocSuperCollector;
@@ -110,7 +115,6 @@ public class Lucene {
     public static final String ID_FIELD = "__id__";
     IndexWriter indexWriter;
     DirectoryTaxonomyWriter taxoWriter;
-    IndexAndTaxanomy indexAndTaxo;
     FacetsConfig facetsConfig;
     private LuceneSettings settings;
     private int commitCount = 0;
@@ -122,6 +126,8 @@ public class Lucene {
     private Map<Query, Filter> filterCache;
     private Map<KeyNameQuery, ScoreSuperCollector> scoreCollectorCache;
     private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
+    SearcherTaxonomyManager manager;
+    private LuceneRefreshListener refreshListener = new LuceneRefreshListener();
 
     public Lucene(String name, File stateDir) {
         this.name = name;
@@ -161,12 +167,14 @@ public class Lucene {
         taxoWriter = new DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(settings.lruTaxonomyWriterCacheSize));
         taxoWriter.commit();
 
-        indexAndTaxo = new IndexAndTaxanomy(indexDirectory, taxoDirectory, settings);
         facetsConfig = settings.facetsConfig;
         
         filterCache = Collections.synchronizedMap(new LRUMap<Query, Filter>(50));
         scoreCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, ScoreSuperCollector>(50));
         keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
+        
+        manager = new SearcherTaxonomyManager(indexDirectory, taxoDirectory, new MerescoSearchFactory(indexDirectory, taxoDirectory, settings));
+        manager.addListener(refreshListener);
     }
 
     public LuceneSettings getSettings() {
@@ -176,7 +184,7 @@ public class Lucene {
     public synchronized void close() throws IOException {
         if (commitTimer != null)
             commitTimer.cancel();
-        indexAndTaxo.close();
+        manager.close();
         taxoWriter.close();
         indexWriter.close();
     }
@@ -229,7 +237,8 @@ public class Lucene {
         }
         indexWriter.commit();
         taxoWriter.commit();
-        if (indexAndTaxo.reopen()) {
+        manager.maybeRefreshBlocking();
+        if (refreshListener.isRefreshed()) {
             scoreCollectorCache.clear();
             keyCollectorCache.clear();
         }
@@ -267,64 +276,69 @@ public class Lucene {
         Map<String, Long> times = new HashMap<>();
         long t0 = System.currentTimeMillis();
         int topCollectorStop = q.stop;
-        while (true) {
-            collectors = createCollectors(q, topCollectorStop, keyCollectors, scoreCollectors);
-            Filter f = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Filter[0]));
-
-            Query query = q.query;
-            if (drilldownQueries != null) 
-                query = createDrilldownQuery(query, drilldownQueries);
-            long t1 = System.currentTimeMillis();
-            indexAndTaxo.searcher().search(query, f, collectors.root);
-            times.put("searchTime", System.currentTimeMillis() - t1);
-            
-            totalHits = collectors.topCollector.getTotalHits();
-            if (q.clustering) {
-                t1 = System.currentTimeMillis();
-                hits = clusterTopDocsResponse(q, collectors, times);
-                times.put("totalClusterTime", System.currentTimeMillis() - t1);
-            } else {
-                t1 = System.currentTimeMillis();
-                hits = topDocsResponse(q, collectors);
-                times.put("topDocsTime", System.currentTimeMillis() - t1);
+        SearcherAndTaxonomy reference = manager.acquire();
+        try {
+            while (true) {
+                collectors = createCollectors(q, topCollectorStop, keyCollectors, scoreCollectors, reference);
+                Filter f = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Filter[0]));
+    
+                Query query = q.query;
+                if (drilldownQueries != null) 
+                    query = createDrilldownQuery(query, drilldownQueries);
+                long t1 = System.currentTimeMillis();
+                ((SuperIndexSearcher) reference.searcher).search(query, f, collectors.root);
+                times.put("searchTime", System.currentTimeMillis() - t1);
+                
+                totalHits = collectors.topCollector.getTotalHits();
+                if (q.clustering) {
+                    t1 = System.currentTimeMillis();
+                    hits = clusterTopDocsResponse(q, collectors, times, reference.searcher.getIndexReader());
+                    times.put("totalClusterTime", System.currentTimeMillis() - t1);
+                } else {
+                    t1 = System.currentTimeMillis();
+                    hits = topDocsResponse(q, collectors);
+                    times.put("topDocsTime", System.currentTimeMillis() - t1);
+                }
+                
+                if (hits.size() == q.stop - q.start || topCollectorStop >= totalHits)
+                    break;
+                topCollectorStop *= 10;
             }
+                
+            LuceneResponse response = new LuceneResponse(totalHits);
+            if (collectors.dedupCollector != null)
+                response.totalWithDuplicates = collectors.dedupCollector.getTotalHits();
             
-            if (hits.size() == q.stop - q.start || topCollectorStop >= totalHits)
-                break;
-            topCollectorStop *= 10;
-        }
+            response.hits = hits;
             
-        LuceneResponse response = new LuceneResponse(totalHits);
-        if (collectors.dedupCollector != null)
-            response.totalWithDuplicates = collectors.dedupCollector.getTotalHits();
-        
-        response.hits = hits;
-        
-        if (collectors.facetCollector != null) {
-            long t1 = System.currentTimeMillis();
-            response.drilldownData = facetResult(collectors.facetCollector, q.facets);
-            times.put("facetTime", System.currentTimeMillis() - t1);
+            if (collectors.facetCollector != null) {
+                long t1 = System.currentTimeMillis();
+                response.drilldownData = facetResult(collectors.facetCollector, q.facets);
+                times.put("facetTime", System.currentTimeMillis() - t1);
+            }
+    
+            if (q.suggestionRequest != null) {
+                long t1 = System.currentTimeMillis();
+                HashMap<String, SuggestWord[]> result = new HashMap<>();  
+                for (String suggest : q.suggestionRequest.suggests)
+                    result.put(suggest, suggest(suggest, q.suggestionRequest.count, q.suggestionRequest.field));
+                times.put("suggestionTime", System.currentTimeMillis() - t1);
+                response.suggestions = result;
+            }
+            response.times = times;
+            response.queryTime = System.currentTimeMillis() - t0;
+            return response;
+        } finally {
+            manager.release(reference);
         }
-
-        if (q.suggestionRequest != null) {
-            long t1 = System.currentTimeMillis();
-            HashMap<String, SuggestWord[]> result = new HashMap<>();  
-            for (String suggest : q.suggestionRequest.suggests)
-                result.put(suggest, suggest(suggest, q.suggestionRequest.count, q.suggestionRequest.field));
-            times.put("suggestionTime", System.currentTimeMillis() - t1);
-            response.suggestions = result;
-        }
-        response.times = times;
-        response.queryTime = System.currentTimeMillis() - t0;
-        return response;
     }
 
-    private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times) throws IOException {
+    private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader) throws IOException {
         int totalHits = collectors.topCollector.getTotalHits();
                 
         List<LuceneResponse.Hit> hits = new ArrayList<>();
         double epsilon = interpolateEpsilon(totalHits, q.stop - q.start);
-        MerescoClusterer clusterer = new MerescoClusterer(indexAndTaxo.reader, epsilon, settings.clusteringMinPoints);
+        MerescoClusterer clusterer = new MerescoClusterer(indexReader, epsilon, settings.clusteringMinPoints);
         for (ClusterField clusterField : settings.clusterFields)
             clusterer.registerField(clusterField.fieldname, clusterField.weight, clusterField.filterValue);
         TopDocs topDocs = collectors.topCollector.topDocs(q.start);
@@ -419,15 +433,20 @@ public class Lucene {
     }
 
     public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, List<String[]> drilldownQueries, Filter filter) throws Exception {
-        FacetSuperCollector facetCollector = facetCollector(facets);
-        if (facetCollector == null)
-            return new ArrayList<DrilldownData>();
-        Filter filter_ = filtersFor(filterQueries, filter);
-        Query query = new MatchAllDocsQuery();
-        if (drilldownQueries != null)
-            query = createDrilldownQuery(query, drilldownQueries);
-        indexAndTaxo.searcher().search(query, filter_, facetCollector);
-        return facetResult(facetCollector, facets);
+        SearcherAndTaxonomy reference = manager.acquire();
+        try {
+            FacetSuperCollector facetCollector = facetCollector(facets, reference.taxonomyReader);
+            if (facetCollector == null)
+                return new ArrayList<DrilldownData>();
+            Filter filter_ = filtersFor(filterQueries, filter);
+            Query query = new MatchAllDocsQuery();
+            if (drilldownQueries != null)
+                query = createDrilldownQuery(query, drilldownQueries);
+            ((SuperIndexSearcher) reference.searcher).search(query, filter_, facetCollector);
+            return facetResult(facetCollector, facets);
+        } finally {
+            manager.release(reference);
+        }
     }
 
     public Filter filterQuery(Query query) {
@@ -455,10 +474,16 @@ public class Lucene {
     }
 
     public Document getDocument(int docID) throws IOException {
-        return indexAndTaxo.searcher().doc(docID);
+        SearcherAndTaxonomy reference = manager.acquire();
+        try {
+            return ((SuperIndexSearcher) reference.searcher).doc(docID);
+        } finally {
+            manager.release(reference);
+        }
+        
     }
 
-    private Collectors createCollectors(QueryData q, int stop, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors) {
+    private Collectors createCollectors(QueryData q, int stop, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors, SearcherAndTaxonomy reference) {
         Collectors allCollectors = new Collectors();
         SuperCollector<?> resultsCollector;
         if (q.clustering) {
@@ -476,7 +501,7 @@ public class Lucene {
             allCollectors.topCollector = topCollector(q.start, stop, q.sort);
             resultsCollector = allCollectors.topCollector;
         }
-        allCollectors.facetCollector = facetCollector(q.facets);
+        allCollectors.facetCollector = facetCollector(q.facets, reference.taxonomyReader);
 
         List<SuperCollector<?>> collectors = new ArrayList<SuperCollector<?>>();
         collectors.add(resultsCollector);
@@ -506,11 +531,11 @@ public class Lucene {
         return new TopFieldSuperCollector(sort, stop, true, false, true);
     }
 
-    private FacetSuperCollector facetCollector(List<FacetRequest> facets) {
+    private FacetSuperCollector facetCollector(List<FacetRequest> facets, TaxonomyReader taxonomyReader) {
         if (facets == null || facets.size() == 0)
             return null;
         String[] indexFieldnames = getIndexFieldNames(facets);
-        FacetSuperCollector collector = new FacetSuperCollector(indexAndTaxo.taxoReader, facetsConfig, getOrdinalsReader(indexFieldnames[0]));
+        FacetSuperCollector collector = new FacetSuperCollector(taxonomyReader, facetsConfig, getOrdinalsReader(indexFieldnames[0]));
         for (int i = 1; i < indexFieldnames.length; i++) {
             collector.addOrdinalsReader(getOrdinalsReader(indexFieldnames[i]));
         }
@@ -577,26 +602,32 @@ public class Lucene {
 //        elif t == float:
 //            convert = lambda term: NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term))
 
-        List<TermCount> terms = new ArrayList<TermCount>();
-        Terms termsEnum = MultiFields.getTerms(this.indexAndTaxo.reader, field);
-        if (termsEnum == null)
-            return terms;
-        TermsEnum iterator = termsEnum.iterator(null);
-        if (prefix != null) {
-            iterator.seekCeil(new BytesRef(prefix));
-            terms.add(new TermCount(iterator.term().utf8ToString(), iterator.docFreq()));
-        }
-        while (terms.size() < limit) {
-            BytesRef next = iterator.next();
-            if (next == null)
-                break;
-            String term = next.utf8ToString();
-            if (prefix != null && !term.startsWith(prefix)) {
-                break;
+        SearcherAndTaxonomy reference = manager.acquire();
+        try {
+            List<TermCount> terms = new ArrayList<TermCount>();
+            IndexReader reader = reference.searcher.getIndexReader();  
+            Terms termsEnum = MultiFields.getTerms(reader, field);
+            if (termsEnum == null)
+                return terms;
+            TermsEnum iterator = termsEnum.iterator(null);
+            if (prefix != null) {
+                iterator.seekCeil(new BytesRef(prefix));
+                terms.add(new TermCount(iterator.term().utf8ToString(), iterator.docFreq()));
             }
-            terms.add(new TermCount(term, iterator.docFreq()));
+            while (terms.size() < limit) {
+                BytesRef next = iterator.next();
+                if (next == null)
+                    break;
+                String term = next.utf8ToString();
+                if (prefix != null && !term.startsWith(prefix)) {
+                    break;
+                }
+                terms.add(new TermCount(term, iterator.docFreq()));
+            }
+            return terms;
+        } finally {
+            manager.release(reference);
         }
-        return terms;
     }
 
     public int numDocs() {
@@ -608,38 +639,53 @@ public class Lucene {
     }
 
     public List<String> fieldnames() throws IOException {
-        List<String> fieldnames = new ArrayList<String>();
-        Fields fields = MultiFields.getFields(this.indexAndTaxo.reader);
-        if (fields == null)
+        SearcherAndTaxonomy reference = manager.acquire();
+        try {
+            List<String> fieldnames = new ArrayList<String>();
+            Fields fields = MultiFields.getFields(reference.searcher.getIndexReader());
+            if (fields == null)
+                return fieldnames;
+            for (Iterator<String> iterator = fields.iterator(); iterator.hasNext();) {
+                fieldnames.add(iterator.next());
+            }
             return fieldnames;
-        for (Iterator<String> iterator = fields.iterator(); iterator.hasNext();) {
-            fieldnames.add(iterator.next());
+        }  finally {
+            manager.release(reference);
         }
-        return fieldnames;
     }
 
     public List<String> drilldownFieldnames(int limit, String dim, String... path) throws IOException {
-        DirectoryTaxonomyReader taxoReader = this.indexAndTaxo.taxoReader;
-        int parentOrdinal = dim == null ? TaxonomyReader.ROOT_ORDINAL : taxoReader.getOrdinal(dim, path);
-        ChildrenIterator childrenIter = taxoReader.getChildren(parentOrdinal);
-        List<String> fieldnames = new ArrayList<String>();
-        while (true) {
-            int ordinal = childrenIter.next();
-            if (ordinal == TaxonomyReader.INVALID_ORDINAL)
-                break;
-            String[] components = taxoReader.getPath(ordinal).components;
-            fieldnames.add(components[components.length - 1 ]);
-            if (fieldnames.size() >= limit)
-                break;
+        SearcherAndTaxonomy reference = manager.acquire();
+        try {
+            DirectoryTaxonomyReader taxoReader = reference.taxonomyReader;
+            int parentOrdinal = dim == null ? TaxonomyReader.ROOT_ORDINAL : taxoReader.getOrdinal(dim, path);
+            ChildrenIterator childrenIter = taxoReader.getChildren(parentOrdinal);
+            List<String> fieldnames = new ArrayList<String>();
+            while (true) {
+                int ordinal = childrenIter.next();
+                if (ordinal == TaxonomyReader.INVALID_ORDINAL)
+                    break;
+                String[] components = taxoReader.getPath(ordinal).components;
+                fieldnames.add(components[components.length - 1 ]);
+                if (fieldnames.size() >= limit)
+                    break;
+            }
+            return fieldnames;
+        }  finally {
+            manager.release(reference);
         }
-        return fieldnames;
     }
 
     public void search(Query query, Query filterQuery, SuperCollector<?> collector) throws Exception {
         Filter filter_ = null;
         if (filterQuery != null)
             filter_ = new QueryWrapperFilter(filterQuery);
-        indexAndTaxo.searcher().search(query, filter_, collector);
+        SearcherAndTaxonomy reference = manager.acquire();
+        try {
+            ((SuperIndexSearcher) reference.searcher).search(query, filter_, collector);
+        } finally {
+            manager.release(reference);
+        }
     }
 
     public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Exception {
@@ -694,13 +740,23 @@ public class Lucene {
     }
     
     public ScoreSuperCollector doScoreCollecting(String keyName, Query query) throws Exception {
-        ScoreSuperCollector scoreCollector = new ScoreSuperCollector(keyName);
-        indexAndTaxo.searcher().search(query, null, scoreCollector);
-        return scoreCollector;
+        SearcherAndTaxonomy reference = manager.acquire();
+        try {
+            ScoreSuperCollector scoreCollector = new ScoreSuperCollector(keyName);
+            ((SuperIndexSearcher) reference.searcher).search(query, null, scoreCollector);
+            return scoreCollector;
+        } finally {
+            manager.release(reference);
+        }
     }
 
     public SuggestWord[] suggest(String term, int count, String field) throws IOException {
-        return spellChecker.suggestSimilar(new Term(field, term), count, indexAndTaxo.searcher().getIndexReader());
+        SearcherAndTaxonomy reference = manager.acquire();
+        try {
+            return spellChecker.suggestSimilar(new Term(field, term), count, reference.searcher.getIndexReader());    
+        } finally {
+            manager.release(reference);
+        }
     }
 
     double interpolateEpsilon(int hits, int slice) {
@@ -750,4 +806,24 @@ public class Lucene {
         }
     }
 
+    private class LuceneRefreshListener implements RefreshListener {
+        private boolean refreshed;
+
+        @Override
+        public void afterRefresh(boolean didRefresh) throws IOException {
+            if (!refreshed)
+                refreshed = didRefresh;
+        }
+
+        @Override
+        public void beforeRefresh() throws IOException {}
+        
+        public boolean isRefreshed() {
+            if (refreshed) {
+                refreshed = false;
+                return true;
+            }
+            return false;
+        }
+    }
 }

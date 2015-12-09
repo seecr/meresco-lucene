@@ -117,7 +117,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         }
         I.close();
         I = new Lucene(this.tmpDir, new LuceneSettings());
-        FacetSuperCollector C = new FacetSuperCollector(I.indexAndTaxo.taxoReader, I.facetsConfig, new DocValuesOrdinalsReader());
+        FacetSuperCollector C = new FacetSuperCollector(I.manager.acquire().taxonomyReader, I.facetsConfig, new DocValuesOrdinalsReader());
         MatchAllDocsQuery Q = new MatchAllDocsQuery();
         I.search(Q, null, C);
         FacetResult tc = C.getTopChildren(10, "facet1");
@@ -152,7 +152,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         I.close();
         I = new Lucene(this.tmpDir, new LuceneSettings());
 
-        FacetSuperCollector f = new FacetSuperCollector(I.indexAndTaxo.taxoReader, I.facetsConfig, new DocValuesOrdinalsReader());
+        FacetSuperCollector f = new FacetSuperCollector(I.manager.acquire().taxonomyReader, I.facetsConfig, new DocValuesOrdinalsReader());
         TopScoreDocSuperCollector t = new TopScoreDocSuperCollector(10, true);
         List<SuperCollector<?>> collectors = new ArrayList<SuperCollector<?>>();
         collectors.add(t);

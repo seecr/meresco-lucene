@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -44,7 +45,7 @@ public class SuperIndexSearcher extends IndexSearcher {
     private ExecutorService executor;
     private List<List<AtomicReaderContext>> grouped_leaves;
 
-    public SuperIndexSearcher(DirectoryReader reader, ExecutorService executor, int tasks) {
+    public SuperIndexSearcher(IndexReader reader, ExecutorService executor, int tasks) {
         super(reader);
         this.executor = executor;
         this.grouped_leaves = this.group_leaves(reader.leaves(), tasks);

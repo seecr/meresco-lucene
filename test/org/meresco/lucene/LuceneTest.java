@@ -1073,6 +1073,14 @@ public class LuceneTest extends SeecrTestCase {
         assertNotSame(keys1, keys3);
     }
     
+    @Test
+    public void testQueryConvert() {
+        lucene.getSettings().facetsConfig.setIndexFieldName("dim1", "otherfield");
+        QueryConverter queryConverter = lucene.getQueryConverter();
+        Term drilldownTerm = queryConverter.createDrilldownTerm("dim1");
+        assertEquals("otherfield", drilldownTerm.field());
+    }
+    
     public static void compareHits(LuceneResponse response, String... hitIds) {
         Set<String> responseHitIds = new HashSet<String>();
         for (Hit hit : response.hits)

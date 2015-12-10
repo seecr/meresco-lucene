@@ -103,9 +103,6 @@ public class DocumentStringToDocument {
                 }
                 field = new FacetField(name, path);
         }
-        if (field == null)
-            throw new UnknownTypeException();
-
         return field;
     }
 
@@ -126,6 +123,3 @@ public class DocumentStringToDocument {
         NO_TERMS_FREQUENCY_FIELD.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
     }
 }
-
-class UnknownTypeException extends RuntimeException {};
-

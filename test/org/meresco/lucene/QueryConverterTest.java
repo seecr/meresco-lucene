@@ -350,12 +350,25 @@ public class QueryConverterTest {
                                 .add("sortBy", "fieldname")
                                 .add("type", "String")
                                 .add("missingValue", "STRING_FIRST")
+                                .add("sortDescending", true))
+                        .add(Json.createObjectBuilder()
+                                .add("sortBy", "fieldname")
+                                .add("type", "String")
+                                .add("missingValue", "STRING_LAST")
+                                .add("sortDescending", true))
+                        .add(Json.createObjectBuilder()
+                                .add("sortBy", "longfield")
+                                .add("type", "Long")
+                                .add("sortDescending", true))
+                        .add(Json.createObjectBuilder()
+                                .add("sortBy", "doublefield")
+                                .add("type", "Double")
                                 .add("sortDescending", true)))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         assertEquals(new MatchAllDocsQuery(), q.query);
         SortField[] sortFields = q.sort.getSort();
-        assertEquals(4, sortFields.length);
+        assertEquals(7, sortFields.length);
         assertEquals("fieldname", sortFields[0].getField());
         assertEquals(SortField.Type.STRING, sortFields[0].getType());
         assertEquals(false, sortFields[0].getReverse());
@@ -375,6 +388,21 @@ public class QueryConverterTest {
         assertEquals(SortField.Type.STRING, sortFields[3].getType());
         assertEquals(true, sortFields[3].getReverse());
         assertEquals(SortField.STRING_FIRST, sortFields[3].missingValue);
+        
+        assertEquals("fieldname", sortFields[4].getField());
+        assertEquals(SortField.Type.STRING, sortFields[4].getType());
+        assertEquals(true, sortFields[4].getReverse());
+        assertEquals(SortField.STRING_LAST, sortFields[4].missingValue);
+        
+        assertEquals("longfield", sortFields[5].getField());
+        assertEquals(SortField.Type.LONG, sortFields[5].getType());
+        assertEquals(true, sortFields[5].getReverse());
+        assertEquals(null, sortFields[5].missingValue);
+        
+        assertEquals("doublefield", sortFields[6].getField());
+        assertEquals(SortField.Type.DOUBLE, sortFields[6].getType());
+        assertEquals(true, sortFields[6].getReverse());
+        assertEquals(null, sortFields[6].missingValue);
     }
     
     @Test

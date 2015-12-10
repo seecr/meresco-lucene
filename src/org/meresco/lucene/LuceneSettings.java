@@ -25,17 +25,23 @@
 
 package org.meresco.lucene;
 
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
+import org.meresco.lucene.analysis.MerescoDutchStemmingAnalyzer;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
+import org.meresco.lucene.search.TermFrequencySimilarity;
 
 public class LuceneSettings {
 
@@ -79,5 +85,108 @@ public class LuceneSettings {
             .add("clusterMoreRecords", clusterMoreRecords)
             .build();
         return json;
+    }
+
+    public void updateSettings(Reader reader) {
+        JsonObject object = (JsonObject) Json.createReader(reader).read();
+        for (String key : object.keySet()) {
+            switch (key) {
+                case "commitCount":
+                    commitCount = object.getInt(key);
+                    break;
+                case "commitTimeout":
+                    commitTimeout = object.getInt(key);
+                    break;
+                case "lruTaxonomyWriterCacheSize":
+                    lruTaxonomyWriterCacheSize = object.getInt(key);
+                    break;
+                case "maxMergeAtOnce":
+                    maxMergeAtOnce = object.getInt(key);
+                    break;
+                case "segmentsPerTier":
+                    segmentsPerTier = object.getJsonNumber(key).doubleValue();
+                    break;
+                case "numberOfConcurrentTasks":
+                    numberOfConcurrentTasks = object.getInt(key);
+                    break;
+                case "clusteringEps":
+                    clusteringEps = object.getJsonNumber(key).doubleValue();
+                    break;
+                case "clusteringMinPoints":
+                    clusteringMinPoints = object.getInt(key);
+                    break;
+                case "clusterMoreRecords":
+                    clusterMoreRecords  = object.getInt(key);
+                    break;
+                case "analyzer":
+                    analyzer = getAnalyzer(object.getJsonObject(key));
+                    break;
+                case "similarity":
+                    similarity = getSimilarity(object.getJsonObject(key));
+                    break;
+                case "drilldownFields":
+                    updateDrilldownFields(facetsConfig, object.getJsonArray(key));
+                    break;
+                case "clusterFields":
+                    clusterFields = getClusterFields(object.getJsonArray(key));
+                    break;
+            }
+        }
+
+    }
+
+    private static List<ClusterField> getClusterFields(JsonArray jsonClusterFields) {
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        for (int i=0; i<jsonClusterFields.size(); i++) {
+            JsonObject clusterField = jsonClusterFields.getJsonObject(i);
+            String filterValue = clusterField.getString("filterValue", null);
+            clusterFields.add(new ClusterField(clusterField.getString("fieldname"), clusterField.getJsonNumber("weight").doubleValue(), filterValue));
+        }
+        return clusterFields;
+    }
+
+    private static void updateDrilldownFields(FacetsConfig facetsConfig, JsonArray drilldownFields) {
+        for (int i = 0; i < drilldownFields.size(); i++) {
+            JsonObject drilldownField = drilldownFields.getJsonObject(i);
+            String dim = drilldownField.getString("dim");
+            if (drilldownField.get("hierarchical") != null)
+                facetsConfig.setHierarchical(dim, drilldownField.getBoolean("hierarchical"));
+            if (drilldownField.get("multiValued") != null)
+                facetsConfig.setMultiValued(dim, drilldownField.getBoolean("multiValued"));
+            String fieldname = drilldownField.getString("fieldname", null);
+            if (fieldname != null && fieldname != null)
+                facetsConfig.setIndexFieldName(dim, fieldname);
+        }
+    }
+
+    private static Similarity getSimilarity(JsonObject similarity) {
+        switch (similarity.getString("type")) {
+            case "BM25Similarity":
+                JsonNumber k1 = similarity.getJsonNumber("k1");
+                JsonNumber b = similarity.getJsonNumber("b");
+                if (k1 != null && b != null)
+                    return new BM25Similarity((float) k1.doubleValue(), (float) b.doubleValue());
+                return new BM25Similarity();
+            case "TermFrequencySimilarity":
+                return new TermFrequencySimilarity();
+        }
+        return null;
+    }
+
+    private static Analyzer getAnalyzer(JsonObject analyzer) {
+        switch (analyzer.getString("type")) {
+            case "MerescoDutchStemmingAnalyzer":
+                JsonArray jsonFields = analyzer.getJsonArray("fields");
+                String[] fields = new String[jsonFields.size()];
+                for (int i = 0; i < jsonFields.size(); i++) {
+                    fields[i] = jsonFields.getString(i);
+                }
+                return new MerescoDutchStemmingAnalyzer(fields);
+            case "MerescoStandardAnalyzer":
+                return new MerescoStandardAnalyzer();
+            case "WhitespaceAnalyzer":
+                return new WhitespaceAnalyzer();
+        }
+        return null;
     }
 }

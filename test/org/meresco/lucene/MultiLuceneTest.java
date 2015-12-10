@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -57,13 +58,14 @@ public class MultiLuceneTest extends SeecrTestCase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        LuceneSettings settings = new LuceneSettings();
-        LuceneSettings settingsLuceneC = new LuceneSettings();
-        settingsLuceneC.similarity = new TermFrequencySimilarity();
+        LuceneSettings settingsA = new LuceneSettings();
+        LuceneSettings settingsB = new LuceneSettings();
+        LuceneSettings settingsC = new LuceneSettings();
+        settingsC.similarity = new TermFrequencySimilarity();
 
-        luceneA = new Lucene("coreA", new File(this.tmpDir, "a"), settings);
-        luceneB = new Lucene("coreB", new File(this.tmpDir, "b"), settings);
-        luceneC = new Lucene("coreC", new File(this.tmpDir, "c"), settingsLuceneC);
+        luceneA = new Lucene("coreA", new File(this.tmpDir, "a"), settingsA);
+        luceneB = new Lucene("coreB", new File(this.tmpDir, "b"), settingsB);
+        luceneC = new Lucene("coreC", new File(this.tmpDir, "c"), settingsC);
 
         multiLucene = new MultiLucene(new ArrayList<Lucene>() {{ add(luceneA); add(luceneB); add(luceneC);}});
 
@@ -96,8 +98,9 @@ public class MultiLuceneTest extends SeecrTestCase {
         luceneB.realCommit();
         luceneC.realCommit();
 
-        settings.commitCount = 1;
-        settingsLuceneC.commitCount = 1;
+        settingsA.commitCount = 1;
+        settingsB.commitCount = 1;
+        settingsC.commitCount = 1;
     }
 
     @After
@@ -610,5 +613,15 @@ public class MultiLuceneTest extends SeecrTestCase {
 //    testJoinSort
 //    testSortWithJoinField
 
-    
+
+    @Test
+    public void testQueryConvertors() {
+        luceneA.getSettings().facetsConfig.setIndexFieldName("dim1", "otherfield");
+        Map<String, QueryConverter> converters = multiLucene.getQueryConverters();
+        Term drilldownTerm = converters.get("coreA").createDrilldownTerm("dim1");
+        assertEquals("otherfield", drilldownTerm.field());
+        
+        drilldownTerm = converters.get("coreB").createDrilldownTerm("dim1");
+        assertEquals("$facets", drilldownTerm.field());
+    }
 }

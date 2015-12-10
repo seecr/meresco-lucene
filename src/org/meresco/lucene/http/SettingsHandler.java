@@ -68,7 +68,7 @@ public class SettingsHandler extends AbstractHandler {
             if (settings == null)
                 settings = new LuceneSettings();
             if (request.getMethod() == "POST") {
-                updateSettings(settings, request.getReader());
+                settings.updateSettings(request.getReader());
                 if (lucene.getSettings() == null)
                     lucene.initSettings(settings);
             } else {
@@ -85,106 +85,4 @@ public class SettingsHandler extends AbstractHandler {
         baseRequest.setHandled(true);
     }
 
-    public static void updateSettings(LuceneSettings settings, Reader reader) throws Exception {
-        JsonObject object = (JsonObject) Json.createReader(reader).read();
-        for (String key : object.keySet()) {
-            switch (key) {
-                case "commitCount":
-                    settings.commitCount = object.getInt(key);
-                    break;
-                case "commitTimeout":
-                    settings.commitTimeout = object.getInt(key);
-                    break;
-                case "lruTaxonomyWriterCacheSize":
-                    settings.lruTaxonomyWriterCacheSize = object.getInt(key);
-                    break;
-                case "maxMergeAtOnce":
-                    settings.maxMergeAtOnce = object.getInt(key);
-                    break;
-                case "segmentsPerTier":
-                    settings.segmentsPerTier = object.getJsonNumber(key).doubleValue();
-                    break;
-                case "numberOfConcurrentTasks":
-                    settings.numberOfConcurrentTasks = object.getInt(key);
-                    break;
-                case "clusteringEps":
-                    settings.clusteringEps = object.getJsonNumber(key).doubleValue();
-                    break;
-                case "clusteringMinPoints":
-                    settings.clusteringMinPoints = object.getInt(key);
-                    break;
-                case "clusterMoreRecords":
-                    settings.clusterMoreRecords  = object.getInt(key);
-                    break;
-                case "analyzer":
-                    settings.analyzer = getAnalyzer(object.getJsonObject(key));
-                    break;
-                case "similarity":
-                    settings.similarity = getSimilarity(object.getJsonObject(key));
-                    break;
-                case "drilldownFields":
-                    updateDrilldownFields(settings.facetsConfig, object.getJsonArray(key));
-                    break;
-                case "clusterFields":
-                    updateClusterFields(settings, object.getJsonArray(key));
-                    break;
-            }
-        }
-
-    }
-
-    private static void updateClusterFields(LuceneSettings settings, JsonArray jsonClusterFields) {
-        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
-        for (int i=0; i<jsonClusterFields.size(); i++) {
-            JsonObject clusterField = jsonClusterFields.getJsonObject(i);
-            String filterValue = clusterField.getString("filterValue", null);
-            clusterFields.add(new ClusterField(clusterField.getString("fieldname"), clusterField.getJsonNumber("weight").doubleValue(), filterValue));
-        }
-        settings.clusterFields = clusterFields;
-    }
-
-    private static void updateDrilldownFields(FacetsConfig facetsConfig, JsonArray drilldownFields) {
-        for (int i = 0; i < drilldownFields.size(); i++) {
-            JsonObject drilldownField = drilldownFields.getJsonObject(i);
-            String dim = drilldownField.getString("dim");
-            if (drilldownField.get("hierarchical") != null)
-                facetsConfig.setHierarchical(dim, drilldownField.getBoolean("hierarchical"));
-            if (drilldownField.get("multiValued") != null)
-                facetsConfig.setMultiValued(dim, drilldownField.getBoolean("multiValued"));
-            String fieldname = drilldownField.getString("fieldname", null);
-            if (fieldname != null && fieldname != null)
-                facetsConfig.setIndexFieldName(dim, fieldname);
-        }
-    }
-
-    private static Similarity getSimilarity(JsonObject similarity) {
-        switch (similarity.getString("type")) {
-            case "BM25Similarity":
-                JsonNumber k1 = similarity.getJsonNumber("k1");
-                JsonNumber b = similarity.getJsonNumber("b");
-                if (k1 != null && b != null)
-                    return new BM25Similarity((float) k1.doubleValue(), (float) b.doubleValue());
-                return new BM25Similarity();
-            case "TermFrequencySimilarity": // TODO: test
-                return new TermFrequencySimilarity();
-        }
-        return null;
-    }
-
-    private static Analyzer getAnalyzer(JsonObject analyzer) {
-        switch (analyzer.getString("type")) {
-            case "MerescoDutchStemmingAnalyzer":
-                JsonArray jsonFields = analyzer.getJsonArray("fields");
-                String[] fields = new String[jsonFields.size()];
-                for (int i = 0; i < jsonFields.size(); i++) {
-                    fields[i] = jsonFields.getString(i);
-                }
-                return new MerescoDutchStemmingAnalyzer(fields);
-            case "MerescoStandardAnalyzer":
-                return new MerescoStandardAnalyzer();
-            case "WhitespaceAnalyzer":// TODO: test
-                return new WhitespaceAnalyzer();
-        }
-        return null;
-    }
 }

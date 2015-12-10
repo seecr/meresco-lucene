@@ -725,7 +725,7 @@ public class Lucene {
         return q;
     }
 
-    public QueryConverter getQueryConverter() { // TODO: Test?
+    public QueryConverter getQueryConverter() {
         return new QueryConverter(this.facetsConfig);
     }
     

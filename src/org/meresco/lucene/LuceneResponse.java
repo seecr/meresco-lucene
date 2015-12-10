@@ -68,8 +68,6 @@ public class LuceneResponse {
             this.score = score;
         }
 
-        public Hit() {}
-
         @Override
         public int compareTo(Hit o) {
             return id.compareTo(o.id);

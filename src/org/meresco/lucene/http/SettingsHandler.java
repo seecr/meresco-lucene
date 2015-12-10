@@ -26,38 +26,21 @@
 package org.meresco.lucene.http;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonNumber;
-import javax.json.JsonObject;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.search.similarities.Similarity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneSettings;
-import org.meresco.lucene.LuceneSettings.ClusterField;
-import org.meresco.lucene.analysis.MerescoDutchStemmingAnalyzer;
-import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
-import org.meresco.lucene.search.TermFrequencySimilarity;
 
 public class SettingsHandler extends AbstractHandler {
 
     private Lucene lucene;
 
     public SettingsHandler(Lucene lucene) {
-        //TODO: test this class
         this.lucene = lucene;
     }
 

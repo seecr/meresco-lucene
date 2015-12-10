@@ -103,10 +103,6 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_O'
              }], result.drilldownData)
 
-    def testCoreInfo(self):
-        infos = list(compose(self.dna.all.coreInfo()))
-        self.assertEquals(3, len(infos))
-
     def testUniteResultFromTwoIndexesCached(self):
         q = ComposedQuery('coreA')
         q.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'), facets=[
@@ -233,50 +229,6 @@ class MultiLuceneTest(SeecrTestCase):
                 'fieldname': u'cat_O'
             }], result.drilldownData)
 
-    def testCachingCollectorsAfterUpdate(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql("N=true"))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
-        self.assertTrue(result.queryTime < 5, result.queryTime)
-        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 80 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ']), self.hitIds(result.hits))
-
-    def testCachingCollectorsAfterUpdateInSegmentWithMultipleDocuments(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql("N=true"))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
-        self.assertTrue(result.queryTime < 5, result.queryTime)
-        self.addDocument(self.luceneB, identifier='B-N>A-MU', keys=[('B', 60 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(set([u'A-M', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
-
-    def testCachingCollectorsAfterDelete(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql("N=true"))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        self.addDocument(self.luceneB, identifier='B-N>A-MQU', keys=[('B', 8 )], fields=[('N', 'true' ), ('O', 'false'), ('P', 'false')])
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(set([u'A-M', u'A-MU', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
-        consume(self.luceneB.delete(identifier='B-N>A-MU'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(set([u'A-M', u'A-MQ', u'A-MQU']), self.hitIds(result.hits))
-
-
     def NOT_YET_SUPPORTED_testJoinQueryOnOptionalKeyUniteResultsWithoutKey(self):
         q = ComposedQuery('coreA')
         q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'C'), dict(core='coreB', key=KEY_PREFIX+'B'))
@@ -291,78 +243,6 @@ class MultiLuceneTest(SeecrTestCase):
         result = retval(self.dna.any.executeComposedQuery(q))
         self.assertEquals(8, result.total)
         self.assertEquals([u'A-Q', u'A-QU', u'A-MQ', u'A-MQU', u'A', u'A-U', u'A-M', u'A-MU'], [hit.id for hit in result.hits])
-
-    def testScoreCollectorCacheInvalidation(self):
-        q = ComposedQuery('coreA', query=MatchAllDocsQuery())
-        q.setRankQuery(core='coreC', query=luceneQueryFromCql('S=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(8, result.total)
-        self.assertEquals(u'A-MQU', result.hits[0].id)
-        self.assertEquals(set([u'A', u'A-U', u'A-Q', u'A-QU', u'A-M', u'A-MU', u'A-MQ']), set([hit.id for hit in result.hits[1:]]))
-
-        self.addDocument(self.luceneC, identifier='C-S>A-MQ', keys=[('C', 7)], fields=[('S', 'true')])
-        try:
-            result = retval(self.dna.any.executeComposedQuery(q))
-            self.assertEquals(8, result.total)
-            self.assertEquals(set([u'A-MQ' , u'A-MQU']), set([hit.id for hit in result.hits[:2]]))
-            self.assertEquals(set([u'A', u'A-U', u'A-Q', u'A-QU', u'A-M', u'A-MU']), set([hit.id for hit in result.hits[2:]]))
-        finally:
-            self.luceneC.delete(identifier='C-S>A-MQ')
-
-    def testNullIteratorOfPForDeltaIsIgnoredInFinalKeySet(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=luceneQueryFromCql('N=no_match'))
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql('N=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'UNKOWN'), dict(core='coreB', key=KEY_PREFIX+'UNKOWN'))
-        retval(self.dna.any.executeComposedQuery(q))
-        self.luceneB.commit() # Force to write new segment; Old segment remains in seen list
-        self.addDocument(self.luceneB, identifier='new', keys=[], fields=[('ignored', 'true')]) # Add new document to force recreating finalKeySet
-        try:
-            result = retval(self.dna.any.executeComposedQuery(q))
-            self.assertEquals(0, len(result.hits))
-        finally:
-            self.luceneB.delete(identifier='new')
-
-    def testKeyFilterIgnoresKeysOutOfBoundsOfKeySet(self):
-        self.addDocument(self.luceneB, identifier=str(100), keys=[('B', 100)], fields=[]) # Force key to be much more than bits in long[] in FixedBitSet, so it must be OutOfBounds
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=MatchAllDocsQuery())
-        q.addFacet(core='coreB', facet=dict(fieldname='cat_M', maxTerms=10))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(4, len(result.hits))
-
-    def testCollectScoresWithNoResultAndBooleanQueryDoesntFailOnFakeScorerInAggregateScoreCollector(self):
-        q = BooleanQuery()
-        q.add(luceneQueryFromCql('M=true'), BooleanClause.Occur.SHOULD)
-        q.add(luceneQueryFromCql('M=true'), BooleanClause.Occur.SHOULD)
-        q = ComposedQuery('coreA', query=q)
-        q.start = 0
-        q.stop = 0
-        q.setRankQuery(core='coreC', query=luceneQueryFromCql('S=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreC', key=KEY_PREFIX+'C'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(4, result.total)
-        self.assertEquals([], result.hits)
-
-    def testCachingKeyCollectorsIntersectsWithACopyOfTheKeys(self):
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=luceneQueryFromCql("O=true"))
-        q.addFilterQuery(core='coreB', query=luceneQueryFromCql("N=true"))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(2, len(result.hits))
-
-        q = ComposedQuery('coreA')
-        q.setCoreQuery(core='coreA', query=MatchAllDocsQuery())
-        q.setCoreQuery(core='coreB', query=MatchAllDocsQuery())
-        q.addFilterQuery(core='coreB', query=luceneQueryFromCql("N=true"))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals(4, len(result.hits))
 
     def testJoinSort(self):
         cq = ComposedQuery('coreA')

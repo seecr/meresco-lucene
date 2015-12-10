@@ -1106,13 +1106,15 @@ public class LuceneTest extends SeecrTestCase {
         if (keys != null)
             for (String keyField : keys.keySet())
                 doc.add(new NumericDocValuesField(keyField, keys.get(keyField)));
-        for (String fieldname : fields.keySet())
-            if (fieldname.equals("intField"))
-                doc.add(new IntField(fieldname, Integer.parseInt(fields.get(fieldname)), Store.NO));
-            else {
-                doc.add(new StringField(fieldname, fields.get(fieldname), Store.NO));
-                doc.add(new FacetField("cat_" + fieldname, fields.get(fieldname)));
-            }
+        if (fields != null) {
+            for (String fieldname : fields.keySet())
+                if (fieldname.equals("intField"))
+                    doc.add(new IntField(fieldname, Integer.parseInt(fields.get(fieldname)), Store.NO));
+                else {
+                    doc.add(new StringField(fieldname, fields.get(fieldname), Store.NO));
+                    doc.add(new FacetField("cat_" + fieldname, fields.get(fieldname)));
+                }
+        }
         lucene.addDocument(identifier, doc);
         lucene.commit();
     }

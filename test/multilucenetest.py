@@ -32,7 +32,7 @@ from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 from seecr.test import SeecrTestCase
-from weightless.core import consume
+from weightless.core import consume, asList
 from simplejson import loads
 
 
@@ -107,3 +107,7 @@ class MultiLuceneTest(SeecrTestCase):
                 "cores": ["coreB", "coreA"],
                 "filterQueries": {}
             }, loads(self.post[0]['data']))
+
+    def testCoreInfo(self):
+        infos = asList(self._multiLucene.coreInfo())
+        self.assertEquals(1, len(infos))

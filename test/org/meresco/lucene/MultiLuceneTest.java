@@ -29,6 +29,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -36,7 +37,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
@@ -211,11 +215,11 @@ public class MultiLuceneTest extends SeecrTestCase {
         ComposedQuery q = new ComposedQuery("coreA");
         q.addDrilldownQuery("coreA", "cat_Q", "true");
         q.addDrilldownQuery("coreA", "cat_Q", "false");
-        
+
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(0, result.total);
     }
-    
+
     @Test
     public void testJoinFacetWithJoinDrilldownQueryFilters() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA");
@@ -313,7 +317,6 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals("false", catO.terms.get(1).label);
         assertEquals(2, catO.terms.get(1).count);
     }
-//    testCoreInfo
 
     @Test
     public void testUniteResultFromTwoIndexes() throws Exception {
@@ -472,9 +475,59 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals(3, result.total);
         LuceneTest.compareHits(result, "A-MQ", "A-QU");
     }
-//    testCachingCollectorsAfterUpdate
-//    testCachingCollectorsAfterUpdateInSegmentWithMultipleDocuments
-//    testCachingCollectorsAfterDelete
+
+    @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
+    @Test
+    public void testCachingCollectorsAfterUpdate() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new MatchAllDocsQuery());
+        q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        LuceneTest.addDocument(luceneB, "B-N>A-MQU", new HashMap() {{put("B", 8);}}, new HashMap() {{put("N", "true"); put("O", "false"); put("P", "false");}});
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
+        result = multiLucene.executeComposedQuery(q);
+        LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
+        assertTrue(result.queryTime < 5);
+        LuceneTest.addDocument(luceneB, "B-N>A-MQU", new HashMap() {{put("B", 80);}}, new HashMap() {{put("N", "true"); put("O", "false"); put("P", "false");}});
+        result = multiLucene.executeComposedQuery(q);
+        LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ");
+    }
+
+    @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
+    @Test
+    public void testCachingCollectorsAfterUpdateInSegmentWithMultipleDocuments() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new MatchAllDocsQuery());
+        q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        LuceneTest.addDocument(luceneB, "B-N>A-MQU", new HashMap() {{put("B", 8);}}, new HashMap() {{put("N", "true"); put("O", "false"); put("P", "false");}});
+        result = multiLucene.executeComposedQuery(q);
+        LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
+        result = multiLucene.executeComposedQuery(q);
+        LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
+        assertTrue(result.queryTime < 5);
+        LuceneTest.addDocument(luceneB, "B-N>A-MU", new HashMap() {{put("B", 60);}}, new HashMap() {{put("N", "true"); put("O", "false"); put("P", "false");}});
+        result = multiLucene.executeComposedQuery(q);
+        LuceneTest.compareHits(result, "A-M", "A-MQ", "A-MQU");
+        LuceneTest.compareHits(result, "A-M", "A-MQ", "A-MQU");
+    }
+
+    @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
+    @Test
+    public void testCachingCollectorsAfterDelete() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new MatchAllDocsQuery());
+        q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        LuceneTest.addDocument(luceneB, "B-N>A-MQU", new HashMap() {{put("B", 8);}}, new HashMap() {{put("N", "true"); put("O", "false"); put("P", "false");}});
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
+        luceneB.deleteDocument("B-N>A-MU");
+        result = multiLucene.executeComposedQuery(q);
+        LuceneTest.compareHits(result, "A-M", "A-MQ", "A-MQU");
+    }
 
     @Test
     public void testJoinQueryOnOptionalKey() throws Exception {
@@ -561,11 +614,94 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals(4, result.total);
         LuceneTest.compareHitsOrdered(result, "A-MQU", "A-MQ", "A-M", "A-MU");
     }
-//    testScoreCollectorCacheInvalidation
-//    testNullIteratorOfPForDeltaIsIgnoredInFinalKeySet
-//    testKeyFilterIgnoresKeysOutOfBoundsOfKeySet
-//    testCollectScoresWithNoResultAndBooleanQueryDoesntFailOnFakeScorerInAggregateScoreCollector
-//    testCachingKeyCollectorsIntersectsWithACopyOfTheKeys
+
+    @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
+    @Test
+    public void testScoreCollectorCacheInvalidation() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setRankQuery("coreC", new TermQuery(new Term("S", "true")));
+        q.addMatch("coreA", "coreC", "A", "C");
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(8, result.total);
+        assertEquals("A-MQU", result.hits.get(0).id);
+        LuceneTest.compareHits(result, "A", "A-U", "A-Q", "A-QU", "A-M", "A-MU", "A-MQ", "A-MQU");
+
+        LuceneTest.addDocument(luceneC, "C-S>A-MQ", new HashMap() {{put("C", 7);}}, new HashMap() {{put("S", "true");}});
+        try {
+            result = multiLucene.executeComposedQuery(q);
+            assertEquals(8, result.total);
+            assertEquals("A-MQ", result.hits.get(0).id);
+            assertEquals("A-MQU", result.hits.get(1).id);
+            LuceneTest.compareHits(result, "A", "A-U", "A-Q", "A-QU", "A-M", "A-MU", "A-MQ", "A-MQU");
+        } finally {
+            this.luceneC.deleteDocument("C-S>A-MQ");
+        }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
+    @Test
+    public void testNullIteratorOfPForDeltaIsIgnoredInFinalKeySet() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreB", new TermQuery(new Term("N", "no_match")));
+        q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "UNKOWN", "UNKOWN");
+        multiLucene.executeComposedQuery(q);
+        luceneB.commit(); // Force to write new segment; Old segment remains in seen list
+        LuceneTest.addDocument(luceneB, "new", null, new HashMap() {{put("ignored", "true");}}); // Add new document to force recreating finalKeySet
+        try {
+            LuceneResponse result = multiLucene.executeComposedQuery(q);
+            assertEquals(0, result.hits.size());
+        } finally {
+            luceneB.deleteDocument("new");
+        }
+    }
+
+     @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
+     @Test
+     public void testKeyFilterIgnoresKeysOutOfBoundsOfKeySet() throws Exception {
+         LuceneTest.addDocument(luceneB, "100", new HashMap() {{put("B", 100);}}, null); // Force key to be much more than bits in long[] in FixedBitSet, so it must be OutOfBounds
+         ComposedQuery q = new ComposedQuery("coreA");
+         q.setCoreQuery("coreA", new MatchAllDocsQuery());
+         q.setCoreQuery("coreB", new MatchAllDocsQuery());
+         q.addMatch("coreA", "coreB", "A", "B");
+         LuceneResponse result = multiLucene.executeComposedQuery(q);
+         assertEquals(4, result.hits.size());
+     }
+
+     @Test
+     public void testCollectScoresWithNoResultAndBooleanQueryDoesntFailOnFakeScorerInAggregateScoreCollector() throws Exception {
+         BooleanQuery q = new BooleanQuery();
+         q.add(new TermQuery(new Term("M", "true")), Occur.SHOULD);
+         q.add(new TermQuery(new Term("M", "true")), Occur.SHOULD);
+         ComposedQuery cq = new ComposedQuery("coreA", q);
+         cq.queryData.start = 0;
+         cq.queryData.stop = 0;
+         cq.setRankQuery("coreC", new TermQuery(new Term("S", "true")));
+         cq.addMatch("coreA", "coreC", "A", "C");
+         LuceneResponse result = multiLucene.executeComposedQuery(cq);
+         assertEquals(4, result.total);
+         assertEquals(0, result.hits.size());
+     }
+
+    @Test
+    public void testCachingKeyCollectorsIntersectsWithACopyOfTheKeys() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new MatchAllDocsQuery());
+        q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
+        q.addFilterQuery("coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        LuceneResponse result = multiLucene.executeComposedQuery(q);
+        assertEquals(2, result.hits.size());
+
+        q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new MatchAllDocsQuery());
+        q.setCoreQuery("coreB", new MatchAllDocsQuery());
+        q.addFilterQuery("coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        result = multiLucene.executeComposedQuery(q);
+        assertEquals(4, result.hits.size());
+    }
+
     @Test
     public void testTwoCoreQueryWithThirdCoreDrilldownWithOtherCore() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA");
@@ -620,7 +756,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         Map<String, QueryConverter> converters = multiLucene.getQueryConverters();
         Term drilldownTerm = converters.get("coreA").createDrilldownTerm("dim1");
         assertEquals("otherfield", drilldownTerm.field());
-        
+
         drilldownTerm = converters.get("coreB").createDrilldownTerm("dim1");
         assertEquals("$facets", drilldownTerm.field());
     }

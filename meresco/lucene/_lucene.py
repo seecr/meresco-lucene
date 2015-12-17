@@ -33,6 +33,7 @@ from weightless.core import consume
 from weightless.http import httppost, httpget
 from simplejson import loads
 from urllib2 import urlopen
+from .utils import simplifiedDict
 
 class Lucene(Observable):
 
@@ -100,7 +101,19 @@ class Lucene(Observable):
         if suggestionRequest:
             jsonDict["suggestionRequest"] = suggestionRequest
         responseDict = (yield self._send(jsonDict=jsonDict, path='/query/'))
-        raise StopIteration(luceneResponseFromDict(responseDict))
+        response = luceneResponseFromDict(responseDict)
+        response.info = {
+            'type': 'Query',
+            'query': simplifiedDict(dict(
+                    luceneQuery=luceneQuery,
+                    start=start,
+                    stop=stop,
+                    facets=facets,
+                    suggestionRequest=suggestionRequest,
+                    **kwargs
+                ))
+            }
+        raise StopIteration(response)
         yield
 
     def prefixSearch(self, fieldname, prefix, showCount=False, limit=10, **kwargs):

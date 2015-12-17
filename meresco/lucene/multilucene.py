@@ -54,7 +54,9 @@ class MultiLucene(Observable):
             coreName = sortKey.get('core', query.resultsFrom)
             self.call[coreName].updateSortKey(sortKey)
         responseDict = (yield self._send(jsonDict=jsonDict, path='/query/'))
-        raise StopIteration(luceneResponseFromDict(responseDict))
+        response = luceneResponseFromDict(responseDict)
+        response.info = query.infoDict()
+        raise StopIteration(response)
         yield
 
     def _send(self, path, jsonDict=None):

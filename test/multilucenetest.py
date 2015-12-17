@@ -32,7 +32,7 @@ from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 from seecr.test import SeecrTestCase
-from weightless.core import consume, asList
+from weightless.core import consume, asList, retval
 from simplejson import loads
 
 
@@ -52,6 +52,34 @@ class MultiLuceneTest(SeecrTestCase):
             raise StopIteration(self.response)
             yield
         self._multiLucene._post = mockPost
+
+    def testInfoOnQuery(self):
+        self.response = JsonDict({
+                "total": 887,
+                "queryTime": 6,
+                "hits": [{"id": "record:1", "score": 0.1234}]
+            }).dumps()
+
+        q = ComposedQuery('coreA')
+        q.addFilterQuery('coreB', query='N=true')
+        q.addMatch(dict(core='coreA', uniqueKey='A'), dict(core='coreB', key='B'))
+        result = retval(self._multiLucene.executeComposedQuery(q))
+        self.assertEquals({
+            'query': {
+                'cores': ['coreB', 'coreA'],
+                'drilldownQueries': {},
+                'facets': {},
+                'filterQueries': {'coreB': ['N=true']},
+                'matches': {'coreA->coreB': [{'core': 'coreA', 'uniqueKey': 'A'}, {'core': 'coreB', 'key': 'B'}]},
+                'otherCoreFacetFilters': {},
+                'queries': {},
+                'rankQueries': {},
+                'resultsFrom': 'coreA',
+                'sortKeys': [],
+                'unites': []
+            },
+            'type': 'ComposedQuery'
+        }, result.info)
 
     def testComposedQuery(self):
         self.response = JsonDict({

@@ -51,28 +51,6 @@ class MultiLuceneTest(SeecrTestCase):
             q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'X'))
             consume(self.dna.any.executeComposedQuery(q))
 
-    def testInfoOnQuery(self):
-        q = ComposedQuery('coreA')
-        q.addFilterQuery('coreB', query=luceneQueryFromCql('N=true'))
-        q.addMatch(dict(core='coreA', uniqueKey=KEY_PREFIX+'A'), dict(core='coreB', key=KEY_PREFIX+'B'))
-        result = retval(self.dna.any.executeComposedQuery(q))
-        self.assertEquals({
-            'query': {
-                'cores': ['coreB', 'coreA'],
-                'drilldownQueries': {},
-                'facets': {},
-                'filterQueries': {'coreB': ['N:true']},
-                'matches': {'coreA->coreB': [{'core': 'coreA', 'uniqueKey': '__key__.A'}, {'core': 'coreB', 'key': '__key__.B'}]},
-                'otherCoreFacetFilters': {},
-                'queries': {'coreA': None},
-                'rankQueries': {},
-                'resultsFrom': 'coreA',
-                'sortKeys': [],
-                'unites': []
-            },
-            'type': 'ComposedQuery'
-        }, result.info)
-
     def testJoinFacetFromBPointOfView(self):
         q = ComposedQuery('coreB')
         q.setCoreQuery(core='coreA', query=luceneQueryFromCql('Q=true'))

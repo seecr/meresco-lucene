@@ -34,7 +34,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -48,6 +50,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
+import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 
@@ -270,7 +273,6 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals(1, catO.terms.get(1).count);
     }
 
-//    testJoinFacetFromBPointOfView
     @Test
     public void testJoinFacetWillNotFilter() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA");
@@ -329,8 +331,50 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals(3, result.total);
         LuceneTest.compareHits(result, "A-QU", "A-MQ", "A-MQU");
     }
-//    testUniteResultFromTwoIndexesCached
-//    testUniteResultFromTwoIndexesCachedAfterUpdate
+
+    @Test
+    public void testUniteResultFromTwoIndexesCached() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new TermQuery(new Term("Q", "true")));
+        q.setCoreQuery("coreB", null);
+        q.addMatch("coreA", "coreB", "A", "B");
+        q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
+        LuceneResponse resultOne = multiLucene.executeComposedQuery(q);
+        
+        q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new TermQuery(new Term("U", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        q.addUnite("coreA", new TermQuery(new Term("U", "false")), "coreB", new TermQuery(new Term("N", "true")));        
+        multiLucene.executeComposedQuery(q);
+        
+        q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new TermQuery(new Term("Q", "true")));
+        q.setCoreQuery("coreB", null);
+        q.addMatch("coreA", "coreB", "A", "B");
+        q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
+        LuceneResponse resultAgain = multiLucene.executeComposedQuery(q);
+        assertEquals(resultOne.total, resultAgain.total);
+        
+        for (int i = 0; i < resultOne.hits.size(); i++) {
+            assertEquals(resultOne.hits.get(i).id, resultAgain.hits.get(i).id);
+        }
+    }
+
+     @Test
+     public void testUniteResultFromTwoIndexesCachedAfterUpdate() throws Exception {
+         ComposedQuery q = new ComposedQuery("coreA");
+         q.setCoreQuery("coreA", new TermQuery(new Term("Q", "true")));
+         q.setCoreQuery("coreB", null);
+         q.addMatch("coreA", "coreB", "A", "B");
+         q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
+         LuceneResponse resultOne = multiLucene.executeComposedQuery(q);
+         assertEquals(3, resultOne.total);
+         
+         LuceneTest.addDocument(luceneA, "A-MQU", new HashMap() {{put("A", 8);}}, new HashMap() {{put("M", "true"); put("Q", "false"); put("U", "true"); put("S", "8");}});
+         LuceneResponse resultAgain = multiLucene.executeComposedQuery(q);
+         assertEquals(2, resultAgain.total);
+    }
+
     @Test
     public void testUniteResultFromTwoIndexes_filterQueries() throws Exception {
         ComposedQuery q = new ComposedQuery("coreA");

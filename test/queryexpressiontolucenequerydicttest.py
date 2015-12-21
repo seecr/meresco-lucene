@@ -175,6 +175,22 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
                 ]
             }, expr)
 
+    def testNotExpression(self):
+        expr = QueryExpression.searchterm("field", "=", "value")
+        expr.must_not = True
+        self.assertConversion({
+                "type": "BooleanQuery",
+                "clauses": [
+                    {
+                        "type": "MatchAllDocsQuery",
+                        "occur": "MUST"
+                    }, {
+                        "type": "TermQuery",
+                        "term": {"field": "field", "value": "value"},
+                        "occur": "MUST_NOT"
+                    }
+                ]
+            }, expr)
     def testPhraseOutput(self):
         self.assertConversion({
                 "type": "PhraseQuery",

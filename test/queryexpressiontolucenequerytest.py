@@ -5,6 +5,7 @@
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015 Stichting Kennisnet http://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -112,6 +113,14 @@ class QueryExpressionToLuceneQueryTest(SeecrTestCase):
         nested.add(TermQuery(Term("field2", "value2")), BooleanClause.Occur.MUST)
         nested.add(TermQuery(Term("field3", "value3")), BooleanClause.Occur.MUST)
         expected.add(nested, BooleanClause.Occur.MUST_NOT)
+        self.assertConversion(expected, expr)
+
+    def testNotExpression(self):
+        expr = QueryExpression.searchterm("field", "=", "value")
+        expr.must_not = True
+        expected = BooleanQuery()
+        expected.add(MatchAllDocsQuery(), BooleanClause.Occur.MUST)
+        expected.add(TermQuery(Term("field", "value")), BooleanClause.Occur.MUST_NOT)
         self.assertConversion(expected, expr)
 
     def testPhraseOutput(self):

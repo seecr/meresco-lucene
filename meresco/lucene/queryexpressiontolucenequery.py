@@ -4,6 +4,7 @@
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015 Stichting Kennisnet http://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -26,6 +27,7 @@
 from re import compile
 
 from cqlparser import UnsupportedCQL
+from cqlparser.cqltoexpression import QueryExpression
 
 from weightless.core import Observable
 
@@ -54,6 +56,11 @@ class QueryExpressionToLuceneQuery(Observable):
         raise StopIteration(response)
 
     def convert(self, expression):
+        if expression.must_not:
+            r = QueryExpression.nested('AND')
+            r.operands.append(QueryExpression.searchterm(term='*'))
+            r.operands.append(expression)
+            expression = r
         return self._expression(expression)
 
     def __call__(self, expression):

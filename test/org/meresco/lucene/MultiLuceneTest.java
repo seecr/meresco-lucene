@@ -29,20 +29,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
@@ -50,7 +46,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
-import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 
@@ -156,7 +151,6 @@ public class MultiLuceneTest extends SeecrTestCase {
         assertEquals(4, result.total);
         LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
     }
-//    testInfoOnQuery
 
     @Test
     public void testJoinWithFacetInResultCore() throws Exception {

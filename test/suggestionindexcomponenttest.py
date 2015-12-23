@@ -71,7 +71,9 @@ class SuggestionIndexComponentTest(SeecrTestCase):
         self.assertEquals("""HTTP/1.0 200 OK\r
 Content-Type: application/x-suggestions+json\r
 Access-Control-Allow-Origin: *\r
-Access-Control-Allow-Headers: X-Requested-With""", header)
+Access-Control-Allow-Headers: X-Requested-With\r
+Access-Control-Allow-Methods: GET, POST, OPTIONS\r
+Access-Control-Max-Age: 86400""", header)
         self.assertEquals('["ha", ["hallo", "harry"]]', body)
 
     def testHandleRequestWithTypesAndCreators(self):
@@ -82,7 +84,9 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
         self.assertEquals("""HTTP/1.0 200 OK\r
 Content-Type: application/x-suggestions+json\r
 Access-Control-Allow-Origin: *\r
-Access-Control-Allow-Headers: X-Requested-With""", header)
+Access-Control-Allow-Headers: X-Requested-With\r
+Access-Control-Allow-Methods: GET, POST, OPTIONS\r
+Access-Control-Max-Age: 86400""", header)
         self.assertEquals('["ha", ["hallo", "harry"], [["hallo", "uri:book", "by:me"], ["harry", "uri:book", "rowling"]]]', body)
 
     def testHandleRequestWithDebug(self):
@@ -93,7 +97,9 @@ Access-Control-Allow-Headers: X-Requested-With""", header)
         self.assertEquals("""HTTP/1.0 200 OK\r
 Content-Type: application/x-suggestions+json\r
 Access-Control-Allow-Origin: *\r
-Access-Control-Allow-Headers: X-Requested-With""", header)
+Access-Control-Allow-Headers: X-Requested-With\r
+Access-Control-Allow-Methods: GET, POST, OPTIONS\r
+Access-Control-Max-Age: 86400""", header)
         json = loads(body)
         self.assertEquals('ha', json['value'])
         self.assertTrue("time" in json, json)

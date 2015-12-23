@@ -95,6 +95,8 @@ class SuggestionIndexComponent(Observable):
         yield ContentTypeHeader + "application/x-suggestions+json" + CRLF
         yield "Access-Control-Allow-Origin: *" + CRLF
         yield "Access-Control-Allow-Headers: X-Requested-With" + CRLF
+        yield 'Access-Control-Allow-Methods: GET, POST, OPTIONS' + CRLF
+        yield 'Access-Control-Max-Age: 86400' + CRLF
         yield CRLF
         result = []
         if value:

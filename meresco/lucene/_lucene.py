@@ -248,7 +248,7 @@ class Lucene(Observable):
             response.drilldownData.extend(self._facetResult(facetCollector, facets))
             times['facetTime'] = millis(time() - t1)
 
-        if suggestionRequest:
+        if False:# suggestionRequest no longer support in this pylucene version.:
             t1 = time()
             response.suggestions = self._index.suggest(**suggestionRequest)
             times['suggestionTime'] = millis(time() - t1)

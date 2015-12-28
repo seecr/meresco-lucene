@@ -446,12 +446,6 @@ class LuceneTest(LuceneTestCase):
         response = retval(self.lucene.prefixSearch(fieldname='intField', prefix=None))
         self.assertEquals([0, 0, 0, 24, 23, 22, 21, 20, 1], response.hits) # No fix for the 0's yet
 
-    def testSuggestions(self):
-        retval(self.lucene.addDocument(identifier="id:0", document=createDocument([('field1', 'value0'), ('field2', 'value2'), ('field5', 'value2')])))
-        response = retval(self.lucene.executeQuery(luceneQuery=MatchAllDocsQuery(), suggestionRequest=dict(count=2, query="value0 and valeu", field="field5")))
-        self.assertEquals(['id:0'], self.hitIds(response.hits))
-        self.assertEquals({'value0': (0, 6, ['value2']), 'valeu': (11, 16, ['value2'])}, response.suggestions)
-
     def testRangeQuery(self):
         for f in ['aap', 'noot', 'mies', 'vis', 'vuur', 'boom']:
             retval(self.lucene.addDocument(identifier="id:%s" % f, document=createDocument([('field', f)])))

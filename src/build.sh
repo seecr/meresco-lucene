@@ -51,11 +51,11 @@ if [ -f /etc/debian_version ]; then
     luceneJarDir=/usr/lib/python${pythonVersion}/dist-packages/lucene
 fi
 
-LUCENEVERSION=4.10.4
+PYLUCENEVERSION=4.10.1
 
 troveJar=${jarsDir}/trove-3.0.2.jar
 apacheMathJar=${jarsDir}/commons-math3-3.4.1.jar
-classpath=${luceneJarDir}/lucene-core-$LUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$LUCENEVERSION.jar:${luceneJarDir}/lucene-facet-$LUCENEVERSION.jar:${luceneJarDir}/lucene-queries-$LUCENEVERSION.jar:${luceneJarDir}/lucene-memory-$LUCENEVERSION.jar:${troveJar}:${apacheMathJar}
+classpath=${luceneJarDir}/lucene-core-$PYLUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$PYLUCENEVERSION.jar:${luceneJarDir}/lucene-facet-$PYLUCENEVERSION.jar:${luceneJarDir}/lucene-queries-$PYLUCENEVERSION.jar:${luceneJarDir}/lucene-memory-$PYLUCENEVERSION.jar:${troveJar}:${apacheMathJar}
 
 ${javac} -cp ${classpath} -d ${buildDir} `find . -type f \( -path "*suggestion*" -o -path "*analysis*" \)`
 (cd $buildDir; jar -c org > $buildDir/meresco-lucene.jar)

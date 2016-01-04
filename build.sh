@@ -4,7 +4,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -27,9 +27,9 @@
 source /usr/share/seecr-tools/functions.d/distro
 
 VERSION=$1
-
+LUCENEVERSION=4.10.1
 JARS=$(find jars -type f -name "*.jar")
-LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*.jar")
+LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*${LUCENEVERSION}.jar")
 
 BUILDDIR=./build
 TARGET=meresco-lucene.jar

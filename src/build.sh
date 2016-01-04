@@ -3,7 +3,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -51,7 +51,7 @@ if [ -f /etc/debian_version ]; then
     luceneJarDir=/usr/lib/python${pythonVersion}/dist-packages/lucene
 fi
 
-LUCENEVERSION=4.10.1
+LUCENEVERSION=4.10.4
 
 troveJar=${jarsDir}/trove-3.0.2.jar
 apacheMathJar=${jarsDir}/commons-math3-3.4.1.jar

@@ -4,7 +4,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -29,7 +29,8 @@ from sys import argv
 from glob import glob
 
 USR_SHARE_JAVA_DIR='/usr/share/java'
-LUCENE_JARS = glob("{0}/lucene-*.jar".format(USR_SHARE_JAVA_DIR))
+LUCENEVERSION = "4.10.4"
+LUCENE_JARS = glob("{0}/lucene-*{1}.jar".format(USR_SHARE_JAVA_DIR, LUCENEVERSION))
 if 'SEECRTEST_USR_SHARE' in environ and environ['SEECRTEST_USR_SHARE']:
     USR_SHARE_JAVA_DIR = environ['SEECRTEST_USR_SHARE'] + '/java'
 MY_JARS = glob('{0}/meresco-lucene/*.jar'.format(USR_SHARE_JAVA_DIR))

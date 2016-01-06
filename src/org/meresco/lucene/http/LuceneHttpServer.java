@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.MultiLucene;
+import org.meresco.lucene.TermNumerator;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -118,10 +119,15 @@ public class LuceneHttpServer {
             context.setHandler(new OtherHandler(lucene));
             contexts.addHandler(context);
         }
-        ContextHandler composedHandler = new ContextHandler("/query");
-        composedHandler.setHandler(new ComposedQueryHandler(new MultiLucene(lucenes)));
-        contexts.addHandler(composedHandler);
+        ContextHandler composedQueryHandler = new ContextHandler("/query");
+        composedQueryHandler.setHandler(new ComposedQueryHandler(new MultiLucene(lucenes)));
+        contexts.addHandler(composedQueryHandler);
 
+        ContextHandler numerateHandler = new ContextHandler("/numerate");
+        TermNumerator termNumerator = new TermNumerator(new File(storeLocation, "keys-termnumerator"));
+        numerateHandler.setHandler(new NumerateHandler(termNumerator));
+        contexts.addHandler(numerateHandler);
+        
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         Server server = new Server(pool);
         ServerConnector http = new ServerConnector(server, new HttpConnectionFactory());

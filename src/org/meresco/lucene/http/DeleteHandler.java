@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
+import org.meresco.lucene.Utils;
 
 public class DeleteHandler extends AbstractHandler {
 

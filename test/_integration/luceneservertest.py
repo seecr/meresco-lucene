@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -110,3 +110,12 @@ class LuceneServerTest(IntegrationTestCase):
                 'numberOfConcurrentTasks': 6,
                 'segmentsPerTier': 8.0
             }, loads(body))
+
+    def testNumerate(self):
+        header, body = postRequest(self.serverPort, '/numerate/', data='id0', parse=False)
+        self.assertTrue("200 OK" in header.upper(), header)
+        header, body2 = postRequest(self.serverPort, '/numerate/', data='id0', parse=False)
+        self.assertTrue("200 OK" in header.upper(), header)
+        self.assertEquals(body2, body)
+        header, body3 = postRequest(self.serverPort, '/numerate/', data='id1', parse=False)
+        self.assertNotEquals(body3, body)

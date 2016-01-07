@@ -37,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
+import org.meresco.lucene.Utils;
 import org.meresco.lucene.Lucene.TermCount;
 
 public class PrefixSearchHandler extends AbstractHandler {

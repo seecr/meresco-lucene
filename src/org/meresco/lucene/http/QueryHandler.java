@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.QueryData;
+import org.meresco.lucene.Utils;
 
 public class QueryHandler extends AbstractHandler {
 

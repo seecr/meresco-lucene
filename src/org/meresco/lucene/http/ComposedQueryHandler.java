@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.ComposedQuery;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.MultiLucene;
+import org.meresco.lucene.Utils;
 
 public class ComposedQueryHandler extends AbstractHandler {
     private MultiLucene multiLucene;

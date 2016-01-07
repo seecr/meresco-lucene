@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.DocumentStringToDocument;
 import org.meresco.lucene.Lucene;
+import org.meresco.lucene.Utils;
 
 public class UpdateHandler extends AbstractHandler {
 

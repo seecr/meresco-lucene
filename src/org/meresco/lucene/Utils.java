@@ -23,49 +23,19 @@
  *
  * end license */
 
-package org.meresco.lucene.http;
+package org.meresco.lucene;
 
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.Reader;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.net.URLDecoder;
-import java.util.ArrayList;
 
 
-class Utils {
-    public static QueryParameters parseQS(String queryString) {
-        /*
-         * shamelessly copied from: http://stackoverflow.com/questions/1667278/parsing-queryString-strings-in-java
-         */
-        QueryParameters params = new QueryParameters();
-        if (queryString == null) {
-            return params;
-        }
-
-        for (String param : queryString.split("&")) {
-            if (param.indexOf('=') > 0) {
-                String[] pair = param.split("=");
-                try {
-                    String key = URLDecoder.decode(pair[0], "UTF-8");
-                    String value = URLDecoder.decode(pair[1], "UTF-8");
-                    ArrayList<String> values = params.get(key);
-                    if (values == null) {
-                        values = new ArrayList<String>();
-                        params.put(key, values);
-                    }
-                    values.add(value);
-                } catch (UnsupportedEncodingException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        return params;
-    }
-
+public class Utils {
     public static String getStackTrace(Throwable aThrowable) {
         /*
          * shameless partial copy from:
@@ -85,5 +55,15 @@ class Utils {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static String readFully(Reader reader) throws IOException {
+        char[] arr = new char[8 * 1024];
+        StringBuilder buf = new StringBuilder();
+        int numChars;
+        while ((numChars = reader.read(arr, 0, arr.length)) > 0) {
+            buf.append(arr, 0, numChars);
+        }
+        return buf.toString();
     }
 }

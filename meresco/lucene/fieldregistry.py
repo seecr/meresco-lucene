@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -141,7 +141,9 @@ class FieldRegistry(object):
         fieldDefinition = self._defaultDefinition
         if fieldname.startswith(SORTED_PREFIX) or fieldname.startswith(UNTOKENIZED_PREFIX):
             fieldDefinition = STRINGFIELD
-        elif fieldname.startswith(KEY_PREFIX) or fieldname.startswith(NUMERIC_PREFIX):
+        elif fieldname.startswith(KEY_PREFIX):
+            fieldDefinition = KEYFIELD
+        elif fieldname.startswith(NUMERIC_PREFIX):
             fieldDefinition = NUMERICFIELD
         elif fieldname.startswith(RANGE_DOUBLE_PREFIX):
             fieldDefinition = DOUBLEFIELD
@@ -198,4 +200,8 @@ DOUBLEFIELD = _FieldDefinition("DoubleField",
 NUMERICFIELD = _FieldDefinition("NumericField",
     pythonType=long,
     isUntokenized=False,
+    phraseQueryPossible=False)
+KEYFIELD = _FieldDefinition("KeyField",
+    pythonType=str,
+    isUntokenized=True,
     phraseQueryPossible=False)

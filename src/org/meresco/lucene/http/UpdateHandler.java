@@ -36,20 +36,22 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.DocumentStringToDocument;
 import org.meresco.lucene.Lucene;
+import org.meresco.lucene.TermNumerator;
 import org.meresco.lucene.Utils;
 
 public class UpdateHandler extends AbstractHandler {
-
     private Lucene lucene;
+    private TermNumerator termNumerator;
 
-    public UpdateHandler(Lucene lucene) {
+    public UpdateHandler(Lucene lucene, TermNumerator termNumerator) {
         this.lucene = lucene;
+        this.termNumerator = termNumerator;
     }
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         try {
-          Document document = new DocumentStringToDocument(request.getReader()).convert();
+          Document document = new DocumentStringToDocument(request.getReader(), termNumerator).convert();
           if (request.getParameterMap().containsKey("identifier"))
               this.lucene.addDocument(request.getParameter("identifier"), document);
           else

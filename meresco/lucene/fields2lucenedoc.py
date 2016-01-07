@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -82,7 +82,5 @@ class Fields2LuceneDoc(Observable):
                 for value in values:
                     if field == IDFIELD:
                         raise ValueError("Field '%s' is protected and created by Meresco Lucene" % IDFIELD)
-                    if field.startswith(KEY_PREFIX):
-                        value = self.call.numerateTerm(value)
                     fields.append(self._fieldRegistry.createField(field, value))
         return fields

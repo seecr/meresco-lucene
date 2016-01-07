@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -181,8 +181,8 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertFalse(registry.isNumeric('field1'))
         self.assertTrue(registry.isNumeric('longfield'))
         self.assertTrue(registry.isNumeric('intfield'))
-        self.assertTrue(registry.isNumeric('__key__.field1'))
         self.assertTrue(registry.isNumeric('range.double.afield'))
+        self.assertFalse(registry.isNumeric('__key__.field1'))  # changed per 2016-01-07 !
 
     def testRangeQueryAndType(self):
         registry = FieldRegistry()

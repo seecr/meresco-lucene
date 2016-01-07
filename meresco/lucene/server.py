@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -39,7 +39,7 @@ from meresco.components.autocomplete import Autocomplete
 from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
 
-from meresco.lucene import Lucene, Fields2LuceneDoc, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, TermNumerator, DrilldownField, LuceneSettings
+from meresco.lucene import Lucene, Fields2LuceneDoc, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, DrilldownField, LuceneSettings
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 from meresco.lucene.fieldregistry import FieldRegistry
@@ -57,9 +57,8 @@ myPath = abspath(dirname(__file__))
 dynamicPath = join(myPath, 'html', 'dynamic')
 staticPath = join(myPath, 'html', 'static')
 
-def uploadHelix(lucene, termNumerator, storageComponent, drilldownFields, fieldRegistry):
+def uploadHelix(lucene, storageComponent, drilldownFields, fieldRegistry):
     indexHelix = (Fields2LuceneDoc('record', fieldRegistry=fieldRegistry),
-        (termNumerator,),
         (lucene,)
     )
 
@@ -125,8 +124,6 @@ def main(reactor, port, serverPort, databasePath, **kwargs):
     lucene2Settings = LuceneSettings(fieldRegistry=fieldRegistry, commitTimeout=0.1)
     lucene2 = Lucene(host="localhost", port=serverPort, name='main2', settings=lucene2Settings)
 
-    termNumerator = TermNumerator(path=join(databasePath, 'termNumerator'))
-
     emptyLuceneSettings = LuceneSettings(commitTimeout=1)
     multiLuceneHelix = (MultiLucene(host='localhost', port=serverPort, defaultCore='main'),
             (Lucene(host='localhost', port=serverPort, name='empty-core', settings=emptyLuceneSettings),),
@@ -170,10 +167,10 @@ def main(reactor, port, serverPort, databasePath, **kwargs):
                         )
                     ),
                     (PathFilter("/update_main", excluding=['/update_main2']),
-                        uploadHelix(lucene, termNumerator, storageComponent, drilldownFields, fieldRegistry=luceneSettings.fieldRegistry),
+                        uploadHelix(lucene, storageComponent, drilldownFields, fieldRegistry=luceneSettings.fieldRegistry),
                     ),
                     (PathFilter("/update_main2"),
-                        uploadHelix(lucene2, termNumerator, storageComponent, drilldownFields, fieldRegistry=lucene2Settings.fieldRegistry),
+                        uploadHelix(lucene2, storageComponent, drilldownFields, fieldRegistry=lucene2Settings.fieldRegistry),
                     ),
                     (PathFilter('/sru'),
                         (SruParser(defaultRecordSchema='record'),

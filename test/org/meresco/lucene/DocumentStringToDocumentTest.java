@@ -30,6 +30,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
 import javax.json.Json;
@@ -49,7 +52,8 @@ import org.apache.lucene.index.IndexableFieldType;
 import org.junit.Test;
 
 public class DocumentStringToDocumentTest {
-
+    TermNumerator mockTermNumerator = new MockTermNumerator();
+    
     @Test
     public void testStringField() {
         JsonArray json = Json.createArrayBuilder()
@@ -61,6 +65,19 @@ public class DocumentStringToDocumentTest {
         Document result = convert(json.toString());
         assertEquals(StringField.TYPE_NOT_STORED, result.getField("name").fieldType());
         assertEquals("value", result.getField("name").stringValue());
+    }
+
+    @Test
+    public void testKeyField() {
+        JsonArray json = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                    .add("type", "KeyField")
+                    .add("name", "name")
+                    .add("value", "value"))
+                .build();
+        Document result = convert(json.toString());
+        assertEquals(NumericDocValuesField.TYPE, result.getField("name").fieldType());
+        assertEquals(43, result.getField("name").numericValue().doubleValue(), 0);
     }
 
     @Test
@@ -193,6 +210,18 @@ public class DocumentStringToDocumentTest {
     }
 
     private Document convert(String documentString) {
-        return new DocumentStringToDocument(new StringReader(documentString)).convert();
+        Reader reader = new StringReader(documentString);
+        try {
+            return new DocumentStringToDocument(reader, mockTermNumerator).convert();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private class MockTermNumerator extends TermNumerator {
+        int ord = 42;
+        public int numerateTerm(String value) {
+            return ++ord;
+        }
     }
 }

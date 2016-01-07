@@ -38,6 +38,8 @@ public class TermNumerator {
     private DirectoryTaxonomyWriter taxoWriter;
     private DirectoryTaxonomyReader taxoReader;
 
+    protected TermNumerator() {};  // for easier mocking by subclass
+    
     public TermNumerator(File path) throws IOException {
         MMapDirectory taxoDirectory = new MMapDirectory(path);
         taxoDirectory.setUseUnmap(false);

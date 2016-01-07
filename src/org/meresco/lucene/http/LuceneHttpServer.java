@@ -89,6 +89,7 @@ public class LuceneHttpServer {
             System.exit(1);
         }
 
+        TermNumerator termNumerator = new TermNumerator(new File(storeLocation, "keys-termnumerator"));
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         List<Lucene> lucenes = new ArrayList<Lucene>();
         for (String core : cores) {
@@ -100,7 +101,7 @@ public class LuceneHttpServer {
             contexts.addHandler(context);
 
             context = new ContextHandler("/" + core + "/update");
-            context.setHandler(new UpdateHandler(lucene));
+            context.setHandler(new UpdateHandler(lucene, termNumerator));
             contexts.addHandler(context);
 
             context = new ContextHandler("/" + core + "/delete");
@@ -124,7 +125,6 @@ public class LuceneHttpServer {
         contexts.addHandler(composedQueryHandler);
 
         ContextHandler numerateHandler = new ContextHandler("/numerate");
-        TermNumerator termNumerator = new TermNumerator(new File(storeLocation, "keys-termnumerator"));
         numerateHandler.setHandler(new NumerateHandler(termNumerator));
         contexts.addHandler(numerateHandler);
         

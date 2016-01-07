@@ -25,6 +25,7 @@
 
 package org.meresco.lucene;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Iterator;
 
@@ -49,15 +50,16 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexableField;
 
 public class DocumentStringToDocument {
-
     private JsonArray object;
+    private TermNumerator termNumerator;
 
-    public DocumentStringToDocument(Reader documentReader) {
+    public DocumentStringToDocument(Reader documentReader, TermNumerator termNumerator) {
         JsonReader jsonReader = Json.createReader(documentReader);
         object = (JsonArray) jsonReader.read();
+        this.termNumerator = termNumerator;
     }
 
-    public Document convert() {
+    public Document convert() throws IOException {
         Document doc = new Document();
         Iterator<JsonValue> iterator = object.iterator();
         while (iterator.hasNext()) {
@@ -67,7 +69,7 @@ public class DocumentStringToDocument {
         return doc;
     }
 
-    private IndexableField createField(JsonObject jsonField) {
+    private IndexableField createField(JsonObject jsonField) throws IOException {
         String name = jsonField.getString("name");
         Field field = null;
         switch (jsonField.getString("type")) {
@@ -95,6 +97,9 @@ public class DocumentStringToDocument {
             case "NumericField":
                 field = new NumericDocValuesField(name, jsonField.getJsonNumber("value").longValue());
                 break;
+            case "KeyField":
+                field = new NumericDocValuesField(name, termNumerator.numerateTerm(jsonField.getString("value")));
+                break;         
             case "FacetField":
                 JsonArray jsonArray = jsonField.getJsonArray("path");
                 String[] path = new String[jsonArray.size()];

@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -41,8 +41,6 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             '__numeric__.field6': ["12345"],
         }
         fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry())
-        observer = CallTrace(returnValues={'numerateTerm': 1})
-        fields2LuceneDoc.addObserver(observer)
         fields = fields2LuceneDoc._createFields(fields)
 
         self.assertEqual([
@@ -58,8 +56,8 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                 },
                 {
                     "name": "__key__.field5",
-                    "type": "NumericField",
-                    "value": 1
+                    "type": "KeyField",
+                    "value": "12345"
                 },
                 {
                     "name": "field1",

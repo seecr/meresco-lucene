@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -23,8 +23,7 @@
 #
 ## end license ##
 
-from os import remove
-from os.path import join, isfile
+from os.path import join
 from time import sleep
 
 from seecr.test import SeecrTestCase
@@ -62,7 +61,7 @@ class SuggestionIndexTest(SeecrTestCase):
         self.assertEquals(["$lo", "lor", "ord", "rd$", "$of", "of$"], list(ngrams))
 
     def testSuggestionIndex(self):
-        self._suggestionIndex.add("identifier", ["Lord of the rings", "Fellowship of the ring"], [None, None], [None, None])
+        self._suggestionIndex.add("identifier", 1, ["Lord of the rings", "Fellowship of the ring"], [None, None], [None, None])
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
 
         self.assertSuggestion("l", ["Lord of the rings"])
@@ -73,10 +72,10 @@ class SuggestionIndexTest(SeecrTestCase):
         self.assertSuggestion("fel", ['Fellowship of the ring'])
 
     def testRanking(self):
-        self._suggestionIndex.add("identifier", ["Lord of the rings", "Lord magic"], [None]*2, [None]*2)
-        self._suggestionIndex.add("identifier2", ["Lord of the rings"], [None], [None])
-        self._suggestionIndex.add("identifier3", ["Lord magic"], [None], [None])
-        self._suggestionIndex.add("identifier4", ["Lord magic"], [None], [None])
+        self._suggestionIndex.add("identifier", 1, ["Lord of the rings", "Lord magic"], [None]*2, [None]*2)
+        self._suggestionIndex.add("identifier2", 2, ["Lord of the rings"], [None], [None])
+        self._suggestionIndex.add("identifier3", 3, ["Lord magic"], [None], [None])
+        self._suggestionIndex.add("identifier4", 4, ["Lord magic"], [None], [None])
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
 
         reader = self._suggestionIndex.getSuggestionsReader()
@@ -88,7 +87,7 @@ class SuggestionIndexTest(SeecrTestCase):
     def testCreatingIndexState(self):
         self.assertEquals(None, self._suggestionIndex.indexingState())
         for i in range(100):
-            self._suggestionIndex.add("identifier%s", ["Lord rings", "Lord magic"], [None]*2, [None]*2)
+            self._suggestionIndex.add("identifier%s", 1, ["Lord rings", "Lord magic"], [None]*2, [None]*2)
         try:
             self._suggestionIndex.createSuggestionNGramIndex(False, False)
             sleep(0.005) # Wait for thread
@@ -103,7 +102,7 @@ class SuggestionIndexTest(SeecrTestCase):
         self.assertTrue("Nothing bad happened, no NullPointerException")
 
     def testSuggestionWithConceptTypesAndCreators(self):
-        self._suggestionIndex.add("identifier", ["Lord of the rings", "Lord magic"], ["uri:book", None], ["uri:author", None])
+        self._suggestionIndex.add("identifier", 1, ["Lord of the rings", "Lord magic"], ["uri:book", None], ["uri:author", None])
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
 
         reader = self._suggestionIndex.getSuggestionsReader()
@@ -114,7 +113,7 @@ class SuggestionIndexTest(SeecrTestCase):
         self.assertEquals([None, u'uri:author'], [s.creator for s in suggestions])
 
     def testSuggestWithFilter(self):
-        self._suggestionIndex.add("identifier", ["Lord of the rings", "Lord magic"], ["uri:book", None], [None]*2)
+        self._suggestionIndex.add("identifier", 1, ["Lord of the rings", "Lord magic"], ["uri:book", None], [None]*2)
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
 
         reader = self._suggestionIndex.getSuggestionsReader()
@@ -123,7 +122,7 @@ class SuggestionIndexTest(SeecrTestCase):
         self.assertEquals([u'Lord of the rings'], [s.suggestion for s in suggestions])
 
     def testCommit(self):
-        self._suggestionIndex.add("identifier", ["Lord of the rings", "Fellowship of the ring"], [None, None], [None, None])
+        self._suggestionIndex.add("identifier", 1, ["Lord of the rings", "Fellowship of the ring"], [None, None], [None, None])
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
         self._suggestionIndex.commit()
         self.assertSuggestion("l", ["Lord of the rings"])

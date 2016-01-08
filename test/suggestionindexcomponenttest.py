@@ -1,27 +1,24 @@
 ## begin license ##
 #
-# "NBC+" also known as "ZP (ZoekPlatform)" is
-#  a project of the Koninklijke Bibliotheek
-#  and provides a search service for all public
-#  libraries in the Netherlands.
+# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 #
-# This file is part of "NBC+ (Zoekplatform BNL)"
+# This file is part of "Meresco Lucene"
 #
-# "NBC+ (Zoekplatform BNL)" is free software; you can redistribute it and/or modify
+# "Meresco Lucene" is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
-# "NBC+ (Zoekplatform BNL)" is distributed in the hope that it will be useful,
+# "Meresco Lucene" is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with "NBC+ (Zoekplatform BNL)"; if not, write to the Free Software
+# along with "Meresco Lucene"; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 ## end license ##
@@ -33,16 +30,16 @@ from meresco.components.http.utils import CRLF
 from simplejson import loads
 from seecr.test.io import stdout_replaced
 
-class SuggestionIndexComponentTest(SeecrTestCase):
 
+class SuggestionIndexComponentTest(SeecrTestCase):
     def testSuggestionsAreEmptyIfNotCreated(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", createSuggestions())
+        sic.addSuggestions(identifier="id:1", key=1, values=createSuggestions())
         self.assertEquals([], sic.suggest('ha'))
 
     def testSuggest(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", createSuggestions())
+        sic.addSuggestions(identifier="id:1", key=1, values=createSuggestions())
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
 
         suggestions = sic.suggest("ha")
@@ -55,7 +52,7 @@ class SuggestionIndexComponentTest(SeecrTestCase):
 
     def testSuggestWithTypesAndCreators(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", createSuggestions())
+        sic.addSuggestions(identifier="id:1", key=1, values=createSuggestions())
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
 
         suggestions = sic.suggest("ha")
@@ -65,7 +62,7 @@ class SuggestionIndexComponentTest(SeecrTestCase):
 
     def testHandleRequest(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", createSuggestions())
+        sic.addSuggestions(identifier="id:1", key=1, values=createSuggestions())
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], minScore=["0"]))).split(CRLF*2)
         self.assertEquals("""HTTP/1.0 200 OK\r
@@ -78,7 +75,7 @@ Access-Control-Max-Age: 86400""", header)
 
     def testHandleRequestWithTypesAndCreators(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", createSuggestions())
+        sic.addSuggestions(identifier="id:1", key=1, values=createSuggestions())
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], minScore=["0"], concepts=["True"]))).split(CRLF*2)
         self.assertEquals("""HTTP/1.0 200 OK\r
@@ -91,7 +88,7 @@ Access-Control-Max-Age: 86400""", header)
 
     def testHandleRequestWithDebug(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", createSuggestions())
+        sic.addSuggestions(identifier="id:1", key=1, values=createSuggestions())
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "x-debug": ["true"], "minScore": ["0"]})).split(CRLF*2)
         self.assertEquals("""HTTP/1.0 200 OK\r
@@ -117,7 +114,7 @@ Access-Control-Max-Age: 86400""", header)
     @stdout_replaced
     def testPersistentShingles(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", createSuggestions())
+        sic.addSuggestions(identifier="id:1", key=1, values=createSuggestions())
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         sic.handleShutdown()
 
@@ -127,8 +124,8 @@ Access-Control-Max-Age: 86400""", header)
 
     def testAddDelete(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions("id:1", createSuggestions())
-        sic.addSuggestions("id:2", createSuggestions())
+        sic.addSuggestions(identifier="id:1", key=1, values=createSuggestions())
+        sic.addSuggestions(identifier="id:2", key=1, values=createSuggestions())
         self.assertEquals(2, sic.totalShingleRecords())
         sic.deleteSuggestions("id:1")
         self.assertEquals(1, sic.totalShingleRecords())
@@ -138,7 +135,7 @@ Access-Control-Max-Age: 86400""", header)
         suggestions = createSuggestions()
         suggestions.append(dict(title="harry", type="uri:e-book"))
         suggestions.append(dict(title="harry", type="uri:track"))
-        sic.addSuggestions("id:1", suggestions)
+        sic.addSuggestions(identifier="id:1", key=1, values=suggestions)
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"]})).split(CRLF*2)
         self.assertEqual('["ha", ["hallo", "harry"], [["hallo", "uri:book", "by:me"], ["harry", "uri:book", "rowling"], ["harry", "uri:e-book", null], ["harry", "uri:track", null]]]', body)
@@ -148,7 +145,7 @@ Access-Control-Max-Age: 86400""", header)
         suggestions = createSuggestions()
         suggestions.append(dict(title="harry", type="uri:e-book"))
         suggestions.append(dict(title="harry", type="uri:track"))
-        sic.addSuggestions("id:1", suggestions)
+        sic.addSuggestions(identifier="id:1", key=1, values=suggestions)
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"], "filter": ["type=uri:track"]})).split(CRLF*2)
         self.assertEqual('["ha", ["harry"], [["harry", "uri:track", null]]]', body)

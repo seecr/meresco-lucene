@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
@@ -45,8 +46,8 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;
 
-public class SuggestionIndex {
 
+public class SuggestionIndex {
     public static final String CONCAT_MARKER = "$$--$$";
 
     private static final String RECORD_VALUE_FIELDNAME = "__record_value__";
@@ -77,6 +78,7 @@ public class SuggestionIndex {
     private int commitCount = 0;
 
     private Field recordIdField = new Field("__id__", "", SIMPLE_NOT_STORED_STRING_FIELD);
+    private Field recordKeyField = new NumericDocValuesField("__key__", 0L);
 
 	private SuggestionNGramIndex suggestionNGramIndex;
 
@@ -105,10 +107,12 @@ public class SuggestionIndex {
         this.suggestionNGramIndex = new SuggestionNGramIndex(this.suggestionNGramIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
     }
 
-    public void add(String identifier, String[] values, String[] types, String[] creators) throws IOException {
+    public void add(String identifier, int key, String[] values, String[] types, String[] creators) throws IOException {
         Document recordDoc = new Document();
         this.recordIdField.setStringValue(identifier);
         recordDoc.add(this.recordIdField);
+        this.recordKeyField.setLongValue(key);
+        recordDoc.add(this.recordKeyField);
         for (int i = 0; i < values.length; i++) {
             String value = (types[i] != null ? types[i] : "") + CONCAT_MARKER + (creators[i] != null ? creators[i] : "") + CONCAT_MARKER + values[i];
             recordDoc.add(new Field(RECORD_VALUE_FIELDNAME, value, SIMPLE_NOT_STORED_STRING_FIELD));

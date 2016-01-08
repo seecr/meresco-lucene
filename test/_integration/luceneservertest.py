@@ -119,3 +119,7 @@ class LuceneServerTest(IntegrationTestCase):
         self.assertEquals(body2, body)
         header, body3 = postRequest(self.serverPort, '/numerate/', data='id1', parse=False)
         self.assertNotEquals(body3, body)
+
+    def testCommit(self):
+        header, body = postRequest(self.serverPort, '/commit/', parse=False)
+        self.assertTrue("200 OK" in header.upper(), header)

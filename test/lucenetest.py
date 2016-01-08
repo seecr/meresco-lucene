@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -32,8 +32,8 @@ from weightless.core import consume, retval
 from cqlparser import cqlToExpression
 from simplejson import loads
 
-class LuceneTest(SeecrTestCase):
 
+class LuceneTest(SeecrTestCase):
     def setUp(self):
         SeecrTestCase.setUp(self)
         self._lucene = Lucene(host="localhost", port=1234, name='lucene', settings=LuceneSettings())
@@ -43,7 +43,7 @@ class LuceneTest(SeecrTestCase):
             self.post.append(dict(data=data, path=path))
             raise StopIteration(self.response)
             yield
-        self._lucene._post = mockPost
+        self._lucene._client._post = mockPost
 
         self.read = []
         self.response = ""
@@ -51,7 +51,7 @@ class LuceneTest(SeecrTestCase):
             self.read.append(path)
             raise StopIteration(self.response)
             yield
-        self._lucene._read = mockRead
+        self._lucene._client.read = mockRead
 
     def testPostSettingsAddObserverInit(self):
         self.assertEqual([], self.post)

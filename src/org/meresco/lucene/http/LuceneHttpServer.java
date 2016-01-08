@@ -26,6 +26,7 @@
 package org.meresco.lucene.http;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -128,44 +129,52 @@ public class LuceneHttpServer {
         numerateHandler.setHandler(new NumerateHandler(termNumerator));
         contexts.addHandler(numerateHandler);
         
+        ContextHandler commitHandler = new ContextHandler("/commit");
+        commitHandler.setHandler(new CommitHandler(termNumerator, lucenes));
+        contexts.addHandler(commitHandler);
+        
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         Server server = new Server(pool);
         ServerConnector http = new ServerConnector(server, new HttpConnectionFactory());
         http.setPort(port);
         server.addConnector(http);
 
-        registerShutdownHandler(lucenes, server);
+        registerShutdownHandler(lucenes, termNumerator, server);
 
         server.setHandler(contexts);
         server.start();
         server.join();
     }
 
-    static void registerShutdownHandler(final List<Lucene> lucenes, final Server server) {
+    static void registerShutdownHandler(final List<Lucene> lucenes, final TermNumerator termNumerator, final Server server) {
         Signal.handle(new Signal("TERM"), new SignalHandler() {
             public void handle(Signal sig) {
-                shutdown(server, lucenes);
+                shutdown(server, lucenes, termNumerator);
             }
         });
         Signal.handle(new Signal("INT"), new SignalHandler() {
             public void handle(Signal sig) {
-                shutdown(server, lucenes);
+                shutdown(server, lucenes, termNumerator);
             }
         });
     }
 
-    static void shutdown(final Server server, final List<Lucene> lucenes) {
+    static void shutdown(final Server server, final List<Lucene> lucenes, final TermNumerator termNumerator) {
         System.out.println("Shutting down lucene. Please wait...");
+        try {
+            termNumerator.close();
+            System.out.println("Shutdown termNumerator completed.");
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Shutdown termNumerator failed.");
+        }
         for (Lucene lucene : lucenes) {
             try {
                 lucene.close();
                 System.out.println("Shutdown " + lucene.name + " completed.");
-                System.out.flush();
             } catch (Exception e) {
                 e.printStackTrace();
-                System.err.flush();
-                System.out.println("Shutdown failed.");
-                System.out.flush();
+                System.out.println("Shutdown " + lucene.name + " failed.");
             }
         }
         try {
@@ -174,6 +183,8 @@ public class LuceneHttpServer {
             e.printStackTrace();
         }
         System.out.println("Http-server stopped");
+        System.err.flush();
+        System.out.flush();
         System.exit(0);
    }
 }

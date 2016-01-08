@@ -62,7 +62,7 @@ public class TermNumerator {
         return taxoReader.getPath(nr).components[0];
     }
 
-    public void commit() throws IOException {
+    public synchronized void commit() throws IOException {
         taxoWriter.commit();
     }
 

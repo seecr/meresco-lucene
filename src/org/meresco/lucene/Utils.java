@@ -33,6 +33,7 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.List;
 
 
 public class Utils {
@@ -65,5 +66,18 @@ public class Utils {
             buf.append(arr, 0, numChars);
         }
         return buf.toString();
+    }
+    
+    static public String join(List<?> list, String conjunction) {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (Object item : list) {
+            if (first)
+                first = false;
+            else
+                sb.append(conjunction);
+            sb.append(item.toString());
+        }
+        return sb.toString();
     }
 }

@@ -37,11 +37,16 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -53,22 +58,26 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
+import org.meresco.lucene.Utils;
 import org.meresco.lucene.suggestion.SuggestionIndex.IndexingState;
 
-public class SuggestionNGramIndex {
 
+public class SuggestionNGramIndex {
 	private static final String SUGGESTION_FIELDNAME = "__suggestion__";
     private static final String CONCEPT_URI_FIELDNAME = "type";
     private static final String BIGRAM_FIELDNAME = "__bigram__";
     private static final String TRIGRAM_FIELDNAME = "__trigram__";
     private static final String CREATOR_FIELDNAME = "creator";
+    private static final String KEY_FIELDNAME = "__keys__";
 
     private Field suggestionField = new Field(SUGGESTION_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field creatorField = new Field(CREATOR_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
-
+    private Field keyField = new StringField(KEY_FIELDNAME, "", Store.NO);
+    
     private final NGramAnalyzer bigram;
     private final NGramAnalyzer trigram;
     private final int maxCommitCount;
@@ -96,20 +105,36 @@ public class SuggestionNGramIndex {
 	}
 
 	public void createSuggestions(IndexReader reader, String suggestionFieldname, IndexingState indexingState) throws IOException {
+        Bits liveDocs = MultiFields.getLiveDocs(reader);
+        List<AtomicReaderContext> leaves = reader.leaves();
         Terms terms = MultiFields.getTerms(reader, suggestionFieldname);
         if (terms == null)
             return;
-		TermsEnum iterator = terms.iterator(null);
+		TermsEnum termsEnum = terms.iterator(null);
     	BytesRef term;
-    	while ((term = iterator.next()) != null) {
+    	while ((term = termsEnum.next()) != null) {
+    	    List<Long> keys = new ArrayList<>();
+    	    DocsEnum docsEnum = termsEnum.docs(liveDocs, null, DocsEnum.FLAG_NONE);
+    	    while (true) {
+                int docId = docsEnum.nextDoc();
+                if (docId == DocsEnum.NO_MORE_DOCS) {
+                    break;
+                }
+                keys.add(keyForDoc(docId, leaves));
+    	    }
             String[] values = term.utf8ToString().split(SuggestionIndex.CONCAT_MARKER.replace("$", "\\$"));
-            indexNGram(values[0], values[1], values[2]);
+            indexNGram(values[0], values[1], values[2], keys);
             indexingState.count++;
     	}
     	this.commit();
     }
 
-	private void maybeCommitAfterUpdate() throws IOException {
+	private Long keyForDoc(int docId, List<AtomicReaderContext> leaves) throws IOException {
+        AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
+        return context.reader().getNumericDocValues(KEY_FIELDNAME).get(docId);
+    }
+
+    private void maybeCommitAfterUpdate() throws IOException {
         this.commitCount++;
         if (this.commitCount >= this.maxCommitCount) {
             this.commit();
@@ -125,7 +150,7 @@ public class SuggestionNGramIndex {
         this.writer.close();
     }
 
-    private void indexNGram(String type, String creator, String term) throws IOException {
+    private void indexNGram(String type, String creator, String term, List<Long> keys) throws IOException {
         Document doc = new Document();
         this.suggestionField.setStringValue(term);
         doc.add(this.suggestionField);
@@ -143,6 +168,8 @@ public class SuggestionNGramIndex {
         for (String n : ngrams(term, true)) {
             doc.add(new Field(TRIGRAM_FIELDNAME, n, SuggestionIndex.SIMPLE_NOT_STORED_STRING_FIELD));
         }
+        keyField.setStringValue(Utils.join(keys, "|"));
+        doc.add(keyField);
         this.writer.addDocument(doc);
         maybeCommitAfterUpdate();
     }

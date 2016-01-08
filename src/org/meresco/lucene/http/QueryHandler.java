@@ -48,6 +48,7 @@ public class QueryHandler extends AbstractHandler {
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        response.setCharacterEncoding("UTF-8");
         LuceneResponse luceneResponse = new LuceneResponse(0);
         try {
             QueryData q = new QueryData(request.getReader(), this.lucene.getQueryConverter());

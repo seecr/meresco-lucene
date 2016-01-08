@@ -46,6 +46,7 @@ public class DeleteHandler extends AbstractHandler {
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        response.setCharacterEncoding("UTF-8");
         String identifier = request.getParameter("identifier");
         try {
             this.lucene.deleteDocument(identifier);

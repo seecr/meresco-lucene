@@ -50,6 +50,7 @@ public class PrefixSearchHandler extends AbstractHandler {
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        response.setCharacterEncoding("UTF-8");
         String fieldname = request.getParameter("fieldname");
         String prefix = request.getParameter("prefix");
         String limitParam = request.getParameter("limit");

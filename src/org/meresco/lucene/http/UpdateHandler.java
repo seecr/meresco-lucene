@@ -50,6 +50,7 @@ public class UpdateHandler extends AbstractHandler {
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        response.setCharacterEncoding("UTF-8");
         try {
           Document document = new DocumentStringToDocument(request.getReader(), termNumerator).convert();
           if (request.getParameterMap().containsKey("identifier"))

@@ -42,6 +42,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.OpenBitSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -798,4 +799,34 @@ public class MultiLuceneTest extends SeecrTestCase {
         drilldownTerm = converters.get("coreB").createDrilldownTerm("dim1");
         assertEquals("$facets", drilldownTerm.field());
     }
+    
+    @Test
+    public void testExportKeys() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new MatchAllDocsQuery());
+        q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        LuceneResponse result = multiLucene.executeComposedQuery(q, "A");
+        assertEquals(4, result.total);
+        OpenBitSet expected = new OpenBitSet();
+        expected.set(5);
+        expected.set(6);
+        expected.set(7);
+        expected.set(8);
+        assertEquals(expected, result.keys);
+    }
+    
+    @Test
+    public void testExportKeysSingleCore() throws Exception {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
+        LuceneResponse result = multiLucene.executeComposedQuery(q, "A");
+        assertEquals(4, result.total);
+        OpenBitSet expected = new OpenBitSet();
+        expected.set(5);
+        expected.set(6);
+        expected.set(7);
+        expected.set(8);
+        assertEquals(expected, result.keys);
+    }    
 }

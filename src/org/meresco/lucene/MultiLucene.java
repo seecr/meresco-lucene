@@ -52,9 +52,13 @@ public class MultiLucene {
     }
 
     public LuceneResponse executeComposedQuery(ComposedQuery q) throws Exception {
-        if (q.cores.size() <= 1)
+        return executeComposedQuery(q, null);
+    }
+    
+    public LuceneResponse executeComposedQuery(ComposedQuery q, String exportKey) throws Exception {
+        if (q.cores.size() <= 1 && exportKey == null)
             return singleCoreQuery(q);
-        return multipleCoreQuery(q);
+        return multipleCoreQuery(q, exportKey);
     }
 
     private LuceneResponse singleCoreQuery(ComposedQuery query) throws Exception {
@@ -67,7 +71,7 @@ public class MultiLucene {
         return this.lucenes.get(resultCoreName).executeQuery(query.queryData, query.filterQueries.get(resultCoreName), query.drilldownQueriesFor(resultCoreName), null, null, null);
     }
 
-    private LuceneResponse multipleCoreQuery(ComposedQuery query) throws Exception {
+    private LuceneResponse multipleCoreQuery(ComposedQuery query, String exportKey) throws Exception {
         long t0 = System.currentTimeMillis();
         String resultCoreName = query.resultsFrom;
         List<String> otherCoreNames = new ArrayList<String>();
@@ -90,6 +94,9 @@ public class MultiLucene {
         Map<String, KeySuperCollector> keyCollectors = new HashMap<String, KeySuperCollector>();
         for (String keyName : query.keyNames(resultCoreName)) {
             keyCollectors.put(keyName, new KeySuperCollector(keyName));
+        }
+        if (exportKey != null && !keyCollectors.containsKey(exportKey)) {
+            keyCollectors.put(exportKey, new KeySuperCollector(exportKey));
         }
 
         query.queryData.query = resultCoreQuery;
@@ -120,6 +127,9 @@ public class MultiLucene {
             }
         }
 
+        if (exportKey != null) {
+            response.keys = keyCollectors.get(exportKey).getCollectedKeys();
+        }
         response.queryTime = System.currentTimeMillis() - t0;
         return response;
     }

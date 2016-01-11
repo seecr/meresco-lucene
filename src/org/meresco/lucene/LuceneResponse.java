@@ -2,8 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -38,6 +38,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
 import org.apache.lucene.search.spell.SuggestWord;
+import org.apache.lucene.util.OpenBitSet;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;
@@ -50,6 +51,7 @@ public class LuceneResponse {
     public long queryTime = 0;
     public Map<String,SuggestWord[]> suggestions = new HashMap<>();
     public Map<String, Long> times = new HashMap<>();
+    public OpenBitSet keys;
 
     public LuceneResponse(int totalHits) {
         total = totalHits;
@@ -59,6 +61,7 @@ public class LuceneResponse {
         hits.add(hit);
     }
 
+    
     public static class Hit implements Comparable<Hit> {
         public String id;
         public float score;
@@ -74,6 +77,7 @@ public class LuceneResponse {
         }
     }
     
+    
     public static class DedupHit extends Hit {
         public DedupHit(String id, float score) {
             super(id, score);
@@ -82,6 +86,7 @@ public class LuceneResponse {
         public int duplicateCount;
     }
     
+    
     public static class GroupingHit extends Hit {
         public List<String> duplicates;
         public String groupingField;
@@ -89,6 +94,8 @@ public class LuceneResponse {
             super(id, score);
         }
     }
+    
+    
     public static class ClusterHit extends Hit {
         public MerescoCluster.DocScore[] topDocs;
         public MerescoCluster.TermScore[] topTerms;
@@ -97,6 +104,7 @@ public class LuceneResponse {
         }
     }
 
+    
     public static class DrilldownData {
         public String fieldname;
         public String[] path = new String[0];

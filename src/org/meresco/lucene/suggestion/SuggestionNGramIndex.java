@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -77,7 +77,7 @@ public class SuggestionNGramIndex {
     private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field creatorField = new Field(CREATOR_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field keyField = new StringField(KEY_FIELDNAME, "", Store.NO);
-    
+
     private final NGramAnalyzer bigram;
     private final NGramAnalyzer trigram;
     private final int maxCommitCount;
@@ -104,7 +104,7 @@ public class SuggestionNGramIndex {
         this.writer.commit();
 	}
 
-	public void createSuggestions(IndexReader reader, String suggestionFieldname, IndexingState indexingState) throws IOException {
+	public void createSuggestions(IndexReader reader, String suggestionFieldname, String keyFieldname, IndexingState indexingState) throws IOException {
         Bits liveDocs = MultiFields.getLiveDocs(reader);
         List<AtomicReaderContext> leaves = reader.leaves();
         Terms terms = MultiFields.getTerms(reader, suggestionFieldname);
@@ -120,7 +120,7 @@ public class SuggestionNGramIndex {
                 if (docId == DocsEnum.NO_MORE_DOCS) {
                     break;
                 }
-                keys.add(keyForDoc(docId, leaves));
+                keys.add(keyForDoc(docId, leaves, keyFieldname));
     	    }
             String[] values = term.utf8ToString().split(SuggestionIndex.CONCAT_MARKER.replace("$", "\\$"));
             indexNGram(values[0], values[1], values[2], keys);
@@ -129,9 +129,9 @@ public class SuggestionNGramIndex {
     	this.commit();
     }
 
-	private Long keyForDoc(int docId, List<AtomicReaderContext> leaves) throws IOException {
+	private Long keyForDoc(int docId, List<AtomicReaderContext> leaves, String keyFieldname) throws IOException {
         AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
-        return context.reader().getNumericDocValues(KEY_FIELDNAME).get(docId);
+        return context.reader().getNumericDocValues(keyFieldname).get(docId);
     }
 
     private void maybeCommitAfterUpdate() throws IOException {

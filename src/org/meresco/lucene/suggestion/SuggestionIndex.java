@@ -51,6 +51,7 @@ public class SuggestionIndex {
     public static final String CONCAT_MARKER = "$$--$$";
 
     private static final String RECORD_VALUE_FIELDNAME = "__record_value__";
+    private static final String KEY_FIELDNAME = "__record_value__";
 
     public static final FieldType SIMPLE_NOT_STORED_STRING_FIELD = new FieldType();
     public static final FieldType SIMPLE_STORED_STRING_FIELD = new FieldType();
@@ -78,7 +79,7 @@ public class SuggestionIndex {
     private int commitCount = 0;
 
     private Field recordIdField = new Field("__id__", "", SIMPLE_NOT_STORED_STRING_FIELD);
-    private Field recordKeyField = new NumericDocValuesField("__key__", 0L);
+    private Field recordKeyField = new NumericDocValuesField(KEY_FIELDNAME, 0L);
 
 	private SuggestionNGramIndex suggestionNGramIndex;
 
@@ -139,7 +140,7 @@ public class SuggestionIndex {
 		    		deleteIndexDirectory(tempDir);
 		    		deleteIndexDirectory(tempTempDir);
 		    		SuggestionNGramIndex newSuggestionNGramIndex = new SuggestionNGramIndex(tempDir, MAX_COMMIT_COUNT_SUGGESTION);
-		    		newSuggestionNGramIndex.createSuggestions(reader, RECORD_VALUE_FIELDNAME, indexingState);
+		    		newSuggestionNGramIndex.createSuggestions(reader, RECORD_VALUE_FIELDNAME, KEY_FIELDNAME, indexingState);
 		    		newSuggestionNGramIndex.close();
 		        	reader.close();
 		        	suggestionNGramIndex.close();

@@ -25,8 +25,14 @@
 
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import postRequest, getRequest
+from meresco.components.http.utils import CRLF
 from meresco.components.json import JsonList, JsonDict
 from simplejson import loads
+from struct import unpack
+
+from meresco.lucene import ComposedQuery
+from org.apache.lucene.util import OpenBitSet
+
 
 class LuceneServerTest(IntegrationTestCase):
     def setUp(self):
@@ -123,3 +129,21 @@ class LuceneServerTest(IntegrationTestCase):
     def testCommit(self):
         header, body = postRequest(self.serverPort, '/commit/', parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
+
+    def testExportKeys(self):
+        composedQuery = ComposedQuery('main')
+        composedQuery.setCoreQuery('main', query=dict(type="MatchAllDocsQuery"))
+        header, body = postRequest(self.serverPort, '/exportkeys/?exportKey=__key__.field', data=JsonDict(composedQuery.asDict()).dumps(), parse=False)
+        self.assertTrue("200 OK" in header.upper(), header + 2 * CRLF + body)
+        numWords = unpack('>i', body[:4])[0]
+        longs = []
+        for i in xrange(4, len(body), 8):
+            longs.append(long(unpack('>q', body[i:i+8])[0]))
+        bitSet = OpenBitSet(longs, numWords)
+        for i in xrange(0, 100):
+            isSet = bitSet.get(i)
+            if 0 < i < 99:
+                self.assertTrue(isSet, i)
+            else:
+                self.assertFalse(isSet, i)
+

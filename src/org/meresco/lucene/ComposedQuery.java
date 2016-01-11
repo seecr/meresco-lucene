@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -54,7 +54,7 @@ public class ComposedQuery {
     private List<Unite> unites = new ArrayList<Unite>();
     public List<Match> matches = new ArrayList<Match>();
     public QueryData queryData = new QueryData();
-    
+
     public ComposedQuery(String resultsFrom) {
         this.resultsFrom = resultsFrom;
     }
@@ -69,31 +69,31 @@ public class ComposedQuery {
             return null;
         JsonObject json = Json.createReader(jsonStringReader).readObject();
         ComposedQuery cq = new ComposedQuery(json.getString("resultsFrom"));
-        if (json.containsKey("start") && json.get("start") != JsonValue.NULL)
-            cq.queryData.start = json.getInt("start");
-        if (json.containsKey("stop") && json.get("stop") != JsonValue.NULL)
-            cq.queryData.stop = json.getInt("stop");
-        if (json.containsKey("suggestionRequest") && json.get("suggestionRequest") != JsonValue.NULL)
-            cq.queryData.suggestionRequest = converters.get(cq.resultsFrom).convertToSuggestionRequest(json.getJsonObject("suggestionRequest"));
-        cq.queryData.sort = new QueryConverter(null).convertToSort(json.getJsonArray("sortKeys"));
-        cq.queryData.dedupField = json.getString("dedupField", null);
-        cq.queryData.dedupSortField = json.getString("dedupSortField", null);
-        cq.queryData.groupingField = json.getString("groupingField", null);
-        cq.queryData.clustering = json.getBoolean("clustering", false);
+        if (json.containsKey("_start") && json.get("_start") != JsonValue.NULL)
+            cq.queryData.start = json.getInt("_start");
+        if (json.containsKey("_stop") && json.get("_stop") != JsonValue.NULL)
+            cq.queryData.stop = json.getInt("_stop");
+        if (json.containsKey("_suggestionRequest") && json.get("_suggestionRequest") != JsonValue.NULL)
+            cq.queryData.suggestionRequest = converters.get(cq.resultsFrom).convertToSuggestionRequest(json.getJsonObject("_suggestionRequest"));
+        cq.queryData.sort = new QueryConverter(null).convertToSort(json.getJsonArray("_sortKeys"));
+        cq.queryData.dedupField = json.getString("_dedupField", null);
+        cq.queryData.dedupSortField = json.getString("_dedupSortField", null);
+        cq.queryData.groupingField = json.getString("_groupingField", null);
+        cq.queryData.clustering = json.getBoolean("_clustering", false);
         if (json.containsKey("cores")) {
             JsonArray jsonCores = json.getJsonArray("cores");
             for (int i = 0; i < jsonCores.size(); i++) {
                 cq.cores.add(jsonCores.getString(i));
             }
         }
-        if (json.containsKey("queries")) {
-            JsonObject queries = json.getJsonObject("queries");
+        if (json.containsKey("_queries")) {
+            JsonObject queries = json.getJsonObject("_queries");
             for (String core : queries.keySet()) {
                 cq.setCoreQuery(core, converters.get(core).convertToQuery(queries.getJsonObject(core)));
             }
         }
-        if (json.containsKey("filterQueries")) {
-            JsonObject filterQueries = json.getJsonObject("filterQueries");
+        if (json.containsKey("_filterQueries")) {
+            JsonObject filterQueries = json.getJsonObject("_filterQueries");
             for (String coreName : filterQueries.keySet()) {
                 JsonArray queries = filterQueries.getJsonArray(coreName);
                 for (int i = 0; i < queries.size(); i++) {
@@ -101,8 +101,8 @@ public class ComposedQuery {
                 }
             }
         }
-        if (json.containsKey("otherCoreFacetFilters")) {
-            JsonObject filterQueries = json.getJsonObject("otherCoreFacetFilters");
+        if (json.containsKey("_otherCoreFacetFilters")) {
+            JsonObject filterQueries = json.getJsonObject("_otherCoreFacetFilters");
             for (String coreName : filterQueries.keySet()) {
                 JsonArray queries = filterQueries.getJsonArray(coreName);
                 for (int i = 0; i < queries.size(); i++) {
@@ -110,8 +110,8 @@ public class ComposedQuery {
                 }
             }
         }
-        if (json.containsKey("drilldownQueries")) {
-            JsonObject drilldownQueries = json.getJsonObject("drilldownQueries");
+        if (json.containsKey("_drilldownQueries")) {
+            JsonObject drilldownQueries = json.getJsonObject("_drilldownQueries");
             for (String coreName : drilldownQueries.keySet()) {
                 JsonArray ddQueries = drilldownQueries.getJsonArray(coreName);
                 for (int i = 0; i < ddQueries.size(); i++) {
@@ -119,20 +119,20 @@ public class ComposedQuery {
                     JsonArray jsonPath = ddQuery.getJsonArray(1);
                     String[] path = new String[jsonPath.size()];
                     for (int j=0; j < jsonPath.size(); j++)
-                        path[j] = jsonPath.getString(j); 
+                        path[j] = jsonPath.getString(j);
                     cq.addDrilldownQuery(coreName, ddQuery.getString(0), path);
                 }
             }
         }
-        if (json.containsKey("facets")) {
-            JsonObject jsonFacets = json.getJsonObject("facets");
+        if (json.containsKey("_facets")) {
+            JsonObject jsonFacets = json.getJsonObject("_facets");
             for (String coreName : jsonFacets.keySet()) {
                 for (FacetRequest facetRequest : converters.get(coreName).convertToFacets(jsonFacets.getJsonArray(coreName)))
                     cq.addFacet(coreName, facetRequest);
             }
         }
-        if (json.containsKey("matches")) {
-            JsonObject matches = json.getJsonObject("matches");
+        if (json.containsKey("_matches")) {
+            JsonObject matches = json.getJsonObject("_matches");
             for (String match : matches.keySet()) {
                 String[] coreNames = match.split("->");
                 JsonArray coreDicts = matches.getJsonArray(match);
@@ -148,14 +148,14 @@ public class ComposedQuery {
 
             }
         }
-        if (json.containsKey("rankQueries")) {
-            JsonObject rankQueries = json.getJsonObject("rankQueries");
+        if (json.containsKey("_rankQueries")) {
+            JsonObject rankQueries = json.getJsonObject("_rankQueries");
             for (String coreName : rankQueries.keySet()) {
                 cq.setRankQuery(coreName, converters.get(coreName).convertToQuery(rankQueries.getJsonObject(coreName)));
             }
         }
-        if (json.containsKey("unites")) {
-            JsonArray unites = json.getJsonArray("unites");
+        if (json.containsKey("_unites")) {
+            JsonArray unites = json.getJsonArray("_unites");
             for (int i = 0; i < unites.size(); i++) {
                 JsonArray A = unites.getJsonObject(i).getJsonArray("A");
                 JsonArray B = unites.getJsonObject(i).getJsonArray("B");
@@ -200,21 +200,21 @@ public class ComposedQuery {
     public List<String[]> drilldownQueriesFor(String core) {
         return this.drilldownQueries.get(core);
     }
-    
+
     public List<Query> otherCoreFacetFiltersFor(String core) {
         if (!this.otherCoreFacetsFilter.containsKey(core))
             return new ArrayList<Query>();
         return this.otherCoreFacetsFilter.get(core);
     }
-    
+
     public Query rankQueryFor(String core) {
         return this.rankQueries.get(core);
     }
-    
+
     public List<Unite> getUnites() {
         return this.unites;
     }
-    
+
     public String keyName(String coreName, String otherCoreName) {
         for (Match match : matches) {
             if (match.core1.equals(coreName) && match.core2.equals(otherCoreName))
@@ -259,7 +259,7 @@ public class ComposedQuery {
             drilldownQueries.put(coreName, fieldValuesMap);
         }
     }
-    
+
     public void addOtherCoreFacetFilter(String coreName, Query query) {
         if (this.otherCoreFacetsFilter.containsKey(coreName))
             this.otherCoreFacetsFilter.get(coreName).add(query);
@@ -283,7 +283,7 @@ public class ComposedQuery {
             this.facets.put(coreName, facets);
         }
     }
-    
+
     public void setRankQuery(String core, Query query) {
         this.rankQueries.put(core, query);
     }

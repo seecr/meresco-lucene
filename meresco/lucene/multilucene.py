@@ -44,13 +44,10 @@ class MultiLucene(Observable):
         raise StopIteration(response)
 
     def executeComposedQuery(self, query):
-        jsonDict = JsonDict()
-        for k, v in query.asDict().items():
-            jsonDict[k.replace("_", "")] = v
         for sortKey in query.sortKeys:
             coreName = sortKey.get('core', query.resultsFrom)
             self.call[coreName].updateSortKey(sortKey)
-        responseDict = (yield self._client.send(jsonDict=jsonDict, path='/query/'))
+        responseDict = (yield self._client.send(jsonDict=JsonDict(query.asDict()), path='/query/'))
         response = luceneResponseFromDict(responseDict)
         response.info = query.infoDict()
         raise StopIteration(response)

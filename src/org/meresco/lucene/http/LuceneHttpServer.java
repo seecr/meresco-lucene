@@ -125,6 +125,10 @@ public class LuceneHttpServer {
         composedQueryHandler.setHandler(new ComposedQueryHandler(new MultiLucene(lucenes)));
         contexts.addHandler(composedQueryHandler);
 
+        ContextHandler exportKeysHandler = new ContextHandler("/exportkeys");
+        exportKeysHandler.setHandler(new ExportKeysHandler(new MultiLucene(lucenes)));
+        contexts.addHandler(exportKeysHandler);
+        
         ContextHandler numerateHandler = new ContextHandler("/numerate");
         numerateHandler.setHandler(new NumerateHandler(termNumerator));
         contexts.addHandler(numerateHandler);

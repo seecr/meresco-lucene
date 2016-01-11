@@ -30,6 +30,8 @@ from meresco.components.http.utils import CRLF
 from simplejson import loads
 from seecr.test.io import stdout_replaced
 
+from org.apache.lucene.util import OpenBitSet
+
 
 class SuggestionIndexComponentTest(SeecrTestCase):
     def testSuggestionsAreEmptyIfNotCreated(self):
@@ -149,6 +151,25 @@ Access-Control-Max-Age: 86400""", header)
         sic.createSuggestionNGramIndex(wait=True, verbose=False)
         header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"], "filter": ["type=uri:track"]})).split(CRLF*2)
         self.assertEqual('["ha", ["harry"], [["harry", "uri:track", null]]]', body)
+
+    def testFilterByKeySet(self):
+        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
+        suggestions = createSuggestions()
+        sic.addSuggestions(identifier="id:1", key=1, values=suggestions)
+        suggestions = [
+            dict(title="fietsbel", type="uri:book", creator="Anonymous")
+        ]
+        sic.addSuggestions(identifier="id:2", key=2, values=suggestions)
+        sic.createSuggestionNGramIndex(wait=True, verbose=False)
+        bits = OpenBitSet()
+        bits.set(2L)
+        sic.registerFilterKeySet("apikey-abc", bits)
+
+        header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["fi"], "apikey": ["apikey-abc"]})).split(CRLF*2)
+        self.assertEqual('["fi", ["fietsbel"]]', body)
+        header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["fi"], "apikey": ["apikey-never-registered"]})).split(CRLF*2)
+        self.assertEqual('["fi", ["fiets", "fietsbel", "fiets mobiel"]]', body)
+
 
 def createSuggestions():
     return [

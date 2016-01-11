@@ -28,7 +28,9 @@ package org.meresco.lucene.suggestion;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -42,6 +44,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;
@@ -52,7 +55,8 @@ public class SuggestionIndex {
 
     private static final String RECORD_VALUE_FIELDNAME = "__record_value__";
     private static final String KEY_FIELDNAME = "__key__";
-
+    private static int MAX_COMMIT_COUNT_SUGGESTION = 1000000;
+    
     public static final FieldType SIMPLE_NOT_STORED_STRING_FIELD = new FieldType();
     public static final FieldType SIMPLE_STORED_STRING_FIELD = new FieldType();
     static {
@@ -70,26 +74,24 @@ public class SuggestionIndex {
         SIMPLE_STORED_STRING_FIELD.setTokenized(false);
         SIMPLE_STORED_STRING_FIELD.freeze();
     }
-
+  
+    public IndexingState indexingState = null;
+    
     private final IndexWriter writer;
     private final ShingleAnalyzer shingleAnalyzer;
     private final FSDirectory suggestionIndexDir;
     private final int maxCommitCount;
-
+    
     private int commitCount = 0;
 
     private Field recordIdField = new Field("__id__", "", SIMPLE_NOT_STORED_STRING_FIELD);
     private Field recordKeyField = new NumericDocValuesField(KEY_FIELDNAME, 0L);
 
 	private SuggestionNGramIndex suggestionNGramIndex;
-
-	private static int MAX_COMMIT_COUNT_SUGGESTION = 1000000;
-
-	public IndexingState indexingState = null;
-
 	private String suggestionNGramIndexDir;
-
     private Reader currentReader;
+    private Map<String, DocIdSet> filterKeySets = new HashMap<>();
+
 
     public SuggestionIndex(String suggestionIndexDir, String suggestionNGramIndexDir, int minShingleSize, int maxShingleSize) throws IOException {
         this(suggestionIndexDir, suggestionNGramIndexDir, minShingleSize, maxShingleSize, 1);
@@ -125,6 +127,10 @@ public class SuggestionIndex {
     public void delete(String identifier) throws IOException {
         this.writer.deleteDocuments(new Term(this.recordIdField.name(), identifier));
         maybeCommitAfterUpdate();
+    }
+    
+    public void registerFilterKeySet(String name, DocIdSet keySet) {
+        this.filterKeySets.put(name, keySet);
     }
 
     public void createSuggestionNGramIndex(boolean wait, final boolean verbose) throws IOException {
@@ -194,7 +200,7 @@ public class SuggestionIndex {
     }
 
     public SuggestionNGramIndex.Reader getSuggestionsReader() throws IOException {
-        this.currentReader = this.suggestionNGramIndex.createReader();
+        this.currentReader = this.suggestionNGramIndex.createReader(this.filterKeySets);
         return this.currentReader;
     }
 

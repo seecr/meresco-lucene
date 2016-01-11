@@ -28,7 +28,9 @@ package org.meresco.lucene.suggestion;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -51,8 +53,11 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.queries.ChainedFilter;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -74,13 +79,14 @@ public class SuggestionNGramIndex {
     private static final String CREATOR_FIELDNAME = "creator";
     private static final String KEY_FIELDNAME = "__keys__";
 
+    private static final NGramAnalyzer BIGRAM_ANALYZER = new NGramAnalyzer(2, 2);
+    private static final NGramAnalyzer TRIGRAM_ANALYZER = new NGramAnalyzer(3, 3);
+    
     private Field suggestionField = new Field(SUGGESTION_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field creatorField = new Field(CREATOR_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field keyField = new BinaryDocValuesField(KEY_FIELDNAME, new BytesRef());
 
-    private final NGramAnalyzer bigram;
-    private final NGramAnalyzer trigram;
     private final int maxCommitCount;
 
     private final IndexWriter writer;
@@ -95,10 +101,6 @@ public class SuggestionNGramIndex {
 
 	public SuggestionNGramIndex(String directory, int commitCount) throws IOException {
 		this.maxCommitCount = commitCount;
-
-        this.bigram = new NGramAnalyzer(2, 2);
-        this.trigram = new NGramAnalyzer(3, 3);
-
         this.directory = FSDirectory.open(new File(directory));
         IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new StandardAnalyzer());
         this.writer = new IndexWriter(this.directory, config);
@@ -175,9 +177,9 @@ public class SuggestionNGramIndex {
         maybeCommitAfterUpdate();
     }
 
-    public List<String> ngrams(String s, Boolean trigram) throws IOException {
+    public static List<String> ngrams(String s, Boolean trigram) throws IOException {
         List<String> ngram = new ArrayList<String>();
-        Analyzer ngramAnalyzer = trigram ? this.trigram : this.bigram;
+        Analyzer ngramAnalyzer = trigram ? TRIGRAM_ANALYZER : BIGRAM_ANALYZER;
         TokenStream stream = ngramAnalyzer.tokenStream("ignored", s);
         stream.reset();
         CharTermAttribute termAttribute = stream.getAttribute(CharTermAttribute.class);
@@ -188,15 +190,21 @@ public class SuggestionNGramIndex {
         return ngram;
     }
 
-    public Reader createReader() throws IOException {
-    	return new Reader();
+    public Reader createReader(Map<String, DocIdSet> keySetFilters) throws IOException {
+    	return new Reader(directory, keySetFilters);
     }
 
-    public class Reader {
+    
+    public static class Reader {
+        private FSDirectory directory;
     	private DirectoryReader reader;
         private IndexSearcher searcher;
+        private Map<String, DocIdSet> filterKeySets;
+        private Map<String, Filter> keySetFilters = new HashMap<>();
 
-    	public Reader() throws IOException {
+    	public Reader(FSDirectory directory, Map<String, DocIdSet> filterKeySets) throws IOException {
+    	    this.directory = directory;
+            this.filterKeySets = filterKeySets;
     		reopen();
     	}
 
@@ -204,7 +212,11 @@ public class SuggestionNGramIndex {
             return this.reader.numDocs();
         }
 
-    	public Suggestion[] suggest(String value, Boolean trigram, Filter filter) throws IOException {
+        public Suggestion[] suggest(String value, Boolean trigram, Filter filter) throws IOException {
+            return suggest(value, trigram, filter, null);
+        }
+        
+    	public Suggestion[] suggest(String value, Boolean trigram, Filter filter, String keySetName) throws IOException {
             String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
             BooleanQuery query = new BooleanQuery();
             List<String> ngrams = ngrams(value, trigram);
@@ -212,6 +224,20 @@ public class SuggestionNGramIndex {
             int ngramSize = ngrams.size() - SKIP_LAST_DOLLAR;
             for (int i = 0; i < ngramSize; i++) {
                 query.add(new TermQuery(new Term(ngramFieldName, ngrams.get(i))), BooleanClause.Occur.MUST);
+            }
+            Filter keySetFilter = this.keySetFilters.get(keySetName);
+            if (keySetFilter == null) {
+                DocIdSet keys = filterKeySets.get(keySetName);
+                if (keys != null) {
+                    keySetFilter = new CachingWrapperFilter(new SuggestionNGramKeysFilter(keys, KEY_FIELDNAME));
+                    this.keySetFilters.put(keySetName, keySetFilter);
+                }
+            }
+            if (filter == null) {
+                filter = keySetFilter;
+            }
+            else if (keySetFilter != null) {
+                filter = new ChainedFilter(new Filter[]{filter, keySetFilter}, ChainedFilter.AND);
             }
             TopDocs t = searcher.search(query, filter, 25);
             Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
@@ -227,13 +253,15 @@ public class SuggestionNGramIndex {
             this.reader.close();
         }
 
-        public void reopen() throws IOException {
+        public synchronized void reopen() throws IOException {
             this.reader = DirectoryReader.open(directory);
+            this.keySetFilters.clear();
             this.searcher = new IndexSearcher(this.reader, Executors.newFixedThreadPool(10));
         }
     }
 
-    public class Suggestion {
+    
+    public static class Suggestion {
     	public String suggestion;
         public String type;
     	public String creator;

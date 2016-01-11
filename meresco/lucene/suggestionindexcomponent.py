@@ -59,15 +59,19 @@ class SuggestionIndexComponent(Observable):
     def deleteSuggestions(self, identifier):
         self._index.delete(identifier)
 
+    def registerFilterKeySet(self, apikey, keySet):
+        self._index.registerFilterKeySet(apikey, keySet)
+
     def createSuggestionNGramIndex(self, wait=False, verbose=True):
         self._index.createSuggestionNGramIndex(wait, verbose)
 
-    def suggest(self, value, trigram=False, filters=None):
+    def suggest(self, value, trigram=False, filters=None, keySetName=None):
         if not self._reader:
             return []
         if filters:
-            filters = ChainedFilter([QueryWrapperFilter(TermQuery(Term(*f.split('=', 1)))) for f in filters])
-        return list(self._reader.suggest(value, trigram, filters))
+            filters = [QueryWrapperFilter(TermQuery(Term(*f.split('=', 1)))) for f in filters]
+            filters = ChainedFilter(filters, [ChainedFilter.OR] * len(filters))
+        return list(self._reader.suggest(value, trigram, filters, keySetName))
 
     def indexingState(self):
         indexingState = self._index.indexingState()
@@ -88,6 +92,7 @@ class SuggestionIndexComponent(Observable):
         showConcepts = arguments.get("concepts", ["False"])[0] != 'False'
         filters = arguments.get("filter", None)
         minScore = float(arguments.get("minScore", ["0"])[0])
+        apikey = arguments.get("apikey", [None])[0]
         yield Ok
         yield ContentTypeHeader + "application/x-suggestions+json" + CRLF
         yield "Access-Control-Allow-Origin: *" + CRLF
@@ -99,7 +104,7 @@ class SuggestionIndexComponent(Observable):
         if value:
             suggestions = []
             t0 = time()
-            suggest = self.suggest(value, trigram=trigram, filters=filters)
+            suggest = self.suggest(value, trigram=trigram, filters=filters, keySetName=apikey)
             tTotal = time() - t0
             for s in suggest:
                 suggestion = str(s.suggestion)

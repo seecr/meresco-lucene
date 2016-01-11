@@ -51,7 +51,7 @@ public class SuggestionIndex {
     public static final String CONCAT_MARKER = "$$--$$";
 
     private static final String RECORD_VALUE_FIELDNAME = "__record_value__";
-    private static final String KEY_FIELDNAME = "__record_value__";
+    private static final String KEY_FIELDNAME = "__key__";
 
     public static final FieldType SIMPLE_NOT_STORED_STRING_FIELD = new FieldType();
     public static final FieldType SIMPLE_STORED_STRING_FIELD = new FieldType();

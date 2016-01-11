@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
@@ -76,7 +77,7 @@ public class SuggestionNGramIndex {
     private Field suggestionField = new Field(SUGGESTION_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field creatorField = new Field(CREATOR_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
-    private Field keyField = new StringField(KEY_FIELDNAME, "", Store.NO);
+    private Field keyField = new BinaryDocValuesField(KEY_FIELDNAME, new BytesRef());
 
     private final NGramAnalyzer bigram;
     private final NGramAnalyzer trigram;
@@ -168,7 +169,7 @@ public class SuggestionNGramIndex {
         for (String n : ngrams(term, true)) {
             doc.add(new Field(TRIGRAM_FIELDNAME, n, SuggestionIndex.SIMPLE_NOT_STORED_STRING_FIELD));
         }
-        keyField.setStringValue(Utils.join(keys, "|"));
+        keyField.setBytesValue(new BytesRef(Utils.join(keys, "|")));
         doc.add(keyField);
         this.writer.addDocument(doc);
         maybeCommitAfterUpdate();

@@ -31,7 +31,7 @@ from time import time
 from Levenshtein import distance
 
 from meresco.core import Observable
-from meresco.components.http.utils import CRLF, ContentTypeHeader, Ok
+from meresco.components.http.utils import CRLF, ContentTypeHeader, Ok, serverErrorPlainText
 from meresco.components.json import JsonList, JsonDict
 
 from org.apache.lucene.index import Term
@@ -93,6 +93,16 @@ class SuggestionIndexComponent(Observable):
         filters = arguments.get("filter", None)
         minScore = float(arguments.get("minScore", ["0"])[0])
         apikey = arguments.get("apikey", [None])[0]
+        suggest = None
+        if value:
+            t0 = time()
+            try:
+                suggest = self.suggest(value, trigram=trigram, filters=filters, keySetName=apikey)
+            except Exception, e:
+                yield serverErrorPlainText
+                yield str(e)
+                return
+            tTotal = time() - t0
         yield Ok
         yield ContentTypeHeader + "application/x-suggestions+json" + CRLF
         yield "Access-Control-Allow-Origin: *" + CRLF
@@ -103,9 +113,6 @@ class SuggestionIndexComponent(Observable):
         result = []
         if value:
             suggestions = []
-            t0 = time()
-            suggest = self.suggest(value, trigram=trigram, filters=filters, keySetName=apikey)
-            tTotal = time() - t0
             for s in suggest:
                 suggestion = str(s.suggestion)
                 recordType = str(s.type) if s.type else None

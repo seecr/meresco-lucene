@@ -95,17 +95,17 @@ class MultiLuceneTest(SeecrTestCase):
         self.assertEqual(1, len(self.post))
         self.assertEqual("/query/", self.post[0]['path'])
         self.assertEqual({
-                "sortKeys": [],
+                "_sortKeys": [],
                 "resultsFrom": "coreA",
-                "matches": {},
-                "facets": {},
-                "otherCoreFacetFilters": {},
-                "rankQueries": {},
-                "drilldownQueries": {},
-                "unites": [],
-                "queries": {"coreA": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"}},
+                "_matches": {},
+                "_facets": {},
+                "_otherCoreFacetFilters": {},
+                "_rankQueries": {},
+                "_drilldownQueries": {},
+                "_unites": [],
+                "_queries": {"coreA": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"}},
                 "cores": ["coreA"],
-                "filterQueries": {}
+                "_filterQueries": {}
             }, loads(self.post[0]['data']))
 
     def testAddTypeAndMissingValueToSortField(self):
@@ -122,17 +122,17 @@ class MultiLuceneTest(SeecrTestCase):
         cq.addMatch(dict(core='coreA', uniqueKey='A'), dict(core='coreB', key='B'))
         consume(self._multiLucene.executeComposedQuery(cq))
         self.assertEqual({
-                "sortKeys": [{'core': 'coreA', 'sortBy': 'sortField', 'sortDescending': True, 'type': 'String', 'missingValue': 'STRING_FIRST'}],
+                "_sortKeys": [{'core': 'coreA', 'sortBy': 'sortField', 'sortDescending': True, 'type': 'String', 'missingValue': 'STRING_FIRST'}],
                 "resultsFrom": "coreA",
-                'matches': {'coreA->coreB': [{'core': 'coreA', 'uniqueKey': 'A'}, {'core': 'coreB', 'key': 'B'}]},
-                "facets": {},
-                "otherCoreFacetFilters": {},
-                "rankQueries": {},
-                "drilldownQueries": {},
-                "unites": [],
-                'queries': {'coreB': {'term': {'field': 'field', 'value': 'value'}, 'type': 'TermQuery'}},
+                '_matches': {'coreA->coreB': [{'core': 'coreA', 'uniqueKey': 'A'}, {'core': 'coreB', 'key': 'B'}]},
+                "_facets": {},
+                "_otherCoreFacetFilters": {},
+                "_rankQueries": {},
+                "_drilldownQueries": {},
+                "_unites": [],
+                '_queries': {'coreB': {'term': {'field': 'field', 'value': 'value'}, 'type': 'TermQuery'}},
                 "cores": ["coreB", "coreA"],
-                "filterQueries": {}
+                "_filterQueries": {}
             }, loads(self.post[0]['data']))
 
     def testCoreInfo(self):

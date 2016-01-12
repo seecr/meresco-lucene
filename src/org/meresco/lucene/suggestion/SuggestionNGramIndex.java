@@ -81,7 +81,7 @@ public class SuggestionNGramIndex {
 
     private static final NGramAnalyzer BIGRAM_ANALYZER = new NGramAnalyzer(2, 2);
     private static final NGramAnalyzer TRIGRAM_ANALYZER = new NGramAnalyzer(3, 3);
-    
+
     private Field suggestionField = new Field(SUGGESTION_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field conceptUriField = new Field(CONCEPT_URI_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
     private Field creatorField = new Field(CREATOR_FIELDNAME, "", SuggestionIndex.SIMPLE_STORED_STRING_FIELD);
@@ -125,16 +125,18 @@ public class SuggestionNGramIndex {
                 }
                 keys.add(keyForDoc(docId, leaves, keyFieldname));
     	    }
-            String[] values = term.utf8ToString().split(SuggestionIndex.CONCAT_MARKER.replace("$", "\\$"));
-            indexNGram(values[0], values[1], values[2], keys);
-            indexingState.count++;
+            if (keys.size() > 0) {
+                String[] values = term.utf8ToString().split(SuggestionIndex.CONCAT_MARKER.replace("$", "\\$"));
+                indexNGram(values[0], values[1], values[2], keys);
+                indexingState.count++;
+            }
     	}
     	this.commit();
     }
 
 	private Long keyForDoc(int docId, List<AtomicReaderContext> leaves, String keyFieldname) throws IOException {
         AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
-        return context.reader().getNumericDocValues(keyFieldname).get(docId);
+        return context.reader().getNumericDocValues(keyFieldname).get(docId - context.docBase);
     }
 
     private void maybeCommitAfterUpdate() throws IOException {
@@ -194,7 +196,7 @@ public class SuggestionNGramIndex {
     	return new Reader(directory, keySetFilters);
     }
 
-    
+
     public static class Reader {
         private FSDirectory directory;
     	private DirectoryReader reader;
@@ -215,7 +217,7 @@ public class SuggestionNGramIndex {
         public Suggestion[] suggest(String value, Boolean trigram, Filter filter) throws IOException {
             return suggest(value, trigram, filter, null);
         }
-        
+
     	public Suggestion[] suggest(String value, Boolean trigram, Filter filter, String keySetName) throws IOException {
             String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
             BooleanQuery query = new BooleanQuery();
@@ -260,7 +262,7 @@ public class SuggestionNGramIndex {
         }
     }
 
-    
+
     public static class Suggestion {
     	public String suggestion;
         public String type;

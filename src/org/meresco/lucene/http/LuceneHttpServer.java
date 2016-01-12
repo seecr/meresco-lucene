@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -128,15 +128,15 @@ public class LuceneHttpServer {
         ContextHandler exportKeysHandler = new ContextHandler("/exportkeys");
         exportKeysHandler.setHandler(new ExportKeysHandler(new MultiLucene(lucenes)));
         contexts.addHandler(exportKeysHandler);
-        
+
         ContextHandler numerateHandler = new ContextHandler("/numerate");
         numerateHandler.setHandler(new NumerateHandler(termNumerator));
         contexts.addHandler(numerateHandler);
-        
+
         ContextHandler commitHandler = new ContextHandler("/commit");
         commitHandler.setHandler(new CommitHandler(termNumerator, lucenes));
         contexts.addHandler(commitHandler);
-        
+
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         Server server = new Server(pool);
         ServerConnector http = new ServerConnector(server, new HttpConnectionFactory());

@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -44,7 +44,7 @@ import org.meresco.lucene.search.join.ScoreSuperCollector;
 public class MultiLucene {
 
     private Map<String, Lucene> lucenes = new HashMap<String, Lucene>();
-    
+
     public MultiLucene(List<Lucene> lucenes) {
         for (Lucene lucene : lucenes) {
             this.lucenes.put(lucene.name, lucene);
@@ -54,7 +54,7 @@ public class MultiLucene {
     public LuceneResponse executeComposedQuery(ComposedQuery q) throws Exception {
         return executeComposedQuery(q, null);
     }
-    
+
     public LuceneResponse executeComposedQuery(ComposedQuery q, String exportKey) throws Exception {
         if (q.cores.size() <= 1 && exportKey == null)
             return singleCoreQuery(q);
@@ -175,7 +175,7 @@ public class MultiLucene {
             luceneQuery = lucenes.get(coreName).createDrilldownQuery(luceneQuery, ddQueries);
         return luceneQuery;
     }
-    
+
     private Map<String, OpenBitSet> coreQueries(String coreName, String otherCoreName, ComposedQuery query, Map<String, OpenBitSet> keysForKeyName) throws Exception {
         Query luceneQuery = luceneQueryForCore(coreName, query);
         if (luceneQuery != null) {
@@ -188,14 +188,14 @@ public class MultiLucene {
         }
         return keysForKeyName;
     }
-    
+
     public Map<String, QueryConverter> getQueryConverters() {
         Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>();
         for (Lucene lucene : this.lucenes.values())
             queryConverters.put(lucene.name, lucene.getQueryConverter());
         return queryConverters;
     }
-    
+
     public List<AggregateScoreSuperCollector> createAggregateScoreCollectors(ComposedQuery query) throws Exception {
         Map<String, List<ScoreSuperCollector>> scoreCollectors = new HashMap<String, List<ScoreSuperCollector>>();
         for (String coreName : query.cores) {

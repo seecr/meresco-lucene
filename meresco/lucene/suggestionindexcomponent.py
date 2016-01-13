@@ -59,8 +59,8 @@ class SuggestionIndexComponent(Observable):
     def deleteSuggestions(self, identifier):
         self._index.delete(identifier)
 
-    def registerFilterKeySet(self, apikey, keySet):
-        self._index.registerFilterKeySet(apikey, keySet)
+    def registerFilterKeySet(self, name, keySet):
+        self._index.registerFilterKeySet(name, keySet)
 
     def createSuggestionNGramIndex(self, wait=False, verbose=True):
         self._index.createSuggestionNGramIndex(wait, verbose)

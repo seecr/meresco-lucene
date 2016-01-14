@@ -93,6 +93,9 @@ class SuggestionIndexComponent(Observable):
         filters = arguments.get("filter", None)
         minScore = float(arguments.get("minScore", ["0"])[0])
         apikey = arguments.get("apikey", [None])[0]
+        apikeyFilter = arguments.get("x-apikey-filter", [''])[0]
+        if apikeyFilter:
+            apikey += "-" + apikeyFilter
         suggest = None
         if value:
             t0 = time()
@@ -144,7 +147,7 @@ class SuggestionIndexComponent(Observable):
         self._index.commit()
 
     def handleShutdown(self):
-        print 'handle shutdown: saving ShingleIndexComponent'
+        print 'handle shutdown: saving SuggestionIndexComponent'
         from sys import stdout; stdout.flush()
         self._index.close()
         self._reader.close()

@@ -50,6 +50,7 @@ public class ExportKeysHandler extends AbstractHandler {
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         LuceneResponse luceneResponse = new LuceneResponse(0);
         try {
@@ -75,9 +76,9 @@ public class ExportKeysHandler extends AbstractHandler {
         dos.writeInt(luceneResponse.keys.getNumWords());
         long[] bits = luceneResponse.keys.getBits();
         for (int i = 0; i < bits.length; i++) {
-            dos.writeLong(bits[i]);            
+            dos.writeLong(bits[i]);
         }
-        dos.flush();        
+        dos.flush();
         baseRequest.setHandled(true);
     }
 }

@@ -47,6 +47,7 @@ public class NumerateHandler extends AbstractHandler implements Handler {
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
+        request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         if (request.getMethod() == "POST") {
             String value = Utils.readFully(request.getReader());

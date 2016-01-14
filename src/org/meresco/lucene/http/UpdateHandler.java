@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -50,14 +50,15 @@ public class UpdateHandler extends AbstractHandler {
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+        request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         try {
-          Document document = new DocumentStringToDocument(request.getReader(), termNumerator).convert();
-          if (request.getParameterMap().containsKey("identifier"))
-              this.lucene.addDocument(request.getParameter("identifier"), document);
-          else
-              this.lucene.addDocument(document);
-              
+            Document document = new DocumentStringToDocument(request.getReader(), termNumerator).convert();
+            if (request.getParameterMap().containsKey("identifier"))
+                this.lucene.addDocument(request.getParameter("identifier"), document);
+            else
+                this.lucene.addDocument(document);
+
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write(Utils.getStackTrace(e));

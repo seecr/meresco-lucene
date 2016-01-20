@@ -75,10 +75,17 @@ public class DocumentStringToDocumentTest {
                     .add("type", "KeyField")
                     .add("name", "name")
                     .add("value", "value"))
+                .add(Json.createObjectBuilder()
+                	.add("type", "KeyField")
+					.add("name", "name2")
+					.add("value", 153))
                 .build();
         Document result = convert(json.toString());
         assertEquals(NumericDocValuesField.TYPE, result.getField("name").fieldType());
-        assertEquals(43, result.getField("name").numericValue().doubleValue(), 0);
+        assertEquals(43, result.getField("name").numericValue().intValue());
+       
+        assertEquals(NumericDocValuesField.TYPE, result.getField("name2").fieldType());
+        assertEquals(153, result.getField("name2").numericValue().intValue());
     }
 
     @Test

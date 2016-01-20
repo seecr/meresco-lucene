@@ -34,6 +34,7 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 import javax.json.JsonValue;
+import javax.json.JsonValue.ValueType;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
@@ -99,8 +100,15 @@ public class DocumentStringToDocument {
                 field = new NumericDocValuesField(name, jsonField.getJsonNumber("value").longValue());
                 break;
             case "KeyField":
-                field = new NumericDocValuesField(name, termNumerator.numerateTerm(jsonField.getString("value")));
-                break;         
+            	int value;
+            	if (jsonField.get("value").getValueType().equals(ValueType.STRING)) {
+            		value = termNumerator.numerateTerm(jsonField.getString("value"));
+            	}
+            	else {
+            		value = jsonField.getInt("value");
+            	}
+            	field = new NumericDocValuesField(name, value);
+                break;
             case "FacetField":
                 JsonArray jsonArray = jsonField.getJsonArray("path");
                 String[] path = new String[jsonArray.size()];

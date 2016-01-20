@@ -22,13 +22,15 @@
  *
  * end license */
 
-package org.meresco.lucene;
+package org.meresco.lucene.numerate;
 
 import static org.junit.Assert.*;
 
 import java.io.IOException;
 
 import org.junit.Test;
+import org.meresco.lucene.SeecrTestCase;
+import org.meresco.lucene.numerate.TermNumerator;
 
 public class TermNumeratorTest extends SeecrTestCase {
 

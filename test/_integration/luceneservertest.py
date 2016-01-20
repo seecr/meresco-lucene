@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+# Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 #
 # This file is part of "Meresco Lucene"
@@ -38,23 +38,23 @@ class LuceneServerTest(IntegrationTestCase):
     def setUp(self):
         IntegrationTestCase.setUp(self)
         self._path = "/default"
-        header, body = postRequest(self.serverPort, self._path + '/settings/', data=JsonDict(commitCount=1).dumps())
+        header, body = postRequest(self.luceneServerPort, self._path + '/settings/', data=JsonDict(commitCount=1).dumps())
         self.assertTrue("200 OK" in header.upper(), header)
 
     def testAddAndQueryDocument(self):
         data = JsonList([
                 {"type": "TextField", "name": "fieldname", "value": "value"}
             ]).dumps()
-        header, body = postRequest(self.serverPort, self._path + '/update/?identifier=id1', data=data)
+        header, body = postRequest(self.luceneServerPort, self._path + '/update/?identifier=id1', data=data)
         self.assertTrue("200 OK" in header.upper(), header)
 
-        header, body = postRequest(self.serverPort, self._path + '/query/', data=JsonDict(query=dict(type="MatchAllDocsQuery")).dumps(), parse=False)
+        header, body = postRequest(self.luceneServerPort, self._path + '/query/', data=JsonDict(query=dict(type="MatchAllDocsQuery")).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         response = loads(body)
         self.assertEqual(1, response['total'])
         self.assertEqual([{'id': 'id1', 'score': 1.0}], response['hits'])
 
-        header, body = postRequest(self.serverPort, self._path + '/query/', data=JsonDict(query=dict(type="TermQuery", term=dict(field="fieldname", value="value"))).dumps(), parse=False)
+        header, body = postRequest(self.luceneServerPort, self._path + '/query/', data=JsonDict(query=dict(type="TermQuery", term=dict(field="fieldname", value="value"))).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         response = loads(body)
         self.assertEqual(1, response['total'])
@@ -67,10 +67,10 @@ class LuceneServerTest(IntegrationTestCase):
                 {"type": "TextField", "name": "fieldname", "value": "value"},
                 {"type": "FacetField", "name": "fieldname", "path": ["value"]}
             ]).dumps()
-        header, body = postRequest(self.serverPort, self._path + '/update/?identifier=id1', data=data)
+        header, body = postRequest(self.luceneServerPort, self._path + '/update/?identifier=id1', data=data)
         self.assertTrue("200 OK" in header.upper(), header)
 
-        header, body = postRequest(self.serverPort, self._path + '/query/', data=JsonDict(query=dict(type="MatchAllDocsQuery"), facets=[{"fieldname": "fieldname", "maxTerms": 10}]).dumps(), parse=False)
+        header, body = postRequest(self.luceneServerPort, self._path + '/query/', data=JsonDict(query=dict(type="MatchAllDocsQuery"), facets=[{"fieldname": "fieldname", "maxTerms": 10}]).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         jsonResponse = loads(body)
         self.assertEqual(1, jsonResponse['total'])
@@ -83,26 +83,26 @@ class LuceneServerTest(IntegrationTestCase):
                 {"type": "TextField", "name": "prefixField", "value": "value1"},
                 {"type": "TextField", "name": "prefixField", "value": "value2"},
             ]).dumps()
-        header, body = postRequest(self.serverPort, self._path + '/update/?identifier=id1', data=data)
+        header, body = postRequest(self.luceneServerPort, self._path + '/update/?identifier=id1', data=data)
         self.assertTrue("200 OK" in header.upper(), header)
 
-        header, body = postRequest(self.serverPort, self._path + '/prefixSearch/?fieldname=prefixField&prefix=val', parse=False)
+        header, body = postRequest(self.luceneServerPort, self._path + '/prefixSearch/?fieldname=prefixField&prefix=val', parse=False)
         self.assertEqual([['value0', 1], ['value1', 1], ['value2', 1]], loads(body))
 
     def testSuggestionRequest(self):
         data = JsonList([
                 {"type": "TextField", "name": "field", "value": "value"},
             ]).dumps()
-        header, body = postRequest(self.serverPort, self._path + '/update/?identifier=id1', data=data)
+        header, body = postRequest(self.luceneServerPort, self._path + '/update/?identifier=id1', data=data)
         self.assertTrue("200 OK" in header.upper(), header)
 
-        header, body = postRequest(self.serverPort, self._path + '/query/', parse=False, data=JsonDict(query=dict(type="MatchAllDocsQuery"), suggestionRequest=dict(field="field", count=1, suggests=['valeu'])).dumps())
+        header, body = postRequest(self.luceneServerPort, self._path + '/query/', parse=False, data=JsonDict(query=dict(type="MatchAllDocsQuery"), suggestionRequest=dict(field="field", count=1, suggests=['valeu'])).dumps())
         jsonResponse = loads(body)
         self.assertEqual({'valeu': ['value']}, jsonResponse["suggestions"])
         self.assertTrue("suggestionTime" in jsonResponse["times"])
 
     def testSettings(self):
-        header, body = getRequest(self.serverPort, self._path + '/settings/', parse=False)
+        header, body = getRequest(self.luceneServerPort, self._path + '/settings/', parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         self.assertEqual({
                 'similarity': 'BM25(k1=1.2,b=0.75)',
@@ -118,22 +118,22 @@ class LuceneServerTest(IntegrationTestCase):
             }, loads(body))
 
     def testNumerate(self):
-        header, body = postRequest(self.serverPort, '/numerate/', data='id0', parse=False)
+        header, body = postRequest(self.luceneServerPort, '/numerate/', data='id0', parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
-        header, body2 = postRequest(self.serverPort, '/numerate/', data='id0', parse=False)
+        header, body2 = postRequest(self.luceneServerPort, '/numerate/', data='id0', parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         self.assertEquals(body2, body)
-        header, body3 = postRequest(self.serverPort, '/numerate/', data='id1', parse=False)
+        header, body3 = postRequest(self.luceneServerPort, '/numerate/', data='id1', parse=False)
         self.assertNotEquals(body3, body)
 
     def testCommit(self):
-        header, body = postRequest(self.serverPort, '/commit/', parse=False)
+        header, body = postRequest(self.luceneServerPort, '/commit/', parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
 
     def testExportKeys(self):
         composedQuery = ComposedQuery('main')
         composedQuery.setCoreQuery('main', query=dict(type="MatchAllDocsQuery"))
-        header, body = postRequest(self.serverPort, '/exportkeys/?exportKey=__key__.field', data=JsonDict(composedQuery.asDict()).dumps(), parse=False)
+        header, body = postRequest(self.luceneServerPort, '/exportkeys/?exportKey=__key__.field', data=JsonDict(composedQuery.asDict()).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header + 2 * CRLF + body)
         bitSet = readOpenBitSet(body)
         for i in xrange(0, 100):

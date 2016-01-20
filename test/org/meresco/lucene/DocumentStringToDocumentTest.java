@@ -50,6 +50,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.junit.Test;
+import org.meresco.lucene.numerate.TermNumerator;
 
 public class DocumentStringToDocumentTest {
     TermNumerator mockTermNumerator = new MockTermNumerator();

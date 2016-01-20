@@ -33,10 +33,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.meresco.lucene.TermNumerator;
 import org.meresco.lucene.Utils;
+import org.meresco.lucene.numerate.TermNumerator;
 
-
+@Deprecated
 public class NumerateHandler extends AbstractHandler implements Handler {
     private TermNumerator termNumerator;
 

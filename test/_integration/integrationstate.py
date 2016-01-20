@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -45,12 +45,14 @@ class IntegrationState(SeecrIntegrationState):
         if not fastMode:
             system('rm -rf ' + self.integrationTempdir)
             system('mkdir --parents '+ self.integrationTempdir)
-        self.serverPort = PortNumberGenerator.next()
+        self.numerateServerPort = PortNumberGenerator.next()
+        self.luceneServerPort = PortNumberGenerator.next()
         self.httpPort = PortNumberGenerator.next()
         self.testdataDir = join(dirname(mydir), "data")
 
     def setUp(self):
-        self.startServer()
+        self.startNumerateServer()
+        self.startLuceneServer()
         self.startExampleServer()
         self._createDatabase()
 
@@ -66,15 +68,18 @@ class IntegrationState(SeecrIntegrationState):
         try:
             self._runExecutable(join(self.testdataDir, 'upload.py'), processName='IntegrationUpload', cwd=self.testdataDir, port=self.httpPort, redirect=False, timeoutInSeconds=20)
             sleepWheel(5)
-            postRequest(self.serverPort, "/default/settings/", data=JsonDict(commitCount=1).dumps(), parse=False)
+            postRequest(self.luceneServerPort, "/default/settings/", data=JsonDict(commitCount=1).dumps(), parse=False)
             print "Finished creating database in %s seconds" % (time() - start)
         except Exception:
             print 'Error received while creating database for', self.stateName
             print_exc()
             exit(1)
 
-    def startServer(self):
-        self._startServer('lucene-server', self.binPath('start-lucene-server'), 'http://localhost:{}/info'.format(self.serverPort), port=self.serverPort, stateDir=join(self.integrationTempdir, 'server'), core=["main", "main2", "empty-core", "default"])
+    def startNumerateServer(self):
+        self._startServer('numerate-server', self.binPath('start-numerate-server'), 'http://localhost:{}/info'.format(self.numerateServerPort), port=self.numerateServerPort, stateDir=join(self.integrationTempdir, 'numerate'))
+
+    def startLuceneServer(self):
+        self._startServer('lucene-server', self.binPath('start-lucene-server'), 'http://localhost:{}/info'.format(self.luceneServerPort), port=self.luceneServerPort, stateDir=join(self.integrationTempdir, 'lucene-server'), core=["main", "main2", "empty-core", "default"])
 
     def startExampleServer(self):
-        self._startServer('meresco-lucene', self.binPath('start-server'), 'http://localhost:%s/' % self.httpPort, port=self.httpPort, serverPort=self.serverPort, stateDir=join(self.integrationTempdir, 'example-state'))
+        self._startServer('meresco-lucene', self.binPath('start-server'), 'http://localhost:%s/' % self.httpPort, port=self.httpPort, serverPort=self.luceneServerPort, stateDir=join(self.integrationTempdir, 'example-state'))

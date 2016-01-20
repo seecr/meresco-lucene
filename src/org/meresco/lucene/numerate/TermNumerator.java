@@ -22,7 +22,7 @@
  *
  * end license */
 
-package org.meresco.lucene;
+package org.meresco.lucene.numerate;
 
 import java.io.File;
 import java.io.IOException;

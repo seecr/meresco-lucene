@@ -48,6 +48,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexableField;
+import org.meresco.lucene.numerate.TermNumerator;
 
 public class DocumentStringToDocument {
     private JsonArray object;

@@ -27,57 +27,73 @@ package org.meresco.lucene;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.util.Formatter;
 import java.util.List;
 
-
 public class Utils {
-    public static String getStackTrace(Throwable aThrowable) {
-        /*
-         * shameless partial copy from:
-         * http://www.javapractices.com/topic/TopicAction.do?Id=78
-         */
-        final Writer result = new StringWriter();
-        final PrintWriter printWriter = new PrintWriter(result);
-        aThrowable.printStackTrace(printWriter);
-        return result.toString();
-    }
+	public static String getStackTrace(Throwable aThrowable) {
+		/*
+		 * shameless partial copy from:
+		 * http://www.javapractices.com/topic/TopicAction.do?Id=78
+		 */
+		final Writer result = new StringWriter();
+		final PrintWriter printWriter = new PrintWriter(result);
+		aThrowable.printStackTrace(printWriter);
+		return result.toString();
+	}
 
-    public static void writeToStream(String response, OutputStream stream) {
-        try {
-            Writer writer = new BufferedWriter(new OutputStreamWriter(stream, "UTF-8"));
-            writer.write(response, 0, response.length());
-            writer.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+	public static void writeToStream(String response, OutputStream stream) {
+		try {
+			Writer writer = new BufferedWriter(new OutputStreamWriter(stream, "UTF-8"));
+			writer.write(response, 0, response.length());
+			writer.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
-    public static String readFully(Reader reader) throws IOException {
-        char[] arr = new char[8 * 1024];
-        StringBuilder buf = new StringBuilder();
-        int numChars;
-        while ((numChars = reader.read(arr, 0, arr.length)) > 0) {
-            buf.append(arr, 0, numChars);
-        }
-        return buf.toString();
-    }
-    
-    static public String join(List<?> list, String conjunction) {
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (Object item : list) {
-            if (first)
-                first = false;
-            else
-                sb.append(conjunction);
-            sb.append(item.toString());
-        }
-        return sb.toString();
-    }
+	public static String readFully(Reader reader) throws IOException {
+		char[] arr = new char[8 * 1024];
+		StringBuilder buf = new StringBuilder();
+		int numChars;
+		while ((numChars = reader.read(arr, 0, arr.length)) > 0) {
+			buf.append(arr, 0, numChars);
+		}
+		return buf.toString();
+	}
+
+	public static String readFully(InputStream inputStream) throws IOException {
+		return readFully(new InputStreamReader(inputStream));
+	}
+
+	static public String join(List<?> list, String conjunction) {
+		StringBuilder sb = new StringBuilder();
+		boolean first = true;
+		for (Object item : list) {
+			if (first)
+				first = false;
+			else
+				sb.append(conjunction);
+			sb.append(item.toString());
+		}
+		return sb.toString();
+	}
+
+	public static String byteToHex(final byte[] hash) {
+		Formatter formatter = new Formatter();
+		for (byte b : hash) {
+			formatter.format("%02x", b);
+		}
+		String result = formatter.toString();
+		formatter.close();
+		return result;
+	}
 }

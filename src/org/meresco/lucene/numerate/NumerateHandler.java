@@ -22,10 +22,9 @@
  *
  * end license */
 
-package org.meresco.lucene.http;
+package org.meresco.lucene.numerate;
 
 import java.io.IOException;
-import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -34,35 +33,51 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.meresco.lucene.Lucene;
 import org.meresco.lucene.Utils;
-import org.meresco.lucene.numerate.TermNumerator;
 
 
-public class CommitHandler extends AbstractHandler implements Handler {
+public class NumerateHandler extends AbstractHandler implements Handler {
     private TermNumerator termNumerator;
-    private List<Lucene> lucenes;
 
-    public CommitHandler(TermNumerator termNumerator, List<Lucene> lucenes) {
+    public NumerateHandler(TermNumerator termNumerator) {
         this.termNumerator = termNumerator;
-        this.lucenes = lucenes;
     }
 
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException {
-        try {
-            termNumerator.commit();
-            for (Lucene lucene : lucenes) {
-                lucene.commit();
-            }
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write(Utils.getStackTrace(e));
+        response.setCharacterEncoding("UTF-8");
+        if (request.getMethod() == "POST") {
+        	switch (request.getRequestURI()) {
+	        	case "/commit":
+	            	try {
+	            		termNumerator.commit();
+		            } catch (Exception e) {
+		                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		                response.getWriter().write(Utils.getStackTrace(e));
+		                baseRequest.setHandled(true);
+		                return;
+		            }
+	            	break;
+	            
+	        	case "/numerate":
+		            String value = Utils.readFully(request.getReader());
+		            int number;
+		            try {
+		                number = termNumerator.numerateTerm(value);
+		            } catch (Exception e) {
+		                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		                response.getWriter().write(Utils.getStackTrace(e));
+		                baseRequest.setHandled(true);
+		                return;
+		            }
+		            response.setContentType("text/plain");
+		            response.getWriter().write("" + number);
+		            break;
+        	}
+            
+            response.setStatus(HttpServletResponse.SC_OK);
             baseRequest.setHandled(true);
-            return;
         }
-        response.setStatus(HttpServletResponse.SC_OK);
-        baseRequest.setHandled(true);
     }
 }

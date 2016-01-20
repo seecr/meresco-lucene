@@ -6,3 +6,4 @@ build
 .project
 /ecl-bin/
 meresco-lucene.jar
+.pydevproject

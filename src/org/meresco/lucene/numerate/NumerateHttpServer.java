@@ -26,10 +26,9 @@
 package org.meresco.lucene.numerate;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -42,16 +41,13 @@ import org.apache.commons.cli.PosixParser;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
-import org.meresco.lucene.Lucene;
-import org.meresco.lucene.MultiLucene;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 public class NumerateHttpServer {
+
     public static void main(String[] args) throws Exception {
         Options options = new Options();
 
@@ -76,14 +72,14 @@ public class NumerateHttpServer {
         }
 
         Integer port = new Integer(commandLine.getOptionValue("p"));
-        String storeLocation = commandLine.getOptionValue("d");
+        String stateDir = commandLine.getOptionValue("d");
 
         if (Charset.defaultCharset() != Charset.forName("UTF-8")) {
         System.err.println("file.encoding must be UTF-8.");
             System.exit(1);
         }
 
-        TermNumerator termNumerator = new TermNumerator(new File(storeLocation, "keys-termnumerator"));
+        TermNumerator termNumerator = new TermNumerator(new File(stateDir, "keys-termnumerator"));
 
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         Server server = new Server(pool);
@@ -91,14 +87,26 @@ public class NumerateHttpServer {
         http.setPort(port);
         server.addConnector(http);
 
-        registerShutdownHandler(termNumerator, server);
+        registerShutdownHandler(stateDir, termNumerator, server);
 
         server.setHandler(new NumerateHandler(termNumerator));
         server.start();
         server.join();
     }
 
-    public static void registerShutdownHandler(final TermNumerator termNumerator, final Server server) {
+    public static void registerShutdownHandler(final String stateDir, final TermNumerator termNumerator, final Server server) {
+        File runningMarker = new File(stateDir, "running.marker");
+        if (runningMarker.exists()) { 
+            System.err.println("Previous shutdown failed, will not start");
+            System.exit(1);
+        } else {
+            try {
+                new FileOutputStream(runningMarker).close();
+                runningMarker.deleteOnExit();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         Signal.handle(new Signal("TERM"), new SignalHandler() {
             public void handle(Signal sig) {
                 shutdown(server, termNumerator);
@@ -114,18 +122,18 @@ public class NumerateHttpServer {
     static void shutdown(final Server server, final TermNumerator termNumerator) {
         System.out.println("Shutting down termNumerator. Please wait...");
         try {
+            server.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("Http-server stopped");
+        try {
             termNumerator.close();
             System.out.println("Shutdown termNumerator completed.");
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Shutdown termNumerator failed.");
         }
-        try {
-            server.stop();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println("Http-server stopped");
         System.err.flush();
         System.out.flush();
         System.exit(0);

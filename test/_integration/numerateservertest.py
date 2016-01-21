@@ -25,7 +25,7 @@
 
 
 from seecr.test import IntegrationTestCase
-from seecr.test.utils import postRequest
+from seecr.test.utils import postRequest, getRequest
 
 
 class NumerateServerTest(IntegrationTestCase):
@@ -45,6 +45,6 @@ class NumerateServerTest(IntegrationTestCase):
     def testInfo(self):
         header, body = postRequest(self.numerateServerPort, '/numerate', data='id0', parse=False)
         header, body = postRequest(self.numerateServerPort, '/numerate', data='id1', parse=False)
-        header, body = postRequest(self.numerateServerPort, '/info', parse=False)
+        header, body = getRequest(self.numerateServerPort, '/info', parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         self.assertEqual('{"total": 2}', body)

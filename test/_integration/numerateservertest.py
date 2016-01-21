@@ -41,3 +41,10 @@ class NumerateServerTest(IntegrationTestCase):
     def testCommit(self):
         header, body = postRequest(self.numerateServerPort, '/commit', parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
+
+    def testInfo(self):
+        header, body = postRequest(self.numerateServerPort, '/numerate', data='id0', parse=False)
+        header, body = postRequest(self.numerateServerPort, '/numerate', data='id1', parse=False)
+        header, body = postRequest(self.numerateServerPort, '/info', parse=False)
+        self.assertTrue("200 OK" in header.upper(), header)
+        self.assertEqual('{"total": 2}', body)

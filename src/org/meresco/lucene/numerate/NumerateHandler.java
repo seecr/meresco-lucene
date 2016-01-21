@@ -74,6 +74,9 @@ public class NumerateHandler extends AbstractHandler implements Handler {
 		            response.setContentType("text/plain");
 		            response.getWriter().write("" + number);
 		            break;
+	        	case "/info":
+	        	    response.setContentType("application/json");
+	        	    response.getWriter().write("{\"total\": " + termNumerator.size() + "}");
         	}
             
             response.setStatus(HttpServletResponse.SC_OK);

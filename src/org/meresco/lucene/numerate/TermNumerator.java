@@ -69,4 +69,8 @@ public class TermNumerator {
     public void close() throws IOException {
         taxoWriter.close();
     }
+    
+    public int size() { 
+        return taxoWriter.getSize() - 1;
+    }
 }

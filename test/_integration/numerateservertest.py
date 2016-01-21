@@ -26,6 +26,9 @@
 
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import postRequest, getRequest
+from os import kill, remove
+from os.path import isfile, join
+from time import sleep
 
 
 class NumerateServerTest(IntegrationTestCase):
@@ -48,3 +51,18 @@ class NumerateServerTest(IntegrationTestCase):
         header, body = getRequest(self.numerateServerPort, '/info', parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
         self.assertEqual('{"total": 2}', body)
+
+    def testDontStartAfterCrash(self):
+        numerateStatePath = join(self.integrationTempdir, 'numerate')
+        runningMarker = join(numerateStatePath, "running.marker")
+        self.assertTrue(isfile(runningMarker))
+        kill(self.pids["numerate-server"], 9)
+        sleep(0.01)
+        try:
+            self.startNumerateServer()
+            self.fail("Should not start with a running.marker")
+        except SystemExit:
+            pass
+        remove(runningMarker)
+        self.startNumerateServer()
+

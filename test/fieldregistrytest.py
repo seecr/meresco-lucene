@@ -69,7 +69,7 @@ class FieldRegistryTest(SeecrTestCase):
     def testNumericField(self):
         registry = FieldRegistry()
         registry.register('fieldname', NUMERICFIELD)
-        field = registry.createField('fieldname', '2010')
+        field = registry.createField('fieldname', 2010)
         self.assertEquals({
                 "type": "NumericField",
                 "name": "fieldname",
@@ -182,7 +182,7 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(registry.isNumeric('longfield'))
         self.assertTrue(registry.isNumeric('intfield'))
         self.assertTrue(registry.isNumeric('range.double.afield'))
-        self.assertFalse(registry.isNumeric('__key__.field1'))  # changed per 2016-01-07 !
+        self.assertTrue(registry.isNumeric('__key__.field1'))
 
     def testRangeQueryAndType(self):
         registry = FieldRegistry()

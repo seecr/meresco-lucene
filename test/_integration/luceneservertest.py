@@ -136,9 +136,9 @@ class LuceneServerTest(IntegrationTestCase):
         header, body = postRequest(self.luceneServerPort, '/exportkeys/?exportKey=__key__.field', data=JsonDict(composedQuery.asDict()).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header + 2 * CRLF + body)
         bitSet = readOpenBitSet(body)
-        for i in xrange(0, 100):
+        for i in xrange(0, 102):
             isSet = bitSet.get(i)
-            if 0 < i < 99:
+            if 2 < i < 101:
                 self.assertTrue(isSet, i)
             else:
                 self.assertFalse(isSet, i)

@@ -34,7 +34,7 @@ from meresco.components.http import StringServer, ObservableHttpServer, BasicHtt
 from meresco.components.http.utils import ContentTypePlainText
 from meresco.components.sru import SruRecordUpdate, SruParser, SruHandler, SruDuplicateCount
 from meresco.components.drilldown import SRUTermDrilldown
-from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml, FilterField, RenameField, FilterMessages
+from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml, FilterField, RenameField, FilterMessages, TransformFieldValue
 from meresco.components.autocomplete import Autocomplete
 from meresco.core import Observable, TransactionScope
 from meresco.core.processtools import setSignalHandlers
@@ -73,7 +73,12 @@ def uploadHelix(lucene, storageComponent, drilldownFields, fieldRegistry):
                 (FilterMessages(allowed=['add']),
                     (Xml2Fields(),
                         (RenameField(lambda name: name.split('.', 1)[-1]),
-                            (FilterField(lambda name: 'fieldHier' not in name),
+                            (FilterField(lambda name: name.startswith('__key__')),
+                                (TransformFieldValue(lambda value: int(value)),
+                                    indexHelix,
+                                ),
+                            ),
+                            (FilterField(lambda name: 'fieldHier' not in name and not name.startswith('__key__')),
                                 indexHelix,
                             ),
                             (FilterField(lambda name: name == 'intfield1'),

@@ -100,9 +100,6 @@ class FieldRegistry(object):
     def isIndexField(self, fieldname):
         return not self.isDrilldownField(fieldname) or self.isTermVectorField(fieldname)
 
-    def pythonType(self, fieldname):
-        return self._getFieldDefinition(fieldname).pythonType
-
     def rangeQueryAndType(self, fieldname):
         if not self.isNumeric(fieldname):
             return "String", str
@@ -163,7 +160,7 @@ class _FieldDefinition(object):
         field = dict(
             type=self.type,
             name=name,
-            value=self.pythonType(value),
+            value=value,
         )
         if termVectors:
             field['termVectors'] = True
@@ -202,6 +199,6 @@ NUMERICFIELD = _FieldDefinition("NumericField",
     isUntokenized=False,
     phraseQueryPossible=False)
 KEYFIELD = _FieldDefinition("KeyField",
-    pythonType=str,
+    pythonType=long,
     isUntokenized=True,
     phraseQueryPossible=False)

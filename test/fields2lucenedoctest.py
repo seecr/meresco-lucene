@@ -37,8 +37,8 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             'field2': ['value2', 'value2.1'],
             'sorted.field3': ['value3'],
             'untokenized.field4': ['value4'],
-            '__key__.field5': ["12345"],
-            '__numeric__.field6': ["12345"],
+            '__key__.field5': [12345],
+            '__numeric__.field6': [12345],
         }
         fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry())
         fields = fields2LuceneDoc._createFields(fields)
@@ -57,7 +57,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                 {
                     "name": "__key__.field5",
                     "type": "KeyField",
-                    "value": "12345"
+                    "value": 12345
                 },
                 {
                     "name": "field1",

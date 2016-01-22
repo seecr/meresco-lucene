@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -174,8 +174,8 @@ class LuceneTest(IntegrationTestCase):
         self.assertEqual(10, response.total)
         self.assertEqual(1000, response.totalWithDuplicates)
         self.assertEquals(
-            [('record:100', 100), ('record:1000', 100), ('record:200', 100)],
-            [(hit.id, hit.duplicateCount['__key__.groupfield']) for hit in response.hits]
+            [100] * 3,
+            [hit.duplicateCount['__key__.groupfield'] for hit in response.hits]
         )
 
     def testDutchStemming(self):

@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -51,7 +51,7 @@ import org.apache.lucene.search.WildcardQuery;
 public class QueryConverter {
 
     private static final String SORT_ON_SCORE = "score";
-    
+
     private FacetsConfig facetsConfig;
 
     public QueryConverter(FacetsConfig facetsConfig) {
@@ -114,15 +114,15 @@ public class QueryConverter {
                 JsonArray jsonPath = facet.getJsonArray("path");
                 String[] path = new String[jsonPath.size()];
                 for (int j=0; j<path.length; j++)
-                    path[j] = jsonPath.getString(j); 
+                    path[j] = jsonPath.getString(j);
                 fr.path = path;
             }
-            
+
             facetRequests.add(fr);
         }
         return facetRequests;
     }
-    
+
 
     public SuggestionRequest convertToSuggestionRequest(JsonObject suggestionRequest) {
         if (suggestionRequest == null)
@@ -165,7 +165,7 @@ public class QueryConverter {
                 return null;
         }
         if (query.get("boost") != null)
-            q.setBoost(query.getJsonNumber("boost").longValue());
+            q.setBoost((float) query.getJsonNumber("boost").doubleValue());
         return q;
     }
 
@@ -236,7 +236,7 @@ public class QueryConverter {
         String indexFieldName = facetsConfig.getDimConfig(field).indexFieldName;
         return DrillDownQuery.term(indexFieldName, field, path);
     }
-    
+
     public static class FacetRequest {
         public String fieldname;
         public int maxTerms;
@@ -252,7 +252,7 @@ public class QueryConverter {
         public String field;
         public int count;
         List<String> suggests = new ArrayList<>();
-        
+
         public SuggestionRequest(String field, int count) {
             this.field = field;
             this.count = count;

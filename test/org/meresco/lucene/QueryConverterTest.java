@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -73,14 +73,14 @@ public class QueryConverterTest {
         JsonObject json = Json.createObjectBuilder()
                 .add("query", Json.createObjectBuilder()
                     .add("type", "TermQuery")
-                    .add("boost", 2.0)
+                    .add("boost", 2.1)
                     .add("term", Json.createObjectBuilder()
                         .add("field", "field")
                         .add("value", "value")))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         TermQuery query = new TermQuery(new Term("field", "value"));
-        query.setBoost(2.0f);
+        query.setBoost(2.1f);
         assertEquals(query, q.query);
     }
 
@@ -388,28 +388,28 @@ public class QueryConverterTest {
         assertEquals(SortField.Type.STRING, sortFields[3].getType());
         assertEquals(true, sortFields[3].getReverse());
         assertEquals(SortField.STRING_FIRST, sortFields[3].missingValue);
-        
+
         assertEquals("fieldname", sortFields[4].getField());
         assertEquals(SortField.Type.STRING, sortFields[4].getType());
         assertEquals(true, sortFields[4].getReverse());
         assertEquals(SortField.STRING_LAST, sortFields[4].missingValue);
-        
+
         assertEquals("longfield", sortFields[5].getField());
         assertEquals(SortField.Type.LONG, sortFields[5].getType());
         assertEquals(true, sortFields[5].getReverse());
         assertEquals(null, sortFields[5].missingValue);
-        
+
         assertEquals("doublefield", sortFields[6].getField());
         assertEquals(SortField.Type.DOUBLE, sortFields[6].getType());
         assertEquals(true, sortFields[6].getReverse());
         assertEquals(null, sortFields[6].missingValue);
     }
-    
+
     @Test
     public void testSuggestionRequest() {
         JsonObject json = Json.createObjectBuilder()
                 .add("query", Json.createObjectBuilder()
-                    .add("type", "MatchAllDocsQuery"))  
+                    .add("type", "MatchAllDocsQuery"))
                 .add("suggestionRequest", Json.createObjectBuilder()
                     .add("field", "field1")
                     .add("count", 2)
@@ -421,7 +421,7 @@ public class QueryConverterTest {
         assertEquals(2, q.suggestionRequest.count);
         assertArrayEquals(new String[] {"valeu"}, q.suggestionRequest.suggests.toArray(new String[0]));
     }
-    
+
     @Test
     public void testDedup() {
         JsonObject json = Json.createObjectBuilder()

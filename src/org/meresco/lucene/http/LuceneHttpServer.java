@@ -165,17 +165,11 @@ public class LuceneHttpServer {
 
     static void shutdown(final Server server, final List<Lucene> lucenes, final TermNumerator termNumerator) {
         System.out.println("Shutting down lucene. Please wait...");
-        try {
-            server.stop();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println("Http-server stopped");
-        
+
         try {
             termNumerator.close();
             System.out.println("Shutdown termNumerator completed.");
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Shutdown termNumerator failed.");
         }
@@ -188,7 +182,14 @@ public class LuceneHttpServer {
                 System.out.println("Shutdown " + lucene.name + " failed.");
             }
         }
-        
+        try {
+            // Stop the server after(!) closing Lucene etc.
+            server.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("Http-server stopped");
+
         System.err.flush();
         System.out.flush();
         System.exit(0);

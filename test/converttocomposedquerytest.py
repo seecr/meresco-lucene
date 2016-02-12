@@ -1,28 +1,25 @@
 ## begin license ##
 #
-# "NBC+" also known as "ZP (ZoekPlatform)" is
-#  a project of the Koninklijke Bibliotheek
-#  and provides a search service for all public
-#  libraries in the Netherlands.
+# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
-# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+# Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
-# This file is part of "NBC+ (Zoekplatform BNL)"
+# This file is part of "Meresco Lucene"
 #
-# "NBC+ (Zoekplatform BNL)" is free software; you can redistribute it and/or modify
+# "Meresco Lucene" is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
-# "NBC+ (Zoekplatform BNL)" is distributed in the hope that it will be useful,
+# "Meresco Lucene" is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with "NBC+ (Zoekplatform BNL)"; if not, write to the Free Software
+# along with "Meresco Lucene"; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #
 ## end license ##
@@ -227,17 +224,17 @@ class ConvertToComposedQueryTest(SeecrTestCase):
     def testXTermDrilldown(self):
         self.response = LuceneResponse(drilldownData=[
                 dict(fieldname='prefix:field1', terms=[dict(term='term1', count=1)]),
-                dict(fieldname='prefix:field2', terms=[dict(term='term2', count=1)]),
+                dict(fieldname='unknownJoinName.field', terms=[]),
                 dict(fieldname='normal:drilldown', terms=[]),
-                dict(fieldname='unknownJoinName.field', terms=[])
+                dict(fieldname='prefix:field2', terms=[dict(term='term2', count=1)]),
             ])
         response = retval(self.tree.any.executeQuery(
                 cqlAbstractSyntaxTree=parseCQL('*'),
                 extraArguments={},
                 facets=[
-                    dict(fieldname='otherCore.prefix:field1', maxTerms=9),
                     dict(fieldname='otherCore.prefix:field2', maxTerms=7),
                     dict(fieldname='normal:drilldown', maxTerms=11),
+                    dict(fieldname='otherCore.prefix:field1', maxTerms=9),
                     dict(fieldname='unknownJoinName.field', maxTerms=12)
                 ],
                 someKwarg='someValue'))
@@ -247,34 +244,34 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals(set(['defaultCore', 'otherCore']), cq.cores)
         self.assertEquals('keyDefault', cq.keyName('defaultCore', 'otherCore'))
         self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
-        self.assertEquals([dict(fieldname='prefix:field1', path=[], maxTerms=9), dict(fieldname='prefix:field2', path=[], maxTerms=7)], cq.facetsFor('otherCore'))
+        self.assertEquals([dict(fieldname='prefix:field2', path=[], maxTerms=7), dict(fieldname='prefix:field1', path=[], maxTerms=9)], cq.facetsFor('otherCore'))
         self.assertEquals([dict(fieldname='normal:drilldown', path=[], maxTerms=11), dict(fieldname='unknownJoinName.field', path=[], maxTerms=12)], cq.facetsFor('defaultCore'))
         self.assertEquals([
-                dict(fieldname='otherCore.prefix:field1', terms=[dict(term='term1', count=1)]),
                 dict(fieldname='otherCore.prefix:field2', terms=[dict(term='term2', count=1)]),
                 dict(fieldname='normal:drilldown', terms=[]),
+                dict(fieldname='otherCore.prefix:field1', terms=[dict(term='term1', count=1)]),
                 dict(fieldname='unknownJoinName.field', terms=[])
             ], response.drilldownData)
 
     def testHierarchicalXTermDrilldown(self):
         self.response = LuceneResponse(drilldownData=[
-                dict(fieldname='field1', path=['field2'], terms=[dict(term='term1', count=1)]),
-            ])
+            dict(fieldname='field1', path=['field2'], terms=[dict(term='term1', count=1)]),
+        ])
 
         response = retval(self.tree.any.executeQuery(
-                cqlAbstractSyntaxTree=parseCQL('*'),
-                extraArguments={},
-                facets=[
-                    dict(fieldname='otherCore.field1>field2', maxTerms=10),
-                ],
-                someKwarg='someValue'))
+            cqlAbstractSyntaxTree=parseCQL('*'),
+            extraArguments={},
+            facets=[
+                dict(fieldname='otherCore.field1>field2', maxTerms=10),
+            ],
+            someKwarg='someValue'))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
         cq.validate()
         self.assertEquals([{'fieldname': 'field1', 'path': ['field2'], 'maxTerms': 10}], cq.facetsFor('otherCore'))
         self.assertEquals([
-                dict(fieldname='otherCore.field1', path=['field2'], terms=[dict(term='term1', count=1)]),
-            ], response.drilldownData)
+            dict(fieldname='otherCore.field1', path=['field2'], terms=[dict(term='term1', count=1)]),
+        ], response.drilldownData)
 
     def testXRankQuery(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-rank-query': ['otherCore.prefix:field=value', 'otherCore.otherprefix:otherfield=othervalue', 'field=value']}))

@@ -2,10 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Drents Archief http://www.drentsarchief.nl
-# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+# Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -107,10 +107,12 @@ class ConvertToComposedQuery(Observable):
         if self._clusteringEnabled and 'true' == extraArguments.get('x-clustering', [None])[0]:
             setattr(cq, "clustering", True)
 
+        facetOrder = []
         fieldTranslations = {}
         for drilldownField in (facets or []):
             path = drilldownField['fieldname'].split('>')
             fieldname, path = path[0], path[1:]
+            facetOrder.append((fieldname, path))
             core, newFieldname = self._coreFacet(fieldname, self._cores)
             newFieldname = self._drilldownFieldnamesTranslate(newFieldname)
             fieldTranslations[newFieldname] = fieldname
@@ -123,9 +125,15 @@ class ConvertToComposedQuery(Observable):
 
         result = yield self.any.executeComposedQuery(query=cq)
 
-        for facet in getattr(result, "drilldownData", []):
-            fieldname = facet['fieldname']
-            facet['fieldname'] = fieldTranslations.get(fieldname, fieldname)
+        drilldownData = getattr(result, "drilldownData", None)
+        if drilldownData:
+            for facet in drilldownData:
+                fieldname = facet['fieldname']
+                facet['fieldname'] = fieldTranslations.get(fieldname, fieldname)
+            result.drilldownData = sorted(
+                drilldownData,
+                key=lambda d: facetOrder.index((d['fieldname'], d.get('path', [])))
+            )
 
         raise StopIteration(result)
 

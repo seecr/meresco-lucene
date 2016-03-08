@@ -306,6 +306,9 @@ public class Lucene {
                 if (hits.size() == q.stop - q.start || topCollectorStop >= totalHits)
                     break;
                 topCollectorStop *= 10;
+                if (topCollectorStop > 10000) {
+                    break;
+                }
             }
 
             LuceneResponse response = new LuceneResponse(totalHits);

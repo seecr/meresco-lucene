@@ -37,8 +37,8 @@ import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneSettings;
 import org.meresco.lucene.Utils;
 
-public class SettingsHandler extends AbstractHandler {
 
+public class SettingsHandler extends AbstractHandler {
     private Lucene lucene;
 
     public SettingsHandler(Lucene lucene) {

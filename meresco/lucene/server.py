@@ -27,30 +27,28 @@
 from os.path import dirname, abspath, join, realpath
 from sys import stdout
 
-from meresco.components.log import LogComponent
-from meresco.html import DynamicHtml
-
+from weightless.io import Reactor
+from weightless.core import compose, be
+from meresco.core import Observable, TransactionScope
+from meresco.core.processtools import setSignalHandlers
+from meresco.components import Xml2Fields, Venturi, XmlPrintLxml, FilterField, RenameField, FilterMessages, TransformFieldValue
 from meresco.components.http import StringServer, ObservableHttpServer, BasicHttpHandler, ApacheLogger, PathFilter, PathRename, FileServer
 from meresco.components.http.utils import ContentTypePlainText
 from meresco.components.sru import SruRecordUpdate, SruParser, SruHandler, SruDuplicateCount
 from meresco.components.drilldown import SRUTermDrilldown
-from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml, FilterField, RenameField, FilterMessages, TransformFieldValue
 from meresco.components.autocomplete import Autocomplete
-from meresco.core import Observable, TransactionScope
-from meresco.core.processtools import setSignalHandlers
+from meresco.html import DynamicHtml
+from meresco.xml import namespaces
+from meresco.sequentialstore import MultiSequentialStorage, StorageComponentAdapter
 
 from meresco.lucene import Lucene, Fields2LuceneDoc, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, DrilldownField, LuceneSettings
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 from meresco.lucene.fieldregistry import FieldRegistry
+from meresco.lucene.adaptertolucenequery import AdapterToLuceneQuery
+from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
 
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
-
-from weightless.io import Reactor
-from weightless.core import compose, be
-from meresco.lucene.adaptertolucenequery import AdapterToLuceneQuery
-from meresco.xml import namespaces
-from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
 
 
 myPath = abspath(dirname(__file__))
@@ -135,7 +133,11 @@ def main(reactor, port, serverPort, databasePath, **kwargs):
             (lucene,),
             (lucene2,),
         )
-    storageComponent = StorageComponent(directory=join(databasePath, 'storage'))
+    storageComponent = be(
+        (StorageComponentAdapter(),
+            (MultiSequentialStorage(directory=join(databasePath, 'storage')),)
+        )
+    )
 
     return \
     (Observable(),

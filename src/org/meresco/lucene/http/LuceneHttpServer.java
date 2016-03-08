@@ -52,6 +52,7 @@ import org.meresco.lucene.numerate.TermNumerator;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
+
 public class LuceneHttpServer {
     public static void main(String[] args) throws Exception {
         Options options = new Options();

@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -24,16 +24,26 @@
 #
 ## end license ##
 
+from simplejson import dumps, loads
+
 from cqlparser import cql2string, parseString, CQL_QUERY
 from cqlparser.cqltoexpression import QueryExpression
-from simplejson import dumps, loads
+
 from meresco.lucene.composedquery import ComposedQuery
+
 
 class Conversion(object):
     def __init__(self):
         self._converters = []
-        self.addObject('__COMPOSED_QUERY__', ComposedQuery)
-        self.addObject('__QUERY_EXPRESSION__', QueryExpression)
+        self._addObject('__COMPOSED_QUERY__', ComposedQuery)
+        self._addObject('__QUERY_EXPRESSION__', QueryExpression)
+
+    def jsonDumpMessage(self, message, **kwargs):
+        return dumps(dict(message=message, kwargs=kwargs), default=self._dumps_default)
+
+    def jsonLoadMessage(self, aString):
+        result = loads(aString, object_hook=self._loads_object_hook)
+        return result['message'], result['kwargs']
 
     def _dumps_default(self, anObject):
         if isinstance(anObject, CQL_QUERY):
@@ -51,14 +61,7 @@ class Conversion(object):
                 return converter['type'].fromDict(loads(dct[converter['name']], object_hook=self._loads_object_hook))
         return dct
 
-    def jsonDumpMessage(self, message, **kwargs):
-        return dumps(dict(message=message, kwargs=kwargs), default=self._dumps_default)
-
-    def jsonLoadMessage(self, aString):
-        result = loads(aString, object_hook=self._loads_object_hook)
-        return result['message'], result['kwargs']
-
-    def addObject(self, objectString, objectType, objectAsDict=None, objectFromDict=None):
+    def _addObject(self, objectString, objectType, objectAsDict=None, objectFromDict=None):
         self._converters.append(dict(
                 name=objectString,
                 type=objectType,

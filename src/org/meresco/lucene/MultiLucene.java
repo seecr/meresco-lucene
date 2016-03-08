@@ -41,8 +41,8 @@ import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
 
-public class MultiLucene {
 
+public class MultiLucene {
     private Map<String, Lucene> lucenes = new HashMap<String, Lucene>();
 
     public MultiLucene(List<Lucene> lucenes) {

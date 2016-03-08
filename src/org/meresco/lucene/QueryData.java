@@ -37,6 +37,7 @@ import org.apache.lucene.search.Sort;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.QueryConverter.SuggestionRequest;
 
+
 public class QueryData {
     public Query query = new MatchAllDocsQuery();
     public List<FacetRequest> facets;
@@ -48,6 +49,7 @@ public class QueryData {
     public String dedupSortField;
     public String groupingField;
     public boolean clustering;
+    public ClusterConfig clusterConfig;
 
     public QueryData(Reader queryReader, QueryConverter converter) {
         JsonObject object = Json.createReader(queryReader).readObject();
@@ -61,6 +63,7 @@ public class QueryData {
         this.dedupSortField = object.getString("dedupSortField", null);
         this.groupingField = object.getString("groupingField", null);
         this.clustering = object.getBoolean("clustering", false);
+        this.clusterConfig = ClusterConfig.parseFromJsonObject(object);
     }
 
     public QueryData() {

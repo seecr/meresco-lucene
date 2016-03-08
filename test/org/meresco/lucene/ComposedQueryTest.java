@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -42,11 +42,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
+import org.meresco.lucene.ClusterConfig.ClusterField;
 import org.meresco.lucene.ComposedQuery.Unite;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 
-public class ComposedQueryTest {
 
+public class ComposedQueryTest {
     @SuppressWarnings("serial")
     @Test
     public void testComposedQuery() throws Exception {
@@ -123,6 +124,15 @@ public class ComposedQueryTest {
                         .add(Json.createObjectBuilder()
                             .add("fieldname", "fieldB")
                             .add("maxTerms", 5))))
+                .add("_clusteringConfig", Json.createObjectBuilder()
+                	.add("clusteringEps", 0.3)
+                	.add("clusteringMinPoints", 3)
+                	.add("clusterMoreRecords", 200)
+                	.add("fields", Json.createObjectBuilder()
+                			.add("dcterms:title", Json.createObjectBuilder()
+                					.add("fieldname", "dcterms:title")
+                					.add("filterValue", "a")
+                					.add("weight", 0.3))))
                 .build();
         Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
             put("coreA", new QueryConverter(new FacetsConfig()));
@@ -159,22 +169,33 @@ public class ComposedQueryTest {
         assertEquals(1, facetsB.size());
         assertEquals("fieldB", facetsB.get(0).fieldname);
         assertEquals(5, facetsB.get(0).maxTerms);
-        
+
         List<Query> otherCoreFacetFilters = q.otherCoreFacetFiltersFor("coreA");
         assertEquals(1, otherCoreFacetFilters.size());
         assertEquals(new TermQuery(new Term("field", "value0")), otherCoreFacetFilters.get(0));
-        
+
         List<String[]> drilldownQueries = q.drilldownQueriesFor("coreA");
         assertEquals(2, drilldownQueries.size());
         assertArrayEquals(new String[] {"ddField"}, drilldownQueries.get(0));
         assertArrayEquals(new String[] {"ddValue"}, drilldownQueries.get(1));
-        
+
         Query rankQuery = q.rankQueryFor("coreA");
         assertEquals(new TermQuery(new Term("field", "value0")), rankQuery);
-        
+
         assertEquals("field1", q.queryData.suggestionRequest.field);
         assertEquals(2, q.queryData.suggestionRequest.count);
         assertArrayEquals(new String[] {"valeu"}, q.queryData.suggestionRequest.suggests.toArray(new String[0]));
+
+        ClusterConfig clusterConfig = q.queryData.clusterConfig;
+        assertEquals(0.3, clusterConfig.clusteringEps, 0.02);
+    	assertEquals(3, clusterConfig.clusteringMinPoints);
+    	assertEquals(200, clusterConfig.clusterMoreRecords);
+        List<ClusterField> clusterFields = clusterConfig.clusterFields;
+        assertEquals(1, clusterFields.size());
+        ClusterField field = clusterFields.get(0);
+        assertEquals("dcterms:title", field.fieldname);
+        assertEquals("a", field.filterValue);
+        assertEquals(0.3, field.weight, 0.02);
     }
 
     @SuppressWarnings("serial")
@@ -190,7 +211,7 @@ public class ComposedQueryTest {
         assertEquals(0, q.queryData.start);
         assertEquals(10, q.queryData.stop);
     }
-    
+
     @SuppressWarnings("serial")
     @Test
     public void testUnite() {
@@ -224,7 +245,7 @@ public class ComposedQueryTest {
                                 .add("type", "TermQuery")
                                 .add("term", Json.createObjectBuilder()
                                     .add("field", "field2")
-                                    .add("value", "value1")))) 
+                                    .add("value", "value1"))))
                     ))
                 .build();
         Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{

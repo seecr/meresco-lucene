@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -25,6 +25,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
+
 from meresco.lucene.composedquery import ComposedQuery
 
 
@@ -147,6 +148,8 @@ class ComposedQueryTest(SeecrTestCase):
         cq.addUnite(dict(core='coreA', query='AQuery'), dict(core='coreB', query='anotherQuery'))
         cq.start = 0
         cq.sortKeys = [dict(sortBy='field', sortDescending=True)]
+        cq.clustering = True
+        cq.clusteringConfig = {'clusteringEps': 0.2}
 
         d = cq.asDict()
         cq2 = ComposedQuery.fromDict(d)
@@ -161,6 +164,7 @@ class ComposedQueryTest(SeecrTestCase):
         queries = list(cq2.unites[0].queries())
         self.assertEquals(({'core': 'coreA', 'keyName': 'keyA', 'query': 'AQuery'}, 'keyA'), queries[0])
         self.assertEquals(({'core': 'coreB', 'keyName': 'keyB', 'query': 'anotherQuery'}, 'keyA'), queries[1])
+        self.assertEquals({'clusteringEps': 0.2}, cq2.clusteringConfig)
 
     def testAddFilterQueriesIncremental(self):
         cq = ComposedQuery('coreA')

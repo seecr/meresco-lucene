@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -26,8 +26,6 @@
 package org.meresco.lucene;
 
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -43,20 +41,8 @@ import org.meresco.lucene.analysis.MerescoDutchStemmingAnalyzer;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 
+
 public class LuceneSettings {
-
-    public static class ClusterField {
-        public String fieldname;
-        public double weight;
-        public String filterValue;
-
-        public ClusterField(String fieldname, double weight, String filterValue) {
-            this.fieldname = fieldname;
-            this.weight = weight;
-            this.filterValue = filterValue;
-        }
-    }
-
     public Similarity similarity = new BM25Similarity();
     public Analyzer analyzer = new MerescoStandardAnalyzer();
     public int maxMergeAtOnce = 2;
@@ -66,12 +52,9 @@ public class LuceneSettings {
     public int commitTimeout = 10;
     public int commitCount = 100000;
     public FacetsConfig facetsConfig = new FacetsConfig();
-    public double clusteringEps = 0.4;
-    public int clusteringMinPoints = 1;
-    public int clusterMoreRecords = 100;
-    public List<ClusterField> clusterFields = new ArrayList<>();
+    public ClusterConfig clusterConfig = new ClusterConfig(0.4, 1, 100);
 
-    public JsonObject asJson() {
+	public JsonObject asJson() {
         JsonObject json = Json.createObjectBuilder()
             .add("similarity", similarity.toString())
             .add("maxMergeAtOnce", maxMergeAtOnce)
@@ -80,16 +63,17 @@ public class LuceneSettings {
             .add("numberOfConcurrentTasks", numberOfConcurrentTasks)
             .add("commitCount", commitCount)
             .add("commitTimeout", commitTimeout)
-            .add("clusteringEps", clusteringEps)
-            .add("clusteringMinPoints", clusteringMinPoints)
-            .add("clusterMoreRecords", clusterMoreRecords)
-            .build();
+            .add("clustering", Json.createObjectBuilder()
+                .add("clusteringEps", clusterConfig.clusteringEps)
+                .add("clusteringMinPoints", clusterConfig.clusteringMinPoints)
+                .add("clusterMoreRecords", clusterConfig.clusterMoreRecords)
+            ).build();
         return json;
     }
 
     public void updateSettings(Reader reader) {
         JsonObject object = (JsonObject) Json.createReader(reader).read();
-        for (String key : object.keySet()) {
+        for (String key: object.keySet()) {
             switch (key) {
                 case "commitCount":
                     commitCount = object.getInt(key);
@@ -109,15 +93,6 @@ public class LuceneSettings {
                 case "numberOfConcurrentTasks":
                     numberOfConcurrentTasks = object.getInt(key);
                     break;
-                case "clusteringEps":
-                    clusteringEps = object.getJsonNumber(key).doubleValue();
-                    break;
-                case "clusteringMinPoints":
-                    clusteringMinPoints = object.getInt(key);
-                    break;
-                case "clusterMoreRecords":
-                    clusterMoreRecords  = object.getInt(key);
-                    break;
                 case "analyzer":
                     analyzer = getAnalyzer(object.getJsonObject(key));
                     break;
@@ -127,22 +102,14 @@ public class LuceneSettings {
                 case "drilldownFields":
                     updateDrilldownFields(facetsConfig, object.getJsonArray(key));
                     break;
-                case "clusterFields":
-                    clusterFields = getClusterFields(object.getJsonArray(key));
+                case "clustering":
+                    ClusterConfig clusterConfig = ClusterConfig.parseFromJsonObject(object.getJsonObject(key));
+                    if (clusterConfig != null) {
+                        this.clusterConfig = clusterConfig;
+                    }
                     break;
             }
         }
-
-    }
-
-    private static List<ClusterField> getClusterFields(JsonArray jsonClusterFields) {
-        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
-        for (int i=0; i<jsonClusterFields.size(); i++) {
-            JsonObject clusterField = jsonClusterFields.getJsonObject(i);
-            String filterValue = clusterField.getString("filterValue", null);
-            clusterFields.add(new ClusterField(clusterField.getString("fieldname"), clusterField.getJsonNumber("weight").doubleValue(), filterValue));
-        }
-        return clusterFields;
     }
 
     private static void updateDrilldownFields(FacetsConfig facetsConfig, JsonArray drilldownFields) {

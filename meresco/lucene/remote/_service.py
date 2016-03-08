@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013, 2015 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -45,7 +45,6 @@ usrSharePath = '/usr/share/meresco-lucene'
 usrSharePath = join(dirname(dirname(dirname(myPath))), 'usr-share')  #DO_NOT_DISTRIBUTE
 staticPath = join(usrSharePath, 'lucene-remote', 'static')
 dynamicPath = join(myPath, 'dynamic')
-
 
 class LuceneRemoteService(Observable):
     def __init__(self, reactor, conversion=None, **kwargs):
@@ -112,5 +111,6 @@ class LuceneRemoteService(Observable):
 
     def _allCoreInfo(self):
         return list(compose(self.all.coreInfo()))
+
 
 _ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames', 'drilldownFieldnames', 'executeComposedQuery']

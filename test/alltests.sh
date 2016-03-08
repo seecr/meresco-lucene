@@ -3,7 +3,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -73,7 +73,7 @@ if [ ! -f ${JUNIT} ]; then
 fi
 
 JARS=$(find ../jars -type f -name "*.jar")
-LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*.jar")
+LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*-4.10.*.jar")
 
 CP="$JUNIT:$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':'):../build"
 

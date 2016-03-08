@@ -41,8 +41,8 @@ import javax.json.JsonValue;
 import org.apache.lucene.search.Query;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 
-public class ComposedQuery {
 
+public class ComposedQuery {
     public String resultsFrom;
     public Set<String> cores = new HashSet<String>();
     private Map<String, Query> queries = new HashMap<String, Query>();
@@ -54,6 +54,7 @@ public class ComposedQuery {
     private List<Unite> unites = new ArrayList<Unite>();
     public List<Match> matches = new ArrayList<Match>();
     public QueryData queryData = new QueryData();
+    public ClusterConfig clusterConfig;
 
     public ComposedQuery(String resultsFrom) {
         this.resultsFrom = resultsFrom;
@@ -80,6 +81,9 @@ public class ComposedQuery {
         cq.queryData.dedupSortField = json.getString("_dedupSortField", null);
         cq.queryData.groupingField = json.getString("_groupingField", null);
         cq.queryData.clustering = json.getBoolean("_clustering", false);
+        if (json.containsKey("_clusteringConfig")) {
+        	cq.queryData.clusterConfig = ClusterConfig.parseFromJsonObject(json.getJsonObject("_clusteringConfig"));
+        }
         if (json.containsKey("cores")) {
             JsonArray jsonCores = json.getJsonArray("cores");
             for (int i = 0; i < jsonCores.size(); i++) {

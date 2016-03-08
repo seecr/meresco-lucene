@@ -106,9 +106,11 @@ class LuceneServerTest(IntegrationTestCase):
         self.assertTrue("200 OK" in header.upper(), header)
         self.assertEqual({
                 'similarity': 'BM25(k1=1.2,b=0.75)',
-                'clusterMoreRecords': 100,
-                'clusteringEps': 0.4,
-                'clusteringMinPoints': 1,
+                'clustering': {
+                    'clusterMoreRecords': 100,
+                    'clusteringEps': 0.4,
+                    'clusteringMinPoints': 1,
+                },
                 'commitCount': 1,
                 'commitTimeout': 10,
                 'lruTaxonomyWriterCacheSize': 4000,

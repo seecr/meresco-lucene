@@ -26,6 +26,7 @@
 
 from .utils import simplifiedDict
 
+
 class ComposedQuery(object):
     def __init__(self, resultsFromCore, query=None):
         self.cores = set()
@@ -43,6 +44,25 @@ class ComposedQuery(object):
             self.setCoreQuery(resultsFromCore, query=query)
         else:
             self.cores.add(resultsFromCore)
+
+    def _makeProperty(name, defaultValue=None):
+        return property(
+            fget=lambda self: getattr(self, name, defaultValue),
+            fset=lambda self, value: setattr(self, name, value)
+        )
+
+    stop = _makeProperty('_stop')
+    start = _makeProperty('_start')
+    sortKeys = _makeProperty('_sortKeys')
+    suggestionRequest = _makeProperty('_suggestionRequest')
+    dedupField = _makeProperty('_dedupField')
+    dedupSortField = _makeProperty('_dedupSortField')
+    groupingField = _makeProperty('_groupingField')
+    storedFields = _makeProperty('_storedFields')
+    clustering = _makeProperty('_clustering')
+    clusteringConfig = _makeProperty('_clusteringConfig')
+
+    _makeProperty = None
 
     def setCoreQuery(self, core, query, filterQueries=None, facets=None):
         self.cores.add(core)
@@ -186,23 +206,7 @@ class ComposedQuery(object):
         self._otherCoreFacetFilters = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._otherCoreFacetFilters.items())
 
     def otherKwargs(self):
-        return dict(start=self.start, stop=self.stop, sortKeys=self._sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, groupingField=self.groupingField, clustering=self.clustering, storedFields=self.storedFields)
-
-    def _prop(name, defaultValue=None):
-        def fget(self):
-            return getattr(self, '_'+name, defaultValue)
-        def fset(self, value):
-            return setattr(self, '_'+name, value)
-        return dict(fget=fget, fset=fset)
-    stop = property(**_prop('stop'))
-    start = property(**_prop('start'))
-    sortKeys = property(**_prop('sortKeys'))
-    suggestionRequest = property(**_prop('suggestionRequest'))
-    dedupField = property(**_prop('dedupField'))
-    dedupSortField = property(**_prop('dedupSortField'))
-    groupingField = property(**_prop('groupingField'))
-    clustering = property(**_prop('clustering'))
-    storedFields = property(**_prop('storedFields'))
+        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, groupingField=self.groupingField, clustering=self.clustering, storedFields=self.storedFields, clusteringConfig=self.clusteringConfig)
 
     def asDict(self):
         result = dict(vars(self))
@@ -235,8 +239,9 @@ class ComposedQuery(object):
     def infoDict(self):
         return {
             'type': self.__class__.__name__,
-            'query':simplifiedDict(dict((k.replace('_',''),v) for k,v in self.asDict().items()))
+            'query': simplifiedDict(dict((k.replace('_', ''), v) for k,v in self.asDict().items()))
         }
+
 
 class Unite(object):
     def __init__(self, parent, coreASpec, coreBSpec):
@@ -262,4 +267,5 @@ class Unite(object):
     def fromDict(cls, parent, dct):
         return cls(parent, dict(core=dct['A'][0], query=dct['A'][1]), dict(core=dct['B'][0], query=dct['B'][1]))
 
-del ComposedQuery._prop
+
+del ComposedQuery._makeProperty

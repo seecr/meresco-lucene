@@ -38,8 +38,8 @@ import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.QueryData;
 import org.meresco.lucene.Utils;
 
-public class QueryHandler extends AbstractHandler {
 
+public class QueryHandler extends AbstractHandler {
     private Lucene lucene;
 
     public QueryHandler(Lucene lucene) {

@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -23,15 +23,18 @@
 #
 ## end license ##
 
-from seecr.test import SeecrTestCase
-from cqlparser import parseString
-from cqlparser.cqltoexpression import QueryExpression
-from meresco.lucene import ComposedQuery
-from meresco.lucene.remote import Conversion
 from simplejson import loads
 
-class ConversionTest(SeecrTestCase):
+from cqlparser import parseString
+from cqlparser.cqltoexpression import QueryExpression
 
+from seecr.test import SeecrTestCase
+
+from meresco.lucene import ComposedQuery
+from meresco.lucene.remote import Conversion
+
+
+class ConversionTest(SeecrTestCase):
     def testConversion(self):
         kwargs = {'q': parseString('CQL'), 'attr': {'qs':[parseString('qs')]}}
         dump = Conversion().jsonDumpMessage(message='aMessage', **kwargs)
@@ -87,7 +90,7 @@ class ConversionTest(SeecrTestCase):
                 return cls()
 
         conversion = Conversion()
-        conversion.addObject('__MyObject__', MyObject, MyObject.asDict, MyObject.fromDict)
+        conversion._addObject('__MyObject__', MyObject, MyObject.asDict, MyObject.fromDict)
         kwargs = {'q': "query", 'object': MyObject()}
         dump = conversion.jsonDumpMessage(message='aMessage', **kwargs)
         self.assertEquals({

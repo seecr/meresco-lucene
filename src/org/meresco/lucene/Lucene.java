@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -91,7 +91,6 @@ import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.LuceneResponse.GroupingHit;
 import org.meresco.lucene.LuceneResponse.Hit;
-import org.meresco.lucene.LuceneSettings.ClusterField;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.search.DeDupFilterSuperCollector;
 import org.meresco.lucene.search.FacetSuperCollector;
@@ -110,8 +109,8 @@ import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
 
-public class Lucene {
 
+public class Lucene {
     public static final String ID_FIELD = "__id__";
     IndexWriter indexWriter;
     DirectoryTaxonomyWriter taxoWriter;
@@ -168,11 +167,11 @@ public class Lucene {
         taxoWriter.commit();
 
         facetsConfig = settings.facetsConfig;
-        
+
         filterCache = Collections.synchronizedMap(new LRUMap<Query, Filter>(50));
         scoreCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, ScoreSuperCollector>(50));
         keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
-        
+
         manager = new SearcherTaxonomyManager(indexDirectory, taxoDirectory, new MerescoSearchFactory(indexDirectory, taxoDirectory, settings));
         manager.addListener(refreshListener);
     }
@@ -194,7 +193,7 @@ public class Lucene {
         indexWriter.addDocument(doc);
         commit();
     }
-    
+
     public void addDocument(String identifier, Document doc) throws IOException {
         doc.add(new StringField(ID_FIELD, identifier, Store.YES));
         doc = facetsConfig.build(taxoWriter, doc);
@@ -247,7 +246,7 @@ public class Lucene {
     public LuceneResponse executeQuery(QueryData q) throws Exception {
         return executeQuery(q, null, null, null, null, null);
     }
-    
+
     public LuceneResponse executeQuery(Query query) throws Exception {
         QueryData q = new QueryData();
         q.query = query;
@@ -281,45 +280,49 @@ public class Lucene {
             while (true) {
                 collectors = createCollectors(q, topCollectorStop, keyCollectors, scoreCollectors, reference);
                 Filter f = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Filter[0]));
-    
+
                 Query query = q.query;
-                if (drilldownQueries != null) 
+                if (drilldownQueries != null)
                     query = createDrilldownQuery(query, drilldownQueries);
                 long t1 = System.currentTimeMillis();
                 ((SuperIndexSearcher) reference.searcher).search(query, f, collectors.root);
                 times.put("searchTime", System.currentTimeMillis() - t1);
-                
+
                 totalHits = collectors.topCollector.getTotalHits();
                 if (q.clustering) {
+                    ClusterConfig clusterConfig = q.clusterConfig;
+                    if (clusterConfig == null) {
+                    	clusterConfig = settings.clusterConfig;
+                    }
                     t1 = System.currentTimeMillis();
-                    hits = clusterTopDocsResponse(q, collectors, times, reference.searcher.getIndexReader());
+                    hits = clusterTopDocsResponse(q, collectors, times, reference.searcher.getIndexReader(), clusterConfig);
                     times.put("totalClusterTime", System.currentTimeMillis() - t1);
                 } else {
                     t1 = System.currentTimeMillis();
                     hits = topDocsResponse(q, collectors);
                     times.put("topDocsTime", System.currentTimeMillis() - t1);
                 }
-                
+
                 if (hits.size() == q.stop - q.start || topCollectorStop >= totalHits)
                     break;
                 topCollectorStop *= 10;
             }
-                
+
             LuceneResponse response = new LuceneResponse(totalHits);
             if (collectors.dedupCollector != null)
                 response.totalWithDuplicates = collectors.dedupCollector.getTotalHits();
-            
+
             response.hits = hits;
-            
+
             if (collectors.facetCollector != null) {
                 long t1 = System.currentTimeMillis();
                 response.drilldownData = facetResult(collectors.facetCollector, q.facets);
                 times.put("facetTime", System.currentTimeMillis() - t1);
             }
-    
+
             if (q.suggestionRequest != null) {
                 long t1 = System.currentTimeMillis();
-                HashMap<String, SuggestWord[]> result = new HashMap<>();  
+                HashMap<String, SuggestWord[]> result = new HashMap<>();
                 for (String suggest : q.suggestionRequest.suggests)
                     result.put(suggest, suggest(suggest, q.suggestionRequest.count, q.suggestionRequest.field));
                 times.put("suggestionTime", System.currentTimeMillis() - t1);
@@ -333,13 +336,12 @@ public class Lucene {
         }
     }
 
-    private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader) throws IOException {
+    private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader, ClusterConfig clusterConfig) throws IOException {
         int totalHits = collectors.topCollector.getTotalHits();
-                
         List<LuceneResponse.Hit> hits = new ArrayList<>();
-        double epsilon = interpolateEpsilon(totalHits, q.stop - q.start);
-        MerescoClusterer clusterer = new MerescoClusterer(indexReader, epsilon, settings.clusteringMinPoints);
-        for (ClusterField clusterField : settings.clusterFields)
+        double epsilon = interpolateEpsilon(totalHits, q.stop - q.start, clusterConfig);
+        MerescoClusterer clusterer = new MerescoClusterer(indexReader, epsilon, clusterConfig.clusteringMinPoints);
+        for (ClusterConfig.ClusterField clusterField : clusterConfig.clusterFields)
             clusterer.registerField(clusterField.fieldname, clusterField.weight, clusterField.filterValue);
         TopDocs topDocs = collectors.topCollector.topDocs(q.start);
         long t0 = System.currentTimeMillis();
@@ -358,7 +360,7 @@ public class Lucene {
                 continue;
             MerescoCluster cluster = clusterer.cluster(scoreDoc.doc);
             DocScore[] clusterTopDocs = cluster == null ? new DocScore[0] : cluster.topDocs;
-            
+
             List<Integer> clusteredDocIds = new ArrayList<>();
             if (cluster == null)
                 clusteredDocIds.add(scoreDoc.doc);
@@ -382,10 +384,10 @@ public class Lucene {
 
     private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws IOException {
         int totalHits = collectors.topCollector.getTotalHits();
-                
+
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;
         GroupSuperCollector groupingCollector = collectors.groupingCollector;
-        
+
         HashSet<String> seenIds = new HashSet<>();
         int count = q.start;
         List<LuceneResponse.Hit> hits = new ArrayList<>();
@@ -402,11 +404,11 @@ public class Lucene {
                     hit.duplicateCount = keyForDocId.getCount();
                 hit.score = scoreDoc.score;
                 hits.add(hit);
-            } else if (groupingCollector != null) { 
+            } else if (groupingCollector != null) {
                 GroupingHit hit = new GroupingHit(getDocument(scoreDoc.doc).get(ID_FIELD), scoreDoc.score);
                 if (seenIds.contains(hit.id))
                     continue;
-                
+
                 List<String> duplicateIds = new ArrayList<>();
                 duplicateIds.add(hit.id);
                 if (totalHits > (q.stop - q.start)) {
@@ -458,7 +460,7 @@ public class Lucene {
         filterCache.put(query, filter);
         return filter;
     }
-    
+
     private Filter filtersFor(List<Query> filterQueries, Filter... filter) {
         List<Filter> filters = new ArrayList<Filter>();
         if (filterQueries != null)
@@ -480,14 +482,14 @@ public class Lucene {
         } finally {
             manager.release(reference);
         }
-        
+
     }
 
     private Collectors createCollectors(QueryData q, int stop, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors, SearcherAndTaxonomy reference) {
         Collectors allCollectors = new Collectors();
         SuperCollector<?> resultsCollector;
         if (q.clustering) {
-            allCollectors.topCollector = topCollector(q.start, stop + settings.clusterMoreRecords, q.sort);
+            allCollectors.topCollector = topCollector(q.start, stop + settings.clusterConfig.clusterMoreRecords, q.sort);
             resultsCollector = allCollectors.topCollector;
         } else if (q.groupingField != null) {
             allCollectors.topCollector = topCollector(q.start, stop * 10, q.sort);
@@ -511,7 +513,7 @@ public class Lucene {
         if (keyCollectors != null)
             collectors.addAll(keyCollectors);
         allCollectors.root = new MultiSuperCollector(collectors);
-        
+
         if (scoreCollectors != null && scoreCollectors.size() > 0) {
             for (AggregateScoreSuperCollector scoreCollector : scoreCollectors) {
                 scoreCollector.setDelegate(allCollectors.root);
@@ -572,7 +574,7 @@ public class Lucene {
         }
         return drilldownData;
     }
-    
+
     public List<DrilldownData.Term> drilldownDataFromFacetResult(FacetSuperCollector facetCollector, FacetRequest facet, String[] path, boolean hierarchical) throws IOException {
         FacetResult result = facetCollector.getTopChildren(facet.maxTerms == 0 ? Integer.MAX_VALUE : facet.maxTerms, facet.fieldname, path);
         if (result == null)
@@ -605,7 +607,7 @@ public class Lucene {
         SearcherAndTaxonomy reference = manager.acquire();
         try {
             List<TermCount> terms = new ArrayList<TermCount>();
-            IndexReader reader = reference.searcher.getIndexReader();  
+            IndexReader reader = reference.searcher.getIndexReader();
             Terms termsEnum = MultiFields.getTerms(reader, field);
             if (termsEnum == null)
                 return terms;
@@ -712,7 +714,7 @@ public class Lucene {
         search(query, filterQuery, keyCollector);
         return keyCollector.getCollectedKeys();
     }
-    
+
     public Query createDrilldownQuery(Query luceneQuery, List<String[]> drilldownQueries) {
         BooleanQuery q = new BooleanQuery(true);
         if (luceneQuery != null)
@@ -720,7 +722,7 @@ public class Lucene {
         for (int i = 0; i<drilldownQueries.size(); i+=2) {
             String field = drilldownQueries.get(i)[0];
             String indexFieldName = facetsConfig.getDimConfig(field).indexFieldName;
-            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(i+1))), Occur.MUST); 
+            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(i+1))), Occur.MUST);
         }
         return q;
     }
@@ -728,17 +730,17 @@ public class Lucene {
     public QueryConverter getQueryConverter() {
         return new QueryConverter(this.facetsConfig);
     }
-    
+
     public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Exception {
         KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, query);
         ScoreSuperCollector scoreCollector = scoreCollectorCache.get(keyNameQuery);
         if (scoreCollector == null) {
             scoreCollector = doScoreCollecting(keyName, query);
-            scoreCollectorCache.put(keyNameQuery, scoreCollector);    
+            scoreCollectorCache.put(keyNameQuery, scoreCollector);
         }
         return scoreCollector;
     }
-    
+
     public ScoreSuperCollector doScoreCollecting(String keyName, Query query) throws Exception {
         SearcherAndTaxonomy reference = manager.acquire();
         try {
@@ -753,17 +755,17 @@ public class Lucene {
     public SuggestWord[] suggest(String term, int count, String field) throws IOException {
         SearcherAndTaxonomy reference = manager.acquire();
         try {
-            return spellChecker.suggestSimilar(new Term(field, term), count, reference.searcher.getIndexReader());    
+            return spellChecker.suggestSimilar(new Term(field, term), count, reference.searcher.getIndexReader());
         } finally {
             manager.release(reference);
         }
     }
 
-    double interpolateEpsilon(int hits, int slice) {
-        double eps = settings.clusteringEps * (hits - slice) / settings.clusterMoreRecords;
-        return Math.max(Math.min(eps, settings.clusteringEps), 0.0);
+    double interpolateEpsilon(int hits, int slice, ClusterConfig clusterConfig) {
+        double eps = clusterConfig.clusteringEps * (hits - slice) / clusterConfig.clusterMoreRecords;
+        return Math.max(Math.min(eps, clusterConfig.clusteringEps), 0.0);
     }
-    
+
 
     public static class Collectors {
         public GroupSuperCollector groupingCollector;
@@ -781,7 +783,7 @@ public class Lucene {
             this.count = count;
         }
     }
-    
+
     private static class KeyNameQuery {
         private String keyName;
         private Query query;
@@ -790,12 +792,12 @@ public class Lucene {
             this.keyName = keyName;
             this.query = query;
         }
-        
+
         @Override
         public int hashCode() {
             return keyName.hashCode() + 127 * query.hashCode();
         }
-        
+
         @Override
         public boolean equals(Object obj) {
             if (obj instanceof KeyNameQuery){
@@ -817,7 +819,7 @@ public class Lucene {
 
         @Override
         public void beforeRefresh() throws IOException {}
-        
+
         public boolean isRefreshed() {
             if (refreshed) {
                 refreshed = false;

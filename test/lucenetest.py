@@ -43,7 +43,7 @@ class LuceneTest(SeecrTestCase):
             self.post.append(dict(data=data, path=path))
             raise StopIteration(self.response)
             yield
-        self._lucene._client._post = mockPost
+        self._lucene._connect._post = mockPost
 
         self.read = []
         self.response = ""
@@ -51,7 +51,7 @@ class LuceneTest(SeecrTestCase):
             self.read.append(path)
             raise StopIteration(self.response)
             yield
-        self._lucene._client.read = mockRead
+        self._lucene._connect.read = mockRead
 
     def testPostSettingsAddObserverInit(self):
         self.assertEqual([], self.post)

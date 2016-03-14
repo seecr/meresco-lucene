@@ -27,14 +27,20 @@ from urllib2 import urlopen
 from simplejson import loads
 
 from meresco.components.http.utils import CRLF
+from meresco.core import Observable
+from weightless.core import be
+from weightless.http import HttpRequest
 
 
 class _Connect(object):
-    def __init__(self, host, port, observable, pathPrefix=None):
+    def __init__(self, host, port, observable=None, pathPrefix=None):
         self._host = host
         self._port = port
         self._pathPrefix = pathPrefix or ''
-        self._observable = observable
+        if observable:
+            self._observable = observable
+        else:
+            self._observable = be((Observable(), (HttpRequest(),)))
 
     def send(self, path, jsonDict=None, synchronous=False):
         response = yield self._post(path=self._pathPrefix + path, data=jsonDict.dumps() if jsonDict else None, synchronous=synchronous)

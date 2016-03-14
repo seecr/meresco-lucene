@@ -25,11 +25,13 @@
 from weightless.core import consume
 
 from _client import Client
+from meresco.core import Observable
 
 
-class LuceneCommit(object):
-    def __init__(self, host, port):
-        self._client = Client(host, port)
+class LuceneCommit(Observable):
+    def __init__(self, host, port, **kwargs):
+        Observable.__init__(self, **kwargs)
+        self._client = Client(host, port, observable=self)
 
     def commit(self):
         consume(self._client.send('/commit/', synchronous=True))

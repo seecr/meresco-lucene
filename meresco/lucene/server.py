@@ -27,6 +27,7 @@
 from os.path import dirname, abspath, join, realpath
 from sys import stdout
 
+from weightless.http import HttpRequest
 from weightless.io import Reactor
 from weightless.core import compose, be
 from meresco.core import Observable, TransactionScope
@@ -122,16 +123,23 @@ def main(reactor, port, serverPort, databasePath, **kwargs):
                 analyzer=MerescoDutchStemmingAnalyzer(["field4", "field5"]),
                 _analyzer=dict(type="MerescoDutchStemmingAnalyzer", fields=['field4', 'field5'])
             )
-    lucene = Lucene(host="localhost", port=serverPort, name='main', settings=luceneSettings)
+    lucene = be((Lucene(host="localhost", port=serverPort, name='main', settings=luceneSettings),
+            (HttpRequest(),)
+        ))
 
     lucene2Settings = LuceneSettings(fieldRegistry=fieldRegistry, commitTimeout=0.1)
-    lucene2 = Lucene(host="localhost", port=serverPort, name='main2', settings=lucene2Settings)
+    lucene2 = be((Lucene(host="localhost", port=serverPort, name='main2', settings=lucene2Settings),
+            (HttpRequest(),)
+        ))
 
     emptyLuceneSettings = LuceneSettings(commitTimeout=1)
     multiLuceneHelix = (MultiLucene(host='localhost', port=serverPort, defaultCore='main'),
-            (Lucene(host='localhost', port=serverPort, name='empty-core', settings=emptyLuceneSettings),),
+            (Lucene(host='localhost', port=serverPort, name='empty-core', settings=emptyLuceneSettings),
+                (HttpRequest(),)
+            ),
             (lucene,),
             (lucene2,),
+            (HttpRequest(),)
         )
     storageComponent = be(
         (StorageComponentAdapter(),

@@ -27,17 +27,20 @@
 from os.path import dirname, abspath, join, realpath
 from sys import stdout
 
-from meresco.components.log import LogComponent
 from meresco.html import DynamicHtml
 
+from weightless.http import HttpRequest
+from weightless.io import Reactor
+from weightless.core import compose, be
+from meresco.core import Observable, TransactionScope
+from meresco.core.processtools import setSignalHandlers
+from meresco.components import Xml2Fields, Venturi, XmlPrintLxml, FilterField, RenameField, FilterMessages, TransformFieldValue
 from meresco.components.http import StringServer, ObservableHttpServer, BasicHttpHandler, ApacheLogger, PathFilter, PathRename, FileServer
 from meresco.components.http.utils import ContentTypePlainText
 from meresco.components.sru import SruRecordUpdate, SruParser, SruHandler, SruDuplicateCount
 from meresco.components.drilldown import SRUTermDrilldown
-from meresco.components import Xml2Fields, Venturi, StorageComponent, XmlPrintLxml, FilterField, RenameField, FilterMessages, TransformFieldValue
+from meresco.components import StorageComponent
 from meresco.components.autocomplete import Autocomplete
-from meresco.core import Observable, TransactionScope
-from meresco.core.processtools import setSignalHandlers
 
 from meresco.lucene import Lucene, Fields2LuceneDoc, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, DrilldownField, LuceneSettings
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
@@ -46,8 +49,6 @@ from meresco.lucene.fieldregistry import FieldRegistry
 
 from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 
-from weightless.io import Reactor
-from weightless.core import compose, be
 from meresco.lucene.adaptertolucenequery import AdapterToLuceneQuery
 from meresco.xml import namespaces
 from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
@@ -124,16 +125,23 @@ def main(reactor, port, serverPort, databasePath, **kwargs):
                 analyzer=MerescoDutchStemmingAnalyzer(["field4", "field5"]),
                 _analyzer=dict(type="MerescoDutchStemmingAnalyzer", fields=['field4', 'field5'])
             )
-    lucene = Lucene(host="localhost", port=serverPort, name='main', settings=luceneSettings)
+    lucene = be((Lucene(host="localhost", port=serverPort, name='main', settings=luceneSettings),
+            (HttpRequest(),)
+        ))
 
     lucene2Settings = LuceneSettings(fieldRegistry=fieldRegistry, commitTimeout=0.1)
-    lucene2 = Lucene(host="localhost", port=serverPort, name='main2', settings=lucene2Settings)
+    lucene2 = be((Lucene(host="localhost", port=serverPort, name='main2', settings=lucene2Settings),
+            (HttpRequest(),)
+        ))
 
     emptyLuceneSettings = LuceneSettings(commitTimeout=1)
     multiLuceneHelix = (MultiLucene(host='localhost', port=serverPort, defaultCore='main'),
-            (Lucene(host='localhost', port=serverPort, name='empty-core', settings=emptyLuceneSettings),),
+            (Lucene(host='localhost', port=serverPort, name='empty-core', settings=emptyLuceneSettings),
+                (HttpRequest(),)
+            ),
             (lucene,),
             (lucene2,),
+            (HttpRequest(),)
         )
     storageComponent = StorageComponent(directory=join(databasePath, 'storage'))
 

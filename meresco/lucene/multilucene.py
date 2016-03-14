@@ -35,7 +35,7 @@ from _lucene import luceneResponseFromDict
 class MultiLucene(Observable):
     def __init__(self, host, port, defaultCore):
         Observable.__init__(self)
-        self._client = Client(host, port)
+        self._client = Client(host, port, observable=self)
         self._defaultCore = defaultCore
 
     def executeQuery(self, core=None, **kwargs):

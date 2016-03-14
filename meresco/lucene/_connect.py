@@ -29,7 +29,7 @@ from simplejson import loads
 from meresco.components.http.utils import CRLF
 
 
-class Client(object):
+class _Connect(object):
     def __init__(self, host, port, observable, pathPrefix=None):
         self._host = host
         self._port = port

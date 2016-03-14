@@ -28,14 +28,14 @@ from weightless.core import DeclineMessage
 from meresco.core import Observable
 from meresco.components.json import JsonDict
 
-from _client import Client
+from _connect import _Connect
 from _lucene import luceneResponseFromDict
 
 
 class MultiLucene(Observable):
     def __init__(self, host, port, defaultCore):
         Observable.__init__(self)
-        self._client = Client(host, port, observable=self)
+        self._connect = _Connect(host, port, observable=self)
         self._defaultCore = defaultCore
 
     def executeQuery(self, core=None, **kwargs):
@@ -47,7 +47,7 @@ class MultiLucene(Observable):
         for sortKey in query.sortKeys:
             coreName = sortKey.get('core', query.resultsFrom)
             self.call[coreName].updateSortKey(sortKey)
-        responseDict = (yield self._client.send(jsonDict=JsonDict(query.asDict()), path='/query/'))
+        responseDict = (yield self._connect.send(jsonDict=JsonDict(query.asDict()), path='/query/'))
         response = luceneResponseFromDict(responseDict)
         response.info = query.infoDict()
         raise StopIteration(response)

@@ -50,7 +50,7 @@ class MultiLuceneTest(SeecrTestCase):
             self.post.append(dict(data=data, path=path))
             raise StopIteration(self.response)
             yield
-        self._multiLucene._client._post = mockPost
+        self._multiLucene._connect._post = mockPost
 
     def testInfoOnQuery(self):
         self.response = JsonDict({

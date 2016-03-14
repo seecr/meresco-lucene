@@ -32,19 +32,19 @@ from meresco.lucene import LuceneResponse
 from meresco.lucene.hit import Hit
 
 from .utils import simplifiedDict
-from _client import Client
+from _connect import _Connect
 
 
 class Lucene(Observable):
     def __init__(self, host, port, settings, name, **kwargs):
         Observable.__init__(self, name=name)
-        self._client = Client(host, port, pathPrefix = "/" + name, observable=self)
+        self._connect = _Connect(host, port, pathPrefix = "/" + name, observable=self)
         self.settings = settings
         self._fieldRegistry = settings.fieldRegistry
         self._name = name
 
     def observer_init(self):
-        consume(self._client.send(jsonDict=self.settings.asPostDict(), path="/settings/", synchronous=True))
+        consume(self._connect.send(jsonDict=self.settings.asPostDict(), path="/settings/", synchronous=True))
 
     def setSettings(self, clusteringEps=None, clusteringMinPoints=None, clusterMoreRecords=None, similarity=None, numberOfConcurrentTasks=None, clusterFields=None):
         settingsDict = JsonDict()
@@ -61,17 +61,17 @@ class Lucene(Observable):
         if similarity:
             settingsDict["similarity"] = dict(type="BM25Similarity", k1=similarity['k1'], b=similarity['b'])
         if settingsDict:
-            yield self._client.send(jsonDict=settingsDict, path="/settings/")
+            yield self._connect.send(jsonDict=settingsDict, path="/settings/")
 
     def getSettings(self):
-        raise StopIteration((yield self._client.read(path='/settings/')))
+        raise StopIteration((yield self._connect.read(path='/settings/')))
 
     def addDocument(self, fields, identifier=None):
         args = urlencode(dict(identifier=identifier)) if identifier else ''
-        yield self._client.send(jsonDict=JsonList(fields), path='/update/?{}'.format(args))
+        yield self._connect.send(jsonDict=JsonList(fields), path='/update/?{}'.format(args))
 
     def delete(self, identifier):
-        yield self._client.send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
+        yield self._connect.send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
 
     def updateSortKey(self, sortKey):
         missingValue = self._fieldRegistry.defaultMissingValueForSort(sortKey["sortBy"], sortKey["sortDescending"])
@@ -98,7 +98,7 @@ class Lucene(Observable):
         )
         if suggestionRequest:
             jsonDict["suggestionRequest"] = suggestionRequest
-        responseDict = (yield self._client.send(jsonDict=jsonDict, path='/query/'))
+        responseDict = (yield self._connect.send(jsonDict=jsonDict, path='/query/'))
         response = luceneResponseFromDict(responseDict)
         response.info = {
             'type': 'Query',
@@ -121,14 +121,14 @@ class Lucene(Observable):
             limit=limit,
         )
         args = urlencode(dict(fieldname=fieldname, prefix=prefix, limit=limit))
-        responseDict = (yield self._client.send(jsonDict=jsonDict, path='/prefixSearch/?{}'.format(args)))
+        responseDict = (yield self._connect.send(jsonDict=jsonDict, path='/prefixSearch/?{}'.format(args)))
         hits = [((term, count) if showCount else term) for term, count in sorted(responseDict, key=lambda t: t[1], reverse=True)]
         response = LuceneResponse(total=len(hits), hits=hits)
         raise StopIteration(response)
         yield
 
     def fieldnames(self, **kwargs):
-        fieldnames = (yield self._client.send(path='/fieldnames/'))
+        fieldnames = (yield self._connect.send(path='/fieldnames/'))
         raise StopIteration(LuceneResponse(total=len(fieldnames), hits=fieldnames))
         yield
 
@@ -138,7 +138,7 @@ class Lucene(Observable):
             args["dim"] = path[0]
             args["path"] = path[1:]
         args = urlencode(args, doseq=True)
-        fieldnames = (yield self._client.send(path='/drilldownFieldnames/?{}'.format(args)))
+        fieldnames = (yield self._connect.send(path='/drilldownFieldnames/?{}'.format(args)))
         raise StopIteration(LuceneResponse(total=len(fieldnames), hits=fieldnames))
         yield
 
@@ -146,7 +146,7 @@ class Lucene(Observable):
         return self._fieldRegistry
 
     def numDocs(self):
-        raise StopIteration((yield self._client.send(path='/numDocs/')))
+        raise StopIteration((yield self._connect.send(path='/numDocs/')))
 
     def coreInfo(self):
         yield self.LuceneInfo(self)

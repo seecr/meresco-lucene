@@ -34,22 +34,23 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.ComposedQuery;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.MultiLucene;
+import org.meresco.lucene.Shutdown;
 import org.meresco.lucene.Utils;
 
 
-public class ExportKeysHandler extends AbstractHandler {
+public class ExportKeysHandler extends OutOfMemoryHandler {
     private MultiLucene multiLucene;
 
-    public ExportKeysHandler(MultiLucene multiLucene) {
+    public ExportKeysHandler(MultiLucene multiLucene, Shutdown shutdown) {
+        super(shutdown);
         this.multiLucene = multiLucene;
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         LuceneResponse luceneResponse = new LuceneResponse(0);

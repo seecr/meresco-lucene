@@ -47,6 +47,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.MultiLucene;
+import org.meresco.lucene.Shutdown;
 import org.meresco.lucene.numerate.TermNumerator;
 
 import sun.misc.Signal;
@@ -97,37 +98,47 @@ public class LuceneHttpServer {
         for (String core : cores) {
             Lucene lucene = new Lucene(core, new File(storeLocation, "lucene-" + core));
             lucenes.add(lucene);
-
+        }
+        
+        ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
+        Server server = new Server(pool);
+        ServerConnector http = new ServerConnector(server, new HttpConnectionFactory());
+        http.setPort(port);
+        server.addConnector(http);
+        
+        Shutdown shutdown = new Shutdown(server, lucenes, termNumerator, storeLocation);
+        for (Lucene lucene : lucenes) {
+            String core = lucene.name;
             ContextHandler context = new ContextHandler("/" + core + "/query");
-            context.setHandler(new QueryHandler(lucene));
+            context.setHandler(new QueryHandler(lucene, shutdown));
             contexts.addHandler(context);
 
             context = new ContextHandler("/" + core + "/update");
-            context.setHandler(new UpdateHandler(lucene, termNumerator));
+            context.setHandler(new UpdateHandler(lucene, termNumerator, shutdown));
             contexts.addHandler(context);
 
             context = new ContextHandler("/" + core + "/delete");
-            context.setHandler(new DeleteHandler(lucene));
+            context.setHandler(new DeleteHandler(lucene, shutdown));
             contexts.addHandler(context);
 
             context = new ContextHandler("/" + core + "/settings");
-            context.setHandler(new SettingsHandler(lucene));
+            context.setHandler(new SettingsHandler(lucene, shutdown));
             contexts.addHandler(context);
 
             context = new ContextHandler("/" + core + "/prefixSearch");
-            context.setHandler(new PrefixSearchHandler(lucene));
+            context.setHandler(new PrefixSearchHandler(lucene, shutdown));
             contexts.addHandler(context);
 
             context = new ContextHandler("/" + core);
-            context.setHandler(new OtherHandler(lucene));
+            context.setHandler(new OtherHandler(lucene, shutdown));
             contexts.addHandler(context);
         }
         ContextHandler composedQueryHandler = new ContextHandler("/query");
-        composedQueryHandler.setHandler(new ComposedQueryHandler(new MultiLucene(lucenes)));
+        composedQueryHandler.setHandler(new ComposedQueryHandler(new MultiLucene(lucenes), shutdown));
         contexts.addHandler(composedQueryHandler);
 
         ContextHandler exportKeysHandler = new ContextHandler("/exportkeys");
-        exportKeysHandler.setHandler(new ExportKeysHandler(new MultiLucene(lucenes)));
+        exportKeysHandler.setHandler(new ExportKeysHandler(new MultiLucene(lucenes), shutdown));
         contexts.addHandler(exportKeysHandler);
 
         ContextHandler numerateHandler = new ContextHandler("/numerate");
@@ -135,64 +146,26 @@ public class LuceneHttpServer {
         contexts.addHandler(numerateHandler);
 
         ContextHandler commitHandler = new ContextHandler("/commit");
-        commitHandler.setHandler(new CommitHandler(termNumerator, lucenes));
-        contexts.addHandler(commitHandler);
+        commitHandler.setHandler(new CommitHandler(termNumerator, lucenes, shutdown));
+        contexts.addHandler(commitHandler);       
 
-        ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
-        Server server = new Server(pool);
-        ServerConnector http = new ServerConnector(server, new HttpConnectionFactory());
-        http.setPort(port);
-        server.addConnector(http);
-
-        registerShutdownHandler(lucenes, termNumerator, server);
+        registerShutdownHandler(shutdown);
 
         server.setHandler(contexts);
         server.start();
         server.join();
     }
 
-    static void registerShutdownHandler(final List<Lucene> lucenes, final TermNumerator termNumerator, final Server server) {
+    static void registerShutdownHandler(final Shutdown shutdown) {
         Signal.handle(new Signal("TERM"), new SignalHandler() {
             public void handle(Signal sig) {
-                shutdown(server, lucenes, termNumerator);
+                shutdown.shutdown();
             }
         });
         Signal.handle(new Signal("INT"), new SignalHandler() {
             public void handle(Signal sig) {
-                shutdown(server, lucenes, termNumerator);
+                shutdown.shutdown();
             }
         });
     }
-
-    static void shutdown(final Server server, final List<Lucene> lucenes, final TermNumerator termNumerator) {
-        System.out.println("Shutting down lucene. Please wait...");
-
-        try {
-            termNumerator.close();
-            System.out.println("Shutdown termNumerator completed.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Shutdown termNumerator failed.");
-        }
-        for (Lucene lucene : lucenes) {
-            try {
-                lucene.close();
-                System.out.println("Shutdown " + lucene.name + " completed.");
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("Shutdown " + lucene.name + " failed.");
-            }
-        }
-        try {
-            // Stop the server after(!) closing Lucene etc.
-            server.stop();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println("Http-server stopped");
-
-        System.err.flush();
-        System.out.flush();
-        System.exit(0);
-   }
 }

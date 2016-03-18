@@ -33,24 +33,24 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
+import org.meresco.lucene.Shutdown;
 import org.meresco.lucene.Utils;
 import org.meresco.lucene.numerate.TermNumerator;
 
 
-public class CommitHandler extends AbstractHandler implements Handler {
+public class CommitHandler extends OutOfMemoryHandler implements Handler {
     private TermNumerator termNumerator;
     private List<Lucene> lucenes;
 
-    public CommitHandler(TermNumerator termNumerator, List<Lucene> lucenes) {
+    public CommitHandler(TermNumerator termNumerator, List<Lucene> lucenes, Shutdown shutdown) {
+        super(shutdown);
         this.termNumerator = termNumerator;
         this.lucenes = lucenes;
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         try {
             termNumerator.commit();
             for (Lucene lucene : lucenes) {

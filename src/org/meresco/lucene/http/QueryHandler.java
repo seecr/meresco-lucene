@@ -32,22 +32,23 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.QueryData;
+import org.meresco.lucene.Shutdown;
 import org.meresco.lucene.Utils;
 
 
-public class QueryHandler extends AbstractHandler {
+public class QueryHandler extends OutOfMemoryHandler {
     private Lucene lucene;
 
-    public QueryHandler(Lucene lucene) {
+    public QueryHandler(Lucene lucene, Shutdown shutdown) {
+        super(shutdown);
         this.lucene = lucene;
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         LuceneResponse luceneResponse = new LuceneResponse(0);

@@ -35,18 +35,20 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneSettings;
+import org.meresco.lucene.Shutdown;
 import org.meresco.lucene.Utils;
 
 
-public class SettingsHandler extends AbstractHandler {
+public class SettingsHandler extends OutOfMemoryHandler {
     private Lucene lucene;
 
-    public SettingsHandler(Lucene lucene) {
+    public SettingsHandler(Lucene lucene, Shutdown shutdown) {
+        super(shutdown);
         this.lucene = lucene;
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         try {

@@ -33,23 +33,24 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.document.Document;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.DocumentStringToDocument;
 import org.meresco.lucene.Lucene;
+import org.meresco.lucene.Shutdown;
 import org.meresco.lucene.Utils;
 import org.meresco.lucene.numerate.TermNumerator;
 
-public class UpdateHandler extends AbstractHandler {
+public class UpdateHandler extends OutOfMemoryHandler {
     private Lucene lucene;
     private TermNumerator termNumerator;
 
-    public UpdateHandler(Lucene lucene, TermNumerator termNumerator) {
+    public UpdateHandler(Lucene lucene, TermNumerator termNumerator, Shutdown shutdown) {
+        super(shutdown);
         this.lucene = lucene;
         this.termNumerator = termNumerator;
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         try {
@@ -58,7 +59,6 @@ public class UpdateHandler extends AbstractHandler {
                 this.lucene.addDocument(request.getParameter("identifier"), document);
             else
                 this.lucene.addDocument(document);
-
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write(Utils.getStackTrace(e));

@@ -185,9 +185,12 @@ public class Lucene {
             commitTimer.cancel();
         if (this.settings == null)
             return;
-        manager.close();
-        taxoWriter.close();
-        indexWriter.close();
+        if (manager != null)
+            manager.close();
+        if (taxoWriter != null)
+            taxoWriter.close();
+        if (indexWriter != null)
+            indexWriter.close();
     }
 
     public void addDocument(Document doc) throws IOException {

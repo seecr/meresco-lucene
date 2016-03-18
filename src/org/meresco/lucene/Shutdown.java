@@ -32,7 +32,6 @@ public class Shutdown {
         try {
             termNumerator.close();
             System.out.println("Shutdown termNumerator completed.");
-            throw new Exception();
         } catch (Exception e) {
             e.printStackTrace();
             successful = false;

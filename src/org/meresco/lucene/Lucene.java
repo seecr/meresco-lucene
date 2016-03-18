@@ -183,6 +183,8 @@ public class Lucene {
     public synchronized void close() throws IOException {
         if (commitTimer != null)
             commitTimer.cancel();
+        if (this.settings == null)
+            return;
         manager.close();
         taxoWriter.close();
         indexWriter.close();

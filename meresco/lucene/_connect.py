@@ -28,19 +28,18 @@ from simplejson import loads
 
 
 class _Connect(object):
-    def __init__(self, host, port, observable, uninitializedCallback=None, pathPrefix=None):
+    def __init__(self, host, port, observable, pathPrefix=None):
         self._host = host
         self._port = port
         self._pathPrefix = pathPrefix or ''
         self._observable = observable
-        self._uninitializedCallback = uninitializedCallback or (lambda: None)
 
     def send(self, path, jsonDict=None):
         post = lambda: self._post(path=self._pathPrefix + path, data=jsonDict.dumps() if jsonDict else None)
         try:
             body = yield post()
         except UninitializedException:
-            yield self._uninitializedCallback()
+            yield self._observable.initialize()
             body = yield post()
         raise StopIteration(loads(body) if body else None)
 
@@ -49,7 +48,7 @@ class _Connect(object):
         try:
             body = yield get()
         except UninitializedException:
-            yield self._uninitializedCallback()
+            yield self._observable.initialize()
             body = yield get()
         raise StopIteration(loads(body) if body else None)
 

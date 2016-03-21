@@ -39,7 +39,7 @@ from _connect import _Connect
 class Lucene(Observable):
     def __init__(self, host, port, settings, name, **kwargs):
         Observable.__init__(self, name=name)
-        self._connect = _Connect(host, port, pathPrefix = "/" + name, observable=self, uninitializedCallback=self.initialize)
+        self._connect = _Connect(host, port, pathPrefix = "/" + name, observable=self)
         self.settings = settings
         self._fieldRegistry = settings.fieldRegistry
         self._name = name

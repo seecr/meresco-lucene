@@ -22,7 +22,7 @@
 #
 ## end license ##
 
-from weightless.core import consume
+from weightless.io.utils import asProcess
 
 from _connect import _Connect
 from meresco.core import Observable
@@ -33,5 +33,9 @@ class LuceneCommit(Observable):
         Observable.__init__(self, **kwargs)
         self._connect = _Connect(host, port, observable=self)
 
+    def initialize(self):
+        return
+        yield
+
     def commit(self):
-        consume(self._connect.send('/commit/', synchronous=True))
+        asProcess(self._connect.send('/commit/'))

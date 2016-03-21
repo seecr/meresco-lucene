@@ -205,6 +205,12 @@ class LuceneTest(IntegrationTestCase):
             [(hit.id, len(hit.duplicates['__key__.groupfield'])) for hit in response.hits]
         )
 
+    def testQueryAfterRestartDoesReInitSettings(self):
+        self.assertEquals(10, self.numberOfRecords(query='field2=value2'))
+        self.stopServer("lucene-server")
+        self.startLuceneServer()
+        self.assertEquals(10, self.numberOfRecords(query='field2=value2'))
+
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru', drilldownFormat='xml'):
         arguments={'version': '1.2',
             'operation': 'searchRetrieve',

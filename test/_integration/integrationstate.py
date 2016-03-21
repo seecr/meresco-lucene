@@ -83,3 +83,6 @@ class IntegrationState(SeecrIntegrationState):
 
     def startExampleServer(self):
         self._startServer('meresco-lucene', self.binPath('start-server'), 'http://localhost:%s/' % self.httpPort, port=self.httpPort, serverPort=self.luceneServerPort, stateDir=join(self.integrationTempdir, 'example-state'))
+
+    def stopServer(self, serviceName):
+        self._stopServer(serviceName)

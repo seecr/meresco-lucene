@@ -45,7 +45,7 @@ class _Connect(object):
         raise StopIteration(loads(body) if body else None)
 
     def read(self, path):
-        get = yield self._get(path=self._pathPrefix + path)
+        get = lambda: self._get(path=self._pathPrefix + path)
         try:
             body = yield get()
         except UninitializedException:

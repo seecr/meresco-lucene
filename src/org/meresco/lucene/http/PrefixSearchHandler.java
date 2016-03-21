@@ -25,12 +25,10 @@
 
 package org.meresco.lucene.http;
 
-import java.io.IOException;
 import java.util.List;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,9 +36,8 @@ import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.Lucene.TermCount;
 import org.meresco.lucene.Shutdown;
-import org.meresco.lucene.Utils;
 
-public class PrefixSearchHandler extends OutOfMemoryHandler {
+public class PrefixSearchHandler extends AbstractMerescoLuceneHandler {
 
     private Lucene lucene;
 
@@ -50,7 +47,7 @@ public class PrefixSearchHandler extends OutOfMemoryHandler {
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
         String fieldname = request.getParameter("fieldname");
@@ -61,21 +58,13 @@ public class PrefixSearchHandler extends OutOfMemoryHandler {
             limit = 10;
         else
             limit = Integer.parseInt(limitParam);
-        try {
-            List<TermCount> terms = lucene.termsForField(fieldname, prefix, limit);
-            JsonArrayBuilder json = Json.createArrayBuilder();
-            for (TermCount t : terms) {
-                json.add(Json.createArrayBuilder().add(t.term).add(t.count));
-            }
-            response.getWriter().write(json.build().toString());
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write(Utils.getStackTrace(e));
-            baseRequest.setHandled(true);
-            return;
+        List<TermCount> terms = lucene.termsForField(fieldname, prefix, limit);
+        JsonArrayBuilder json = Json.createArrayBuilder();
+        for (TermCount t : terms) {
+            json.add(Json.createArrayBuilder().add(t.term).add(t.count));
         }
+        response.getWriter().write(json.build().toString());
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json");
-        baseRequest.setHandled(true);
     }
 }

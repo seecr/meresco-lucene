@@ -26,10 +26,8 @@
 package org.meresco.lucene.http;
 
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,10 +36,9 @@ import org.meresco.lucene.ComposedQuery;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.MultiLucene;
 import org.meresco.lucene.Shutdown;
-import org.meresco.lucene.Utils;
 
 
-public class ExportKeysHandler extends OutOfMemoryHandler {
+public class ExportKeysHandler extends AbstractMerescoLuceneHandler {
     private MultiLucene multiLucene;
 
     public ExportKeysHandler(MultiLucene multiLucene, Shutdown shutdown) {
@@ -50,23 +47,14 @@ public class ExportKeysHandler extends OutOfMemoryHandler {
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        request.setCharacterEncoding("UTF-8");
-        response.setCharacterEncoding("UTF-8");
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
         LuceneResponse luceneResponse = new LuceneResponse(0);
-        try {
-            String exportKey = request.getParameter("exportKey");
-            ComposedQuery q = ComposedQuery.fromJsonString(request.getReader(), this.multiLucene.getQueryConverters());
-            luceneResponse = this.multiLucene.executeComposedQuery(q, exportKey);
-            if (luceneResponse.keys == null) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().write("No keys found; please check that exportKey parameter was provided.");
-                baseRequest.setHandled(true);
-                return;
-            }
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write(Utils.getStackTrace(e));
+        String exportKey = request.getParameter("exportKey");
+        ComposedQuery q = ComposedQuery.fromJsonString(request.getReader(), this.multiLucene.getQueryConverters());
+        luceneResponse = this.multiLucene.executeComposedQuery(q, exportKey);
+        if (luceneResponse.keys == null) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("No keys found; please check that exportKey parameter was provided.");
             baseRequest.setHandled(true);
             return;
         }
@@ -80,6 +68,5 @@ public class ExportKeysHandler extends OutOfMemoryHandler {
             dos.writeLong(bits[i]);
         }
         dos.flush();
-        baseRequest.setHandled(true);
     }
 }

@@ -34,9 +34,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.Shutdown;
-import org.meresco.lucene.Utils;
 
-public class DeleteHandler extends OutOfMemoryHandler {
+public class DeleteHandler extends AbstractMerescoLuceneHandler {
 
     private Lucene lucene;
 
@@ -47,18 +46,8 @@ public class DeleteHandler extends OutOfMemoryHandler {
 
     @Override
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        request.setCharacterEncoding("UTF-8");
-        response.setCharacterEncoding("UTF-8");
         String identifier = request.getParameter("identifier");
-        try {
-            this.lucene.deleteDocument(identifier);
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write(Utils.getStackTrace(e));
-            baseRequest.setHandled(true);
-            return;
-        }
+        this.lucene.deleteDocument(identifier);
         response.setStatus(HttpServletResponse.SC_OK);
-        baseRequest.setHandled(true);
     }
 }

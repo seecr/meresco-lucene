@@ -25,9 +25,6 @@
 
 package org.meresco.lucene.http;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,10 +33,9 @@ import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.QueryData;
 import org.meresco.lucene.Shutdown;
-import org.meresco.lucene.Utils;
 
 
-public class QueryHandler extends OutOfMemoryHandler {
+public class QueryHandler extends AbstractMerescoLuceneHandler {
     private Lucene lucene;
 
     public QueryHandler(Lucene lucene, Shutdown shutdown) {
@@ -48,22 +44,12 @@ public class QueryHandler extends OutOfMemoryHandler {
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        request.setCharacterEncoding("UTF-8");
-        response.setCharacterEncoding("UTF-8");
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
         LuceneResponse luceneResponse = new LuceneResponse(0);
-        try {
-            QueryData q = new QueryData(request.getReader(), this.lucene.getQueryConverter());
-            luceneResponse = this.lucene.executeQuery(q, null, null, null, null, null);
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write(Utils.getStackTrace(e));
-            baseRequest.setHandled(true);
-            return;
-        }
+        QueryData q = new QueryData(request.getReader(), this.lucene.getQueryConverter());
+        luceneResponse = this.lucene.executeQuery(q, null, null, null, null, null);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json");
-        response.getWriter().write(luceneResponse.toJson().toString());
-        baseRequest.setHandled(true);
+        response.getWriter().write(luceneResponse.toJson().toString());        
     }
 }

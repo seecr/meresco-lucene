@@ -142,7 +142,7 @@ public class LuceneHttpServer {
         contexts.addHandler(exportKeysHandler);
 
         ContextHandler numerateHandler = new ContextHandler("/numerate");
-        numerateHandler.setHandler(new NumerateHandler(termNumerator));
+        numerateHandler.setHandler(new NumerateHandler(termNumerator, shutdown));
         contexts.addHandler(numerateHandler);
 
         ContextHandler commitHandler = new ContextHandler("/commit");

@@ -25,9 +25,6 @@
 
 package org.meresco.lucene.http;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,9 +33,8 @@ import org.meresco.lucene.ComposedQuery;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.MultiLucene;
 import org.meresco.lucene.Shutdown;
-import org.meresco.lucene.Utils;
 
-public class ComposedQueryHandler extends OutOfMemoryHandler {
+public class ComposedQueryHandler extends AbstractMerescoLuceneHandler {
     private MultiLucene multiLucene;
 
     public ComposedQueryHandler(MultiLucene multiLucene, Shutdown shutdown) {
@@ -47,22 +43,12 @@ public class ComposedQueryHandler extends OutOfMemoryHandler {
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        request.setCharacterEncoding("UTF-8");
-        response.setCharacterEncoding("UTF-8");
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
         LuceneResponse luceneResponse = new LuceneResponse(0);
-        try {
-            ComposedQuery q = ComposedQuery.fromJsonString(request.getReader(), this.multiLucene.getQueryConverters());
-            luceneResponse = this.multiLucene.executeComposedQuery(q);
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write(Utils.getStackTrace(e));
-            baseRequest.setHandled(true);
-            return;
-        }
+        ComposedQuery q = ComposedQuery.fromJsonString(request.getReader(), this.multiLucene.getQueryConverters());
+        luceneResponse = this.multiLucene.executeComposedQuery(q);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json");
         response.getWriter().write(luceneResponse.toJson().toString());
-        baseRequest.setHandled(true);
     }
 }

@@ -24,46 +24,32 @@
 
 package org.meresco.lucene.http;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.meresco.lucene.Shutdown;
 import org.meresco.lucene.Utils;
 import org.meresco.lucene.numerate.TermNumerator;
 
 @Deprecated
-public class NumerateHandler extends AbstractHandler implements Handler {
+public class NumerateHandler extends AbstractMerescoLuceneHandler {
     private TermNumerator termNumerator;
 
-    public NumerateHandler(TermNumerator termNumerator) {
+    public NumerateHandler(TermNumerator termNumerator, Shutdown shutdown) {
+        super(shutdown);
         this.termNumerator = termNumerator;
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ServletException {
-        request.setCharacterEncoding("UTF-8");
-        response.setCharacterEncoding("UTF-8");
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
         if (request.getMethod() == "POST") {
             String value = Utils.readFully(request.getReader());
             int number;
-            try {
-                number = termNumerator.numerateTerm(value);
-            } catch (Exception e) {
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                response.getWriter().write(Utils.getStackTrace(e));
-                baseRequest.setHandled(true);
-                return;
-            }
+            number = termNumerator.numerateTerm(value);
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("text/plain");
             response.getWriter().write("" + number);
-            baseRequest.setHandled(true);
         }
     }
 }

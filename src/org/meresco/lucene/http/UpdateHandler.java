@@ -25,9 +25,6 @@
 
 package org.meresco.lucene.http;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,10 +33,9 @@ import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.DocumentStringToDocument;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.Shutdown;
-import org.meresco.lucene.Utils;
 import org.meresco.lucene.numerate.TermNumerator;
 
-public class UpdateHandler extends OutOfMemoryHandler {
+public class UpdateHandler extends AbstractMerescoLuceneHandler {
     private Lucene lucene;
     private TermNumerator termNumerator;
 
@@ -50,22 +46,14 @@ public class UpdateHandler extends OutOfMemoryHandler {
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
-        try {
-            Document document = new DocumentStringToDocument(request.getReader(), termNumerator).convert();
-            if (request.getParameterMap().containsKey("identifier"))
-                this.lucene.addDocument(request.getParameter("identifier"), document);
-            else
-                this.lucene.addDocument(document);
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write(Utils.getStackTrace(e));
-            baseRequest.setHandled(true);
-            return;
-        }
+        Document document = new DocumentStringToDocument(request.getReader(), termNumerator).convert();
+        if (request.getParameterMap().containsKey("identifier"))
+            this.lucene.addDocument(request.getParameter("identifier"), document);
+        else
+            this.lucene.addDocument(document);
         response.setStatus(HttpServletResponse.SC_OK);
-        baseRequest.setHandled(true);
     }
 }

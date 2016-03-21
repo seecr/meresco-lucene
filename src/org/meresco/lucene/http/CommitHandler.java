@@ -35,11 +35,10 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.Shutdown;
-import org.meresco.lucene.Utils;
 import org.meresco.lucene.numerate.TermNumerator;
 
 
-public class CommitHandler extends OutOfMemoryHandler implements Handler {
+public class CommitHandler extends AbstractMerescoLuceneHandler implements Handler {
     private TermNumerator termNumerator;
     private List<Lucene> lucenes;
 
@@ -51,18 +50,10 @@ public class CommitHandler extends OutOfMemoryHandler implements Handler {
 
     @Override
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        try {
-            termNumerator.commit();
-            for (Lucene lucene : lucenes) {
-                lucene.commit();
-            }
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write(Utils.getStackTrace(e));
-            baseRequest.setHandled(true);
-            return;
+        termNumerator.commit();
+        for (Lucene lucene : lucenes) {
+            lucene.commit();
         }
         response.setStatus(HttpServletResponse.SC_OK);
-        baseRequest.setHandled(true);
     }
 }

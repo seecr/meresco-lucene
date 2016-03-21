@@ -25,21 +25,16 @@
 
 package org.meresco.lucene.http;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneSettings;
 import org.meresco.lucene.Shutdown;
-import org.meresco.lucene.Utils;
 
 
-public class SettingsHandler extends OutOfMemoryHandler {
+public class SettingsHandler extends AbstractMerescoLuceneHandler {
     private Lucene lucene;
 
     public SettingsHandler(Lucene lucene, Shutdown shutdown) {
@@ -48,29 +43,21 @@ public class SettingsHandler extends OutOfMemoryHandler {
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
-        try {
-            LuceneSettings settings = lucene.getSettings();
-            if (settings == null)
-                settings = new LuceneSettings();
-            if (request.getMethod() == "POST") {
-                settings.updateSettings(request.getReader());
-                if (lucene.getSettings() == null)
-                    lucene.initSettings(settings);
-            } else {
-                response.setContentType("application/json");
-                response.getWriter().write(settings.asJson().toString());
-            }
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            response.getWriter().write(Utils.getStackTrace(e));
-            baseRequest.setHandled(true);
-            return;
+        LuceneSettings settings = lucene.getSettings();
+        if (settings == null)
+            settings = new LuceneSettings();
+        if (request.getMethod() == "POST") {
+            settings.updateSettings(request.getReader());
+            if (lucene.getSettings() == null)
+                lucene.initSettings(settings);
+        } else {
+            response.setContentType("application/json");
+            response.getWriter().write(settings.asJson().toString());
         }
         response.setStatus(HttpServletResponse.SC_OK);
-        baseRequest.setHandled(true);
     }
 
 }

@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.lucene.document.Document;
@@ -111,23 +110,17 @@ import org.meresco.lucene.search.join.ScoreSuperCollector;
 
 
 public class Lucene {
+    public static class UninitializedException extends Exception {}
+
     public static final String ID_FIELD = "__id__";
-    IndexWriter indexWriter;
-    DirectoryTaxonomyWriter taxoWriter;
-    FacetsConfig facetsConfig;
-    private LuceneSettings settings;
     private int commitCount = 0;
     private Timer commitTimer;
     public String name;
     private File stateDir;
     private Map<String, CachedOrdinalsReader> cachedOrdinalsReader = new HashMap<String, CachedOrdinalsReader>();
     private DirectSpellChecker spellChecker = new DirectSpellChecker();
-    private Map<Query, Filter> filterCache;
-    private Map<KeyNameQuery, ScoreSuperCollector> scoreCollectorCache;
-    private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
-    SearcherTaxonomyManager manager;
-    private LuceneRefreshListener refreshListener = new LuceneRefreshListener();
-
+    LuceneData data = new LuceneData();
+    
     public Lucene(String name, File stateDir) {
         this.name = name;
         this.stateDir = stateDir;
@@ -144,75 +137,44 @@ public class Lucene {
     }
 
     public void initSettings(LuceneSettings settings) throws Exception {
-        if (this.settings != null)
-            throw new Exception("Init settings is only allowed once");
-        this.settings = settings;
-
-        MMapDirectory indexDirectory = new MMapDirectory(new File(stateDir, "index"));
-        indexDirectory.setUseUnmap(false);
-
-        MMapDirectory taxoDirectory = new MMapDirectory(new File(stateDir, "taxo"));
-        taxoDirectory.setUseUnmap(false);
-
-        IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_10_4, settings.analyzer);
-        config.setSimilarity(settings.similarity);
-        TieredMergePolicy mergePolicy = new TieredMergePolicy();
-        mergePolicy.setMaxMergeAtOnce(settings.maxMergeAtOnce);
-        mergePolicy.setSegmentsPerTier(settings.segmentsPerTier);
-        config.setMergePolicy(mergePolicy);
-
-        indexWriter = new IndexWriter(indexDirectory, config);
-        indexWriter.commit();
-        taxoWriter = new DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(settings.lruTaxonomyWriterCacheSize));
-        taxoWriter.commit();
-
-        facetsConfig = settings.facetsConfig;
-
-        filterCache = Collections.synchronizedMap(new LRUMap<Query, Filter>(50));
-        scoreCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, ScoreSuperCollector>(50));
-        keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
-
-        manager = new SearcherTaxonomyManager(indexDirectory, taxoDirectory, new MerescoSearchFactory(indexDirectory, taxoDirectory, settings));
-        manager.addListener(refreshListener);
+        data.initSettings(stateDir, settings);
     }
 
-    public LuceneSettings getSettings() {
-        return this.settings;
+    public LuceneSettings getSettings() throws Exception {
+        return this.data.getSettings();
     }
 
+    public boolean hasSettings() {
+        return this.data.hasSettings();
+    }
+    
     public synchronized void close() throws IOException {
         if (commitTimer != null)
             commitTimer.cancel();
-        if (this.settings == null)
-            return;
-        if (manager != null)
-            manager.close();
-        if (taxoWriter != null)
-            taxoWriter.close();
-        if (indexWriter != null)
-            indexWriter.close();
+        this.data.close();
     }
 
-    public void addDocument(Document doc) throws IOException {
-        doc = facetsConfig.build(taxoWriter, doc);
-        indexWriter.addDocument(doc);
+    public void addDocument(Document doc) throws Exception {
+        doc = data.getFacetsConfig().build(data.getTaxoWriter(), doc);
+        data.getIndexWriter().addDocument(doc);
         commit();
     }
 
-    public void addDocument(String identifier, Document doc) throws IOException {
+    public void addDocument(String identifier, Document doc) throws Exception {
         doc.add(new StringField(ID_FIELD, identifier, Store.YES));
-        doc = facetsConfig.build(taxoWriter, doc);
-        indexWriter.updateDocument(new Term(ID_FIELD, identifier), doc);
+        doc = data.getFacetsConfig().build(data.getTaxoWriter(), doc);
+        data.getIndexWriter().updateDocument(new Term(ID_FIELD, identifier), doc);
         commit();
     }
 
-    public void deleteDocument(String identifier) throws IOException {
-        indexWriter.deleteDocuments(new Term(ID_FIELD, identifier));
+    public void deleteDocument(String identifier) throws Exception {
+        data.getIndexWriter().deleteDocuments(new Term(ID_FIELD, identifier));
         commit();
     }
 
-    public void commit() throws IOException {
+    public void commit() throws Exception {
         commitCount++;
+        LuceneSettings settings = data.getSettings();
         if (commitCount >= settings.commitCount) {
             realCommit();
             return;
@@ -222,7 +184,7 @@ public class Lucene {
                 public void run() {
                     try {
                         realCommit();
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         throw new RuntimeException();
                     }
                 }
@@ -232,20 +194,14 @@ public class Lucene {
         }
     }
 
-    public synchronized void realCommit() throws IOException {
+    public synchronized void realCommit() throws Exception {
         commitCount = 0;
         if (commitTimer != null) {
             commitTimer.cancel();
             commitTimer.purge();
             commitTimer = null;
         }
-        indexWriter.commit();
-        taxoWriter.commit();
-        manager.maybeRefreshBlocking();
-        if (refreshListener.isRefreshed()) {
-            scoreCollectorCache.clear();
-            keyCollectorCache.clear();
-        }
+        data.commit();
     }
 
     public LuceneResponse executeQuery(QueryData q) throws Exception {
@@ -273,14 +229,14 @@ public class Lucene {
         return executeQuery(q, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Filter> filters, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws IOException, InterruptedException, ExecutionException {
+    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Filter> filters, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws Exception {
         int totalHits;
         List<LuceneResponse.Hit> hits;
         Collectors collectors = null;
         Map<String, Long> times = new HashMap<>();
         long t0 = System.currentTimeMillis();
         int topCollectorStop = q.stop;
-        SearcherAndTaxonomy reference = manager.acquire();
+        SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             while (true) {
                 collectors = createCollectors(q, topCollectorStop, keyCollectors, scoreCollectors, reference);
@@ -297,7 +253,7 @@ public class Lucene {
                 if (q.clustering) {
                     ClusterConfig clusterConfig = q.clusterConfig;
                     if (clusterConfig == null) {
-                    	clusterConfig = settings.clusterConfig;
+                    	clusterConfig = data.getSettings().clusterConfig;
                     }
                     t1 = System.currentTimeMillis();
                     hits = clusterTopDocsResponse(q, collectors, times, reference.searcher.getIndexReader(), clusterConfig);
@@ -340,11 +296,11 @@ public class Lucene {
             response.queryTime = System.currentTimeMillis() - t0;
             return response;
         } finally {
-            manager.release(reference);
+            data.getManager().release(reference);
         }
     }
 
-    private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader, ClusterConfig clusterConfig) throws IOException {
+    private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader, ClusterConfig clusterConfig) throws Exception {
         int totalHits = collectors.topCollector.getTotalHits();
         List<LuceneResponse.Hit> hits = new ArrayList<>();
         double epsilon = interpolateEpsilon(totalHits, q.stop - q.start, clusterConfig);
@@ -390,7 +346,7 @@ public class Lucene {
         return hits;
     }
 
-    private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws IOException {
+    private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws Exception {
         int totalHits = collectors.topCollector.getTotalHits();
 
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;
@@ -443,7 +399,7 @@ public class Lucene {
     }
 
     public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, List<String[]> drilldownQueries, Filter filter) throws Exception {
-        SearcherAndTaxonomy reference = manager.acquire();
+        SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             FacetSuperCollector facetCollector = facetCollector(facets, reference.taxonomyReader);
             if (facetCollector == null)
@@ -455,21 +411,21 @@ public class Lucene {
             ((SuperIndexSearcher) reference.searcher).search(query, filter_, facetCollector);
             return facetResult(facetCollector, facets);
         } finally {
-            manager.release(reference);
+            data.getManager().release(reference);
         }
     }
 
-    public Filter filterQuery(Query query) {
-        Filter f = filterCache.get(query);
+    public Filter filterQuery(Query query) throws Exception {
+        Filter f = data.getFilterCache().get(query);
         if (f != null) {
             return f;
         }
         CachingWrapperFilter filter = new CachingWrapperFilter(new QueryWrapperFilter(query));
-        filterCache.put(query, filter);
+        data.getFilterCache().put(query, filter);
         return filter;
     }
 
-    private Filter filtersFor(List<Query> filterQueries, Filter... filter) {
+    private Filter filtersFor(List<Query> filterQueries, Filter... filter) throws Exception {
         List<Filter> filters = new ArrayList<Filter>();
         if (filterQueries != null)
             for (Query query : filterQueries)
@@ -483,21 +439,21 @@ public class Lucene {
         return new ChainedFilter(filters.toArray(new Filter[0]), ChainedFilter.AND);
     }
 
-    public Document getDocument(int docID) throws IOException {
-        SearcherAndTaxonomy reference = manager.acquire();
+    public Document getDocument(int docID) throws Exception {
+        SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             return ((SuperIndexSearcher) reference.searcher).doc(docID);
         } finally {
-            manager.release(reference);
+            data.getManager().release(reference);
         }
 
     }
 
-    private Collectors createCollectors(QueryData q, int stop, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors, SearcherAndTaxonomy reference) {
+    private Collectors createCollectors(QueryData q, int stop, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors, SearcherAndTaxonomy reference) throws Exception {
         Collectors allCollectors = new Collectors();
         SuperCollector<?> resultsCollector;
         if (q.clustering) {
-            allCollectors.topCollector = topCollector(q.start, stop + settings.clusterConfig.clusterMoreRecords, q.sort);
+            allCollectors.topCollector = topCollector(q.start, stop + data.getSettings().clusterConfig.clusterMoreRecords, q.sort);
             resultsCollector = allCollectors.topCollector;
         } else if (q.groupingField != null) {
             allCollectors.topCollector = topCollector(q.start, stop * 10, q.sort);
@@ -541,21 +497,21 @@ public class Lucene {
         return new TopFieldSuperCollector(sort, stop, true, false, true);
     }
 
-    private FacetSuperCollector facetCollector(List<FacetRequest> facets, TaxonomyReader taxonomyReader) {
+    private FacetSuperCollector facetCollector(List<FacetRequest> facets, TaxonomyReader taxonomyReader) throws Exception {
         if (facets == null || facets.size() == 0)
             return null;
         String[] indexFieldnames = getIndexFieldNames(facets);
-        FacetSuperCollector collector = new FacetSuperCollector(taxonomyReader, facetsConfig, getOrdinalsReader(indexFieldnames[0]));
+        FacetSuperCollector collector = new FacetSuperCollector(taxonomyReader, data.getFacetsConfig(), getOrdinalsReader(indexFieldnames[0]));
         for (int i = 1; i < indexFieldnames.length; i++) {
             collector.addOrdinalsReader(getOrdinalsReader(indexFieldnames[i]));
         }
         return collector;
     }
 
-    String[] getIndexFieldNames(List<FacetRequest> facets) {
+    String[] getIndexFieldNames(List<FacetRequest> facets) throws Exception {
         Set<String> indexFieldnames = new HashSet<String>();
         for (FacetRequest f : facets)
-            indexFieldnames.add(this.facetsConfig.getDimConfig(f.fieldname).indexFieldName);
+            indexFieldnames.add(this.data.getFacetsConfig().getDimConfig(f.fieldname).indexFieldName);
         return indexFieldnames.toArray(new String[0]);
     }
 
@@ -569,12 +525,12 @@ public class Lucene {
         return reader;
     }
 
-    private List<DrilldownData> facetResult(FacetSuperCollector facetCollector, List<FacetRequest> facets) throws IOException {
+    private List<DrilldownData> facetResult(FacetSuperCollector facetCollector, List<FacetRequest> facets) throws Exception {
         List<DrilldownData> drilldownData = new ArrayList<DrilldownData>();
         for (FacetRequest facet : facets) {
             DrilldownData dd = new DrilldownData(facet.fieldname);
             dd.path = facet.path;
-            List<DrilldownData.Term> terms = drilldownDataFromFacetResult(facetCollector, facet, facet.path, this.facetsConfig.getDimConfig(facet.fieldname).hierarchical);
+            List<DrilldownData.Term> terms = drilldownDataFromFacetResult(facetCollector, facet, facet.path, this.data.getFacetsConfig().getDimConfig(facet.fieldname).hierarchical);
             if (terms != null) {
                 dd.terms = terms;
                 drilldownData.add(dd);
@@ -612,7 +568,7 @@ public class Lucene {
 //        elif t == float:
 //            convert = lambda term: NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term))
 
-        SearcherAndTaxonomy reference = manager.acquire();
+        SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             List<TermCount> terms = new ArrayList<TermCount>();
             IndexReader reader = reference.searcher.getIndexReader();
@@ -636,20 +592,20 @@ public class Lucene {
             }
             return terms;
         } finally {
-            manager.release(reference);
+            data.getManager().release(reference);
         }
     }
 
-    public int numDocs() {
-        return this.indexWriter.numDocs();
+    public int numDocs() throws Exception {
+        return this.data.getIndexWriter().numDocs();
     }
 
-    public int maxDoc() {
-        return this.indexWriter.maxDoc();
+    public int maxDoc() throws Exception {
+        return this.data.getIndexWriter().maxDoc();
     }
 
-    public List<String> fieldnames() throws IOException {
-        SearcherAndTaxonomy reference = manager.acquire();
+    public List<String> fieldnames() throws Exception {
+        SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             List<String> fieldnames = new ArrayList<String>();
             Fields fields = MultiFields.getFields(reference.searcher.getIndexReader());
@@ -660,12 +616,12 @@ public class Lucene {
             }
             return fieldnames;
         }  finally {
-            manager.release(reference);
+            data.getManager().release(reference);
         }
     }
 
-    public List<String> drilldownFieldnames(int limit, String dim, String... path) throws IOException {
-        SearcherAndTaxonomy reference = manager.acquire();
+    public List<String> drilldownFieldnames(int limit, String dim, String... path) throws Exception {
+        SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             DirectoryTaxonomyReader taxoReader = reference.taxonomyReader;
             int parentOrdinal = dim == null ? TaxonomyReader.ROOT_ORDINAL : taxoReader.getOrdinal(dim, path);
@@ -682,7 +638,7 @@ public class Lucene {
             }
             return fieldnames;
         }  finally {
-            manager.release(reference);
+            data.getManager().release(reference);
         }
     }
 
@@ -690,11 +646,11 @@ public class Lucene {
         Filter filter_ = null;
         if (filterQuery != null)
             filter_ = new QueryWrapperFilter(filterQuery);
-        SearcherAndTaxonomy reference = manager.acquire();
+        SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             ((SuperIndexSearcher) reference.searcher).search(query, filter_, collector);
         } finally {
-            manager.release(reference);
+            data.getManager().release(reference);
         }
     }
 
@@ -705,10 +661,10 @@ public class Lucene {
     public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Exception {
         if (cacheCollectedKeys) {
             KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, filterQuery);
-            OpenBitSet keys = keyCollectorCache.get(keyNameQuery);
+            OpenBitSet keys = data.getKeyCollectorCache().get(keyNameQuery);
             if (keys == null) {
                 keys = doCollectKeys(filterQuery, keyName, query);
-                keyCollectorCache.put(keyNameQuery, keys);
+                data.getKeyCollectorCache().put(keyNameQuery, keys);
             }
             return keys;
         }
@@ -723,49 +679,49 @@ public class Lucene {
         return keyCollector.getCollectedKeys();
     }
 
-    public Query createDrilldownQuery(Query luceneQuery, List<String[]> drilldownQueries) {
+    public Query createDrilldownQuery(Query luceneQuery, List<String[]> drilldownQueries) throws Exception {
         BooleanQuery q = new BooleanQuery(true);
         if (luceneQuery != null)
             q.add(luceneQuery, Occur.MUST);
         for (int i = 0; i<drilldownQueries.size(); i+=2) {
             String field = drilldownQueries.get(i)[0];
-            String indexFieldName = facetsConfig.getDimConfig(field).indexFieldName;
+            String indexFieldName = data.getFacetsConfig().getDimConfig(field).indexFieldName;
             q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(i+1))), Occur.MUST);
         }
         return q;
     }
 
-    public QueryConverter getQueryConverter() {
-        return new QueryConverter(this.facetsConfig);
+    public QueryConverter getQueryConverter() throws Exception {
+        return new QueryConverter(this.data.getFacetsConfig());
     }
 
     public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Exception {
         KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, query);
-        ScoreSuperCollector scoreCollector = scoreCollectorCache.get(keyNameQuery);
+        ScoreSuperCollector scoreCollector = data.getScoreCollectorCache().get(keyNameQuery);
         if (scoreCollector == null) {
             scoreCollector = doScoreCollecting(keyName, query);
-            scoreCollectorCache.put(keyNameQuery, scoreCollector);
+            data.getScoreCollectorCache().put(keyNameQuery, scoreCollector);
         }
         return scoreCollector;
     }
 
     public ScoreSuperCollector doScoreCollecting(String keyName, Query query) throws Exception {
-        SearcherAndTaxonomy reference = manager.acquire();
+        SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             ScoreSuperCollector scoreCollector = new ScoreSuperCollector(keyName);
             ((SuperIndexSearcher) reference.searcher).search(query, null, scoreCollector);
             return scoreCollector;
         } finally {
-            manager.release(reference);
+            data.getManager().release(reference);
         }
     }
 
-    public SuggestWord[] suggest(String term, int count, String field) throws IOException {
-        SearcherAndTaxonomy reference = manager.acquire();
+    public SuggestWord[] suggest(String term, int count, String field) throws Exception {
+        SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             return spellChecker.suggestSimilar(new Term(field, term), count, reference.searcher.getIndexReader());
         } finally {
-            manager.release(reference);
+            data.getManager().release(reference);
         }
     }
 
@@ -815,25 +771,140 @@ public class Lucene {
             return false;
         }
     }
-
-    private class LuceneRefreshListener implements RefreshListener {
-        private boolean refreshed;
-
-        @Override
-        public void afterRefresh(boolean didRefresh) throws IOException {
-            if (!refreshed)
-                refreshed = didRefresh;
+    
+    static class LuceneData {
+        private IndexWriter indexWriter;
+        private DirectoryTaxonomyWriter taxoWriter;
+        private LuceneSettings settings;
+        private Map<Query, Filter> filterCache;
+        private Map<KeyNameQuery, ScoreSuperCollector> scoreCollectorCache;
+        private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
+        private SearcherTaxonomyManager manager;
+        private LuceneRefreshListener refreshListener = new LuceneRefreshListener();
+        
+        public void commit() throws Exception {
+            this.indexWriter.commit();
+            this.taxoWriter.commit();
+            this.manager.maybeRefreshBlocking();
+            if (this.refreshListener.isRefreshed()) {
+                this.scoreCollectorCache.clear();
+                this.keyCollectorCache.clear();
+            }
         }
 
-        @Override
-        public void beforeRefresh() throws IOException {}
+        public void close() throws IOException {
+            if (this.settings == null)
+                return;
+            if (this.manager != null)
+                this.manager.close();
+            if (this.taxoWriter != null)
+                this.taxoWriter.close();
+            if (this.indexWriter != null)
+                this.indexWriter.close();            
+        }
 
-        public boolean isRefreshed() {
-            if (refreshed) {
-                refreshed = false;
-                return true;
+        public void initSettings(File stateDir, LuceneSettings settings) throws Exception {
+            if (this.settings != null)
+                throw new Exception("Init settings is only allowed once");
+            this.settings = settings;
+
+            MMapDirectory indexDirectory = new MMapDirectory(new File(stateDir, "index"));
+            indexDirectory.setUseUnmap(false);
+
+            MMapDirectory taxoDirectory = new MMapDirectory(new File(stateDir, "taxo"));
+            taxoDirectory.setUseUnmap(false);
+
+            IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_10_4, settings.analyzer);
+            config.setSimilarity(settings.similarity);
+            TieredMergePolicy mergePolicy = new TieredMergePolicy();
+            mergePolicy.setMaxMergeAtOnce(settings.maxMergeAtOnce);
+            mergePolicy.setSegmentsPerTier(settings.segmentsPerTier);
+            config.setMergePolicy(mergePolicy);
+
+            this.indexWriter = new IndexWriter(indexDirectory, config);
+            this.indexWriter.commit();
+            this.taxoWriter = new DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(settings.lruTaxonomyWriterCacheSize));
+            this.taxoWriter.commit();
+
+            this.filterCache = Collections.synchronizedMap(new LRUMap<Query, Filter>(50));
+            this.scoreCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, ScoreSuperCollector>(50));
+            this.keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
+
+            this.manager = new SearcherTaxonomyManager(indexDirectory, taxoDirectory, new MerescoSearchFactory(indexDirectory, taxoDirectory, settings));
+            this.manager.addListener(refreshListener);
+        }
+
+        public IndexWriter getIndexWriter() throws UninitializedException {
+            if (this.settings == null)
+                throw new UninitializedException();
+            return indexWriter;
+        }
+
+        public DirectoryTaxonomyWriter getTaxoWriter() throws UninitializedException {
+            if (this.settings == null)
+                throw new UninitializedException();
+            return taxoWriter;
+        }
+
+        public FacetsConfig getFacetsConfig() throws UninitializedException {
+            if (this.settings == null)
+                throw new UninitializedException();
+            return this.settings.facetsConfig;
+        }
+
+        public LuceneSettings getSettings() throws UninitializedException {
+            if (this.settings == null)
+                throw new UninitializedException();
+            return settings;
+        }
+        
+        public boolean hasSettings() {
+            return this.settings != null;
+        }
+
+        public Map<Query, Filter> getFilterCache() throws UninitializedException {
+            if (this.settings == null)
+                throw new UninitializedException();
+            return filterCache;
+        }
+
+        public Map<KeyNameQuery, ScoreSuperCollector> getScoreCollectorCache() throws UninitializedException {
+            if (this.settings == null)
+                throw new UninitializedException();
+            return scoreCollectorCache;
+        }
+
+        public Map<KeyNameQuery, OpenBitSet> getKeyCollectorCache() throws UninitializedException {
+            if (this.settings == null)
+                throw new UninitializedException();
+            return keyCollectorCache;
+        }
+
+        public SearcherTaxonomyManager getManager() throws UninitializedException {
+            if (this.settings == null)
+                throw new UninitializedException();
+            return manager;
+        }
+        
+        private class LuceneRefreshListener implements RefreshListener {
+            private boolean refreshed;
+
+            @Override
+            public void afterRefresh(boolean didRefresh) throws IOException {
+                if (!refreshed)
+                    refreshed = didRefresh;
             }
-            return false;
+
+            @Override
+            public void beforeRefresh() throws IOException {}
+
+            public boolean isRefreshed() {
+                if (refreshed) {
+                    refreshed = false;
+                    return true;
+                }
+                return false;
+            }
         }
     }
 }

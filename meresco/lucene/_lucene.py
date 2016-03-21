@@ -26,6 +26,7 @@
 from urllib import urlencode
 
 from weightless.core import consume
+from weightless.io.utils import asProcess
 from meresco.core import Observable
 from meresco.components.json import JsonList, JsonDict
 from meresco.lucene import LuceneResponse
@@ -44,7 +45,7 @@ class Lucene(Observable):
         self._name = name
 
     def observer_init(self):
-        consume(self._connect.send(jsonDict=self.settings.asPostDict(), path="/settings/", synchronous=True))
+        asProcess(self._connect.send(jsonDict=self.settings.asPostDict(), path="/settings/"))
 
     def setSettings(self, numberOfConcurrentTasks=None, similarity=None, clustering=None):
         settingsDict = JsonDict()

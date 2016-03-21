@@ -24,10 +24,8 @@
 
 package org.meresco.lucene.http;
 
-import java.io.IOException;
 import java.util.List;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -49,7 +47,7 @@ public class CommitHandler extends AbstractMerescoLuceneHandler implements Handl
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
         termNumerator.commit();
         for (Lucene lucene : lucenes) {
             lucene.commit();

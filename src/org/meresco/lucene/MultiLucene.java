@@ -168,7 +168,7 @@ public class MultiLucene {
             keys.put(keyName, collectedKeys.clone());
     }
 
-    private Query luceneQueryForCore(String coreName, ComposedQuery query) {
+    private Query luceneQueryForCore(String coreName, ComposedQuery query) throws Exception {
         Query luceneQuery = query.queryFor(coreName);
         List<String[]> ddQueries = query.drilldownQueriesFor(coreName);
         if (ddQueries != null && ddQueries.size() > 0)
@@ -189,7 +189,7 @@ public class MultiLucene {
         return keysForKeyName;
     }
 
-    public Map<String, QueryConverter> getQueryConverters() {
+    public Map<String, QueryConverter> getQueryConverters() throws Exception {
         Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>();
         for (Lucene lucene : this.lucenes.values())
             queryConverters.put(lucene.name, lucene.getQueryConverter());

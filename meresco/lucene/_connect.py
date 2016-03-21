@@ -22,11 +22,9 @@
 #
 ## end license ##
 
-from urllib2 import urlopen
 
 from simplejson import loads
 
-from meresco.components.http.utils import CRLF
 
 
 class _Connect(object):
@@ -36,29 +34,24 @@ class _Connect(object):
         self._pathPrefix = pathPrefix or ''
         self._observable = observable
 
-    def send(self, path, jsonDict=None, synchronous=False):
-        response = yield self._post(path=self._pathPrefix + path, data=jsonDict.dumps() if jsonDict else None, synchronous=synchronous)
-        raise StopIteration(loads(response) if response else None)
+    def send(self, path, jsonDict=None):
+        body = yield self._post(path=self._pathPrefix + path, data=jsonDict.dumps() if jsonDict else None)
+        raise StopIteration(loads(body) if body else None)
 
     def read(self, path):
-        response = yield self._get(path=self._pathPrefix + path)
-        raise StopIteration(loads(response) if response else None)
+        body = yield self._get(path=self._pathPrefix + path)
+        raise StopIteration(loads(body) if body else None)
 
-    def _post(self, path, data, synchronous=False):
-        if synchronous:
-            body = urlopen("http://{}:{}{}".format(self._host, self._port, path), data=data).read()
-        else:
-            response = yield self._observable.any.httprequest(method='POST', host=self._host, port=self._port, request=path, body=data)
-            header, body = response.split(CRLF * 2, 1)
-            self._verify20x(header, response)
+    def _post(self, path, data):
+        statusAndHeaders, body = yield self._observable.any.httprequest1_1(method='POST', host=self._host, port=self._port, request=path, body=data)
+        self._verify20x(statusAndHeaders, body)
         raise StopIteration(body)
 
     def _get(self, path):
-        response = yield self._observable.any.httprequest(method='GET', host=self._host, port=self._port, request=path)
-        header, body = response.split(CRLF * 2, 1)
-        self._verify20x(header, response)
+        statusAndHeaders, body = yield self._observable.any.httprequest1_1(method='GET', host=self._host, port=self._port, request=path)
+        self._verify20x(statusAndHeaders, body)
         raise StopIteration(body)
 
-    def _verify20x(self, header, response):
-        if not header.startswith('HTTP/1.1 20'):
-            raise IOError("Expected status 'HTTP/1.1 20x' from Lucene server, but got: " + response)
+    def _verify20x(self, statusAndHeaders, body):
+        if not statusAndHeaders['StatusCode'].startswith('20'):
+            raise IOError("Expected status '20x' from Lucene server, but got {} {}\n{}".format(statusAndHeaders['StatusCode'], statusAndHeaders['ReasonPhrase'], body))

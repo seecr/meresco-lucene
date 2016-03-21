@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -790,7 +790,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
 
     @Test
-    public void testQueryConvertors() {
+    public void testQueryConvertors() throws Exception {
         luceneA.getSettings().facetsConfig.setIndexFieldName("dim1", "otherfield");
         Map<String, QueryConverter> converters = multiLucene.getQueryConverters();
         Term drilldownTerm = converters.get("coreA").createDrilldownTerm("dim1");

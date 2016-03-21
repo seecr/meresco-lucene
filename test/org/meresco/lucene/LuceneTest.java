@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -219,8 +219,8 @@ public class LuceneTest extends SeecrTestCase {
         doc1.add(new StringField("field1", "id0", Store.NO));
         doc1.add(new FacetField("facet-field", "first", "second"));
         doc1.add(new FacetField("facet-field", "subfirst", "subsecond"));
-        this.lucene.facetsConfig.setHierarchical("facet-field", true);
-        this.lucene.facetsConfig.setMultiValued("facet-field", true);
+        this.lucene.getSettings().facetsConfig.setHierarchical("facet-field", true);
+        this.lucene.getSettings().facetsConfig.setMultiValued("facet-field", true);
         this.lucene.addDocument("id1", doc1);
 
         ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
@@ -505,7 +505,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testFieldname() throws IOException {
+    public void testFieldname() throws Exception {
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "value0", Store.NO));
         lucene.addDocument("id1", doc1);
@@ -517,7 +517,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testDrilldownFieldname() throws IOException {
+    public void testDrilldownFieldname() throws Exception {
         Document doc1 = new Document();
         doc1.add(new FacetField("cat", "cat 1"));
         lucene.addDocument("id1", doc1);
@@ -659,7 +659,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testInterpolateEps() {
+    public void testInterpolateEps() throws Exception {
     	ClusterConfig clusterConfig = lucene.getSettings().clusterConfig;
         assertEquals(0, lucene.interpolateEpsilon(0, 10, clusterConfig), 0);
         assertEquals(0, lucene.interpolateEpsilon(10, 10, clusterConfig), 0);
@@ -1075,7 +1075,7 @@ public class LuceneTest extends SeecrTestCase {
     }
     
     @Test
-    public void testQueryConvert() {
+    public void testQueryConvert() throws Exception {
         lucene.getSettings().facetsConfig.setIndexFieldName("dim1", "otherfield");
         QueryConverter queryConverter = lucene.getQueryConverter();
         Term drilldownTerm = queryConverter.createDrilldownTerm("dim1");
@@ -1102,7 +1102,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(expectedHitIds, responseHitIds);
     }
 
-    public static void addDocument(Lucene lucene, String identifier, Map<String, Integer> keys, Map<String, String> fields) throws IOException {
+    public static void addDocument(Lucene lucene, String identifier, Map<String, Integer> keys, Map<String, String> fields) throws Exception {
         Document doc = new Document();
         if (keys != null)
             for (String keyField : keys.keySet())

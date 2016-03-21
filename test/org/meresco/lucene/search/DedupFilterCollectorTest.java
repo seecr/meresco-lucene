@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -69,7 +69,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         assertEquals(1, tc.topDocs(0).totalHits);
     }
 
-    public void addDocument(String identifier, Long isformatof, Long sort) throws IOException {
+    public void addDocument(String identifier, Long isformatof, Long sort) throws Exception {
         Document doc = new Document();
         if (isformatof != null)
             doc.add(new NumericDocValuesField("__isformatof__", isformatof));

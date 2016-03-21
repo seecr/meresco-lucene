@@ -44,14 +44,10 @@ public class SettingsHandler extends AbstractMerescoLuceneHandler {
 
     @Override
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request.setCharacterEncoding("UTF-8");
-        response.setCharacterEncoding("UTF-8");
-        LuceneSettings settings = lucene.getSettings();
-        if (settings == null)
-            settings = new LuceneSettings();
+        LuceneSettings settings = lucene.hasSettings() ? lucene.getSettings() : new LuceneSettings();
         if (request.getMethod() == "POST") {
             settings.updateSettings(request.getReader());
-            if (lucene.getSettings() == null)
+            if (! lucene.hasSettings())
                 lucene.initSettings(settings);
         } else {
             response.setContentType("application/json");

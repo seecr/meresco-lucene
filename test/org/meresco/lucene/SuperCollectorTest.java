@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -117,7 +117,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         }
         I.close();
         I = new Lucene(this.tmpDir, new LuceneSettings());
-        FacetSuperCollector C = new FacetSuperCollector(I.manager.acquire().taxonomyReader, I.facetsConfig, new DocValuesOrdinalsReader());
+        FacetSuperCollector C = new FacetSuperCollector(I.data.getManager().acquire().taxonomyReader, I.data.getFacetsConfig(), new DocValuesOrdinalsReader());
         MatchAllDocsQuery Q = new MatchAllDocsQuery();
         I.search(Q, null, C);
         FacetResult tc = C.getTopChildren(10, "facet1");
@@ -152,7 +152,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         I.close();
         I = new Lucene(this.tmpDir, new LuceneSettings());
 
-        FacetSuperCollector f = new FacetSuperCollector(I.manager.acquire().taxonomyReader, I.facetsConfig, new DocValuesOrdinalsReader());
+        FacetSuperCollector f = new FacetSuperCollector(I.data.getManager().acquire().taxonomyReader, I.data.getFacetsConfig(), new DocValuesOrdinalsReader());
         TopScoreDocSuperCollector t = new TopScoreDocSuperCollector(10, true);
         List<SuperCollector<?>> collectors = new ArrayList<SuperCollector<?>>();
         collectors.add(t);

@@ -28,18 +28,29 @@ from simplejson import loads
 
 
 class _Connect(object):
-    def __init__(self, host, port, observable, pathPrefix=None):
+    def __init__(self, host, port, observable, uninitializedCallback=None, pathPrefix=None):
         self._host = host
         self._port = port
         self._pathPrefix = pathPrefix or ''
         self._observable = observable
+        self._uninitializedCallback = uninitializedCallback or (lambda: None)
 
     def send(self, path, jsonDict=None):
-        body = yield self._post(path=self._pathPrefix + path, data=jsonDict.dumps() if jsonDict else None)
+        post = lambda: self._post(path=self._pathPrefix + path, data=jsonDict.dumps() if jsonDict else None)
+        try:
+            body = yield post()
+        except UninitializedException:
+            yield self._uninitializedCallback()
+            body = yield post()
         raise StopIteration(loads(body) if body else None)
 
     def read(self, path):
-        body = yield self._get(path=self._pathPrefix + path)
+        get = yield self._get(path=self._pathPrefix + path)
+        try:
+            body = yield get()
+        except UninitializedException:
+            yield self._uninitializedCallback()
+            body = yield get()
         raise StopIteration(loads(body) if body else None)
 
     def _post(self, path, data):
@@ -53,5 +64,10 @@ class _Connect(object):
         raise StopIteration(body)
 
     def _verify20x(self, statusAndHeaders, body):
+        if statusAndHeaders['StatusCode'] == "409":
+            raise UninitializedException()
         if not statusAndHeaders['StatusCode'].startswith('20'):
             raise IOError("Expected status '20x' from Lucene server, but got {} {}\n{}".format(statusAndHeaders['StatusCode'], statusAndHeaders['ReasonPhrase'], body))
+
+class UninitializedException(Exception):
+    pass

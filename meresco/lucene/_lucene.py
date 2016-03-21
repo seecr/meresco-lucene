@@ -39,13 +39,16 @@ from _connect import _Connect
 class Lucene(Observable):
     def __init__(self, host, port, settings, name, **kwargs):
         Observable.__init__(self, name=name)
-        self._connect = _Connect(host, port, pathPrefix = "/" + name, observable=self)
+        self._connect = _Connect(host, port, pathPrefix = "/" + name, observable=self, uninitializedCallback=self.initialize)
         self.settings = settings
         self._fieldRegistry = settings.fieldRegistry
         self._name = name
 
     def observer_init(self):
-        asProcess(self._connect.send(jsonDict=self.settings.asPostDict(), path="/settings/"))
+        asProcess(self.initialize())
+
+    def initialize(self):
+        yield self._connect.send(jsonDict=self.settings.asPostDict(), path="/settings/")
 
     def setSettings(self, numberOfConcurrentTasks=None, similarity=None, clustering=None):
         settingsDict = JsonDict()

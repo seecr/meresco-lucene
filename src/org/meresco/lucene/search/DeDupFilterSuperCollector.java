@@ -170,37 +170,41 @@ class DeDupFilterSubCollector extends SubCollector {
         this.totalHits++;
         long keyValue = this.keyValues.get(doc);
         if (keyValue > 0) {
-            int absDoc = this.currentDocBase + doc;
-            long sortByValue = this.sortByValues.get(doc);
-
-            AtomicReference<DeDupFilterSuperCollector.Key> ref = new AtomicReference<DeDupFilterSuperCollector.Key>();
-            AtomicReference<DeDupFilterSuperCollector.Key> newRef = this.keys.putIfAbsent(keyValue, ref);
-            if (newRef == null) {
-                newRef = ref;
-            }
-
-            DeDupFilterSuperCollector.Key key;
-            DeDupFilterSuperCollector.Key newKey;
-            int count = 0;
-            while (true) {
-                count++;
-                key = newRef.get();
-                newKey = new DeDupFilterSuperCollector.Key(key, absDoc, sortByValue);
-                if (newRef.compareAndSet(key, newKey)) {
-                    break;
-                }
-                if (count > 10000) {
-                    System.out.println("More than 10000 tries in DeDupFilterSubCollector.collect.");
-                    System.out.flush();
-                    throw new RuntimeException("More than 10000 tries in DeDupFilterSubCollector.collect.");
-                }
-            }
-            if (newKey.getCount() != 1) {
+            if (countDocForKey(doc, keyValue) != 1) {
                 return;
             }
         }
         this.delegate.collect(doc);
     }
+
+	private int countDocForKey(int doc, long keyValue) {
+		int absDoc = this.currentDocBase + doc;
+		long sortByValue = this.sortByValues.get(doc);
+
+		AtomicReference<DeDupFilterSuperCollector.Key> ref = new AtomicReference<DeDupFilterSuperCollector.Key>();
+		AtomicReference<DeDupFilterSuperCollector.Key> newRef = this.keys.putIfAbsent(keyValue, ref);
+		if (newRef == null) {
+		    newRef = ref;
+		}
+
+		DeDupFilterSuperCollector.Key key;
+		DeDupFilterSuperCollector.Key newKey;
+		int count = 0;
+		while (true) {
+		    count++;
+		    key = newRef.get();
+		    newKey = new DeDupFilterSuperCollector.Key(key, absDoc, sortByValue);
+		    if (newRef.compareAndSet(key, newKey)) {
+		        break;
+		    }
+		    if (count > 10000) {
+		        System.out.println("More than 10000 tries in DeDupFilterSubCollector.collect.");
+		        System.out.flush();
+		        throw new RuntimeException("More than 10000 tries in DeDupFilterSubCollector.collect.");
+		    }
+		}
+		return newKey.getCount();
+	}
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {

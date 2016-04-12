@@ -269,6 +269,8 @@ public class SuggestionNGramIndex {
                 }
                 chain[i] = filter;
             }
+            if (chain.length == 1)
+                return chain[0];
             return new ChainedFilter(chain, ChainedFilter.OR);
         }
 

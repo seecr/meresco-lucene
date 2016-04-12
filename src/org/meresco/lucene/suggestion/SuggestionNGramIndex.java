@@ -57,6 +57,8 @@ import org.apache.lucene.queries.ChainedFilter;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
@@ -203,6 +205,7 @@ public class SuggestionNGramIndex {
         private IndexSearcher searcher;
         private Map<String, DocIdSet> filterKeySets;
         private Map<String, Filter> keySetFilters = new HashMap<>();
+        private Map<String, Filter> filterCache = new HashMap<>();
 
     	public Reader(FSDirectory directory, Map<String, DocIdSet> filterKeySets) throws IOException {
     	    this.directory = directory;
@@ -214,11 +217,11 @@ public class SuggestionNGramIndex {
             return this.reader.numDocs();
         }
 
-        public Suggestion[] suggest(String value, Boolean trigram, Filter filter) throws IOException {
-            return suggest(value, trigram, filter, null);
+        public Suggestion[] suggest(String value, Boolean trigram, String[] filters) throws IOException {
+            return suggest(value, trigram, filters, null);
         }
 
-    	public Suggestion[] suggest(String value, Boolean trigram, Filter filter, String keySetName) throws IOException {
+    	public Suggestion[] suggest(String value, Boolean trigram, String[] filters, String keySetName) throws IOException {
             String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
             BooleanQuery query = new BooleanQuery();
             List<String> ngrams = ngrams(value, trigram);
@@ -235,6 +238,7 @@ public class SuggestionNGramIndex {
                     this.keySetFilters.put(keySetName, keySetFilter);
                 }
             }
+            Filter filter = createFilter(filters);
             if (filter == null) {
                 filter = keySetFilter;
             }
@@ -251,6 +255,23 @@ public class SuggestionNGramIndex {
             return suggestions;
         }
 
+        public Filter createFilter(String[] filters) {
+            if (filters == null || filters.length == 0)
+                return null;
+            Filter[] chain = new Filter[filters.length];
+            for (int i=0; i<filters.length; i++) {
+                String filterString = filters[i];
+                Filter filter = filterCache.get(filterString);
+                if (filter == null) {
+                    String[] f = filterString.split("=", 2);
+                    filter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term(f[0], f[1]))));
+                    filterCache.put(filterString, filter);
+                }
+                chain[i] = filter;
+            }
+            return new ChainedFilter(chain, ChainedFilter.OR);
+        }
+
         public void close() throws IOException {
             this.reader.close();
         }
@@ -258,6 +279,7 @@ public class SuggestionNGramIndex {
         public synchronized void reopen() throws IOException {
             this.reader = DirectoryReader.open(directory);
             this.keySetFilters.clear();
+            this.filterCache.clear();
             this.searcher = new IndexSearcher(this.reader, Executors.newFixedThreadPool(10));
         }
     }

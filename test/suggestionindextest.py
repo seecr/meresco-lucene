@@ -117,7 +117,7 @@ class SuggestionIndexTest(SeecrTestCase):
         self._suggestionIndex.createSuggestionNGramIndex(True, False)
 
         reader = self._suggestionIndex.getSuggestionsReader()
-        suggestions = list(reader.suggest("lo", False, QueryWrapperFilter(TermQuery(Term("type", "uri:book")))))
+        suggestions = list(reader.suggest("lo", False, ["type=uri:book"]))
         self.assertEquals(1, len(suggestions))
         self.assertEquals([u'Lord of the rings'], [s.suggestion for s in suggestions])
 

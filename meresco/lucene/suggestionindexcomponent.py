@@ -34,9 +34,6 @@ from meresco.core import Observable
 from meresco.components.http.utils import CRLF, ContentTypeHeader, Ok, serverErrorPlainText
 from meresco.components.json import JsonList, JsonDict
 
-from org.apache.lucene.index import Term
-from org.apache.lucene.queries import ChainedFilter
-from org.apache.lucene.search import QueryWrapperFilter, TermQuery
 from org.meresco.lucene.suggestion import SuggestionIndex
 
 
@@ -68,9 +65,6 @@ class SuggestionIndexComponent(Observable):
     def suggest(self, value, trigram=False, filters=None, keySetName=None):
         if not self._reader:
             return []
-        if filters:
-            filters = [QueryWrapperFilter(TermQuery(Term(*f.split('=', 1)))) for f in filters]
-            filters = ChainedFilter(filters, [ChainedFilter.OR] * len(filters))
         return list(self._reader.suggest(value, trigram, filters, keySetName))
 
     def indexingState(self):

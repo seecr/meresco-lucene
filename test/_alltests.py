@@ -51,7 +51,6 @@ from adaptertolucenequerytest import AdapterToLuceneQueryTest
 from multilucenetest import MultiLuceneTest
 from queryexpressiontolucenequerydicttest import QueryExpressionToLuceneQueryDictTest
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
-from suggestionindextest import SuggestionIndexTest
 
 if __name__ == '__main__':
     unittest.main()

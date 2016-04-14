@@ -206,6 +206,8 @@ public class SuggestionIndex {
     }
     
     public SuggestionNGramIndex.Reader getSuggestionsReader() throws IOException {
+        if (this.currentReader == null)
+            createSuggestionsReader();
         return this.currentReader;
     }
     

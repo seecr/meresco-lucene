@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.OutOfMemoryShutdown;
 import org.meresco.lucene.http.AbstractMerescoLuceneHandler;
+import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Suggestion;
 
 public class SuggestionHandler extends AbstractMerescoLuceneHandler implements Handler {
@@ -68,6 +69,9 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
 	        	    Suggestion[] suggestions = suggestionIndex.getSuggestionsReader().suggest(suggest.getString("value"), false, null, null);
 	        	    response.getWriter().write(suggestionsToJson(suggestions).toString());
 	        	    break;
+	        	case "/commit":
+	        	    suggestionIndex.commit();
+	        	    break;
 	        	default:
 	        	    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 	        	    baseRequest.setHandled(true);
@@ -94,6 +98,14 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
     }
 
     private static JsonArray suggestionsToJson(Suggestion[] suggestions) {
-        return Json.createArrayBuilder().build();
+        JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
+        for (Suggestion sugg : suggestions) {
+            arrayBuilder.add(Json.createObjectBuilder()
+                    .add("suggestion", sugg.suggestion)
+                    .add("type", sugg.type)
+                    .add("creator", sugg.creator)
+                    .add("score", sugg.score));
+        }
+        return arrayBuilder.build();
     }
 }

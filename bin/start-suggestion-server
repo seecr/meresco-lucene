@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+## begin license ##
+#
+# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+#
+# Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+#
+# This file is part of "Meresco Lucene"
+#
+# "Meresco Lucene" is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# "Meresco Lucene" is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with "Meresco Lucene"; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+## end license ##
+
+from os import execv, environ, system
+from sys import argv
+from glob import glob
+
+USR_SHARE_JAVA_DIR='/usr/share/java'
+LUCENEVERSION = "4.10.4"
+LUCENE_JARS = glob("{0}/lucene-*{1}.jar".format(USR_SHARE_JAVA_DIR, LUCENEVERSION))
+if 'SEECRTEST_USR_SHARE' in environ and environ['SEECRTEST_USR_SHARE']:
+    USR_SHARE_JAVA_DIR = environ['SEECRTEST_USR_SHARE'] + '/java'
+MY_JARS = glob('{0}/meresco-lucene/*.jar'.format(USR_SHARE_JAVA_DIR))
+
+from os.path import dirname, abspath                         #DO_NOT_DISTRIBUTE
+projectdir = dirname(dirname(abspath(__file__)))             #DO_NOT_DISTRIBUTE
+status = system("cd %s; ./build.sh"  % projectdir)           #DO_NOT_DISTRIBUTE
+if status > 0:                                               #DO_NOT_DISTRIBUTE
+    import sys                                               #DO_NOT_DISTRIBUTE
+    sys.exit(status)                                         #DO_NOT_DISTRIBUTE
+MY_JARS = glob("%s/jars/*.jar" % projectdir) + glob("%s/*.jar" % projectdir)  #DO_NOT_DISTRIBUTE
+
+CP = ':'.join(MY_JARS + LUCENE_JARS)
+
+argv0, args = argv[0], [arg for arg in argv if not arg.startswith('-X')]
+XOptions = [arg for arg in argv if arg.startswith('-X')]
+if not [arg for arg in XOptions if arg.startswith('-Xmx')]:
+    XOptions.append('-Xmx4G')
+
+java = '/usr/bin/java'
+if 'JAVA_BIN' in environ and environ['JAVA_BIN']:
+    java = environ['JAVA_BIN'] + "/java"
+
+if system("%s -version 2>&1 | grep '1.7' > /dev/null" % java) != 0:
+    print "Java version should be java 7; You could specify a different java with JAVA_BIN"
+    exit(1)
+
+execv(
+    java,
+    [argv0] + XOptions + [
+        '-cp', CP,
+        'org.meresco.lucene.suggestion.SuggestionHttpServer'
+    ] + args)

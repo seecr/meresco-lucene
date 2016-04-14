@@ -108,7 +108,7 @@ def uploadHelix(lucene, storageComponent, drilldownFields, fieldRegistry):
         )
     )
 
-def main(reactor, port, serverPort, databasePath, **kwargs):
+def main(reactor, port, serverPort, autocompletePort, databasePath, **kwargs):
     drilldownFields = [
         DrilldownField('untokenized.field2'),
         DrilldownField('untokenized.field2.copy', indexFieldName='copy'),
@@ -238,8 +238,8 @@ def main(reactor, port, serverPort, databasePath, **kwargs):
                         )
                     ),
                     (PathFilter('/suggestion'),
-                        (SuggestionIndexComponent(join(databasePath, 'suggestions')),
-                            (lucene,),
+                        (SuggestionIndexComponent(host='localhost', port=autocompletePort),
+                            (http11_request,),
                         )
                     )
                 )

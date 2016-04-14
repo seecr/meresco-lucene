@@ -204,7 +204,7 @@ public class SuggestionNGramIndex {
     public static class Reader {
         private FSDirectory directory;
     	private DirectoryReader reader;
-        private SuperIndexSearcher searcher;
+        private IndexSearcher searcher;
         private Map<String, DocIdSet> filterKeySets;
         private Map<String, Filter> keySetFilters = new HashMap<>();
         private Map<String, Filter> filterCache = new HashMap<>();
@@ -247,9 +247,7 @@ public class SuggestionNGramIndex {
             else if (keySetFilter != null) {
                 filter = new ChainedFilter(new Filter[]{filter, keySetFilter}, ChainedFilter.AND);
             }
-            TopScoreDocSuperCollector collector = new TopScoreDocSuperCollector(25, false);
-            searcher.search(query, filter, collector);
-            TopDocs t = collector.topDocs(0);
+            TopDocs t = searcher.search(query, filter, 25);
             Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
             int i = 0;
             for (ScoreDoc d : t.scoreDocs) {

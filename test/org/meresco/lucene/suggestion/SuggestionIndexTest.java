@@ -196,7 +196,7 @@ public class SuggestionIndexTest extends SeecrTestCase {
         index.createSuggestionNGramIndex(true, false);;
 
         Reader reader = index.getSuggestionsReader();
-        Suggestion[] suggestions = reader.suggest("lo", false, new QueryWrapperFilter(new TermQuery(new Term("type", "uri:book"))));
+        Suggestion[] suggestions = reader.suggest("lo", false, new String[] {"type=uri:book"});
         assertEquals(1, suggestions.length);
         assertEquals("Lord of the rings", suggestions[0].suggestion);
     }

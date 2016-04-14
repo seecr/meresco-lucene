@@ -46,12 +46,14 @@ class IntegrationState(SeecrIntegrationState):
             system('rm -rf ' + self.integrationTempdir)
             system('mkdir --parents '+ self.integrationTempdir)
         self.numerateServerPort = PortNumberGenerator.next()
+        self.suggestionServerPort = PortNumberGenerator.next()
         self.luceneServerPort = PortNumberGenerator.next()
         self.httpPort = PortNumberGenerator.next()
         self.testdataDir = join(dirname(mydir), "data")
 
     def setUp(self):
         self.startNumerateServer()
+        self.startSuggestionServer()
         self.startLuceneServer()
         self.startExampleServer()
         self._createDatabase()
@@ -78,11 +80,14 @@ class IntegrationState(SeecrIntegrationState):
     def startNumerateServer(self):
         self._startServer('numerate-server', self.binPath('start-numerate-server'), 'http://localhost:{}/info'.format(self.numerateServerPort), port=self.numerateServerPort, stateDir=join(self.integrationTempdir, 'numerate'))
 
+    def startSuggestionServer(self):
+        self._startServer('suggestion-server', self.binPath('start-suggestion-server'), 'http://localhost:{}/info'.format(self.suggestionServerPort), port=self.suggestionServerPort, stateDir=join(self.integrationTempdir, 'suggestion'))
+
     def startLuceneServer(self):
         self._startServer('lucene-server', self.binPath('start-lucene-server'), 'http://localhost:{}/info'.format(self.luceneServerPort), port=self.luceneServerPort, stateDir=join(self.integrationTempdir, 'lucene-server'), core=["main", "main2", "empty-core", "default"])
 
     def startExampleServer(self):
-        self._startServer('meresco-lucene', self.binPath('start-server'), 'http://localhost:%s/' % self.httpPort, port=self.httpPort, serverPort=self.luceneServerPort, stateDir=join(self.integrationTempdir, 'example-state'))
+        self._startServer('meresco-lucene', self.binPath('start-server'), 'http://localhost:%s/' % self.httpPort, port=self.httpPort, serverPort=self.luceneServerPort, autocompletePort=self.suggestionServerPort, stateDir=join(self.integrationTempdir, 'example-state'))
 
     def stopServer(self, serviceName):
         self._stopServer(serviceName)

@@ -30,6 +30,8 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonValue;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -66,7 +68,8 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
                     break;
 	        	case "/suggest":
 	        	    JsonObject suggest = Json.createReader(request.getReader()).readObject();
-	        	    Suggestion[] suggestions = suggestionIndex.getSuggestionsReader().suggest(suggest.getString("value"), false, null, null);
+	        	    String keySetName = suggest.get("keySetName") == JsonValue.NULL ? null : suggest.getString("keySetName"); 
+	        	    Suggestion[] suggestions = suggestionIndex.getSuggestionsReader().suggest(suggest.getString("value"), suggest.getBoolean("trigram"), jsonArrayToStringArray(suggest.getJsonArray("filters")), keySetName);
 	        	    response.getWriter().write(suggestionsToJson(suggestions).toString());
 	        	    break;
 	        	case "/commit":
@@ -89,22 +92,33 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
         }
     }
 
-    private static String[] jsonArrayToStringArray(JsonArray jsonStrings) {
+    static String[] jsonArrayToStringArray(JsonArray jsonStrings) {
         String[] values = new String[jsonStrings.size()];
         for (int i = 0; i < values.length; i++) {
-            values[i] = jsonStrings.getString(i);
+            if (jsonStrings.get(i) == JsonValue.NULL) {
+                values[i] = null;
+            } else {
+                values[i] = jsonStrings.getString(i);
+            }
         }
         return values;
     }
 
-    private static JsonArray suggestionsToJson(Suggestion[] suggestions) {
+    static JsonArray suggestionsToJson(Suggestion[] suggestions) {
         JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
         for (Suggestion sugg : suggestions) {
-            arrayBuilder.add(Json.createObjectBuilder()
-                    .add("suggestion", sugg.suggestion)
-                    .add("type", sugg.type)
-                    .add("creator", sugg.creator)
-                    .add("score", sugg.score));
+            JsonObjectBuilder objectBuilder = Json.createObjectBuilder();
+            objectBuilder.add("suggestion", sugg.suggestion);
+            objectBuilder.add("score", sugg.score);
+            if (sugg.type == null)
+                objectBuilder.add("type", JsonValue.NULL);
+            else
+                objectBuilder.add("type", sugg.type);
+            if (sugg.creator == null)
+                objectBuilder.add("creator", JsonValue.NULL);
+            else
+                objectBuilder.add("creator", sugg.creator);
+            arrayBuilder.add(objectBuilder);
         }
         return arrayBuilder.build();
     }

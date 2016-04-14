@@ -38,8 +38,23 @@ class SuggestionServerTest(IntegrationTestCase):
             "key": 1,
             "values": ["harry"], "types": ["uri:book"], "creators": ["rowling"]
         }"""
-        header, body = postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
-        self.assertTrue("200 OK" in header.upper(), header + body)
+        try:
+            header, body = postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
+            self.assertTrue("200 OK" in header.upper(), header + body)
+        finally:
+            postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
+
+    def testAddNulls(self):
+        data = """{
+            "key": 1,
+            "values": ["harry"], "types": [null], "creators": [null]
+        }"""
+        try:
+            header, body = postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
+            self.assertTrue("200 OK" in header.upper(), header + body)
+        finally:
+            postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
+
 
     def testDelete(self):
         header, body = postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
@@ -49,11 +64,15 @@ class SuggestionServerTest(IntegrationTestCase):
         header, body = postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex', data=None, parse=False)
         self.assertTrue("200 OK" in header.upper(), header + body)
 
+    def testCommit(self):
+        header, body = postRequest(self.suggestionServerPort, '/commit', parse=False)
+        self.assertTrue("200 OK" in header.upper(), header)
+
     def testSuggest(self):
         data = """{
             "value": "ha",
             "trigram": false,
-            "filters": null,
+            "filters": [],
             "keySetName": null
         }"""
         header, body = postRequest(self.suggestionServerPort, '/suggest', data=data, parse=False)
@@ -65,23 +84,43 @@ class SuggestionServerTest(IntegrationTestCase):
             "key": 1,
             "values": ["harry"], "types": ["uri:book"], "creators": ["rowling"]
         }"""
-        postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
-        postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex', data=None, parse=False)
+        try:
+            postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
+            postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex', data=None, parse=False)
+            data = """{
+                "value": "ha",
+                "trigram": false,
+                "filters": [],
+                "keySetName": null
+            }"""
+            header, body = postRequest(self.suggestionServerPort, '/suggest', data=data, parse=False)
+            self.assertTrue("200 OK" in header.upper(), header + body)
+            self.assertEqual([
+                {"suggestion": "harry", "type": "uri:book", "creator": 'rowling', "score": 0.1627332717180252},
+            ], loads(body))
+        finally:
+            postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
+
+    def testAutocompleteWithSuggestionIndexComponent(self):
         data = """{
-            "value": "ha",
-            "trigram": false,
-            "filters": null,
-            "keySetName": null
+            "key": 1,
+            "values": ["harry"], "types": ["uri:book"], "creators": ["rowling"]
         }"""
-        header, body = postRequest(self.suggestionServerPort, '/suggest', data=data, parse=False)
-        self.assertTrue("200 OK" in header.upper(), header + body)
-        self.assertEqual([
-            {"suggestion": "harry", "type": "uri:book", "creator": 'rowling', "score": 0.1627332717180252},
-        ], loads(body))
+        postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
 
+        data = """{
+            "key": 2,
+            "values": ["hallo"], "types": ["uri:ebook"], "creators": [null]
+        }"""
+        postRequest(self.suggestionServerPort, '/add?identifier=id2', data=data, parse=False)
+        try:
+            postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex', data=None, parse=False)
+            header, body = getRequest(port=self.httpPort, path='/suggestion', arguments={'value': 'ha'}, parse=False)
+            print header, body
+            self.assertEqual(["ha", ["harry", "hallo"]], loads(body))
 
-    # def testCommit(self):
-    #     header, body = postRequest(self.suggestionServerPort, '/commit', parse=False)
-    #     self.assertTrue("200 OK" in header.upper(), header)
-
-
+            header, body = getRequest(port=self.httpPort, path='/suggestion', arguments={'value': 'ha', "filter": "type=uri:book"}, parse=False)
+            self.assertEqual(["ha", ["harry"]], loads(body))
+        finally:
+            postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
+            postRequest(self.suggestionServerPort, '/delete?identifier=id2', data=None, parse=False)

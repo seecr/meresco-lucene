@@ -23,8 +23,6 @@
 #
 ## end license ##
 
-from os import makedirs
-from os.path import isdir, join
 from math import log
 from time import time
 
@@ -34,50 +32,46 @@ from meresco.core import Observable
 from meresco.components.http.utils import CRLF, ContentTypeHeader, Ok, serverErrorPlainText
 from meresco.components.json import JsonList, JsonDict
 
-from org.meresco.lucene.suggestion import SuggestionIndex
+from _connect import _Connect
+from urllib import urlencode
 
 
 class SuggestionIndexComponent(Observable):
-    def __init__(self, stateDir, minShingles=2, maxShingles=6, commitCount=10000, **kwargs):
+    # def __init__(self, stateDir, minShingles=2, maxShingles=6, commitCount=10000, **kwargs):
+    def __init__(self, host, port, **kwargs):
         super(SuggestionIndexComponent, self).__init__(**kwargs)
-        self._suggestionIndexDir = join(stateDir, 'suggestions')
-        self._ngramIndexDir = join(stateDir, 'ngram')
-        isdir(self._suggestionIndexDir) or makedirs(self._suggestionIndexDir)
-        isdir(self._ngramIndexDir) or makedirs(self._ngramIndexDir)
-        self._index = SuggestionIndex(self._suggestionIndexDir, self._ngramIndexDir, minShingles, maxShingles, commitCount)
-        self._reader = self._index.getSuggestionsReader()
+        self._connect = _Connect(host, port, observable=self)
 
     def addSuggestions(self, identifier, key, values):
         titles = [v.get('title') for v in values]
         types = [v.get('type') for v in values]
         creators = [v.get('creator') for v in values]
-        self._index.add(identifier, key, titles, types, creators)
+        yield self._connect.send("/add?{}".format(urlencode(dict(identifier=identifier))), JsonDict(dict(key=key, values=titles, types=types, creators=creators)))
 
     def deleteSuggestions(self, identifier):
-        self._index.delete(identifier)
+        yield self._connect.send("/delete?{}".format(urlencode(dict(identifier=identifier))))
 
-    def registerFilterKeySet(self, name, keySet):
-        self._index.registerFilterKeySet(name, keySet)
+    # def registerFilterKeySet(self, name, keySet):
+    #     self._index.registerFilterKeySet(name, keySet)
 
-    def createSuggestionNGramIndex(self, wait=False, verbose=True):
-        self._index.createSuggestionNGramIndex(wait, verbose)
+    def createSuggestionNGramIndex(self):
+        yield self._connect.send("/createSuggestionNGramIndex")
 
     def suggest(self, value, trigram=False, filters=None, keySetName=None):
-        if not self._reader:
-            return []
-        return list(self._reader.suggest(value, trigram, filters, keySetName))
+        suggestions = yield self._connect.send("/suggest", JsonDict(dict(value=value, trigram=trigram, filters=filters or [], keySetName=keySetName)))
+        raise StopIteration([Suggestion(s) for s in suggestions])
 
-    def indexingState(self):
-        indexingState = self._index.indexingState()
-        if indexingState is not None:
-            return dict(started=int(indexingState.started), count=int(indexingState.count))
-        return None
+    # def indexingState(self):
+    #     indexingState = self._index.indexingState()
+    #     if indexingState is not None:
+    #         return dict(started=int(indexingState.started), count=int(indexingState.count))
+    #     return None
 
-    def totalShingleRecords(self):
-        return int(self._index.numDocs())
+    # def totalShingleRecords(self):
+    #     return int(self._index.numDocs())
 
-    def totalSuggestions(self):
-        return int(self._reader.numDocs())
+    # def totalSuggestions(self):
+    #     return int(self._reader.numDocs())
 
     def handleRequest(self, arguments, path, **kwargs):
         value = arguments.get("value", [None])[0]
@@ -94,7 +88,7 @@ class SuggestionIndexComponent(Observable):
         if value:
             t0 = time()
             try:
-                suggest = self.suggest(value, trigram=trigram, filters=filters, keySetName=apikey)
+                suggest = yield self.suggest(value, trigram=trigram, filters=filters, keySetName=apikey)
             except Exception, e:
                 yield serverErrorPlainText
                 yield str(e)
@@ -137,14 +131,18 @@ class SuggestionIndexComponent(Observable):
                 result.append(concepts)
         yield JsonList(result).dumps()
 
-    def commit(self):
-        self._index.commit()
+    # def commit(self):
+    #     self._index.commit()
 
-    def handleShutdown(self):
-        print 'handle shutdown: saving SuggestionIndexComponent'
-        from sys import stdout; stdout.flush()
-        self._index.close()
-        self._reader.close()
+    # def handleShutdown(self):
+    #     print 'handle shutdown: saving SuggestionIndexComponent'
+    #     from sys import stdout; stdout.flush()
+    #     self._index.close()
+    #     self._reader.close()
+
+class Suggestion(dict):
+    def __getattr__(self, key):
+        return self[key]
 
 
 def match(value, suggestion):

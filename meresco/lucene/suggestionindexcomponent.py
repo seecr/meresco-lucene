@@ -67,11 +67,13 @@ class SuggestionIndexComponent(Observable):
     #         return dict(started=int(indexingState.started), count=int(indexingState.count))
     #     return None
 
-    # def totalShingleRecords(self):
-    #     return int(self._index.numDocs())
+    def totalShingleRecords(self):
+        total = yield self._connect.read("/totalRecords")
+        raise StopIteration(int(total))
 
-    # def totalSuggestions(self):
-    #     return int(self._reader.numDocs())
+    def totalSuggestions(self):
+        total = yield self._connect.read("/totalSuggestions")
+        raise StopIteration(int(total))
 
     def handleRequest(self, arguments, path, **kwargs):
         value = arguments.get("value", [None])[0]
@@ -131,8 +133,8 @@ class SuggestionIndexComponent(Observable):
                 result.append(concepts)
         yield JsonList(result).dumps()
 
-    # def commit(self):
-    #     self._index.commit()
+    def commit(self):
+        yield self._connect.send("/commit")
 
     # def handleShutdown(self):
     #     print 'handle shutdown: saving SuggestionIndexComponent'

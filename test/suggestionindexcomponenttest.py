@@ -46,6 +46,13 @@ class SuggestionIndexComponentTest(SeecrTestCase):
             yield
         self.sic._connect._post = mockPost
 
+        self.get = []
+        def mockGet(path, **kwargs):
+            self.get.append(path)
+            raise StopIteration(self.response)
+            yield
+        self.sic._connect._get = mockGet
+
     def testAdd(self):
         consume(self.sic.addSuggestions(identifier="id:1", key=1, values=[dict(title="harry", type="uri:book", creator="rowling")]))
         self.assertEqual(1, len(self.post))
@@ -75,14 +82,11 @@ class SuggestionIndexComponentTest(SeecrTestCase):
         suggestions = retval(self.sic.suggest("ha"))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/suggest', self.post[0]['path'])
-        self.assertEqual({"value": "ha", "trigram": False, "filters": None, "keySetName": None}, loads(self.post[0]['data']))
+        self.assertEqual({"value": "ha", "trigram": False, "filters": [], "keySetName": None}, loads(self.post[0]['data']))
 
         self.assertEquals([u"hallo", u"harry"], [s.suggestion for s in suggestions])
         self.assertEquals([u"uri:book", None], [s.type for s in suggestions])
         self.assertEquals([u"by:me", None], [s.creator for s in suggestions])
-
-
-        # self.assertEquals(5, sic.totalSuggestions())
 
     def testHandleRequest(self):
         self.response = dumps([
@@ -138,6 +142,27 @@ Access-Control-Max-Age: 86400""", header)
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={})).split(CRLF*2)
         self.assertEquals('[]', body)
 
+    def testCommit(self):
+        consume(self.sic.commit())
+        self.assertEqual(1, len(self.post))
+        self.assertEqual('/commit', self.post[0]['path'])
+        self.assertEqual(None, self.post[0]['data'])
+
+    def testTotalShingleRecords(self):
+        self.response = "10"
+        total = retval(self.sic.totalShingleRecords())
+        self.assertEqual(10, total)
+        self.assertEqual(0, len(self.post))
+        self.assertEqual(1, len(self.get))
+        self.assertEqual('/totalRecords', self.get[0])
+
+    def testTotalSuggestions(self):
+        self.response = "10"
+        total = retval(self.sic.totalSuggestions())
+        self.assertEqual(10, total)
+        self.assertEqual(0, len(self.post))
+        self.assertEqual(1, len(self.get))
+        self.assertEqual('/totalSuggestions', self.get[0])
 
 
 

@@ -41,6 +41,11 @@ class SuggestionServerTest(IntegrationTestCase):
         try:
             header, body = postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
             self.assertTrue("200 OK" in header.upper(), header + body)
+
+            header, body = postRequest(self.suggestionServerPort, '/totalRecords', data=data, parse=False)
+            self.assertEqual("1", body)
+            header, body = postRequest(self.suggestionServerPort, '/totalSuggestions', data=data, parse=False)
+            self.assertEqual("0", body)
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
 
@@ -116,7 +121,6 @@ class SuggestionServerTest(IntegrationTestCase):
         try:
             postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex', data=None, parse=False)
             header, body = getRequest(port=self.httpPort, path='/suggestion', arguments={'value': 'ha'}, parse=False)
-            print header, body
             self.assertEqual(["ha", ["harry", "hallo"]], loads(body))
 
             header, body = getRequest(port=self.httpPort, path='/suggestion', arguments={'value': 'ha', "filter": "type=uri:book"}, parse=False)

@@ -24,15 +24,12 @@
 
 package org.meresco.lucene.suggestion;
 
-import java.io.IOException;
-
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -40,7 +37,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.OutOfMemoryShutdown;
 import org.meresco.lucene.http.AbstractMerescoLuceneHandler;
-import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Suggestion;
 
 public class SuggestionHandler extends AbstractMerescoLuceneHandler implements Handler {
@@ -75,7 +71,13 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
 	        	case "/commit":
 	        	    suggestionIndex.commit();
 	        	    break;
-	        	default:
+	        	case "/totalRecords":
+	        	    response.getWriter().write(Integer.toString(suggestionIndex.numDocs()));
+	        	    break;
+	        	case "/totalSuggestions":
+                    response.getWriter().write(Integer.toString(suggestionIndex.getSuggestionsReader().numDocs()));
+                    break;
+                default:
 	        	    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
 	        	    baseRequest.setHandled(true);
 	        	    return;

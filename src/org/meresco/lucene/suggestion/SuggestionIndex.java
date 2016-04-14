@@ -158,6 +158,8 @@ public class SuggestionIndex {
 
 		        	if (currentReader != null)
 		        	    currentReader.reopen();
+		        	else
+		        	    createSuggestionsReader();
 		        } catch (IOException e) {
 					e.printStackTrace();
 				} finally {
@@ -199,11 +201,14 @@ public class SuggestionIndex {
         return numDocs;
     }
 
-    public SuggestionNGramIndex.Reader getSuggestionsReader() throws IOException {
+    public void createSuggestionsReader() throws IOException {
         this.currentReader = this.suggestionNGramIndex.createReader(this.filterKeySets);
+    }
+    
+    public SuggestionNGramIndex.Reader getSuggestionsReader() throws IOException {
         return this.currentReader;
     }
-
+    
     private void maybeCommitAfterUpdate() throws IOException {
         this.commitCount++;
         if (this.commitCount >= this.maxCommitCount) {

@@ -70,6 +70,8 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.Utils;
+import org.meresco.lucene.search.SuperIndexSearcher;
+import org.meresco.lucene.search.TopScoreDocSuperCollector;
 import org.meresco.lucene.suggestion.SuggestionIndex.IndexingState;
 
 
@@ -202,7 +204,7 @@ public class SuggestionNGramIndex {
     public static class Reader {
         private FSDirectory directory;
     	private DirectoryReader reader;
-        private IndexSearcher searcher;
+        private SuperIndexSearcher searcher;
         private Map<String, DocIdSet> filterKeySets;
         private Map<String, Filter> keySetFilters = new HashMap<>();
         private Map<String, Filter> filterCache = new HashMap<>();
@@ -217,11 +219,11 @@ public class SuggestionNGramIndex {
             return this.reader.numDocs();
         }
 
-        public Suggestion[] suggest(String value, Boolean trigram, String[] filters) throws IOException {
+        public Suggestion[] suggest(String value, Boolean trigram, String[] filters) throws Exception {
             return suggest(value, trigram, filters, null);
         }
 
-    	public Suggestion[] suggest(String value, Boolean trigram, String[] filters, String keySetName) throws IOException {
+    	public Suggestion[] suggest(String value, Boolean trigram, String[] filters, String keySetName) throws Exception {
             String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
             BooleanQuery query = new BooleanQuery();
             List<String> ngrams = ngrams(value, trigram);
@@ -245,7 +247,9 @@ public class SuggestionNGramIndex {
             else if (keySetFilter != null) {
                 filter = new ChainedFilter(new Filter[]{filter, keySetFilter}, ChainedFilter.AND);
             }
-            TopDocs t = searcher.search(query, filter, 25);
+            TopScoreDocSuperCollector collector = new TopScoreDocSuperCollector(25, false);
+            searcher.search(query, filter, collector);
+            TopDocs t = collector.topDocs(0);
             Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
             int i = 0;
             for (ScoreDoc d : t.scoreDocs) {

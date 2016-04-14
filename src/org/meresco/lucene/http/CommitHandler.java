@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.Lucene;
-import org.meresco.lucene.Shutdown;
+import org.meresco.lucene.OutOfMemoryShutdown;
 import org.meresco.lucene.numerate.TermNumerator;
 
 
@@ -40,7 +40,7 @@ public class CommitHandler extends AbstractMerescoLuceneHandler implements Handl
     private TermNumerator termNumerator;
     private List<Lucene> lucenes;
 
-    public CommitHandler(TermNumerator termNumerator, List<Lucene> lucenes, Shutdown shutdown) {
+    public CommitHandler(TermNumerator termNumerator, List<Lucene> lucenes, OutOfMemoryShutdown shutdown) {
         super(shutdown);
         this.termNumerator = termNumerator;
         this.lucenes = lucenes;

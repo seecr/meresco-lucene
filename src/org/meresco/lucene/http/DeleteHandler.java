@@ -30,13 +30,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.Lucene;
-import org.meresco.lucene.Shutdown;
+import org.meresco.lucene.OutOfMemoryShutdown;
 
 public class DeleteHandler extends AbstractMerescoLuceneHandler {
 
     private Lucene lucene;
 
-    public DeleteHandler(Lucene lucene, Shutdown shutdown) {
+    public DeleteHandler(Lucene lucene, OutOfMemoryShutdown shutdown) {
         super(shutdown);
         this.lucene = lucene;
     }

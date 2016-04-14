@@ -47,7 +47,8 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.MultiLucene;
-import org.meresco.lucene.Shutdown;
+import org.meresco.lucene.OutOfMemoryShutdown;
+import org.meresco.lucene.LuceneShutdown;
 import org.meresco.lucene.numerate.TermNumerator;
 
 import sun.misc.Signal;
@@ -106,7 +107,7 @@ public class LuceneHttpServer {
         http.setPort(port);
         server.addConnector(http);
         
-        Shutdown shutdown = new Shutdown(server, lucenes, termNumerator, storeLocation);
+        OutOfMemoryShutdown shutdown = new LuceneShutdown(server, lucenes, termNumerator, storeLocation);
         for (Lucene lucene : lucenes) {
             String core = lucene.name;
             ContextHandler context = new ContextHandler("/" + core + "/query");
@@ -156,7 +157,7 @@ public class LuceneHttpServer {
         server.join();
     }
 
-    static void registerShutdownHandler(final Shutdown shutdown) {
+    static void registerShutdownHandler(final OutOfMemoryShutdown shutdown) {
         Signal.handle(new Signal("TERM"), new SignalHandler() {
             public void handle(Signal sig) {
                 shutdown.shutdown();

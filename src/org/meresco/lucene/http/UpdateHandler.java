@@ -32,14 +32,14 @@ import org.apache.lucene.document.Document;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.DocumentStringToDocument;
 import org.meresco.lucene.Lucene;
-import org.meresco.lucene.Shutdown;
+import org.meresco.lucene.OutOfMemoryShutdown;
 import org.meresco.lucene.numerate.TermNumerator;
 
 public class UpdateHandler extends AbstractMerescoLuceneHandler {
     private Lucene lucene;
     private TermNumerator termNumerator;
 
-    public UpdateHandler(Lucene lucene, TermNumerator termNumerator, Shutdown shutdown) {
+    public UpdateHandler(Lucene lucene, TermNumerator termNumerator, OutOfMemoryShutdown shutdown) {
         super(shutdown);
         this.lucene = lucene;
         this.termNumerator = termNumerator;

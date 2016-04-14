@@ -28,7 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
-import org.meresco.lucene.Shutdown;
+import org.meresco.lucene.OutOfMemoryShutdown;
 import org.meresco.lucene.Utils;
 import org.meresco.lucene.numerate.TermNumerator;
 
@@ -36,7 +36,7 @@ import org.meresco.lucene.numerate.TermNumerator;
 public class NumerateHandler extends AbstractMerescoLuceneHandler {
     private TermNumerator termNumerator;
 
-    public NumerateHandler(TermNumerator termNumerator, Shutdown shutdown) {
+    public NumerateHandler(TermNumerator termNumerator, OutOfMemoryShutdown shutdown) {
         super(shutdown);
         this.termNumerator = termNumerator;
     }

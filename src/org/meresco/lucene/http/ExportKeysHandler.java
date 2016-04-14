@@ -35,13 +35,13 @@ import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.ComposedQuery;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.MultiLucene;
-import org.meresco.lucene.Shutdown;
+import org.meresco.lucene.OutOfMemoryShutdown;
 
 
 public class ExportKeysHandler extends AbstractMerescoLuceneHandler {
     private MultiLucene multiLucene;
 
-    public ExportKeysHandler(MultiLucene multiLucene, Shutdown shutdown) {
+    public ExportKeysHandler(MultiLucene multiLucene, OutOfMemoryShutdown shutdown) {
         super(shutdown);
         this.multiLucene = multiLucene;
     }

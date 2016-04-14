@@ -31,14 +31,14 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.LuceneResponse;
+import org.meresco.lucene.OutOfMemoryShutdown;
 import org.meresco.lucene.QueryData;
-import org.meresco.lucene.Shutdown;
 
 
 public class QueryHandler extends AbstractMerescoLuceneHandler {
     private Lucene lucene;
 
-    public QueryHandler(Lucene lucene, Shutdown shutdown) {
+    public QueryHandler(Lucene lucene, OutOfMemoryShutdown shutdown) {
         super(shutdown);
         this.lucene = lucene;
     }

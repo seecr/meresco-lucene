@@ -35,13 +35,13 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.Lucene.TermCount;
-import org.meresco.lucene.Shutdown;
+import org.meresco.lucene.OutOfMemoryShutdown;
 
 public class PrefixSearchHandler extends AbstractMerescoLuceneHandler {
 
     private Lucene lucene;
 
-    public PrefixSearchHandler(Lucene lucene, Shutdown shutdown) {
+    public PrefixSearchHandler(Lucene lucene, OutOfMemoryShutdown shutdown) {
         super(shutdown);
         this.lucene = lucene;
     }

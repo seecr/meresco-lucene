@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.OutOfMemoryShutdown;
 import org.meresco.lucene.http.AbstractMerescoLuceneHandler;
+import org.meresco.lucene.suggestion.SuggestionIndex.IndexingState;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Suggestion;
 
 public class SuggestionHandler extends AbstractMerescoLuceneHandler implements Handler {
@@ -48,50 +49,48 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
     }
 
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
-        if (request.getMethod() == "POST") {
-        	switch (request.getRequestURI()) {
-	        	case "/add":
-	        	    String identifier = request.getParameter("identifier");
-            	    JsonObject add = Json.createReader(request.getReader()).readObject();
-            	    int key = add.getInt("key");
-            	    suggestionIndex.add(identifier, key, jsonArrayToStringArray(add.getJsonArray("values")), jsonArrayToStringArray(add.getJsonArray("types")), jsonArrayToStringArray(add.getJsonArray("creators")));
-	            	break;
-	        	case "/delete":
-	                suggestionIndex.delete(request.getParameter("identifier"));
-		            break;
-	        	case "/createSuggestionNGramIndex":
-        	        suggestionIndex.createSuggestionNGramIndex(true, true);
-                    break;
-	        	case "/suggest":
-	        	    JsonObject suggest = Json.createReader(request.getReader()).readObject();
-	        	    String keySetName = suggest.get("keySetName") == JsonValue.NULL ? null : suggest.getString("keySetName"); 
-	        	    Suggestion[] suggestions = suggestionIndex.getSuggestionsReader().suggest(suggest.getString("value"), suggest.getBoolean("trigram"), jsonArrayToStringArray(suggest.getJsonArray("filters")), keySetName);
-	        	    response.getWriter().write(suggestionsToJson(suggestions).toString());
-	        	    break;
-	        	case "/commit":
-	        	    suggestionIndex.commit();
-	        	    break;
-	        	case "/totalRecords":
-	        	    response.getWriter().write(Integer.toString(suggestionIndex.numDocs()));
-	        	    break;
-	        	case "/totalSuggestions":
-                    response.getWriter().write(Integer.toString(suggestionIndex.getSuggestionsReader().numDocs()));
-                    break;
-                default:
-	        	    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-	        	    baseRequest.setHandled(true);
-	        	    return;
-        	}
-            response.setStatus(HttpServletResponse.SC_OK);
-            baseRequest.setHandled(true);
-        } else if (request.getMethod() == "GET") {
-            if (request.getRequestURI().equals("/info")) {
-                response.setStatus(HttpServletResponse.SC_OK);
-//                response.setContentType("application/json");
-//                response.getWriter().write("{\"total\": " + termNumerator.size() + "}");
-                baseRequest.setHandled(true);
-            }
-        }
+    	switch (request.getRequestURI()) {
+        	case "/add":
+        	    String identifier = request.getParameter("identifier");
+        	    JsonObject add = Json.createReader(request.getReader()).readObject();
+        	    int key = add.getInt("key");
+        	    suggestionIndex.add(identifier, key, jsonArrayToStringArray(add.getJsonArray("values")), jsonArrayToStringArray(add.getJsonArray("types")), jsonArrayToStringArray(add.getJsonArray("creators")));
+            	break;
+        	case "/delete":
+                suggestionIndex.delete(request.getParameter("identifier"));
+	            break;
+        	case "/createSuggestionNGramIndex":
+    	        suggestionIndex.createSuggestionNGramIndex(true, true);
+                break;
+        	case "/suggest":
+        	    JsonObject suggest = Json.createReader(request.getReader()).readObject();
+        	    String keySetName = suggest.get("keySetName") == JsonValue.NULL ? null : suggest.getString("keySetName"); 
+        	    Suggestion[] suggestions = suggestionIndex.getSuggestionsReader().suggest(suggest.getString("value"), suggest.getBoolean("trigram"), jsonArrayToStringArray(suggest.getJsonArray("filters")), keySetName);
+        	    response.getWriter().write(suggestionsToJson(suggestions).toString());
+        	    break;
+        	case "/commit":
+        	    suggestionIndex.commit();
+        	    break;
+        	case "/totalRecords":
+        	    response.getWriter().write(Integer.toString(suggestionIndex.numDocs()));
+        	    break;
+        	case "/totalSuggestions":
+                response.getWriter().write(Integer.toString(suggestionIndex.getSuggestionsReader().numDocs()));
+                break;
+        	case "/indexingState":
+        	    IndexingState state = suggestionIndex.indexingState();
+        	    String data = "{}";
+        	    if (state != null)
+        	        data = "{\"started\"=" + state.started + ", \"count\"=" + state.count + "\"}";
+        	    response.getWriter().write(data);
+        	    break;
+            default:
+        	    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        	    baseRequest.setHandled(true);
+        	    return;
+    	}
+        response.setStatus(HttpServletResponse.SC_OK);
+        baseRequest.setHandled(true);
     }
 
     static String[] jsonArrayToStringArray(JsonArray jsonStrings) {

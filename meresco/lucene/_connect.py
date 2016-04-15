@@ -34,23 +34,27 @@ class _Connect(object):
         self._pathPrefix = pathPrefix or ''
         self._observable = observable
 
-    def send(self, path, jsonDict=None):
+    def send(self, path, jsonDict=None, parse=True):
         post = lambda: self._post(path=self._pathPrefix + path, data=jsonDict.dumps() if jsonDict else None)
         try:
             body = yield post()
         except UninitializedException:
             yield self._observable.initialize()
             body = yield post()
-        raise StopIteration(loads(body) if body else None)
+        if body and parse:
+            body = loads(body)
+        raise StopIteration(body if body is not None else None)
 
-    def read(self, path):
+    def read(self, path, parse=True):
         get = lambda: self._get(path=self._pathPrefix + path)
         try:
             body = yield get()
         except UninitializedException:
             yield self._observable.initialize()
             body = yield get()
-        raise StopIteration(loads(body) if body else None)
+        if body and parse:
+            body = loads(body)
+        raise StopIteration(body if body is not None else None)
 
     def _post(self, path, data):
         statusAndHeaders, body = yield self._observable.any.httprequest1_1(method='POST', host=self._host, port=self._port, request=path, body=data)

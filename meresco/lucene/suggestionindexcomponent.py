@@ -37,7 +37,7 @@ from urllib import urlencode
 
 
 class SuggestionIndexComponent(Observable):
-    # def __init__(self, stateDir, minShingles=2, maxShingles=6, commitCount=10000, **kwargs):
+
     def __init__(self, host, port, **kwargs):
         super(SuggestionIndexComponent, self).__init__(**kwargs)
         self._connect = _Connect(host, port, observable=self)
@@ -51,7 +51,8 @@ class SuggestionIndexComponent(Observable):
     def deleteSuggestions(self, identifier):
         yield self._connect.send("/delete?{}".format(urlencode(dict(identifier=identifier))))
 
-    # def registerFilterKeySet(self, name, keySet):
+    def registerFilterKeySet(self, name, keySet):
+        pass
     #     self._index.registerFilterKeySet(name, keySet)
 
     def createSuggestionNGramIndex(self):
@@ -61,18 +62,16 @@ class SuggestionIndexComponent(Observable):
         suggestions = yield self._connect.send("/suggest", JsonDict(dict(value=value, trigram=trigram, filters=filters or [], keySetName=keySetName)))
         raise StopIteration([Suggestion(s) for s in suggestions])
 
-    # def indexingState(self):
-    #     indexingState = self._index.indexingState()
-    #     if indexingState is not None:
-    #         return dict(started=int(indexingState.started), count=int(indexingState.count))
-    #     return None
+    def indexingState(self):
+        indexingState = yield self._connect.read("/indexingState")
+        raise StopIteration(indexingState if indexingState else None)
 
     def totalShingleRecords(self):
-        total = yield self._connect.read("/totalRecords")
+        total = yield self._connect.read("/totalRecords", parse=False)
         raise StopIteration(int(total))
 
     def totalSuggestions(self):
-        total = yield self._connect.read("/totalSuggestions")
+        total = yield self._connect.read("/totalSuggestions", parse=False)
         raise StopIteration(int(total))
 
     def handleRequest(self, arguments, path, **kwargs):
@@ -136,16 +135,9 @@ class SuggestionIndexComponent(Observable):
     def commit(self):
         yield self._connect.send("/commit")
 
-    # def handleShutdown(self):
-    #     print 'handle shutdown: saving SuggestionIndexComponent'
-    #     from sys import stdout; stdout.flush()
-    #     self._index.close()
-    #     self._reader.close()
-
 class Suggestion(dict):
     def __getattr__(self, key):
         return self[key]
-
 
 def match(value, suggestion):
     matches = 0

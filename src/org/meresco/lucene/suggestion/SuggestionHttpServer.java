@@ -47,6 +47,7 @@ import sun.misc.SignalHandler;
 
 public class SuggestionHttpServer {
 
+    private static final int COMMIT_COUNT = 10000;
     private static final int MIN_SHINGLE_SIZE = 2;
     private static final int MAX_SHINGLE_SIZE = 6;
 
@@ -81,7 +82,7 @@ public class SuggestionHttpServer {
             System.exit(1);
         }
 
-        SuggestionIndex suggestionIndex = new SuggestionIndex(stateDir + "/suggestions", stateDir + "/ngram", MIN_SHINGLE_SIZE, MAX_SHINGLE_SIZE);
+        SuggestionIndex suggestionIndex = new SuggestionIndex(stateDir + "/suggestions", stateDir + "/ngram", MIN_SHINGLE_SIZE, MAX_SHINGLE_SIZE, COMMIT_COUNT);
         
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         Server server = new Server(pool);

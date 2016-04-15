@@ -42,9 +42,9 @@ class SuggestionServerTest(IntegrationTestCase):
             header, body = postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
             self.assertTrue("200 OK" in header.upper(), header + body)
 
-            header, body = postRequest(self.suggestionServerPort, '/totalRecords', data=data, parse=False)
+            header, body = getRequest(self.suggestionServerPort, '/totalRecords', parse=False)
             self.assertEqual("1", body)
-            header, body = postRequest(self.suggestionServerPort, '/totalSuggestions', data=data, parse=False)
+            header, body = getRequest(self.suggestionServerPort, '/totalSuggestions', parse=False)
             self.assertEqual("0", body)
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
@@ -128,3 +128,9 @@ class SuggestionServerTest(IntegrationTestCase):
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
             postRequest(self.suggestionServerPort, '/delete?identifier=id2', data=None, parse=False)
+
+    def testIndexingState(self):
+        header, body = getRequest(self.suggestionServerPort, '/indexingState', parse=False)
+        self.assertTrue("200 OK" in header.upper(), header + body)
+        self.assertEqual("{}", body)
+

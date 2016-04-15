@@ -197,7 +197,14 @@ Access-Control-Max-Age: 86400""", header)
         self.assertEqual(1, len(self.post))
         self.assertEqual({'data': '{"keySetName": "apikey-abc", "trigram": false, "value": "fi", "filters": []}', 'path': '/suggest'}, self.post[0])
 
+    def testIndexingState(self):
+        self.response = dumps(dict(started=12345, count=12))
+        result = retval(self.sic.indexingState())
+        self.assertEqual(dict(started=12345, count=12), result)
 
+        self.response = dumps(dict())
+        result = retval(self.sic.indexingState())
+        self.assertEqual(None, result)
 
 
 def createSuggestions():

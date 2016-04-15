@@ -26,6 +26,8 @@
 package org.meresco.lucene;
 
 import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -37,6 +39,8 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.Formatter;
 import java.util.List;
+
+import org.apache.lucene.util.OpenBitSet;
 
 public class Utils {
 	public static String getStackTrace(Throwable aThrowable) {
@@ -96,4 +100,24 @@ public class Utils {
 		formatter.close();
 		return result;
 	}
+	
+	public static OpenBitSet readOpenBitSet(InputStream input) throws IOException {
+	    DataInputStream dis = new DataInputStream(input);
+        int numWords = dis.readInt();
+        long[] bits = new long[numWords];
+        for (int i = 0; i < bits.length; i++) {
+            bits[i] = dis.readLong();
+        }
+        return new OpenBitSet(bits, numWords);
+	}
+
+    public static void writeOpenBitSet(OpenBitSet bitSet, OutputStream output) throws IOException {
+        DataOutputStream dos = new DataOutputStream(output);
+        dos.writeInt(bitSet.getNumWords());
+        long[] bits = bitSet.getBits();
+        for (int i = 0; i < bits.length; i++) {
+            dos.writeLong(bits[i]);
+        }
+        dos.flush();
+    }
 }

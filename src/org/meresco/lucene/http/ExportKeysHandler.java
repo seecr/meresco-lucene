@@ -25,9 +25,6 @@
 
 package org.meresco.lucene.http;
 
-import java.io.DataOutputStream;
-import java.io.OutputStream;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -36,6 +33,7 @@ import org.meresco.lucene.ComposedQuery;
 import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.MultiLucene;
 import org.meresco.lucene.OutOfMemoryShutdown;
+import org.meresco.lucene.Utils;
 
 
 public class ExportKeysHandler extends AbstractMerescoLuceneHandler {
@@ -60,13 +58,6 @@ public class ExportKeysHandler extends AbstractMerescoLuceneHandler {
         }
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/octet-stream");
-        OutputStream outputStream = response.getOutputStream();
-        DataOutputStream dos = new DataOutputStream(outputStream);
-        dos.writeInt(luceneResponse.keys.getNumWords());
-        long[] bits = luceneResponse.keys.getBits();
-        for (int i = 0; i < bits.length; i++) {
-            dos.writeLong(bits[i]);
-        }
-        dos.flush();
+        Utils.writeOpenBitSet(luceneResponse.keys, response.getOutputStream());
     }
 }

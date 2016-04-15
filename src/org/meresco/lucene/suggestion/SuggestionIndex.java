@@ -129,7 +129,7 @@ public class SuggestionIndex {
         maybeCommitAfterUpdate();
     }
     
-    public void registerFilterKeySet(String name, DocIdSet keySet) {
+    public void registerFilterKeySet(String name, DocIdSet keySet) throws IOException {
         this.filterKeySets.put(name, keySet);
     }
 

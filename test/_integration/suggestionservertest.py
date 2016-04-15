@@ -26,10 +26,10 @@
 
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import postRequest, getRequest
-from os import kill, remove
-from os.path import isfile, join
-from time import sleep
 from simplejson import loads
+from org.apache.lucene.util import OpenBitSet
+from StringIO import StringIO
+from struct import pack
 
 
 class SuggestionServerTest(IntegrationTestCase):
@@ -135,3 +135,18 @@ class SuggestionServerTest(IntegrationTestCase):
         self.assertTrue("200 OK" in header.upper(), header + body)
         self.assertEqual("{}", body)
 
+    def testRegisterKeySet(self):
+        keySet = OpenBitSet()
+        keySet.set(2L)
+
+        header, body = postRequest(self.suggestionServerPort, '/registerFilterKeySet?name=test', data=openBitSetAsBytes(keySet), parse=False)
+        self.assertTrue("200 OK" in header.upper(), header + body)
+
+
+def openBitSetAsBytes(bitSet):
+    s = StringIO()
+    s.write(pack('>i', bitSet.getNumWords()))
+    bits = bitSet.getBits()
+    for i in xrange(0, len(bits)):
+        s.write(pack('>q', bits[i]))
+    return s.getvalue()

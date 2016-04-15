@@ -34,8 +34,8 @@ class _Connect(object):
         self._pathPrefix = pathPrefix or ''
         self._observable = observable
 
-    def send(self, path, jsonDict=None, parse=True):
-        post = lambda: self._post(path=self._pathPrefix + path, data=jsonDict.dumps() if jsonDict else None)
+    def send(self, path, jsonDict=None, data=None, parse=True):
+        post = lambda: self._post(path=self._pathPrefix + path, data=jsonDict.dumps() if jsonDict else data)
         try:
             body = yield post()
         except UninitializedException:

@@ -24,6 +24,8 @@
 
 package org.meresco.lucene.suggestion;
 
+import java.io.DataInputStream;
+
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
@@ -33,12 +35,15 @@ import javax.json.JsonValue;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.lucene.util.OpenBitSet;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.OutOfMemoryShutdown;
+import org.meresco.lucene.Utils;
 import org.meresco.lucene.http.AbstractMerescoLuceneHandler;
 import org.meresco.lucene.suggestion.SuggestionIndex.IndexingState;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Suggestion;
+
 
 public class SuggestionHandler extends AbstractMerescoLuceneHandler implements Handler {
     private SuggestionIndex suggestionIndex;
@@ -84,6 +89,9 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
         	        data = "{\"started\"=" + state.started + ", \"count\"=" + state.count + "\"}";
         	    response.getWriter().write(data);
         	    break;
+        	case "/registerFilterKeySet":
+         	    suggestionIndex.registerFilterKeySet(request.getParameter("name"), Utils.readOpenBitSet(request.getInputStream()));
+         	    break;
             default:
         	    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         	    baseRequest.setHandled(true);

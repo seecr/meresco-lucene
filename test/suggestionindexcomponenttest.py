@@ -179,21 +179,24 @@ Access-Control-Max-Age: 86400""", header)
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"], "filter": ["type=uri:track"]})).split(CRLF*2)
         self.assertEqual('["ha", ["harry"], [["harry", "uri:track", null]]]', body)
         self.assertEqual(1, len(self.post))
-        self.assertEqual({'data': '{"keySetName": null, "trigram": false, "value": "ha", "filters": ["type=uri:track"]}', 'path': '/suggest'}, self.post[0])
+        self.assertEqual({'data': '{"keySetName": null, "trigram": false, "filters": ["type=uri:track"], "value": "ha"}', 'path': '/suggest'}, self.post[0])
+
+    def testRegisterFilter(self):
+        consume(self.sic.registerFilterKeySet("apikey-abc", 'an-open-bit-set'))
+
+        self.assertEqual(1, len(self.post))
+        self.assertEqual('/registerFilterKeySet?name=apikey-abc', self.post[0]['path'])
+        self.assertEqual('an-open-bit-set', self.post[0]['data'])
 
     def testFilterByKeySet(self):
         self.response = dumps([
             {"suggestion": "fietsbel", "type": "uri:book", "creator": None, "score": 1.0},
         ])
 
-        # bits = OpenBitSet()
-        # bits.set(2L)
-        # consume(self.sic.registerFilterKeySet("apikey-abc", bits))
-
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={"value": ["fi"], "apikey": ["apikey-abc"]})).split(CRLF*2)
         self.assertEqual('["fi", ["fietsbel"]]', body)
         self.assertEqual(1, len(self.post))
-        self.assertEqual({'data': '{"keySetName": "apikey-abc", "trigram": false, "value": "fi", "filters": []}', 'path': '/suggest'}, self.post[0])
+        self.assertEqual({'data': '{"keySetName": "apikey-abc", "trigram": false, "filters": [], "value": "fi"}', 'path': '/suggest'}, self.post[0])
 
     def testIndexingState(self):
         self.response = dumps(dict(started=12345, count=12))

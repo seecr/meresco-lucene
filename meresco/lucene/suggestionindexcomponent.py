@@ -47,20 +47,19 @@ class SuggestionIndexComponent(Observable):
         titles = [v.get('title') for v in values]
         types = [v.get('type') for v in values]
         creators = [v.get('creator') for v in values]
-        yield self._connect.send("/add?{}".format(urlencode(dict(identifier=identifier))), JsonDict(dict(key=key, values=titles, types=types, creators=creators)))
+        yield self._connect.send("/add?{}".format(urlencode(dict(identifier=identifier))), JsonDict(key=key, values=titles, types=types, creators=creators))
 
     def deleteSuggestions(self, identifier):
         yield self._connect.send("/delete?{}".format(urlencode(dict(identifier=identifier))))
 
     def registerFilterKeySet(self, name, keySet):
-        pass
-    #     self._index.registerFilterKeySet(name, keySet)
+        yield self._connect.send("/registerFilterKeySet?{}".format(urlencode(dict(name=name))), data=keySet)
 
     def createSuggestionNGramIndex(self):
         yield self._connect.send("/createSuggestionNGramIndex")
 
     def suggest(self, value, trigram=False, filters=None, keySetName=None):
-        suggestions = yield self._connect.send("/suggest", JsonDict(dict(value=value, trigram=trigram, filters=filters or [], keySetName=keySetName)))
+        suggestions = yield self._connect.send("/suggest", JsonDict(value=value, trigram=trigram, filters=filters or [], keySetName=keySetName))
         raise StopIteration([Suggestion(s) for s in suggestions])
 
     def indexingState(self):

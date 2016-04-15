@@ -164,64 +164,40 @@ Access-Control-Max-Age: 86400""", header)
         self.assertEqual(1, len(self.get))
         self.assertEqual('/totalSuggestions', self.get[0])
 
-
-
-    @stdout_replaced
-    def testPersistentShingles(self):
-        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions(identifier="id:1", key=1, values=createSuggestions())
-        sic.createSuggestionNGramIndex(wait=True, verbose=False)
-        sic.handleShutdown()
-
-        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        suggestions = sic.suggest("ha")
-        self.assertEquals([u"hallo", u"harry"], [s.suggestion for s in suggestions])
-
-    def testAddDelete(self):
-        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        sic.addSuggestions(identifier="id:1", key=1, values=createSuggestions())
-        sic.addSuggestions(identifier="id:2", key=1, values=createSuggestions())
-        self.assertEquals(2, sic.totalShingleRecords())
-        sic.deleteSuggestions("id:1")
-        self.assertEquals(1, sic.totalShingleRecords())
-
     def testSkipDuplicates(self):
-        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        suggestions = createSuggestions()
-        suggestions.append(dict(title="harry", type="uri:e-book"))
-        suggestions.append(dict(title="harry", type="uri:track"))
-        sic.addSuggestions(identifier="id:1", key=1, values=suggestions)
-        sic.createSuggestionNGramIndex(wait=True, verbose=False)
-        header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"]})).split(CRLF*2)
-        self.assertEqual('["ha", ["hallo", "harry"], [["hallo", "uri:book", "by:me"], ["harry", "uri:book", "rowling"], ["harry", "uri:e-book", null], ["harry", "uri:track", null]]]', body)
+        self.response = dumps([
+            {"suggestion": "hallo", "type": "uri:book", "creator": 'by:me', "score": 1.0},
+            {"suggestion": "harry", "type": "uri:book", "creator": 'rowling', "score": 1.0},
+            {"suggestion": "harry", "type": "uri:track", "creator": None, "score": 1.0},
+            {"suggestion": "harry", "type": "uri:e-book", "creator": None, "score": 1.0},
+        ])
+        header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"]})).split(CRLF*2)
+        self.assertEqual('["ha", ["hallo", "harry"], [["hallo", "uri:book", "by:me"], ["harry", "uri:book", "rowling"], ["harry", "uri:track", null], ["harry", "uri:e-book", null]]]', body)
 
     def testFilters(self):
-        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        suggestions = createSuggestions()
-        suggestions.append(dict(title="harry", type="uri:e-book"))
-        suggestions.append(dict(title="harry", type="uri:track"))
-        sic.addSuggestions(identifier="id:1", key=1, values=suggestions)
-        sic.createSuggestionNGramIndex(wait=True, verbose=False)
-        header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"], "filter": ["type=uri:track"]})).split(CRLF*2)
+        self.response = dumps([
+            {"suggestion": "harry", "type": "uri:track", "creator": None, "score": 1.0},
+        ])
+        header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"], "filter": ["type=uri:track"]})).split(CRLF*2)
         self.assertEqual('["ha", ["harry"], [["harry", "uri:track", null]]]', body)
+        self.assertEqual(1, len(self.post))
+        self.assertEqual({'data': '{"keySetName": null, "trigram": false, "value": "ha", "filters": ["type=uri:track"]}', 'path': '/suggest'}, self.post[0])
 
     def testFilterByKeySet(self):
-        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        suggestions = createSuggestions()
-        sic.addSuggestions(identifier="id:1", key=1, values=suggestions)
-        suggestions = [
-            dict(title="fietsbel", type="uri:book", creator="Anonymous")
-        ]
-        sic.addSuggestions(identifier="id:2", key=2, values=suggestions)
-        sic.createSuggestionNGramIndex(wait=True, verbose=False)
-        bits = OpenBitSet()
-        bits.set(2L)
-        sic.registerFilterKeySet("apikey-abc", bits)
+        self.response = dumps([
+            {"suggestion": "fietsbel", "type": "uri:book", "creator": None, "score": 1.0},
+        ])
 
-        header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["fi"], "apikey": ["apikey-abc"]})).split(CRLF*2)
+        # bits = OpenBitSet()
+        # bits.set(2L)
+        # consume(self.sic.registerFilterKeySet("apikey-abc", bits))
+
+        header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={"value": ["fi"], "apikey": ["apikey-abc"]})).split(CRLF*2)
         self.assertEqual('["fi", ["fietsbel"]]', body)
-        header, body = asString(sic.handleRequest(path='/suggestion', arguments={"value": ["fi"], "apikey": ["apikey-never-registered"]})).split(CRLF*2)
-        self.assertEqual('["fi", ["fiets", "fietsbel", "fiets mobiel"]]', body)
+        self.assertEqual(1, len(self.post))
+        self.assertEqual({'data': '{"keySetName": "apikey-abc", "trigram": false, "value": "fi", "filters": []}', 'path': '/suggest'}, self.post[0])
+
+
 
 
 def createSuggestions():

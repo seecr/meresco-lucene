@@ -33,6 +33,7 @@ import java.util.List;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.OpenBitSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.SeecrTestCase;
@@ -92,6 +93,48 @@ public class SuggestionIndexTest extends SeecrTestCase {
         assertEquals("harry", suggestions[1].suggestion);
         assertEquals("uri:book", suggestions[1].type);
         assertEquals("rowling", suggestions[1].creator);
+    }
+
+    @Test
+    public void testPersistentShingles() throws Exception {
+        addSuggestions("id:1", 1);
+        index.createSuggestionNGramIndex(true, false);
+        index.close();
+
+        String suggestionIndexDir = this.tmpDir + "/suggestions";
+        String suggestionNGramIndexDir = this.tmpDir + "/ngram";
+        index = new SuggestionIndex(suggestionIndexDir, suggestionNGramIndexDir, 2, 4);
+        Suggestion[] suggestions = index.getSuggestionsReader().suggest("ha", false, null, null);
+        assertEquals("hallo", suggestions[0].suggestion);
+        assertEquals("harry", suggestions[1].suggestion);
+    }
+
+    public void testAddDelete() throws IOException {
+        addSuggestions("id:1", 1);
+        addSuggestions("id:2", 1);
+        assertEquals(2, index.numDocs());
+        index.delete("id:2");
+        assertEquals(1, index.numDocs());
+    }
+
+    public void testFilterByKeySet() throws Exception {
+        addSuggestions("id:1", 1);
+        index.add("id:2", 2, new String[] {"fietsbel"}, new String[]{"uri:book"}, new String[] {"Anonymous"});
+        index.createSuggestionNGramIndex(true, false);
+        
+        OpenBitSet bits = new OpenBitSet();
+        bits.set(2L);
+        index.registerFilterKeySet("apikey-abc", bits);
+        
+        Suggestion[] suggestions = index.getSuggestionsReader().suggest("fi", false, null, "apikey-abc");
+        assertEquals(1, suggestions.length);
+        assertEquals("fietsbel", suggestions[0].suggestion);
+        
+        suggestions = index.getSuggestionsReader().suggest("fi", false, null, "apikey-never-registered");
+        assertEquals(3, suggestions.length);
+        assertEquals("fiets", suggestions[0].suggestion);
+        assertEquals("fietsbel", suggestions[1].suggestion);
+        assertEquals("fiets mobiel", suggestions[2].suggestion);
     }
 
     public void assertSuggestion(String input, String[] expected, boolean trigram) throws Exception {

@@ -65,7 +65,7 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
                 suggestionIndex.delete(request.getParameter("identifier"));
 	            break;
         	case "/createSuggestionNGramIndex":
-    	        suggestionIndex.createSuggestionNGramIndex(true, true);
+    	        suggestionIndex.createSuggestionNGramIndex(false, true);
                 break;
         	case "/suggest":
         	    JsonObject suggest = Json.createReader(request.getReader()).readObject();

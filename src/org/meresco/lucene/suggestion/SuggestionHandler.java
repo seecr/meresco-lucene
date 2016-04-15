@@ -69,7 +69,7 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
                 break;
         	case "/suggest":
         	    JsonObject suggest = Json.createReader(request.getReader()).readObject();
-        	    String keySetName = suggest.get("keySetName") == JsonValue.NULL ? null : suggest.getString("keySetName"); 
+        	    String keySetName = suggest.get("keySetName") == JsonValue.NULL ? null : suggest.getString("keySetName");
         	    Suggestion[] suggestions = suggestionIndex.getSuggestionsReader().suggest(suggest.getString("value"), suggest.getBoolean("trigram"), jsonArrayToStringArray(suggest.getJsonArray("filters")), keySetName);
         	    response.getWriter().write(suggestionsToJson(suggestions).toString());
         	    break;
@@ -86,7 +86,7 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
         	    IndexingState state = suggestionIndex.indexingState();
         	    String data = "{}";
         	    if (state != null)
-        	        data = "{\"started\"=" + state.started + ", \"count\"=" + state.count + "\"}";
+        	        data = "{\"started\": " + state.started + ", \"count\": " + state.count + "}";
         	    response.getWriter().write(data);
         	    break;
         	case "/registerFilterKeySet":

@@ -28,9 +28,7 @@ from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
 from weightless.core import asString, consume, retval
 from meresco.components.http.utils import CRLF
 from simplejson import loads, dumps
-from seecr.test.io import stdout_replaced
 
-from org.apache.lucene.util import OpenBitSet
 
 
 class SuggestionIndexComponentTest(SeecrTestCase):
@@ -143,7 +141,7 @@ Access-Control-Max-Age: 86400""", header)
         self.assertEquals('[]', body)
 
     def testCommit(self):
-        consume(self.sic.commit())
+        self.sic.commit()
         self.assertEqual(1, len(self.post))
         self.assertEqual('/commit', self.post[0]['path'])
         self.assertEqual(None, self.post[0]['data'])

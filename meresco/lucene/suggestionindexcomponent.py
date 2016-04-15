@@ -34,6 +34,7 @@ from meresco.components.json import JsonList, JsonDict
 
 from _connect import _Connect
 from urllib import urlencode
+from weightless.io.utils import asProcess
 
 
 class SuggestionIndexComponent(Observable):
@@ -133,7 +134,7 @@ class SuggestionIndexComponent(Observable):
         yield JsonList(result).dumps()
 
     def commit(self):
-        yield self._connect.send("/commit")
+        asProcess(self._connect.send("/commit"))
 
 class Suggestion(dict):
     def __getattr__(self, key):

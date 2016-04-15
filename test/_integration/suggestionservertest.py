@@ -42,6 +42,7 @@ class SuggestionServerTest(IntegrationTestCase):
             header, body = postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
             self.assertTrue("200 OK" in header.upper(), header + body)
 
+            header, body = postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
             header, body = getRequest(self.suggestionServerPort, '/totalRecords', parse=False)
             self.assertEqual("1", body)
             header, body = getRequest(self.suggestionServerPort, '/totalSuggestions', parse=False)

@@ -51,6 +51,8 @@ import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;
 
 
 public class SuggestionIndex {
+    private static final String ID_FIELD = "__id__";
+
     public static final String CONCAT_MARKER = "$$--$$";
 
     private static final String RECORD_VALUE_FIELDNAME = "__record_value__";
@@ -84,9 +86,6 @@ public class SuggestionIndex {
     
     private int commitCount = 0;
 
-    private Field recordIdField = new Field("__id__", "", SIMPLE_NOT_STORED_STRING_FIELD);
-    private Field recordKeyField = new NumericDocValuesField(KEY_FIELDNAME, 0L);
-
 	private SuggestionNGramIndex suggestionNGramIndex;
 	private String suggestionNGramIndexDir;
     private Reader currentReader;
@@ -112,20 +111,18 @@ public class SuggestionIndex {
 
     public void add(String identifier, int key, String[] values, String[] types, String[] creators) throws IOException {
         Document recordDoc = new Document();
-        this.recordIdField.setStringValue(identifier);
-        recordDoc.add(this.recordIdField);
-        this.recordKeyField.setLongValue(key);
-        recordDoc.add(this.recordKeyField);
+        recordDoc.add(new Field(ID_FIELD, identifier, SIMPLE_NOT_STORED_STRING_FIELD));
+        recordDoc.add(new NumericDocValuesField(KEY_FIELDNAME, key));
         for (int i = 0; i < values.length; i++) {
             String value = (types[i] != null ? types[i] : "") + CONCAT_MARKER + (creators[i] != null ? creators[i] : "") + CONCAT_MARKER + values[i];
             recordDoc.add(new Field(RECORD_VALUE_FIELDNAME, value, SIMPLE_NOT_STORED_STRING_FIELD));
         }
-        this.writer.updateDocument(new Term(this.recordIdField.name(), identifier), recordDoc);
+        this.writer.updateDocument(new Term(ID_FIELD, identifier), recordDoc);
         maybeCommitAfterUpdate();
     }
 
     public void delete(String identifier) throws IOException {
-        this.writer.deleteDocuments(new Term(this.recordIdField.name(), identifier));
+        this.writer.deleteDocuments(new Term(ID_FIELD, identifier));
         maybeCommitAfterUpdate();
     }
     
@@ -133,7 +130,7 @@ public class SuggestionIndex {
         this.filterKeySets.put(name, keySet);
     }
 
-    public void createSuggestionNGramIndex(boolean wait, final boolean verbose) throws IOException {
+    public synchronized void createSuggestionNGramIndex(boolean wait, final boolean verbose) throws IOException {
     	this.commit();
 
     	Thread create = new Thread(){

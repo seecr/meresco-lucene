@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -100,11 +100,12 @@ public class Utils {
 		formatter.close();
 		return result;
 	}
-	
+
 	public static OpenBitSet readOpenBitSet(InputStream input) throws IOException {
 	    DataInputStream dis = new DataInputStream(input);
         int numWords = dis.readInt();
-        long[] bits = new long[numWords];
+        int numBits = dis.readInt();
+        long[] bits = new long[numBits];
         for (int i = 0; i < bits.length; i++) {
             bits[i] = dis.readLong();
         }
@@ -115,6 +116,7 @@ public class Utils {
         DataOutputStream dos = new DataOutputStream(output);
         dos.writeInt(bitSet.getNumWords());
         long[] bits = bitSet.getBits();
+        dos.writeInt(bits.length);
         for (int i = 0; i < bits.length; i++) {
             dos.writeLong(bits[i]);
         }

@@ -65,12 +65,14 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
                 suggestionIndex.delete(request.getParameter("identifier"));
 	            break;
         	case "/createSuggestionNGramIndex":
-    	        suggestionIndex.createSuggestionNGramIndex(false, true);
+                boolean wait = request.getParameter("wait").equals("True");
+    	        suggestionIndex.createSuggestionNGramIndex(wait, true);
                 break;
         	case "/suggest":
         	    JsonObject suggest = Json.createReader(request.getReader()).readObject();
         	    String keySetName = suggest.get("keySetName") == JsonValue.NULL ? null : suggest.getString("keySetName");
         	    Suggestion[] suggestions = suggestionIndex.getSuggestionsReader().suggest(suggest.getString("value"), suggest.getBoolean("trigram"), jsonArrayToStringArray(suggest.getJsonArray("filters")), keySetName);
+                response.setContentType("application/json");
         	    response.getWriter().write(suggestionsToJson(suggestions).toString());
         	    break;
         	case "/commit":
@@ -87,6 +89,7 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
         	    String data = "{}";
         	    if (state != null)
         	        data = "{\"started\": " + state.started + ", \"count\": " + state.count + "}";
+                response.setContentType("application/json");
         	    response.getWriter().write(data);
         	    break;
         	case "/registerFilterKeySet":

@@ -43,12 +43,17 @@ class SuggestionServerTest(IntegrationTestCase):
             self.assertTrue("200 OK" in header.upper(), header + body)
 
             header, body = postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
+
             header, body = getRequest(self.suggestionServerPort, '/totalRecords', parse=False)
+            self.assertTrue("200 OK" in header.upper(), header + body)
             self.assertEqual("1", body)
+
             header, body = getRequest(self.suggestionServerPort, '/totalSuggestions', parse=False)
+            self.assertTrue("200 OK" in header.upper(), header + body)
             self.assertEqual("0", body)
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
+            postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
 
     def testAddNulls(self):
         data = """{
@@ -60,14 +65,14 @@ class SuggestionServerTest(IntegrationTestCase):
             self.assertTrue("200 OK" in header.upper(), header + body)
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
-
+            postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
 
     def testDelete(self):
         header, body = postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
         self.assertTrue("200 OK" in header.upper(), header + body)
 
     def testCreate(self):
-        header, body = postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex', data=None, parse=False)
+        header, body = postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex?wait=True', data=None, parse=False)
         self.assertTrue("200 OK" in header.upper(), header + body)
 
     def testCommit(self):
@@ -83,6 +88,7 @@ class SuggestionServerTest(IntegrationTestCase):
         }"""
         header, body = postRequest(self.suggestionServerPort, '/suggest', data=data, parse=False)
         self.assertTrue("200 OK" in header.upper(), header + body)
+        self.assertTrue("Content-Type: application/json" in header, header)
         self.assertEqual("[]", body)
 
     def testAddCreateAndSuggest(self):
@@ -92,7 +98,7 @@ class SuggestionServerTest(IntegrationTestCase):
         }"""
         try:
             postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
-            postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex', data=None, parse=False)
+            postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex?wait=True', data=None, parse=False)
             data = """{
                 "value": "ha",
                 "trigram": false,
@@ -106,6 +112,7 @@ class SuggestionServerTest(IntegrationTestCase):
             ], loads(body))
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
+            postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
 
     def testAutocompleteWithSuggestionIndexComponent(self):
         data = """{
@@ -120,7 +127,7 @@ class SuggestionServerTest(IntegrationTestCase):
         }"""
         postRequest(self.suggestionServerPort, '/add?identifier=id2', data=data, parse=False)
         try:
-            postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex', data=None, parse=False)
+            postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex?wait=True', data=None, parse=False)
             header, body = getRequest(port=self.httpPort, path='/suggestion', arguments={'value': 'ha'}, parse=False)
             self.assertEqual(["ha", ["harry", "hallo"]], loads(body))
 
@@ -129,10 +136,12 @@ class SuggestionServerTest(IntegrationTestCase):
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
             postRequest(self.suggestionServerPort, '/delete?identifier=id2', data=None, parse=False)
+            postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
 
     def testIndexingState(self):
         header, body = getRequest(self.suggestionServerPort, '/indexingState', parse=False)
         self.assertTrue("200 OK" in header.upper(), header + body)
+        self.assertTrue("Content-Type: application/json" in header, header)
         self.assertEqual("{}", body)
 
     def testRegisterKeySet(self):

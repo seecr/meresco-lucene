@@ -65,7 +65,7 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
                 suggestionIndex.delete(request.getParameter("identifier"));
 	            break;
         	case "/createSuggestionNGramIndex":
-                boolean wait = request.getParameter("wait").equals("True");
+                boolean wait = request.getParameter("wait") == null ? false : request.getParameter("wait").equals("True");
     	        suggestionIndex.createSuggestionNGramIndex(wait, true);
                 break;
         	case "/suggest":

@@ -144,6 +144,14 @@ class SuggestionServerTest(IntegrationTestCase):
         self.assertTrue("Content-Type: application/json" in header, header)
         self.assertEqual("{}", body)
 
+        postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex', data=None, parse=False)
+        header, body = getRequest(self.suggestionServerPort, '/indexingState', parse=False)
+        self.assertTrue("200 OK" in header.upper(), header + body)
+        self.assertTrue("Content-Type: application/json" in header, header)
+        self.assertNotEqual("{}", body)
+        self.assertTrue("started" in loads(body), body)
+        self.assertTrue("count" in loads(body), body)
+
     def testRegisterKeySet(self):
         keySet = OpenBitSet()
         keySet.set(2L)

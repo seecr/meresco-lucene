@@ -156,6 +156,7 @@ def openBitSetAsBytes(bitSet):
     s = StringIO()
     s.write(pack('>i', bitSet.getNumWords()))
     bits = bitSet.getBits()
+    s.write(pack('>i', len(bits)))
     for i in xrange(0, len(bits)):
         s.write(pack('>q', bits[i]))
     return s.getvalue()

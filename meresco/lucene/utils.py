@@ -41,7 +41,8 @@ class _JsonEncoder(JSONEncoder):
 
 def readOpenBitSet(data):
     numWords = unpack('>i', data[:4])[0]
+    numBits = unpack('>i', data[4:8])[0]
     longs = []
-    for i in xrange(4, len(data), 8):
+    for i in xrange(8, len(data), 8):
         longs.append(long(unpack('>q', data[i:i+8])[0]))
     return OpenBitSet(longs, numWords)

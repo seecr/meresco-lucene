@@ -87,11 +87,9 @@ class SuggestionIndexComponentTest(SeecrTestCase):
         self.assertEquals([u"by:me", None], [s.creator for s in suggestions])
 
     def testTimestampNgramIndex(self):
-        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
-        timestamp = sic.ngramIndexTimestamp()
-        now = time()
-        # timestamp for files is not very precise
-        self.assertTrue(now - 1 < timestamp < now + 1, (timestamp, now))
+        self.response = '1461923096982'
+        timestamp = retval(self.sic.ngramIndexTimestamp())
+        self.assertAlmostEqual(1461923096.982, timestamp)
 
     def testHandleRequest(self):
         self.response = dumps([

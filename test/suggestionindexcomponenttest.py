@@ -28,7 +28,7 @@ from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
 from weightless.core import asString, consume, retval
 from meresco.components.http.utils import CRLF
 from simplejson import loads, dumps
-
+from time import time
 
 
 class SuggestionIndexComponentTest(SeecrTestCase):
@@ -85,6 +85,13 @@ class SuggestionIndexComponentTest(SeecrTestCase):
         self.assertEquals([u"hallo", u"harry"], [s.suggestion for s in suggestions])
         self.assertEquals([u"uri:book", None], [s.type for s in suggestions])
         self.assertEquals([u"by:me", None], [s.creator for s in suggestions])
+
+    def testTimestampNgramIndex(self):
+        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
+        timestamp = sic.ngramIndexTimestamp()
+        now = time()
+        # timestamp for files is not very precise
+        self.assertTrue(now - 1 < timestamp < now + 1, (timestamp, now))
 
     def testHandleRequest(self):
         self.response = dumps([

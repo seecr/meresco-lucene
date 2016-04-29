@@ -198,6 +198,10 @@ public class SuggestionIndex {
         reader.close();
         return numDocs;
     }
+    
+    public long ngramIndexTimestamp(){
+    	return new File(suggestionNGramIndexDir).lastModified();
+    }
 
     public SuggestionNGramIndex.Reader getSuggestionsReader() throws IOException {
         this.currentReader = this.suggestionNGramIndex.createReader(this.filterKeySets);

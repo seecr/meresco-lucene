@@ -8,3 +8,4 @@ build
 meresco-lucene.jar
 .pydevproject
 .settings
+.metadata

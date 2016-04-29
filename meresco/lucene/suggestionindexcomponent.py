@@ -79,6 +79,9 @@ class SuggestionIndexComponent(Observable):
     def totalSuggestions(self):
         return int(self._reader.numDocs())
 
+    def ngramIndexTimestamp(self):
+        return self._index.ngramIndexTimestamp() / 1000.0
+
     def handleRequest(self, arguments, path, **kwargs):
         value = arguments.get("value", [None])[0]
         debug = arguments.get("x-debug", ["False"])[0] != 'False'

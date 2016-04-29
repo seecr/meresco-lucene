@@ -31,6 +31,7 @@ from simplejson import loads
 from seecr.test.io import stdout_replaced
 
 from org.apache.lucene.util import OpenBitSet
+from time import time
 
 
 class SuggestionIndexComponentTest(SeecrTestCase):
@@ -61,6 +62,13 @@ class SuggestionIndexComponentTest(SeecrTestCase):
         self.assertEquals([u"hallo", u"harry"], [s.suggestion for s in suggestions])
         self.assertEquals([u"uri:book", u"uri:book"], [s.type for s in suggestions])
         self.assertEquals([u"by:me", u"rowling"], [s.creator for s in suggestions])
+
+    def testTimestampNgramIndex(self):
+        sic = SuggestionIndexComponent(self.tempdir, commitCount=1)
+        timestamp = sic.ngramIndexTimestamp()
+        now = time()
+        # timestamp for files is not very precise
+        self.assertTrue(now - 1 < timestamp < now + 1, (timestamp, now))
 
     def testHandleRequest(self):
         sic = SuggestionIndexComponent(self.tempdir, commitCount=1)

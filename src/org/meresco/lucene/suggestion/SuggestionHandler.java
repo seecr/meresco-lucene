@@ -84,7 +84,10 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
         	case "/totalSuggestions":
                 response.getWriter().write(Integer.toString(suggestionIndex.getSuggestionsReader().numDocs()));
                 break;
-        	case "/indexingState":
+        	case "/ngramIndexTimestamp":
+                response.getWriter().write(Long.toString(suggestionIndex.ngramIndexTimestamp()));
+                break;
+            case "/indexingState":
         	    IndexingState state = suggestionIndex.indexingState();
         	    String data = "{}";
         	    if (state != null)

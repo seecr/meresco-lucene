@@ -75,7 +75,8 @@ class SuggestionIndexComponent(Observable):
         raise StopIteration(int(total))
 
     def ngramIndexTimestamp(self):
-        return self._index.ngramIndexTimestamp() / 1000.0
+        timestamp = yield self._connect.read("/ngramIndexTimestamp", parse=False)
+        raise StopIteration(int(timestamp)/ 1000.0)
 
     def handleRequest(self, arguments, path, **kwargs):
         value = arguments.get("value", [None])[0]

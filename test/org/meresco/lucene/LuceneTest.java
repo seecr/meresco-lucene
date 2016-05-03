@@ -65,7 +65,6 @@ import org.apache.lucene.util.OpenBitSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.meresco.lucene.ClusterConfig.ClusterField;
 import org.meresco.lucene.Lucene.TermCount;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
@@ -77,8 +76,6 @@ import org.meresco.lucene.search.MerescoCluster.TermScore;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
-
-import com.sun.medialib.mlib.mediaLibException;
 
 
 public class LuceneTest extends SeecrTestCase {

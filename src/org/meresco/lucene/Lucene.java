@@ -67,6 +67,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.queries.ChainedFilter;
+import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CachingWrapperFilter;
@@ -720,6 +721,34 @@ public class Lucene {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             return spellChecker.suggestSimilar(new Term(field, term), count, reference.searcher.getIndexReader());
+        } finally {
+            data.getManager().release(reference);
+        }
+    }
+    
+    public LuceneResponse similarDocuments(String identifier) throws Exception {
+        SearcherAndTaxonomy reference = data.getManager().acquire();
+        try {
+            TopDocs topDocs = reference.searcher.search(new TermQuery(new Term(ID_FIELD, identifier)), 1);
+            if (topDocs.totalHits == 0)
+                return new LuceneResponse(0);
+            int docId = topDocs.scoreDocs[0].doc;
+            IndexReader reader = reference.searcher.getIndexReader();
+            CommonTermsQuery query = new CommonTermsQuery(Occur.SHOULD, Occur.SHOULD, 0.1f);
+            Fields termVectors = reader.getTermVectors(docId);
+            if (termVectors == null)
+                return new LuceneResponse(0);
+            for (String field : termVectors) {
+                TermsEnum iterator = termVectors.terms(field).iterator(null);
+                BytesRef b;
+                while ((b = iterator.next()) != null) {
+                    Term term = new Term(field, b.utf8ToString());
+//                    int idf = reader.docFreq(term);
+//                    long tf = iterator.totalTermFreq();
+                    query.add(term);
+                }
+            }
+            return executeQuery(query);
         } finally {
             data.getManager().release(reference);
         }

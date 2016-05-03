@@ -78,6 +78,8 @@ import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
 
+import com.sun.medialib.mlib.mediaLibException;
+
 
 public class LuceneTest extends SeecrTestCase {
     private Lucene lucene;
@@ -1080,6 +1082,49 @@ public class LuceneTest extends SeecrTestCase {
         QueryConverter queryConverter = lucene.getQueryConverter();
         Term drilldownTerm = queryConverter.createDrilldownTerm("dim1");
         assertEquals("otherfield", drilldownTerm.field());
+    }
+    
+    @Test
+    public void testSimilarDocuments() throws Exception {
+        FieldType textTypeWithTV = new FieldType(TextField.TYPE_NOT_STORED);
+        textTypeWithTV.setStoreTermVectors(true);
+        
+        for (int i = 0; i < 10; i++) {
+            Document doc1 = new Document();
+            doc1.add(new Field("a", "Dit is veld a", textTypeWithTV));
+            lucene.addDocument("id-" + i, doc1);    
+        }
+        
+        Document doc2 = new Document();
+        doc2.add(new Field("a", "Dit is veld a in doc 2", textTypeWithTV));
+        lucene.addDocument("id:0", doc2);
+        
+        Document doc3 = new Document();
+        doc3.add(new Field("a", "Dit is veld a in doc 3", textTypeWithTV));
+        lucene.addDocument("id:1", doc3);
+        
+        LuceneResponse response = lucene.similarDocuments("id:0");
+        assertEquals(2, response.total);
+        compareHits(response, "id:0", "id:1");
+        
+        response = lucene.similarDocuments("id-0");
+        assertEquals(12, response.total);
+    }
+    
+    @Test
+    public void testNoSimilarDocumentIfNotExists() throws Exception {
+        LuceneResponse response = lucene.similarDocuments("id:0");
+        assertEquals(0, response.total);
+    }
+
+    @Test
+    public void testNoSimilarDocumentIfNoTermVectors() throws Exception {
+        Document doc1 = new Document();
+        doc1.add(new Field("a", "Dit is veld a", TextField.TYPE_NOT_STORED));
+        lucene.addDocument("id:0", doc1); 
+        
+        LuceneResponse response = lucene.similarDocuments("id:0");
+        assertEquals(0, response.total);
     }
     
     public static void compareHits(LuceneResponse response, String... hitIds) {

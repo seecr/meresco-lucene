@@ -32,7 +32,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.Lucene;
+import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.OutOfMemoryShutdown;
+import org.meresco.lucene.QueryData;
 
 public class OtherHandler extends AbstractMerescoLuceneHandler {
 
@@ -68,6 +70,10 @@ public class OtherHandler extends AbstractMerescoLuceneHandler {
                 for (String fieldname : lucene.drilldownFieldnames(50, dim, path))
                     builder.add(fieldname);
                 result = builder.build().toString();
+                break;
+            case "/similarDocuments/":
+                String identifier = request.getParameter("identifier");
+                result = this.lucene.similarDocuments(identifier).toJson().toString();
                 break;
         }
         response.getWriter().write(result);

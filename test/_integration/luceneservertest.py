@@ -144,3 +144,8 @@ class LuceneServerTest(IntegrationTestCase):
                 self.assertTrue(isSet, i)
             else:
                 self.assertFalse(isSet, i)
+
+    def testSimilarDocs(self):
+        header, body = postRequest(self.luceneServerPort, self._path + '/similarDocuments/?identifier=id1', data="", parse=False)
+        self.assertTrue("200 OK" in header.upper(), header + 2 * CRLF + body)
+        self.assertEqual({"total":0,"queryTime":0,"hits":[]}, loads(body))

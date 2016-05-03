@@ -140,6 +140,13 @@ class Lucene(Observable):
         raise StopIteration(LuceneResponse(total=len(fieldnames), hits=fieldnames))
         yield
 
+    def similarDocuments(self, identifier):
+        args = urlencode(dict(identifier=identifier))
+        responseDict = (yield self._connect.send(path='/similarDocuments/?{}'.format(args)))
+        response = luceneResponseFromDict(responseDict)
+        raise StopIteration(response)
+        yield
+
     def getFieldRegistry(self):
         return self._fieldRegistry
 

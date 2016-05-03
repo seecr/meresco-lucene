@@ -57,7 +57,7 @@ class MultiLucene(Observable):
         yield
 
     def any_unknown(self, message, **kwargs):
-        if message in ['prefixSearch', 'fieldnames', 'drilldownFieldnames']:
+        if message in ['prefixSearch', 'fieldnames', 'drilldownFieldnames', 'similarDocuments']:
             core = kwargs.get('core')
             if core is None:
                 core = self._defaultCore

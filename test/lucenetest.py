@@ -207,3 +207,17 @@ class LuceneTest(SeecrTestCase):
         self.assertEqual({
                 "numberOfConcurrentTasks": 5,
             }, loads(self.post[1]['data']))
+
+    def testSimilarDocs(self):
+        self.response = JsonDict({
+                "total": 887,
+                "queryTime": 6,
+                "times": {"searchTime": 3},
+                "hits": [
+                        {"id": "record:1", "score": 0.1234},
+                        {"id": "record:2", "score": 0.1234},
+                    ],
+            }).dumps()
+        response = retval(self._lucene.similarDocuments(identifier='record:3'))
+        self.assertEqual(887, response.total)
+        self.assertEqual(2, len(response.hits))

@@ -121,7 +121,7 @@ public class Lucene {
     private Map<String, CachedOrdinalsReader> cachedOrdinalsReader = new HashMap<String, CachedOrdinalsReader>();
     private DirectSpellChecker spellChecker = new DirectSpellChecker();
     LuceneData data = new LuceneData();
-    
+
     public Lucene(String name, File stateDir) {
         this.name = name;
         this.stateDir = stateDir;
@@ -148,7 +148,7 @@ public class Lucene {
     public boolean hasSettings() {
         return this.data.hasSettings();
     }
-    
+
     public synchronized void close() throws IOException {
         if (commitTimer != null)
             commitTimer.cancel();
@@ -725,16 +725,17 @@ public class Lucene {
             data.getManager().release(reference);
         }
     }
-    
+
     public LuceneResponse similarDocuments(String identifier) throws Exception {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
-            TopDocs topDocs = reference.searcher.search(new TermQuery(new Term(ID_FIELD, identifier)), 1);
+            Query idQuery = new TermQuery(new Term(ID_FIELD, identifier));
+            TopDocs topDocs = reference.searcher.search(idQuery, 1);
             if (topDocs.totalHits == 0)
                 return new LuceneResponse(0);
             int docId = topDocs.scoreDocs[0].doc;
             IndexReader reader = reference.searcher.getIndexReader();
-            CommonTermsQuery query = new CommonTermsQuery(Occur.SHOULD, Occur.SHOULD, 0.1f);
+            CommonTermsQuery commonQuery = new CommonTermsQuery(Occur.SHOULD, Occur.SHOULD, 0.1f);
             Fields termVectors = reader.getTermVectors(docId);
             if (termVectors == null)
                 return new LuceneResponse(0);
@@ -743,11 +744,12 @@ public class Lucene {
                 BytesRef b;
                 while ((b = iterator.next()) != null) {
                     Term term = new Term(field, b.utf8ToString());
-//                    int idf = reader.docFreq(term);
-//                    long tf = iterator.totalTermFreq();
-                    query.add(term);
+                    commonQuery.add(term);
                 }
             }
+            BooleanQuery query = new BooleanQuery();
+            query.add(idQuery, Occur.MUST_NOT);
+            query.add(commonQuery, Occur.MUST);
             return executeQuery(query);
         } finally {
             data.getManager().release(reference);
@@ -800,7 +802,7 @@ public class Lucene {
             return false;
         }
     }
-    
+
     static class LuceneData {
         private IndexWriter indexWriter;
         private DirectoryTaxonomyWriter taxoWriter;
@@ -810,7 +812,7 @@ public class Lucene {
         private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
         private SearcherTaxonomyManager manager;
         private LuceneRefreshListener refreshListener = new LuceneRefreshListener();
-        
+
         public void commit() throws Exception {
             this.indexWriter.commit();
             this.taxoWriter.commit();
@@ -829,7 +831,7 @@ public class Lucene {
             if (this.taxoWriter != null)
                 this.taxoWriter.close();
             if (this.indexWriter != null)
-                this.indexWriter.close();            
+                this.indexWriter.close();
         }
 
         public void initSettings(File stateDir, LuceneSettings settings) throws Exception {
@@ -886,7 +888,7 @@ public class Lucene {
                 throw new UninitializedException();
             return settings;
         }
-        
+
         public boolean hasSettings() {
             return this.settings != null;
         }
@@ -914,7 +916,7 @@ public class Lucene {
                 throw new UninitializedException();
             return manager;
         }
-        
+
         private class LuceneRefreshListener implements RefreshListener {
             private boolean refreshed;
 

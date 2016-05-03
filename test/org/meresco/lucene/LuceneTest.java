@@ -94,7 +94,7 @@ public class LuceneTest extends SeecrTestCase {
         lucene.close();
         super.tearDown();
     }
-    
+
     @Test
     public void testAddDocument() throws Exception {
         Document doc = new Document();
@@ -105,7 +105,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1, response.hits.size());
         assertEquals("id1", response.hits.get(0).id);
     }
-    
+
     @Test
     public void testAddDocumentWithoutIdentifier() throws Exception {
         Document doc = new Document();
@@ -142,12 +142,12 @@ public class LuceneTest extends SeecrTestCase {
         result = lucene.executeQuery(new TermQuery(new Term("field1", "value1")));
         assertEquals(0, result.total);
     }
-    
+
     @Test
     public void testTwoQueries() throws Exception {
         LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery());
         assertEquals(0, result.total);
-        
+
         result = lucene.executeQuery(new MatchAllDocsQuery());
         assertEquals(0, result.total);
     }
@@ -633,7 +633,7 @@ public class LuceneTest extends SeecrTestCase {
 
         assertEquals(2, result.total);
         compareHits(result, "urn:1", "urn:2");
-        
+
         Collections.sort(result.hits);
         GroupingHit hit0 = (GroupingHit) result.hits.get(0);
         GroupingHit hit1 = (GroupingHit) result.hits.get(1);
@@ -876,7 +876,7 @@ public class LuceneTest extends SeecrTestCase {
         List<ClusterConfig.ClusterField> clusterFields = new ArrayList<ClusterConfig.ClusterField>();
         clusterFields.add(new ClusterConfig.ClusterField("termvector1", 1.0, null));
         lucene.getSettings().clusterConfig.clusterFields = clusterFields;
-        
+
         LuceneResponse result = lucene.executeQuery(q);
         assertEquals(4, result.hits.size());
         for (Hit hit : result.hits) {
@@ -897,7 +897,7 @@ public class LuceneTest extends SeecrTestCase {
         clusterFields.add(new ClusterConfig.ClusterField("termvector1", 1.0, null));
         clusterFields.add(new ClusterConfig.ClusterField("termvector2", 1.0, null));
         lucene.getSettings().clusterConfig.clusterFields = clusterFields;
-        
+
         result = lucene.executeQuery(q);
         assertEquals(5, result.hits.size());
         for (Hit hit : result.hits) {
@@ -973,7 +973,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(51, result.total);
         assertEquals(2, result.hits.size());
     }
-    
+
     @SuppressWarnings("serial")
     @Test
     public void testFilterCaching() throws Exception {
@@ -988,7 +988,7 @@ public class LuceneTest extends SeecrTestCase {
         LuceneResponse responseWithCaching = lucene.executeQuery(new QueryData(), new ArrayList<Query>() {{ add(query); }}, null, null, null, null);
         assertTrue(responseWithCaching.queryTime < response.queryTime);
     }
-    
+
     @Test
     public void testScoreCollectorCaching() throws Exception {
         lucene.getSettings().commitCount = 1000;
@@ -997,9 +997,9 @@ public class LuceneTest extends SeecrTestCase {
             doc1.add(new StringField("field0", "value", Store.NO));
             doc1.add(new NumericDocValuesField("field1", i));
             lucene.addDocument("id" + i, doc1);
-        }        
+        }
         lucene.realCommit();
-        
+
         long t0 = System.currentTimeMillis();
         ScoreSuperCollector scoreCollector1 = this.lucene.scoreCollector("field1", new MatchAllDocsQuery());
         long t1 = System.currentTimeMillis();
@@ -1009,7 +1009,7 @@ public class LuceneTest extends SeecrTestCase {
         assertTrue(t2 - t1 < 2);
         assertEquals(0, scoreCollector1.score(100), 0);
         assertSame(scoreCollector1, scoreCollector2);
-        
+
         Document doc3 = new Document();
         doc3.add(new NumericDocValuesField("field1", 100));
         lucene.addDocument("id3", doc3);
@@ -1018,7 +1018,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1.0, scoreCollector1.score(100), 0);
         assertNotSame(scoreCollector1, scoreCollector2);
     }
-    
+
     @Test
     public void testKeyCollectorCaching() throws Exception {
         lucene.getSettings().commitCount = 1000;
@@ -1027,7 +1027,7 @@ public class LuceneTest extends SeecrTestCase {
             doc1.add(new StringField("field0", "value", Store.NO));
             doc1.add(new NumericDocValuesField("field1", i));
             lucene.addDocument("id" + i, doc1);
-        }        
+        }
         lucene.realCommit();
         long t0 = System.currentTimeMillis();
         OpenBitSet keys1 = this.lucene.collectKeys(new MatchAllDocsQuery(), "field1", null);
@@ -1040,7 +1040,7 @@ public class LuceneTest extends SeecrTestCase {
         assertTrue(keys1.get(2));
         assertFalse(keys1.get(100));
         assertSame(keys1, keys2);
-        
+
         Document doc3 = new Document();
         doc3.add(new NumericDocValuesField("field1", 100));
         lucene.addDocument("id3", doc3);
@@ -1051,7 +1051,7 @@ public class LuceneTest extends SeecrTestCase {
         assertTrue(keys1.get(100));
         assertNotSame(keys1, keys2);
     }
-    
+
     @Test
     public void testDontClearCachesIfNothingChanged() throws Exception {
         Document doc1 = new Document();
@@ -1072,7 +1072,7 @@ public class LuceneTest extends SeecrTestCase {
         assertNotSame(scoreCollector1, scoreCollector3);
         assertNotSame(keys1, keys3);
     }
-    
+
     @Test
     public void testQueryConvert() throws Exception {
         lucene.getSettings().facetsConfig.setIndexFieldName("dim1", "otherfield");
@@ -1080,34 +1080,34 @@ public class LuceneTest extends SeecrTestCase {
         Term drilldownTerm = queryConverter.createDrilldownTerm("dim1");
         assertEquals("otherfield", drilldownTerm.field());
     }
-    
+
     @Test
     public void testSimilarDocuments() throws Exception {
         FieldType textTypeWithTV = new FieldType(TextField.TYPE_NOT_STORED);
         textTypeWithTV.setStoreTermVectors(true);
-        
+
         for (int i = 0; i < 10; i++) {
             Document doc1 = new Document();
             doc1.add(new Field("a", "Dit is veld a", textTypeWithTV));
-            lucene.addDocument("id-" + i, doc1);    
+            lucene.addDocument("id-" + i, doc1);
         }
-        
+
         Document doc2 = new Document();
         doc2.add(new Field("a", "Dit is veld a in doc 2", textTypeWithTV));
         lucene.addDocument("id:0", doc2);
-        
+
         Document doc3 = new Document();
         doc3.add(new Field("a", "Dit is veld a in doc 3", textTypeWithTV));
         lucene.addDocument("id:1", doc3);
-        
+
         LuceneResponse response = lucene.similarDocuments("id:0");
-        assertEquals(2, response.total);
-        compareHits(response, "id:0", "id:1");
-        
+        assertEquals(1, response.total);
+        compareHits(response, "id:1");
+
         response = lucene.similarDocuments("id-0");
-        assertEquals(12, response.total);
+        assertEquals(11, response.total);
     }
-    
+
     @Test
     public void testNoSimilarDocumentIfNotExists() throws Exception {
         LuceneResponse response = lucene.similarDocuments("id:0");
@@ -1118,12 +1118,12 @@ public class LuceneTest extends SeecrTestCase {
     public void testNoSimilarDocumentIfNoTermVectors() throws Exception {
         Document doc1 = new Document();
         doc1.add(new Field("a", "Dit is veld a", TextField.TYPE_NOT_STORED));
-        lucene.addDocument("id:0", doc1); 
-        
+        lucene.addDocument("id:0", doc1);
+
         LuceneResponse response = lucene.similarDocuments("id:0");
         assertEquals(0, response.total);
     }
-    
+
     public static void compareHits(LuceneResponse response, String... hitIds) {
         Set<String> responseHitIds = new HashSet<String>();
         for (Hit hit : response.hits)

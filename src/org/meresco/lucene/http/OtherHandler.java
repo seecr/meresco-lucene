@@ -75,6 +75,9 @@ public class OtherHandler extends AbstractMerescoLuceneHandler {
                 String identifier = request.getParameter("identifier");
                 result = this.lucene.similarDocuments(identifier).toJson().toString();
                 break;
+            default:
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                return;
         }
         response.getWriter().write(result);
         response.setStatus(HttpServletResponse.SC_OK);

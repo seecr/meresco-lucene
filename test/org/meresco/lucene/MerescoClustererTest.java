@@ -42,10 +42,10 @@ import org.junit.Test;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoClusterer;
 
-public class MerescoClustererTest extends SeecrTestCase {
 
+public class MerescoClustererTest extends SeecrTestCase {
     private Lucene lucene;
-    private MerescoClusterer collector;
+    private MerescoClusterer merescoClusterer;
 
     @Before
     public void setUp() throws Exception {
@@ -76,7 +76,7 @@ public class MerescoClustererTest extends SeecrTestCase {
         }
         lucene.maybeCommitAfterUpdate();
         IndexReader reader = lucene.data.getManager().acquire().searcher.getIndexReader();
-        collector = new MerescoClusterer(reader, 0.5);
+        merescoClusterer = new MerescoClusterer(reader, 0.5);
     }
 
     @After
@@ -87,13 +87,13 @@ public class MerescoClustererTest extends SeecrTestCase {
 
     @Test
     public void testClusterOnTermVectors() throws IOException {
-        collector.registerField("termvector.field", 1.0, null);
+        merescoClusterer.strategyClusterers.get(0).registerField("termvector.field", 1.0, null);
         for (int i = 0; i < 15; i++) {
-            collector.collect(i);
+            merescoClusterer.collect(i);
         }
-        collector.finish();
+        merescoClusterer.finish();
 
-        MerescoCluster cluster1 = collector.cluster(0);
+        MerescoCluster cluster1 = merescoClusterer.cluster(0);
         assertEquals(5, cluster1.topDocs.length);
         assertEquals(2, cluster1.topTerms.length);
         String[] terms = new String[cluster1.topTerms.length];
@@ -102,7 +102,7 @@ public class MerescoClustererTest extends SeecrTestCase {
         }
         assertArrayEquals(new String[] { "else", "something" }, terms);
 
-        MerescoCluster cluster2 = collector.cluster(5);
+        MerescoCluster cluster2 = merescoClusterer.cluster(5);
         assertEquals(5, cluster2.topDocs.length);
         terms = new String[cluster2.topTerms.length];
         for (int i = 0; i < terms.length; i++) {
@@ -110,7 +110,7 @@ public class MerescoClustererTest extends SeecrTestCase {
         }
         assertArrayEquals(new String[] { "noot", "aap", "vuur" }, terms);
 
-        MerescoCluster cluster3 = collector.cluster(10);
+        MerescoCluster cluster3 = merescoClusterer.cluster(10);
         assertEquals(5, cluster3.topDocs.length);
         terms = new String[cluster3.topTerms.length];
         for (int i = 0; i < terms.length; i++) {
@@ -124,16 +124,16 @@ public class MerescoClustererTest extends SeecrTestCase {
 
     @Test
     public void testClusteringWithFieldFilter() throws IOException {
-        collector.registerField("termvector.field", 1.0, "noot");
+    	merescoClusterer.strategyClusterers.get(0).registerField("termvector.field", 1.0, "noot");
         for (int i = 0; i < 15; i++) {
-            collector.collect(i);
+            merescoClusterer.collect(i);
         }
-        collector.finish();
+        merescoClusterer.finish();
 
-        MerescoCluster cluster1 = collector.cluster(0);
+        MerescoCluster cluster1 = merescoClusterer.cluster(0);
         assertEquals(null, cluster1);
 
-        MerescoCluster cluster2 = collector.cluster(5);
+        MerescoCluster cluster2 = merescoClusterer.cluster(5);
         assertEquals(5, cluster2.topDocs.length);
         String[] terms = new String[cluster2.topTerms.length];
         for (int i = 0; i < terms.length; i++) {
@@ -141,7 +141,7 @@ public class MerescoClustererTest extends SeecrTestCase {
         }
         assertArrayEquals(new String[] { "noot", "aap", "vuur" }, terms);
 
-        MerescoCluster cluster3 = collector.cluster(10);
+        MerescoCluster cluster3 = merescoClusterer.cluster(10);
         assertEquals(null, cluster3);
     }
 }

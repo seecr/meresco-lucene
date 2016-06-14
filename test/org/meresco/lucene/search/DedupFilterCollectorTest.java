@@ -43,7 +43,6 @@ import org.meresco.lucene.LuceneSettings;
 import org.meresco.lucene.SeecrTestCase;
 
 public class DedupFilterCollectorTest extends SeecrTestCase {
-
     private Lucene lucene;
 
     @Before

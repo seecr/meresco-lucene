@@ -34,6 +34,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,6 +72,7 @@ import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.GroupingHit;
 import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.search.EpsilonInterpolator;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
@@ -657,37 +659,20 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(5, result.hits.size());
     }
 
-    @Test
-    public void testInterpolateEps() throws Throwable {
-    	ClusterConfig clusterConfig = lucene.getSettings().clusterConfig;
-        assertEquals(0, lucene.interpolateEpsilon(0, 10, clusterConfig), 0);
-        assertEquals(0, lucene.interpolateEpsilon(10, 10, clusterConfig), 0);
-        assertEquals(0.004, lucene.interpolateEpsilon(11, 10, clusterConfig), 0);
-        assertEquals(0.4, lucene.interpolateEpsilon(110, 10, clusterConfig), 0);
-        assertEquals(0.4, lucene.interpolateEpsilon(111, 10, clusterConfig), 0);
-
-        assertEquals(0, lucene.interpolateEpsilon(0, 20, clusterConfig), 0);
-        assertEquals(0, lucene.interpolateEpsilon(20, 20, clusterConfig), 0);
-        assertEquals(0.004, lucene.interpolateEpsilon(21, 20, clusterConfig), 0);
-        assertEquals(0.32, lucene.interpolateEpsilon(100, 20, clusterConfig), 0);
-        assertEquals(0.4, lucene.interpolateEpsilon(120, 20, clusterConfig), 0);
-        assertEquals(0.4, lucene.interpolateEpsilon(121, 20, clusterConfig), 0);
-    }
-
     @SuppressWarnings("serial")
     @Test
     public void testClusteringOnVectors() throws Throwable {
         LuceneSettings settings = lucene.getSettings();
-        lucene.close();
-        lucene = new Lucene(this.tmpDir, settings) {
+        settings.epsilonInterpolator = new EpsilonInterpolator() {
             @Override
-            double interpolateEpsilon(int hits, int slice, ClusterConfig clusterConfig) {
+            public double interpolateEpsilon(int hits, int slice, double clusteringEps, int clusterMoreRecords) {
                 return 0.4;
             }
         };
-        List<ClusterConfig.ClusterField> clusterFields = new ArrayList<ClusterConfig.ClusterField>();
-        clusterFields.add(new ClusterConfig.ClusterField("termvector", 1.0, "vuur"));
-        lucene.getSettings().clusterConfig.clusterFields = clusterFields;
+
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector", 1.0, "vuur"));
+        lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
         FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
         fieldType.setStoreTermVectors(true);
@@ -712,7 +697,85 @@ public class LuceneTest extends SeecrTestCase {
             ids.add(scoreDoc.identifier);
         }
         Collections.sort(ids);
-        assertEquals(new ArrayList<String>() {{add("id:0"); add("id:1"); add("id:2"); add("id:3"); add("id:4");}}, ids);
+        assertEquals(Arrays.asList("id:0", "id:1", "id:2", "id:3", "id:4"), ids);
+    }
+
+    @Test
+    public void testClusteringOnVectorsMultipleStrategies() throws IOException, Exception {
+        LuceneSettings settings = lucene.getSettings();
+        settings.epsilonInterpolator = new EpsilonInterpolator() {
+            @Override
+            public double interpolateEpsilon(int hits, int slice, double clusteringEps, int clusterMoreRecords) {
+                return 0.4;
+            }
+        };
+
+        ClusterConfig clusterConfig = settings.clusterConfig;
+        ClusterStrategy strategy0 = clusterConfig.strategies.get(0);
+        System.out.println("clusterConfig: " + clusterConfig);
+        strategy0.clusterFields = Arrays.asList(new ClusterField("termvector", 1.0, null));
+        System.out.println("strategy0: " + strategy0);
+        ClusterStrategy strategy1 = new ClusterStrategy(0.4, 2);
+        strategy1.clusterFields = Arrays.asList(new ClusterField("termvector", 1.0, "vis"));
+        System.out.println("strategy1: " + strategy1);
+        ClusterStrategy strategy2 = new ClusterStrategy(0.3, 2);
+        strategy2.clusterFields = Arrays.asList(new ClusterField("termvector", 2.0, "vuur"));
+        System.out.println("strategy2: " + strategy2);
+        clusterConfig.strategies = Arrays.asList(strategy0, strategy1, strategy2);
+
+        FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
+        fieldType.setStoreTermVectors(true);
+
+        for (int i=0; i<5; i++) {
+            Document doc = new Document();
+            doc.add(new Field("termvector", "aap noot vuur " + i, fieldType));
+            lucene.addDocument("id:" + i, doc);
+        }
+        for (int i=5; i<8; i++) {
+            Document doc = new Document();
+            doc.add(new Field("termvector", "aap noot vis " + i, fieldType));
+            lucene.addDocument("id:" + i, doc);
+        }
+        for (int i=8; i<10; i++) {
+            Document doc = new Document();
+            doc.add(new Field("termvector", "boom roos aap noot " + i, fieldType));
+            lucene.addDocument("id:" + i, doc);
+        }
+        QueryData q = new QueryData();
+        q.clustering = true;
+        LuceneResponse result = lucene.executeQuery(q);
+        ClusterHit hit0 = (ClusterHit) result.hits.get(0);
+        ClusterHit hit1 = (ClusterHit) result.hits.get(1);
+        ClusterHit hit2 = (ClusterHit) result.hits.get(2);
+        System.out.println("hit0" + hit0);
+        System.out.println("hit1" + hit1);
+        System.out.println("hit2" + hit2);
+        assertEquals(3, result.hits.size());
+
+        assertEquals(2, hit0.topDocs.length);
+        assertEquals(3, hit1.topDocs.length);
+        assertEquals(5, hit2.topDocs.length);
+
+        List<String> hit0ids = new ArrayList<>();
+        for (DocScore scoreDoc : hit0.topDocs) {
+        	hit0ids.add(scoreDoc.identifier);
+        }
+        Collections.sort(hit0ids);
+        assertEquals(Arrays.asList("id:8", "id:9"), hit0ids);
+
+        List<String> hit1ids = new ArrayList<>();
+        for (DocScore scoreDoc : hit1.topDocs) {
+        	hit1ids.add(scoreDoc.identifier);
+        }
+        Collections.sort(hit1ids);
+        assertEquals(Arrays.asList("id:5", "id:6", "id:7"), hit1ids);
+
+        List<String> hit2ids = new ArrayList<>();
+        for (DocScore scoreDoc : hit2.topDocs) {
+        	hit2ids.add(scoreDoc.identifier);
+        }
+        Collections.sort(hit2ids);
+        assertEquals(Arrays.asList("id:0", "id:1", "id:2", "id:3", "id:4"), hit2ids);
     }
 
 
@@ -741,23 +804,21 @@ public class LuceneTest extends SeecrTestCase {
         q.start = 0;
         q.stop = 2;
 
-        List<ClusterConfig.ClusterField> clusterFields = new ArrayList<ClusterConfig.ClusterField>();
-        clusterFields.add(new ClusterConfig.ClusterField("termvector", 1.0, null));
-        lucene.getSettings().clusterConfig.clusterFields = clusterFields;
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector", 1.0, null));
+        lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
         LuceneResponse result = lucene.executeQuery(q);
         assertEquals(15, result.total);
         assertEquals(2, result.hits.size());
     }
 
-    @SuppressWarnings("serial")
     @Test
     public void testClusteringRanksMostRelevantOfGroup() throws Throwable {
         LuceneSettings settings = lucene.getSettings();
-        lucene.close();
-        lucene = new Lucene(this.tmpDir, settings) {
+        settings.epsilonInterpolator = new EpsilonInterpolator() {
             @Override
-            double interpolateEpsilon(int hits, int slice, ClusterConfig clusterConfig) {
+            public double interpolateEpsilon(int hits, int slice, double clusteringEps, int clusterMoreRecords) {
                 return 10.0;
             }
         };
@@ -782,10 +843,10 @@ public class LuceneTest extends SeecrTestCase {
         doc.add(new Field("termvector", "noot", fieldType));
         lucene.addDocument("id:3", doc);
 
-        settings.clusterConfig.clusteringEps = 10.0;
-        List<ClusterConfig.ClusterField> clusterFields = new ArrayList<ClusterConfig.ClusterField>();
-        clusterFields.add(new ClusterConfig.ClusterField("termvector", 1.0, null));
-        lucene.getSettings().clusterConfig.clusterFields = clusterFields;
+        settings.clusterConfig.strategies.get(0).clusteringEps = 10.0;
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector", 1.0, null));
+        lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
         QueryData q = new QueryData();
         q.clustering = true;
@@ -801,8 +862,8 @@ public class LuceneTest extends SeecrTestCase {
         for (TermScore termScore : hit0.topTerms) {
             terms.add(termScore.term);
         }
-        assertEquals(new ArrayList<String>() {{add("id:1"); add("id:2"); add("id:3");}}, ids);
-        assertEquals(new ArrayList<String>() {{add("aap"); add("noot"); add("mies"); add("vuur");}}, terms);
+        assertEquals(Arrays.asList("id:1", "id:2", "id:3"), ids);
+        assertEquals(Arrays.asList("aap", "noot", "mies", "vuur"), terms);
     }
 
     @Test
@@ -833,9 +894,9 @@ public class LuceneTest extends SeecrTestCase {
         q.start = 0;
         q.stop = 5;
 
-        List<ClusterConfig.ClusterField> clusterFields = new ArrayList<ClusterConfig.ClusterField>();
-        clusterFields.add(new ClusterConfig.ClusterField("termvector", 1.0, null));
-        lucene.getSettings().clusterConfig.clusterFields = clusterFields;
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector", 1.0, null));
+        lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
         LuceneResponse result = lucene.executeQuery(q);
         assertEquals(5, result.hits.size());
@@ -873,9 +934,9 @@ public class LuceneTest extends SeecrTestCase {
         q.start = 0;
         q.stop = 10;
 
-        List<ClusterConfig.ClusterField> clusterFields = new ArrayList<ClusterConfig.ClusterField>();
-        clusterFields.add(new ClusterConfig.ClusterField("termvector1", 1.0, null));
-        lucene.getSettings().clusterConfig.clusterFields = clusterFields;
+        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector1", 1.0, null));
+        lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
         LuceneResponse result = lucene.executeQuery(q);
         assertEquals(4, result.hits.size());
@@ -893,10 +954,10 @@ public class LuceneTest extends SeecrTestCase {
                 assertTrue(id100);
         }
 
-        clusterFields = new ArrayList<ClusterConfig.ClusterField>();
-        clusterFields.add(new ClusterConfig.ClusterField("termvector1", 1.0, null));
-        clusterFields.add(new ClusterConfig.ClusterField("termvector2", 1.0, null));
-        lucene.getSettings().clusterConfig.clusterFields = clusterFields;
+        clusterFields = new ArrayList<ClusterField>();
+        clusterFields.add(new ClusterField("termvector1", 1.0, null));
+        clusterFields.add(new ClusterField("termvector2", 1.0, null));
+        lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
         result = lucene.executeQuery(q);
         assertEquals(5, result.hits.size());

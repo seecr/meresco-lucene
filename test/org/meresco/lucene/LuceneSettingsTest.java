@@ -38,7 +38,6 @@ import org.apache.lucene.facet.FacetsConfig.DimConfig;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.junit.Test;
 import org.meresco.lucene.ClusterConfig;
-import org.meresco.lucene.ClusterConfig.ClusterField;
 import org.meresco.lucene.analysis.MerescoDutchStemmingAnalyzer;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
 import org.meresco.lucene.search.TermFrequencySimilarity;
@@ -57,10 +56,11 @@ public class LuceneSettingsTest {
                 + "\"commitCount\":100000,"
                 + "\"commitTimeout\":10,"
                 + "\"clustering\":{"
+                + "\"clusterMoreRecords\":100,"
+                + "\"strategies\":[{"
                 + "\"clusteringEps\":0.4,"
-                + "\"clusteringMinPoints\":1,"
-                + "\"clusterMoreRecords\":100"
-            + "}}", settings.asJson().toString());
+                + "\"clusteringMinPoints\":1"
+            + "}]}}", settings.asJson().toString());
     }
 
     @Test
@@ -169,14 +169,14 @@ public class LuceneSettingsTest {
     @Test
     public void testClusterConfig() throws Exception {
     	LuceneSettings settings = new LuceneSettings();
-    	String json = "{\"clustering\": {\"clusteringEps\": 0.3, \"clusteringMinPoints\": 3, \"clusterMoreRecords\": 200, " +
+    	String json = "{\"clustering\": {\"clusterMoreRecords\": 200, \"strategies\": [{\"clusteringEps\": 0.3, \"clusteringMinPoints\": 3, " +
     			"\"fields\": {\"dcterms:title\": {\"fieldname\": \"dcterms:title\", \"filterValue\": \"a\", \"weight\": 0.3}}" +
-    			"}}";
+    			"}]}}";
         settings.updateSettings(new StringReader(json));
-        assertEquals(0.3, settings.clusterConfig.clusteringEps, 0.02);
-        assertEquals(3, settings.clusterConfig.clusteringMinPoints);
+        assertEquals(0.3, settings.clusterConfig.strategies.get(0).clusteringEps, 0.02);
+        assertEquals(3, settings.clusterConfig.strategies.get(0).clusteringMinPoints);
         assertEquals(200, settings.clusterConfig.clusterMoreRecords);
-        List<ClusterField> clusterFields = settings.clusterConfig.clusterFields;
+        List<ClusterField> clusterFields = settings.clusterConfig.strategies.get(0).clusterFields;
         assertEquals(1, clusterFields.size());
         ClusterField field = clusterFields.get(0);
         assertEquals("dcterms:title", field.fieldname);

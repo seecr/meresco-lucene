@@ -25,8 +25,8 @@
 
 package org.meresco.lucene.search;
 
-public final class MerescoCluster {
 
+public final class MerescoCluster {
     public final MerescoCluster.DocScore[] topDocs;
     public final MerescoCluster.TermScore[] topTerms;
 
@@ -55,5 +55,4 @@ public final class MerescoCluster {
             this.score = score;
         }
     }
-
 }

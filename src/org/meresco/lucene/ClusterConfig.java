@@ -29,21 +29,23 @@ import java.util.List;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonValue;
 
 
 public class ClusterConfig {
-	public double clusteringEps;
-	public int clusteringMinPoints;
 	public int clusterMoreRecords;
-	public List<ClusterField> clusterFields = new ArrayList<>();
-
+	public List<ClusterStrategy> strategies = new ArrayList<>();
+	
 	private ClusterConfig() {
 	}
-
-	public ClusterConfig(double clusteringEps, int clusteringMinPoints, int clusterMoreRecords) {
-		this.clusteringEps = clusteringEps;
-		this.clusteringMinPoints = clusteringMinPoints;
+	
+	public ClusterConfig(int clusterMoreRecords) {
 		this.clusterMoreRecords = clusterMoreRecords;
+	}
+
+	public ClusterConfig(double clusteringEps, int minPoints, int clusterMoreRecords) {
+		this(clusterMoreRecords);
+		this.strategies.add(new ClusterStrategy(clusteringEps, minPoints));
 	}
 
 	public static ClusterConfig parseFromJsonObject(JsonObject jsonObject) {
@@ -51,55 +53,33 @@ public class ClusterConfig {
 		ClusterConfig clusterConfig = new ClusterConfig();
         for (String key: jsonObject.keySet()) {
             switch (key) {
-            case "clusteringEps":
-            	clusterConfig.clusteringEps = jsonObject.getJsonNumber(key).doubleValue();
-            	result = clusterConfig;
-                break;
-            case "clusteringMinPoints":
-            	clusterConfig.clusteringMinPoints = jsonObject.getInt(key);
-            	result = clusterConfig;
-                break;
             case "clusterMoreRecords":
             	clusterConfig.clusterMoreRecords  = jsonObject.getInt(key);
             	result = clusterConfig;
                 break;
-            case "fields":
-            	clusterConfig.clusterFields = parseClusterFields(jsonObject.getJsonObject(key));
+            case "strategies":
+            	clusterConfig.strategies = parseClusterStrategies(jsonObject.getJsonArray(key));
             	result = clusterConfig;
                 break;
+            case "fields":  // for backwards compatibility
+            	ClusterStrategy clusterStrategy = ClusterStrategy.parseFromJsonObject(jsonObject);
+            	clusterConfig.strategies.add(clusterStrategy);
+            	result = clusterConfig;
+            	break;
             }
         }
         return result;
 	}
-
+	
 	public String toString() {
-		return "ClusterConfig(clusteringEps=" + clusteringEps + ", clusteringMinPoints=" + clusteringMinPoints + ", clusterMoreRecords=" + clusterMoreRecords + ", clusterFields=" + clusterFields.toString() + ")";
+		return "ClusterConfig(clusterMoreRecords=" + clusterMoreRecords + ", strategies=" + strategies.toString() + ")";
 	}
 
-    private static List<ClusterField> parseClusterFields(JsonObject jsonClusterFields) {
-        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
-        for (String key: jsonClusterFields.keySet()) {
-            JsonObject clusterField = jsonClusterFields.getJsonObject(key);
-            String filterValue = clusterField.getString("filterValue", null);
-            clusterFields.add(new ClusterField(clusterField.getString("fieldname"), clusterField.getJsonNumber("weight").doubleValue(), filterValue));
+    private static List<ClusterStrategy> parseClusterStrategies(JsonArray jsonClusterStrategies) {
+        List<ClusterStrategy> clusterStrategies = new ArrayList<ClusterStrategy>();
+        for (JsonValue jsonStrategy: jsonClusterStrategies) {
+            clusterStrategies.add(ClusterStrategy.parseFromJsonObject((JsonObject) jsonStrategy));
         }
-        return clusterFields;
+        return clusterStrategies;
     }
-
-
-	public static class ClusterField {
-	    public String fieldname;
-	    public double weight;
-	    public String filterValue;
-
-	    public ClusterField(String fieldname, double weight, String filterValue) {
-	        this.fieldname = fieldname;
-	        this.weight = weight;
-	        this.filterValue = filterValue;
-	    }
-
-	    public String toString() {
-	    	return "ClusterField(fieldname=\"" + fieldname + "\", weight=" + weight + ", filterValue=" + (filterValue == null ? "null" : "\"" + filterValue + "\"") + ")";
-	    }
-	}
 }

@@ -27,6 +27,8 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,51 +42,91 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
+import org.meresco.lucene.ClusterConfig;
+import org.meresco.lucene.ClusterField;
+import org.meresco.lucene.ClusterStrategy;
 import org.meresco.lucene.search.PageRank.Node;
 
 
 public class MerescoClusterer {
-    private IndexReader reader;
-    private Map<String, Double> fieldsWeight = new HashMap<String, Double>();
-    private Map<String, BytesRef> fieldFilters = new HashMap<String, BytesRef>();
-    private List<MerescoVector> docvectors = new ArrayList<MerescoVector>();
-    private BytesRefHash ords = new BytesRefHash();
+	private IndexReader reader;
+    public List<StrategyClusterer> strategyClusterers = new ArrayList<>();
+	private BytesRefHash ords = new BytesRefHash();
     public List<Cluster<MerescoVector>> clusters;
-    private double eps;
-    private int minPoints;
 
+    public MerescoClusterer(IndexReader reader, ClusterConfig clusterConfig, EpsilonInterpolator interpolator, int totalHits, int sliceSize) {
+    	this.reader = reader;
+    	for (ClusterStrategy strategy: clusterConfig.strategies) {
+    		double eps = interpolator.interpolateEpsilon(totalHits, sliceSize, strategy.clusteringEps, clusterConfig.clusterMoreRecords);
+    		StrategyClusterer strategyClusterer = new StrategyClusterer(strategy, eps);
+	        this.strategyClusterers.add(strategyClusterer);
+    	}
+    	Collections.sort(this.strategyClusterers, new Comparator<StrategyClusterer>() {
+			@Override
+			public int compare(StrategyClusterer o1, StrategyClusterer o2) {
+				return o2.fieldFilters.size() - o1.fieldFilters.size();  // sorting cluster strategies with most filters first
+			}
+    	});
+    }
+    
+    @Deprecated
     public MerescoClusterer(IndexReader reader, double eps) {
         this(reader, eps, 1);
     }
-
+    
+    @Deprecated
     public MerescoClusterer(IndexReader reader, double eps, int minPoints) {
         this.reader = reader;
-        this.eps = eps;
-        this.minPoints = minPoints;
-    }
-
-    public void registerField(String fieldname, double weight, String filterValue) {
-        this.fieldsWeight.put(fieldname, weight);
-        if (filterValue != null) {
-            BytesRef ref = new BytesRef(filterValue);
-            this.fieldFilters.put(fieldname, ref);
-        }
-    }
-
-    public void collect(int doc) throws IOException {
-        MerescoVector vector = this.createVector(doc);
-        if (vector != null) {
-            this.docvectors.add(vector);
-        }
+        this.strategyClusterers.add(new StrategyClusterer(new ClusterStrategy(eps, minPoints), eps));
     }
 
     public void processTopDocs(TopDocs topDocs) throws IOException {
-        for (ScoreDoc scoreDoc : topDocs.scoreDocs)
+        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
             this.collect(scoreDoc.doc);
+        }
+    }
+    
+    public void collect(int doc) throws IOException {
+    	for (StrategyClusterer strategyClusterer: this.strategyClusterers) {
+    		System.out.println("trying doc " + doc);
+    		boolean matches = strategyClusterer.collectIfMatches(doc);
+    		if (matches) {
+    			System.out.println("found match for doc " + doc + ", " + strategyClusterer);
+    			break;
+    		}
+    	}
+    }
+    
+	public void finish() {
+    	this.clusters = new ArrayList<Cluster<MerescoVector>>();
+    	for (StrategyClusterer strategyClusterer: this.strategyClusterers) {
+    		DBSCANClusterer<MerescoVector> clusterer = new DBSCANClusterer<MerescoVector>(strategyClusterer.eps, strategyClusterer.minPoints, new GeneralizedJaccardDistance());
+    		this.clusters.addAll(clusterer.cluster(strategyClusterer.docvectors));
+    	}
     }
 
-    public void finish() {
-        this.clusters = new DBSCANClusterer<MerescoVector>(this.eps, this.minPoints, new GeneralizedJaccardDistance()).cluster(this.docvectors);
+	public MerescoCluster cluster(int docId) {
+        for (Cluster<MerescoVector> c : this.clusters) {
+            List<MerescoVector> points = c.getPoints();
+            for (MerescoVector oc : points) {
+                if (oc.docId == docId) {
+                    return rankCluster(c.getPoints());
+                }
+            }
+        }
+        return null;
+    }
+
+    public void printClusters() {
+        ClusterClusterer cc = new ClusterClusterer(this.ords, this.clusters);
+        cc.print();
+    }
+    
+    private int ord(BytesRef b) {
+        int ord = this.ords.add(b);
+        if (ord < 0)
+            ord = -ord - 1;
+        return ord;
     }
 
     private MerescoCluster rankCluster(List<MerescoVector> vectors) {
@@ -112,74 +154,85 @@ public class MerescoClusterer {
         return new MerescoCluster(topDocs, topTerms);
     }
 
-    public MerescoCluster cluster(int docId) {
-        for (Cluster<MerescoVector> c : this.clusters) {
-            List<MerescoVector> points = c.getPoints();
-            for (MerescoVector oc : points) {
-                if (oc.docId == docId) {
-                    return rankCluster(c.getPoints());
-                }
-            }
-        }
-        return null;
-    }
+    @SuppressWarnings("serial")
+	class FilterConditionFailed extends RuntimeException {};
+	
+	
+    public class StrategyClusterer {
+		public double eps;
+		public int minPoints;
+		public Map<String, Double> fieldsWeight = new HashMap<>();
+		public Map<String, BytesRef> fieldFilters = new HashMap<>();
+		public List<MerescoVector> docvectors = new ArrayList<>();
 
-    private MerescoVector createVector(int docId) throws IOException {
-        MerescoVector vector = null;
-        double vectorWeight = 1.0;
-        try {
-            for (String fieldname : this.fieldsWeight.keySet()) {
-                MerescoVector v = this.termVector(docId, fieldname);
-                if (v != null) {
-                    double weight = this.fieldsWeight.get(fieldname);
-                    if (vector == null) {
-                        vector = v;
-                        vectorWeight = weight;
-                    } else {
-                        vector.combineToSelf(vectorWeight, weight, v);
-                        vectorWeight = 1;
-                    }
-                }
-            }
-        } catch (FilterConditionFailed e) {
-            return null;
-        }
-        return vector;
-    }
+		public StrategyClusterer(ClusterStrategy strategy, double eps) {
+			this.eps = eps;
+	    	this.minPoints = strategy.clusteringMinPoints;
+	    	for (ClusterField field: strategy.clusterFields) {
+	    		registerField(field.fieldname, field.weight, field.filterValue);
+	    	}
+		}
 
-    private MerescoVector termVector(final int docId, String field) throws IOException {
-        MerescoVector vector = null;
-        BytesRef filterTerm = this.fieldFilters.get(field);
-        boolean matched = (filterTerm == null);
-        Terms terms = this.reader.getTermVector(docId, field);
-        if (terms != null) {
-            TermsEnum termsEnum = terms.iterator(null);
-            vector = new MerescoVector(docId);
-            while (termsEnum.next() != null) {
-                BytesRef term = termsEnum.term();
-                if (term.equals(filterTerm)) {
-                    matched = true;
-                }
-                vector.setEntry(ord(term), termsEnum.totalTermFreq());
-            }
-        }
-        if (!matched) {
-            throw new FilterConditionFailed();
-        }
-        return vector;
-    }
+		public void registerField(String fieldname, double weight, String filterValue) {
+		    fieldsWeight.put(fieldname, weight);
+		    if (filterValue != null) {
+		        BytesRef ref = new BytesRef(filterValue);
+		        fieldFilters.put(fieldname, ref);
+		    }
+		}
 
-    private int ord(BytesRef b) {
-        int ord = this.ords.add(b);
-        if (ord < 0)
-            ord = -ord - 1;
-        return ord;
-    }
+		public boolean collectIfMatches(int doc) throws IOException {
+	        MerescoVector vector = this.createVector(doc);
+	        if (vector != null) {
+	        	this.docvectors.add(vector);
+	        	return true;
+	        }
+	        return false;
+		}
+		
+	    private MerescoVector createVector(int docId) throws IOException {
+	        MerescoVector vector = null;
+	        double vectorWeight = 1.0;
+	        try {
+	            for (String fieldname : this.fieldsWeight.keySet()) {
+	                MerescoVector v = this.termVector(docId, fieldname);
+	                if (v != null) {
+	                    double weight = this.fieldsWeight.get(fieldname);
+	                    if (vector == null) {
+	                        vector = v;
+	                        vectorWeight = weight;
+	                    } else {
+	                        vector.combineToSelf(vectorWeight, weight, v);
+	                        vectorWeight = 1;
+	                    }
+	                }
+	            }
+	        } catch (FilterConditionFailed e) {
+	            return null;
+	        }
+	        return vector;
+	    }
 
-    public void printClusters() {
-        ClusterClusterer cc = new ClusterClusterer(this.ords, this.clusters);
-        cc.print();
-    }
-
-    class FilterConditionFailed extends RuntimeException {};
+	    private MerescoVector termVector(final int docId, String field) throws IOException {
+	        MerescoVector vector = null;
+	        BytesRef filterTerm = this.fieldFilters.get(field);
+	        boolean matched = (filterTerm == null);
+	        Terms terms = reader.getTermVector(docId, field);
+	        if (terms != null) {
+	            TermsEnum termsEnum = terms.iterator(null);
+	            vector = new MerescoVector(docId);
+	            while (termsEnum.next() != null) {
+	                BytesRef term = termsEnum.term();
+	                if (term.equals(filterTerm)) {
+	                    matched = true;
+	                }
+	                vector.setEntry(ord(term), termsEnum.totalTermFreq());
+	            }
+	        }
+	        if (!matched) {
+	            throw new FilterConditionFailed();
+	        }
+	        return vector;
+	    }		
+	}
 }

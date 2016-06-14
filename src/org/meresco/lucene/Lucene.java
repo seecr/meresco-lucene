@@ -97,7 +97,6 @@ import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.GroupSuperCollector;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
-import org.meresco.lucene.search.MerescoCluster.TermScore;
 import org.meresco.lucene.search.MerescoClusterer;
 import org.meresco.lucene.search.MultiSuperCollector;
 import org.meresco.lucene.search.SuperCollector;
@@ -111,7 +110,8 @@ import org.meresco.lucene.search.join.ScoreSuperCollector;
 
 
 public class Lucene {
-    public static class UninitializedException extends Exception {}
+    @SuppressWarnings("serial")
+	public static class UninitializedException extends Exception {}
 
     public static final String ID_FIELD = "__id__";
     private int commitCount = 0;
@@ -302,19 +302,18 @@ public class Lucene {
     }
 
     private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader, ClusterConfig clusterConfig) throws Exception {
-        int totalHits = collectors.topCollector.getTotalHits();
-        List<LuceneResponse.Hit> hits = new ArrayList<>();
-        double epsilon = interpolateEpsilon(totalHits, q.stop - q.start, clusterConfig);
-        MerescoClusterer clusterer = new MerescoClusterer(indexReader, epsilon, clusterConfig.clusteringMinPoints);
-        for (ClusterConfig.ClusterField clusterField : clusterConfig.clusterFields)
-            clusterer.registerField(clusterField.fieldname, clusterField.weight, clusterField.filterValue);
+    	int totalHits = collectors.topCollector.getTotalHits();
         TopDocs topDocs = collectors.topCollector.topDocs(q.start);
+        
+    	MerescoClusterer clusterer = new MerescoClusterer(indexReader, clusterConfig, this.getSettings().epsilonInterpolator, totalHits, q.stop - q.start);
         long t0 = System.currentTimeMillis();
         clusterer.processTopDocs(topDocs);
         times.put("processTopDocsForClustering", System.currentTimeMillis() - t0);
         t0 = System.currentTimeMillis();
         clusterer.finish();
         times.put("clusteringAlgorithm", System.currentTimeMillis() - t0);
+        
+        List<LuceneResponse.Hit> hits = new ArrayList<>();
         int count = q.start;
         HashSet<Integer> seenDocIds = new HashSet<>();
         t0 = System.currentTimeMillis();
@@ -323,23 +322,30 @@ public class Lucene {
                 break;
             if (seenDocIds.contains(scoreDoc.doc))
                 continue;
+            
+            Integer representative = null;
             MerescoCluster cluster = clusterer.cluster(scoreDoc.doc);
-            DocScore[] clusterTopDocs = cluster == null ? new DocScore[0] : cluster.topDocs;
-
-            List<Integer> clusteredDocIds = new ArrayList<>();
-            if (cluster == null)
-                clusteredDocIds.add(scoreDoc.doc);
+            if (cluster == null) {
+            	representative = scoreDoc.doc;
+            	seenDocIds.add(representative);
+            }
             else {
-                for (DocScore ds : clusterTopDocs) {
-                    clusteredDocIds.add(ds.docId);
+                for (DocScore ds : cluster.topDocs) {
+                	if (representative == null) {
+                		representative = ds.docId;
+                	}
+                	seenDocIds.add(ds.docId);
                 }
             }
-            seenDocIds.addAll(clusteredDocIds);
-            ClusterHit hit = new ClusterHit(getDocument(clusteredDocIds.get(0)).get(ID_FIELD), scoreDoc.score);
-            hit.topDocs = clusterTopDocs;
-            for (DocScore docScore : hit.topDocs)
-                docScore.identifier = getDocument(docScore.docId).get(ID_FIELD);
-            hit.topTerms = cluster == null ? new TermScore[0] : cluster.topTerms;
+            
+            ClusterHit hit = new ClusterHit(getDocument(representative).get(ID_FIELD), scoreDoc.score);
+            if (cluster != null) {
+            	hit.topTerms = cluster.topTerms;
+	            hit.topDocs = cluster.topDocs;
+	            for (DocScore docScore : cluster.topDocs) {
+	                docScore.identifier = getDocument(docScore.docId).get(ID_FIELD);
+	            }
+            }
             hits.add(hit);
             count += 1;
         }
@@ -755,13 +761,8 @@ public class Lucene {
             data.getManager().release(reference);
         }
     }
-
-    double interpolateEpsilon(int hits, int slice, ClusterConfig clusterConfig) {
-        double eps = clusterConfig.clusteringEps * (hits - slice) / clusterConfig.clusterMoreRecords;
-        return Math.max(Math.min(eps, clusterConfig.clusteringEps), 0.0);
-    }
-
-
+    
+    
     public static class Collectors {
         public GroupSuperCollector groupingCollector;
         public DeDupFilterSuperCollector dedupCollector;

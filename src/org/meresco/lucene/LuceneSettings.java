@@ -29,6 +29,7 @@ import java.io.Reader;
 
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 
@@ -39,6 +40,7 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.meresco.lucene.analysis.MerescoDutchStemmingAnalyzer;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
+import org.meresco.lucene.search.EpsilonInterpolator;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 
 
@@ -53,8 +55,17 @@ public class LuceneSettings {
     public int commitCount = 100000;
     public FacetsConfig facetsConfig = new FacetsConfig();
     public ClusterConfig clusterConfig = new ClusterConfig(0.4, 1, 100);
+    public EpsilonInterpolator epsilonInterpolator = new EpsilonInterpolator();
 
 	public JsonObject asJson() {
+		JsonArrayBuilder strategiesJsonBuilder = Json.createArrayBuilder();
+		for (ClusterStrategy strategy: this.clusterConfig.strategies) {
+			strategiesJsonBuilder.add(Json.createObjectBuilder()
+				.add("clusteringEps", strategy.clusteringEps)
+	            .add("clusteringMinPoints", strategy.clusteringMinPoints)
+			);
+		}
+
         JsonObject json = Json.createObjectBuilder()
             .add("similarity", similarity.toString())
             .add("maxMergeAtOnce", maxMergeAtOnce)
@@ -64,9 +75,8 @@ public class LuceneSettings {
             .add("commitCount", commitCount)
             .add("commitTimeout", commitTimeout)
             .add("clustering", Json.createObjectBuilder()
-                .add("clusteringEps", clusterConfig.clusteringEps)
-                .add("clusteringMinPoints", clusterConfig.clusteringMinPoints)
                 .add("clusterMoreRecords", clusterConfig.clusterMoreRecords)
+                .add("strategies", strategiesJsonBuilder)
             ).build();
         return json;
     }

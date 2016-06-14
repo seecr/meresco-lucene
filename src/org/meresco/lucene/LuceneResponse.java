@@ -75,6 +75,10 @@ public class LuceneResponse {
         public int compareTo(Hit o) {
             return id.compareTo(o.id);
         }
+        
+        public String toString() {
+        	return "Hit(" + id + ", " + score + ")";
+        }
     }
     
     
@@ -97,8 +101,8 @@ public class LuceneResponse {
     
     
     public static class ClusterHit extends Hit {
-        public MerescoCluster.DocScore[] topDocs;
-        public MerescoCluster.TermScore[] topTerms;
+        public MerescoCluster.DocScore[] topDocs = {};
+        public MerescoCluster.TermScore[] topTerms = {};
         public ClusterHit(String id, float score) {
             super(id, score);
         }

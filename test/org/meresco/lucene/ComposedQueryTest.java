@@ -42,7 +42,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
-import org.meresco.lucene.ClusterConfig.ClusterField;
 import org.meresco.lucene.ComposedQuery.Unite;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 
@@ -125,14 +124,16 @@ public class ComposedQueryTest {
                             .add("fieldname", "fieldB")
                             .add("maxTerms", 5))))
                 .add("_clusteringConfig", Json.createObjectBuilder()
-                	.add("clusteringEps", 0.3)
-                	.add("clusteringMinPoints", 3)
-                	.add("clusterMoreRecords", 200)
-                	.add("fields", Json.createObjectBuilder()
-                			.add("dcterms:title", Json.createObjectBuilder()
-                					.add("fieldname", "dcterms:title")
-                					.add("filterValue", "a")
-                					.add("weight", 0.3))))
+                    .add("clusterMoreRecords", 200)
+                    .add("strategies", Json.createArrayBuilder()
+                    	.add(Json.createObjectBuilder()
+                    		.add("clusteringEps", 0.3)
+                    		.add("clusteringMinPoints", 3)
+			            	.add("fields", Json.createObjectBuilder()
+			            			.add("dcterms:title", Json.createObjectBuilder()
+			            					.add("fieldname", "dcterms:title")
+			            					.add("filterValue", "a")
+			            					.add("weight", 0.3))))))
                 .build();
         Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
             put("coreA", new QueryConverter(new FacetsConfig()));
@@ -187,10 +188,10 @@ public class ComposedQueryTest {
         assertArrayEquals(new String[] {"valeu"}, q.queryData.suggestionRequest.suggests.toArray(new String[0]));
 
         ClusterConfig clusterConfig = q.queryData.clusterConfig;
-        assertEquals(0.3, clusterConfig.clusteringEps, 0.02);
-    	assertEquals(3, clusterConfig.clusteringMinPoints);
+        assertEquals(0.3, clusterConfig.strategies.get(0).clusteringEps, 0.02);
+    	assertEquals(3, clusterConfig.strategies.get(0).clusteringMinPoints);
     	assertEquals(200, clusterConfig.clusterMoreRecords);
-        List<ClusterField> clusterFields = clusterConfig.clusterFields;
+        List<ClusterField> clusterFields = clusterConfig.strategies.get(0).clusterFields;
         assertEquals(1, clusterFields.size());
         ClusterField field = clusterFields.get(0);
         assertEquals("dcterms:title", field.fieldname);

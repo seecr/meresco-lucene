@@ -33,41 +33,66 @@ import javax.json.Json;
 import javax.json.JsonObject;
 
 import org.junit.Test;
-import org.meresco.lucene.ClusterConfig.ClusterField;
 
 
 public class ClusterConfigTest {
     @Test
     public void testClusterConfigParseFromJsonObject() throws Exception {
         JsonObject json = Json.createObjectBuilder()
-            .add("clusteringEps", 0.3)
-            .add("clusteringMinPoints", 3)
-           	.add("clusterMoreRecords", 200)
-           	.add("fields", Json.createObjectBuilder()
-                .add("dcterms:title", Json.createObjectBuilder()
-           					.add("fieldname", "dcterms:title")
-           					.add("filterValue", "a")
-           					.add("weight", 0.3))
-           			.add("dcterms:creator", Json.createObjectBuilder()
-           					.add("fieldname", "dcterms:creator")
-           					.add("filterValue", "b")
-           					.add("weight", 0.7)))
+            .add("clusterMoreRecords", 200)
+            .add("strategies", Json.createArrayBuilder()
+            	.add(Json.createObjectBuilder()
+		            .add("clusteringEps", 0.3)
+		            .add("clusteringMinPoints", 3)
+		           	.add("fields", Json.createObjectBuilder()
+		                .add("dcterms:title", Json.createObjectBuilder()
+		           			.add("fieldname", "dcterms:title")
+		   					.add("weight", 0.3))
+		           		.add("dcterms:creator", Json.createObjectBuilder()
+		           			.add("fieldname", "dcterms:creator")
+		           			.add("filterValue", "b")
+		           			.add("weight", 0.7))))
+            	.add(Json.createObjectBuilder()
+    		            .add("clusteringEps", 0.4)
+    		            .add("clusteringMinPoints", 2)
+    		           	.add("fields", Json.createObjectBuilder()
+    		                .add("dcterms:title", Json.createObjectBuilder()
+    		           			.add("fieldname", "dcterms:title")
+    		   					.add("filterValue", "a")
+    		   					.add("weight", 0.4))
+    		           		.add("dcterms:creator", Json.createObjectBuilder()
+    		           			.add("fieldname", "dcterms:creator")
+    		           			.add("weight", 0.6)))))            	
             .build();
         ClusterConfig clusterConfig = ClusterConfig.parseFromJsonObject(json);
-        assertEquals(0.3, clusterConfig.clusteringEps, 0.02);
-    	  assertEquals(3, clusterConfig.clusteringMinPoints);
-    	  assertEquals(200, clusterConfig.clusterMoreRecords);
-        List<ClusterField> clusterFields = clusterConfig.clusterFields;
+  	    assertEquals(200, clusterConfig.clusterMoreRecords);
+        ClusterStrategy strategy0 = clusterConfig.strategies.get(0);
+        assertEquals(0.3, strategy0.clusteringEps, 0.02);
+    	assertEquals(3, strategy0.clusteringMinPoints);
+        List<ClusterField> clusterFields = strategy0.clusterFields;
         assertEquals(2, clusterFields.size());
         ClusterField field = clusterFields.get(0);
         assertEquals("dcterms:title", field.fieldname);
-        assertEquals("a", field.filterValue);
+        assertEquals(null, field.filterValue);
         assertEquals(0.3, field.weight, 0.02);
         field = clusterFields.get(1);
         assertEquals("dcterms:creator", field.fieldname);
         assertEquals("b", field.filterValue);
         assertEquals(0.7, field.weight, 0.02);
-        assertEquals("ClusterConfig(clusteringEps=0.3, clusteringMinPoints=3, clusterMoreRecords=200, clusterFields=[ClusterField(fieldname=\"dcterms:title\", weight=0.3, filterValue=\"a\"), ClusterField(fieldname=\"dcterms:creator\", weight=0.7, filterValue=\"b\")])", clusterConfig.toString());
+        ClusterStrategy strategy1 = clusterConfig.strategies.get(1);
+        assertEquals(0.4, strategy1.clusteringEps, 0.02);
+    	assertEquals(2, strategy1.clusteringMinPoints);
+    	clusterFields = strategy1.clusterFields;
+        assertEquals(2, clusterFields.size());
+        field = clusterFields.get(0);
+        assertEquals("dcterms:title", field.fieldname);
+        assertEquals("a", field.filterValue);
+        assertEquals(0.4, field.weight, 0.02);
+        field = clusterFields.get(1);
+        assertEquals("dcterms:creator", field.fieldname);
+        assertEquals(null, field.filterValue);
+        assertEquals(0.6, field.weight, 0.02);
+        assertEquals("ClusterConfig(clusterMoreRecords=200, strategies=[ClusterStrategy(clusteringEps=0.3, clusteringMinPoints=3, clusterFields=[ClusterField(fieldname=\"dcterms:title\", weight=0.3, filterValue=null), ClusterField(fieldname=\"dcterms:creator\", weight=0.7, filterValue=\"b\")]), ClusterStrategy(clusteringEps=0.4, clusteringMinPoints=2, clusterFields=[ClusterField(fieldname=\"dcterms:title\", weight=0.4, filterValue=\"a\"), ClusterField(fieldname=\"dcterms:creator\", weight=0.6, filterValue=null)])])", clusterConfig.toString());
     }
 
     @Test

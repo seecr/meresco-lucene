@@ -240,7 +240,14 @@ public class Lucene {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             while (true) {
-                collectors = createCollectors(q, topCollectorStop, keyCollectors, scoreCollectors, reference);
+            	ClusterConfig clusterConfig = null;
+                if (q.clustering) {
+                    clusterConfig = q.clusterConfig;
+                    if (clusterConfig == null) {
+                    	clusterConfig = data.getSettings().clusterConfig;
+                    }
+                }
+                collectors = createCollectors(q, topCollectorStop + (q.clustering ? clusterConfig.clusterMoreRecords : 0), keyCollectors, scoreCollectors, reference);
                 Filter f = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Filter[0]));
 
                 Query query = q.query;
@@ -252,10 +259,6 @@ public class Lucene {
 
                 totalHits = collectors.topCollector.getTotalHits();
                 if (q.clustering) {
-                    ClusterConfig clusterConfig = q.clusterConfig;
-                    if (clusterConfig == null) {
-                    	clusterConfig = data.getSettings().clusterConfig;
-                    }
                     t1 = System.currentTimeMillis();
                     hits = clusterTopDocsResponse(q, collectors, times, reference.searcher.getIndexReader(), clusterConfig);
                     times.put("totalClusterTime", System.currentTimeMillis() - t1);
@@ -305,7 +308,7 @@ public class Lucene {
     	int totalHits = collectors.topCollector.getTotalHits();
         TopDocs topDocs = collectors.topCollector.topDocs(q.start);
         
-    	MerescoClusterer clusterer = new MerescoClusterer(indexReader, clusterConfig, this.getSettings().epsilonInterpolator, totalHits, q.stop - q.start);
+    	MerescoClusterer clusterer = new MerescoClusterer(indexReader, clusterConfig, this.getSettings().interpolateEpsilon, totalHits, q.stop - q.start);
         long t0 = System.currentTimeMillis();
         clusterer.processTopDocs(topDocs);
         times.put("processTopDocsForClustering", System.currentTimeMillis() - t0);
@@ -453,16 +456,12 @@ public class Lucene {
         } finally {
             data.getManager().release(reference);
         }
-
     }
 
     private Collectors createCollectors(QueryData q, int stop, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors, SearcherAndTaxonomy reference) throws Exception {
         Collectors allCollectors = new Collectors();
         SuperCollector<?> resultsCollector;
-        if (q.clustering) {
-            allCollectors.topCollector = topCollector(q.start, stop + data.getSettings().clusterConfig.clusterMoreRecords, q.sort);
-            resultsCollector = allCollectors.topCollector;
-        } else if (q.groupingField != null) {
+        if (q.groupingField != null) {
             allCollectors.topCollector = topCollector(q.start, stop * 10, q.sort);
             allCollectors.groupingCollector = new GroupSuperCollector(q.groupingField, allCollectors.topCollector);
             resultsCollector = allCollectors.groupingCollector;

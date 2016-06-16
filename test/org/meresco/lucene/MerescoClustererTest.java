@@ -28,24 +28,34 @@ package org.meresco.lucene;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.index.IndexReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.meresco.lucene.Lucene.UninitializedException;
+import org.meresco.lucene.search.InterpolateEpsilon;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoClusterer;
+import org.meresco.lucene.search.SuperIndexSearcher;
+import org.meresco.lucene.search.MerescoCluster.DocScore;
 
 
 public class MerescoClustererTest extends SeecrTestCase {
     private Lucene lucene;
-    private MerescoClusterer merescoClusterer;
 
     @Before
     public void setUp() throws Exception {
@@ -63,7 +73,6 @@ public class MerescoClustererTest extends SeecrTestCase {
             doc.add(new Field("termvector.field", "aap noot noot noot vuur", fieldType));
             lucene.addDocument("id:" + i, doc);
         }
-
         for (int i = 5; i < 10; i++) {
             doc = new Document();
             doc.add(new Field("termvector.field", "something else", fieldType));
@@ -86,8 +95,9 @@ public class MerescoClustererTest extends SeecrTestCase {
     }
 
     @Test
-    public void testClusterOnTermVectors() throws IOException {
-        merescoClusterer.strategyClusterers.get(0).registerField("termvector.field", 1.0, null);
+    public void testClusterOnTermVectors() throws IOException, UninitializedException {
+    	ClusterConfig clusterConfig = new ClusterConfig().addStrategy(new ClusterStrategy(0.5, 1).addField("termvector.field", 1.0, null));
+    	MerescoClusterer merescoClusterer = new MerescoClusterer(getIndexReader(), clusterConfig);
         for (int i = 0; i < 15; i++) {
             merescoClusterer.collect(i);
         }
@@ -123,8 +133,9 @@ public class MerescoClustererTest extends SeecrTestCase {
     }
 
     @Test
-    public void testClusteringWithFieldFilter() throws IOException {
-    	merescoClusterer.strategyClusterers.get(0).registerField("termvector.field", 1.0, "noot");
+    public void testClusteringWithFieldFilter() throws IOException, UninitializedException {
+    	ClusterConfig clusterConfig = new ClusterConfig().addStrategy(new ClusterStrategy(0.5, 1).addField("termvector.field", 1.0, "noot"));
+    	MerescoClusterer merescoClusterer = new MerescoClusterer(getIndexReader(), clusterConfig);
         for (int i = 0; i < 15; i++) {
             merescoClusterer.collect(i);
         }
@@ -144,4 +155,55 @@ public class MerescoClustererTest extends SeecrTestCase {
         MerescoCluster cluster3 = merescoClusterer.cluster(10);
         assertEquals(null, cluster3);
     }
+
+    @Test
+    public void testClusteringOnVectorsMultipleStrategies() throws IOException, Exception {
+        ClusterConfig clusterConfig = new ClusterConfig(42);
+        clusterConfig.addStrategy(new ClusterStrategy(0.5, 2).addField("termvector.field", 1.0, "vuur"));
+        clusterConfig.addStrategy(new ClusterStrategy(0.4, 1).addField("termvector.field", 1.0, null));
+        clusterConfig.addStrategy(new ClusterStrategy(0.4, 2).addField("termvector.field", 1.0, "anders"));
+
+        InterpolateEpsilon interpolateEpsilon = new InterpolateEpsilon() {
+            @Override
+            public double interpolateEpsilon(int hits, int sliceSize, double clusteringEps, int clusterMoreRecords) {
+            	assertEquals(100, hits);
+            	assertEquals(10, sliceSize);
+            	assertTrue(clusteringEps >= 0.4);
+            	assertEquals(42, clusterMoreRecords);
+                return clusteringEps;
+            }
+        };
+        IndexReader indexReader = getIndexReader();
+    	MerescoClusterer merescoClusterer = new MerescoClusterer(indexReader, clusterConfig, interpolateEpsilon, 100, 10);
+        for (int i = 0; i < 15; i++) {
+            merescoClusterer.collect(i);
+        }
+        merescoClusterer.finish();
+
+        assertEquals(3, merescoClusterer.clusters.size());
+        for (int i = 0; i < 15; i++) {
+        	String theID = indexReader.document(i).get(Lucene.ID_FIELD);
+        	MerescoCluster cluster = merescoClusterer.cluster(i);
+        	Set<String> ids = new HashSet<>();
+	        for (DocScore ds : cluster.topDocs) {
+	        	ids.add(indexReader.document(ds.docId).get(Lucene.ID_FIELD));
+	        }
+        	assertTrue(ids.contains(theID));
+        	int idOrd = Integer.valueOf(theID.split(":")[1]);
+        	if (0 <= idOrd && idOrd <= 4) {
+	        	assertEquals(new HashSet<String>(Arrays.asList("id:4", "id:0", "id:1", "id:2", "id:3")), ids);
+	        }
+        	else if (5 <= idOrd && idOrd <= 9) {
+	        	assertEquals(new HashSet<String>(Arrays.asList("id:8", "id:7", "id:6", "id:5", "id:9")), ids);
+	        }
+        	else {
+	        	assertEquals(new HashSet<String>(Arrays.asList("id:10", "id:11", "id:12", "id:13", "id:14")), ids);
+	        }
+        }
+    }
+
+
+	private IndexReader getIndexReader() throws IOException, UninitializedException {
+		return lucene.data.getManager().acquire().searcher.getIndexReader();
+	}
 }

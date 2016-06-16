@@ -33,12 +33,12 @@ import javax.json.JsonValue;
 
 
 public class ClusterConfig {
-	public int clusterMoreRecords;
+	public int clusterMoreRecords = 0;
 	public List<ClusterStrategy> strategies = new ArrayList<>();
 	
-	private ClusterConfig() {
-	}
-	
+	public ClusterConfig() {
+	}	
+
 	public ClusterConfig(int clusterMoreRecords) {
 		this.clusterMoreRecords = clusterMoreRecords;
 	}
@@ -48,6 +48,11 @@ public class ClusterConfig {
 		this.strategies.add(new ClusterStrategy(clusteringEps, minPoints));
 	}
 
+	public ClusterConfig addStrategy(ClusterStrategy strategy) {
+		this.strategies.add(strategy);
+		return this;
+	}
+	
 	public static ClusterConfig parseFromJsonObject(JsonObject jsonObject) {
 		ClusterConfig result = null;
 		ClusterConfig clusterConfig = new ClusterConfig();

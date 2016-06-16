@@ -14,7 +14,7 @@ public class EpsilonInterpolatorTest {
     	int clusterMoreRecords = clusterConfig.clusterMoreRecords;
     	double clusteringEps = clusterConfig.strategies.get(0).clusteringEps;
     	
-    	EpsilonInterpolator interpolator = new EpsilonInterpolator();
+    	InterpolateEpsilon interpolator = new InterpolateEpsilon();
         assertEquals(0, interpolator.interpolateEpsilon(0, 10, clusteringEps, clusterMoreRecords), 0);
         assertEquals(0, interpolator.interpolateEpsilon(10, 10, clusteringEps, clusterMoreRecords), 0);
         assertEquals(0.004, interpolator.interpolateEpsilon(11, 10, clusteringEps, clusterMoreRecords), 0);

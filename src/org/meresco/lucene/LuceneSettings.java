@@ -40,7 +40,7 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.meresco.lucene.analysis.MerescoDutchStemmingAnalyzer;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
-import org.meresco.lucene.search.EpsilonInterpolator;
+import org.meresco.lucene.search.InterpolateEpsilon;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 
 
@@ -55,7 +55,7 @@ public class LuceneSettings {
     public int commitCount = 100000;
     public FacetsConfig facetsConfig = new FacetsConfig();
     public ClusterConfig clusterConfig = new ClusterConfig(0.4, 1, 100);
-    public EpsilonInterpolator epsilonInterpolator = new EpsilonInterpolator();
+    public InterpolateEpsilon interpolateEpsilon = new InterpolateEpsilon();
 
 	public JsonObject asJson() {
 		JsonArrayBuilder strategiesJsonBuilder = Json.createArrayBuilder();

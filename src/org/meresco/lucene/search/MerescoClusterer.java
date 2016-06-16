@@ -51,13 +51,21 @@ import org.meresco.lucene.search.PageRank.Node;
 public class MerescoClusterer {
 	private IndexReader reader;
     public List<StrategyClusterer> strategyClusterers = new ArrayList<>();
+    
 	private BytesRefHash ords = new BytesRefHash();
     public List<Cluster<MerescoVector>> clusters;
 
-    public MerescoClusterer(IndexReader reader, ClusterConfig clusterConfig, EpsilonInterpolator interpolator, int totalHits, int sliceSize) {
+    public MerescoClusterer(IndexReader reader, ClusterConfig clusterConfig) {
+    	this(reader, clusterConfig, null, 0, 0);
+    }
+    
+    public MerescoClusterer(IndexReader reader, ClusterConfig clusterConfig, InterpolateEpsilon interpolate, int totalHits, int sliceSize) {
     	this.reader = reader;
     	for (ClusterStrategy strategy: clusterConfig.strategies) {
-    		double eps = interpolator.interpolateEpsilon(totalHits, sliceSize, strategy.clusteringEps, clusterConfig.clusterMoreRecords);
+    		double eps = strategy.clusteringEps;
+    		if (interpolate != null) {
+    			eps = interpolate.interpolateEpsilon(totalHits, sliceSize, strategy.clusteringEps, clusterConfig.clusterMoreRecords);
+    		}
     		StrategyClusterer strategyClusterer = new StrategyClusterer(strategy, eps);
 	        this.strategyClusterers.add(strategyClusterer);
     	}
@@ -68,17 +76,6 @@ public class MerescoClusterer {
 			}
     	});
     }
-    
-    @Deprecated
-    public MerescoClusterer(IndexReader reader, double eps) {
-        this(reader, eps, 1);
-    }
-    
-    @Deprecated
-    public MerescoClusterer(IndexReader reader, double eps, int minPoints) {
-        this.reader = reader;
-        this.strategyClusterers.add(new StrategyClusterer(new ClusterStrategy(eps, minPoints), eps));
-    }
 
     public void processTopDocs(TopDocs topDocs) throws IOException {
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
@@ -88,10 +85,8 @@ public class MerescoClusterer {
     
     public void collect(int doc) throws IOException {
     	for (StrategyClusterer strategyClusterer: this.strategyClusterers) {
-    		System.out.println("trying doc " + doc);
     		boolean matches = strategyClusterer.collectIfMatches(doc);
     		if (matches) {
-    			System.out.println("found match for doc " + doc + ", " + strategyClusterer);
     			break;
     		}
     	}

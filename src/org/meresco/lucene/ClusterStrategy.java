@@ -10,7 +10,7 @@ public class ClusterStrategy {
 	public int clusteringMinPoints;
 	public List<ClusterField> clusterFields = new ArrayList<>();
 
-	private ClusterStrategy() {
+	public ClusterStrategy() {
 	}
 
 	public ClusterStrategy(double clusteringEps, int clusteringMinPoints) {
@@ -18,6 +18,15 @@ public class ClusterStrategy {
 		this.clusteringMinPoints = clusteringMinPoints;
 	}
 
+	public ClusterStrategy addField(ClusterField field) {
+		this.clusterFields.add(field);
+		return this;
+	}
+	
+	public ClusterStrategy addField(String fieldname, double weight, String filterValue) {
+		return addField(new ClusterField(fieldname, weight, filterValue));
+	}
+	
 	public static ClusterStrategy parseFromJsonObject(JsonObject jsonObject) {
 		ClusterStrategy result = null;
 		ClusterStrategy strategy = new ClusterStrategy();

@@ -61,7 +61,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
     }
 
     @Test
-    public void testCollectorTransparentlyDelegatesToNextCollector() throws Exception {
+    public void testCollectorTransparentlyDelegatesToNextCollector() throws Throwable {
         addDocument("urn:1", 2L, null);
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100, true);
         DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", "__sort__", tc);
@@ -69,7 +69,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         assertEquals(1, tc.topDocs(0).totalHits);
     }
 
-    public void addDocument(String identifier, Long isformatof, Long sort) throws Exception {
+    public void addDocument(String identifier, Long isformatof, Long sort) throws Throwable {
         Document doc = new Document();
         if (isformatof != null)
             doc.add(new NumericDocValuesField("__isformatof__", isformatof));
@@ -80,7 +80,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
     }
 
     @Test
-    public void testCollectorFiltersTwoSimilar() throws Exception {
+    public void testCollectorFiltersTwoSimilar() throws Throwable {
         addDocument("urn:1", 2L, 1L);
         addDocument("urn:2", 2L, 2L);
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100, true);
@@ -96,9 +96,9 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         assertEquals("urn:2", identifier);
         assertEquals(2, key.getCount());
     }
-    
+
     @Test
-    public void testCollectorFiltersTwoTimesTwoSimilarOneNot() throws Exception {
+    public void testCollectorFiltersTwoTimesTwoSimilarOneNot() throws Throwable {
         addDocument("urn:1",  1L, 2001L);
         addDocument("urn:2",  3L, 2009L); // result 2x
         addDocument("urn:3", 50L, 2010L); // result 1x
@@ -127,7 +127,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
     }
 
     @Test
-    public void testSilentyYieldsWrongResultWhenFieldNameDoesNotMatch() throws Exception {
+    public void testSilentyYieldsWrongResultWhenFieldNameDoesNotMatch() throws Throwable {
         addDocument("urn:1", 2L, null);
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100, true);
         DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__wrong_field__", "__sort__", tc);
@@ -136,7 +136,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
     }
 
     @Test
-    public void testShouldAddResultsWithoutIsFormatOf() throws Exception {
+    public void testShouldAddResultsWithoutIsFormatOf() throws Throwable {
         addDocument("urn:1", 2L, null);
         addDocument("urn:2", null, null);
         addDocument("urn:3", 2L, null);

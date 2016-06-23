@@ -44,7 +44,7 @@ public class QueryHandler extends AbstractMerescoLuceneHandler {
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Throwable {
         LuceneResponse luceneResponse = new LuceneResponse(0);
         QueryData q = new QueryData(request.getReader(), this.lucene.getQueryConverter());
         luceneResponse = this.lucene.executeQuery(q, null, null, null, null, null);

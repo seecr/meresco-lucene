@@ -96,7 +96,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testAddDocument() throws Exception {
+    public void testAddDocument() throws Throwable {
         Document doc = new Document();
         doc.add(new StringField("naam", "waarde", Store.NO));
         lucene.addDocument("id1", doc);
@@ -107,7 +107,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testAddDocumentWithoutIdentifier() throws Exception {
+    public void testAddDocumentWithoutIdentifier() throws Throwable {
         Document doc = new Document();
         doc.add(new StringField("naam", "waarde", Store.NO));
         lucene.addDocument(doc);
@@ -118,7 +118,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testAddDeleteDocument() throws Exception {
+    public void testAddDeleteDocument() throws Throwable {
         lucene.addDocument("id1", new Document());
         lucene.addDocument("id2", new Document());
         lucene.addDocument("id3", new Document());
@@ -129,7 +129,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testAddTwiceUpdatesDocument() throws Exception {
+    public void testAddTwiceUpdatesDocument() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field0", "value0", Store.NO));
         doc1.add(new StringField("field1", "value1", Store.NO));
@@ -144,7 +144,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testTwoQueries() throws Exception {
+    public void testTwoQueries() throws Throwable {
         LuceneResponse result = lucene.executeQuery(new MatchAllDocsQuery());
         assertEquals(0, result.total);
 
@@ -153,7 +153,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testFacets() throws Exception {
+    public void testFacets() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "id0", Store.NO));
         doc1.add(new FacetField("facet-field2", "first item0"));
@@ -213,7 +213,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testHierarchicalFacets() throws Exception {
+    public void testHierarchicalFacets() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "id0", Store.NO));
         doc1.add(new FacetField("facet-field", "first", "second"));
@@ -236,7 +236,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testFacetsInDifferentIndexFieldName() throws Exception {
+    public void testFacetsInDifferentIndexFieldName() throws Throwable {
         FacetsConfig facetsConfig = lucene.getSettings().facetsConfig;
         facetsConfig.setIndexFieldName("field0", "$facets_1");
         facetsConfig.setIndexFieldName("field2", "$facets_1");
@@ -263,7 +263,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testFacetIndexFieldNames() throws Exception {
+    public void testFacetIndexFieldNames() throws Throwable {
         FacetsConfig facetsConfig = lucene.getSettings().facetsConfig;
         facetsConfig.setIndexFieldName("field0", "$facets_1");
         facetsConfig.setIndexFieldName("field2", "$facets_1");
@@ -280,7 +280,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testSorting() throws Exception {
+    public void testSorting() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "AA", Store.NO));
         lucene.addDocument("id1", doc1);
@@ -314,7 +314,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testCommitTimer() throws Exception {
+    public void testCommitTimer() throws Throwable {
         lucene.close();
         LuceneSettings settings = new LuceneSettings();
         settings.commitTimeout = 1;
@@ -327,7 +327,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testCommitTimerAndCount() throws Exception {
+    public void testCommitTimerAndCount() throws Throwable {
         lucene.close();
         LuceneSettings settings = new LuceneSettings();
         settings.commitTimeout = 1;
@@ -342,7 +342,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testStartStop() throws Exception {
+    public void testStartStop() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "AA", Store.NO));
         lucene.addDocument("id1", doc1);
@@ -377,7 +377,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testQueryWithFilter() throws Exception {
+    public void testQueryWithFilter() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "value0", Store.NO));
         lucene.addDocument("id1", doc1);
@@ -393,7 +393,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testQueryWithFilterQuery() throws Exception {
+    public void testQueryWithFilterQuery() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "value0", Store.NO));
         lucene.addDocument("id1", doc1);
@@ -409,7 +409,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testQueryWithKeyCollectors() throws Exception {
+    public void testQueryWithKeyCollectors() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field0", "value", Store.NO));
         doc1.add(new NumericDocValuesField("field1", 1));
@@ -445,7 +445,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testQueryWithScoreCollectors() throws Exception {
+    public void testQueryWithScoreCollectors() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field0", "value", Store.NO));
         doc1.add(new NumericDocValuesField("field1", 1));
@@ -468,7 +468,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testPrefixSearch() throws Exception {
+    public void testPrefixSearch() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "value0", Store.NO));
         lucene.addDocument("id1", doc1);
@@ -492,7 +492,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testNumDocs() throws Exception {
+    public void testNumDocs() throws Throwable {
         assertEquals(0, lucene.maxDoc());
         assertEquals(0, lucene.numDocs());
         Document doc1 = new Document();
@@ -504,7 +504,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testFieldname() throws Exception {
+    public void testFieldname() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field1", "value0", Store.NO));
         lucene.addDocument("id1", doc1);
@@ -516,7 +516,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testDrilldownFieldname() throws Exception {
+    public void testDrilldownFieldname() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new FacetField("cat", "cat 1"));
         lucene.addDocument("id1", doc1);
@@ -536,7 +536,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
     @Test
-    public void testSuggestions() throws Exception {
+    public void testSuggestions() throws Throwable {
         addDocument(lucene, "id:0", null, new HashMap() {{put("field1", "value0"); put("field2", "value2" ); put("field5", "value2" );}});
 
         assertEquals("value2", lucene.suggest("value0", 2, "field5")[0].string);
@@ -555,7 +555,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
     @Test
-    public void testDedupFilterCollectorSortedByField() throws Exception {
+    public void testDedupFilterCollectorSortedByField() throws Throwable {
         addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42); put("__key__.date", 2012);}}, new HashMap() {{put("field0", "v0"); put("A", "cat-A");}});
         addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42); put("__key__.date", 2013);}}, new HashMap() {{put("field0", "v1"); put("A", "cat-A");}}); //first hit of 3 duplicates
         addDocument(lucene, "urn:3", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v2"); put("A", "cat-A");}});
@@ -582,7 +582,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
     @Test
-    public void testGroupingCollector() throws Exception {
+    public void testGroupingCollector() throws Throwable {
         addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
         addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
         addDocument(lucene, "urn:3", new HashMap() {{put("__key__", 43);}}, new HashMap() {{put("field0", "v2");}});
@@ -607,7 +607,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
     @Test
-    public void testGroupingOnNonExistingField() throws Exception {
+    public void testGroupingOnNonExistingField() throws Throwable {
         addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
         addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
         addDocument(lucene, "urn:3", new HashMap() {{put("__key__", 43);}}, new HashMap() {{put("field0", "v2");}});
@@ -623,7 +623,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
     @Test
-    public void testDontGroupIfMaxResultsAreLessThanTotalRecords() throws Exception {
+    public void testDontGroupIfMaxResultsAreLessThanTotalRecords() throws Throwable {
         addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
         addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
 
@@ -643,7 +643,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
     @Test
-    public void testGroupingCollectorReturnsMaxHitAfterGrouping() throws Exception {
+    public void testGroupingCollectorReturnsMaxHitAfterGrouping() throws Throwable {
         addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
         addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
         for (int i=3; i<11; i++)
@@ -658,7 +658,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testInterpolateEps() throws Exception {
+    public void testInterpolateEps() throws Throwable {
     	ClusterConfig clusterConfig = lucene.getSettings().clusterConfig;
         assertEquals(0, lucene.interpolateEpsilon(0, 10, clusterConfig), 0);
         assertEquals(0, lucene.interpolateEpsilon(10, 10, clusterConfig), 0);
@@ -676,7 +676,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testClusteringOnVectors() throws IOException, Exception {
+    public void testClusteringOnVectors() throws Throwable {
         LuceneSettings settings = lucene.getSettings();
         lucene.close();
         lucene = new Lucene(this.tmpDir, settings) {
@@ -717,7 +717,7 @@ public class LuceneTest extends SeecrTestCase {
 
 
     @Test
-    public void testClusteringShowOnlyRequestTop() throws Exception {
+    public void testClusteringShowOnlyRequestTop() throws Throwable {
         FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
         fieldType.setStoreTermVectors(true);
 
@@ -752,7 +752,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testClusteringRanksMostRelevantOfGroup() throws Exception {
+    public void testClusteringRanksMostRelevantOfGroup() throws Throwable {
         LuceneSettings settings = lucene.getSettings();
         lucene.close();
         lucene = new Lucene(this.tmpDir, settings) {
@@ -806,7 +806,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testClusteringWinsOverGroupingAndDedup() throws Exception {
+    public void testClusteringWinsOverGroupingAndDedup() throws Throwable {
         FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
         fieldType.setStoreTermVectors(true);
 
@@ -843,7 +843,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testClusterOnMultipleFields() throws Exception {
+    public void testClusterOnMultipleFields() throws Throwable {
         FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
         fieldType.setStoreTermVectors(true);
         for (int i=0; i<15; i++) {
@@ -916,7 +916,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testCollectUntilStopWithForGrouping() throws Exception {
+    public void testCollectUntilStopWithForGrouping() throws Throwable {
         for (int i=0; i<20; i++) {
             Document doc = new Document();
             doc.add(new NumericDocValuesField("__key__", 42L));
@@ -943,7 +943,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testReturnNoMoreThanStopForGrouping() throws Exception {
+    public void testReturnNoMoreThanStopForGrouping() throws Throwable {
         for (int i=0; i<50; i++)
             lucene.addDocument("id:" + i, new Document());
         lucene.addDocument("id:100", new Document());
@@ -959,7 +959,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testReturnNoMoreThanStopForClustering() throws Exception {
+    public void testReturnNoMoreThanStopForClustering() throws Throwable {
         for (int i=0; i<50; i++)
             lucene.addDocument("id:" + i, new Document());
         lucene.addDocument("id:100", new Document());
@@ -976,7 +976,7 @@ public class LuceneTest extends SeecrTestCase {
 
     @SuppressWarnings("serial")
     @Test
-    public void testFilterCaching() throws Exception {
+    public void testFilterCaching() throws Throwable {
         for (int i=0; i<10; i++) {
             final int j = i;
             addDocument(lucene, "id:" + i, null, new HashMap<String, String>() {{put("field" + j, "value0");}});
@@ -990,7 +990,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testScoreCollectorCaching() throws Exception {
+    public void testScoreCollectorCaching() throws Throwable {
         lucene.getSettings().commitCount = 1000;
         for (int i=0; i<100; i++) {
             Document doc1 = new Document();
@@ -1020,7 +1020,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testKeyCollectorCaching() throws Exception {
+    public void testKeyCollectorCaching() throws Throwable {
         lucene.getSettings().commitCount = 1000;
         for (int i=0; i<100; i++) {
             Document doc1 = new Document();
@@ -1053,7 +1053,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testDontClearCachesIfNothingChanged() throws Exception {
+    public void testDontClearCachesIfNothingChanged() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new NumericDocValuesField("keyfield", 1));
         lucene.addDocument("id1", doc1);
@@ -1074,7 +1074,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testQueryConvert() throws Exception {
+    public void testQueryConvert() throws Throwable {
         lucene.getSettings().facetsConfig.setIndexFieldName("dim1", "otherfield");
         QueryConverter queryConverter = lucene.getQueryConverter();
         Term drilldownTerm = queryConverter.createDrilldownTerm("dim1");
@@ -1082,7 +1082,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testSimilarDocuments() throws Exception {
+    public void testSimilarDocuments() throws Throwable {
         FieldType textTypeWithTV = new FieldType(TextField.TYPE_NOT_STORED);
         textTypeWithTV.setStoreTermVectors(true);
 
@@ -1109,13 +1109,13 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testNoSimilarDocumentIfNotExists() throws Exception {
+    public void testNoSimilarDocumentIfNotExists() throws Throwable {
         LuceneResponse response = lucene.similarDocuments("id:0");
         assertEquals(0, response.total);
     }
 
     @Test
-    public void testNoSimilarDocumentIfNoTermVectors() throws Exception {
+    public void testNoSimilarDocumentIfNoTermVectors() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new Field("a", "Dit is veld a", TextField.TYPE_NOT_STORED));
         lucene.addDocument("id:0", doc1);

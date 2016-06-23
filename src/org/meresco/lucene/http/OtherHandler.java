@@ -46,7 +46,7 @@ public class OtherHandler extends AbstractMerescoLuceneHandler {
     }
 
     @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Throwable {
         String result = "";
         switch (target) {
             case "/numDocs/":

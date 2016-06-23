@@ -51,17 +51,17 @@ public class MultiLucene {
         }
     }
 
-    public LuceneResponse executeComposedQuery(ComposedQuery q) throws Exception {
+    public LuceneResponse executeComposedQuery(ComposedQuery q) throws Throwable {
         return executeComposedQuery(q, null);
     }
 
-    public LuceneResponse executeComposedQuery(ComposedQuery q, String exportKey) throws Exception {
+    public LuceneResponse executeComposedQuery(ComposedQuery q, String exportKey) throws Throwable {
         if (q.cores.size() <= 1 && exportKey == null)
             return singleCoreQuery(q);
         return multipleCoreQuery(q, exportKey);
     }
 
-    private LuceneResponse singleCoreQuery(ComposedQuery query) throws Exception {
+    private LuceneResponse singleCoreQuery(ComposedQuery query) throws Throwable {
         String resultCoreName = query.resultsFrom;
         Query resultCoreQuery = luceneQueryForCore(resultCoreName, query);
         if (resultCoreQuery == null)
@@ -71,7 +71,7 @@ public class MultiLucene {
         return this.lucenes.get(resultCoreName).executeQuery(query.queryData, query.filterQueries.get(resultCoreName), query.drilldownQueriesFor(resultCoreName), null, null, null);
     }
 
-    private LuceneResponse multipleCoreQuery(ComposedQuery query, String exportKey) throws Exception {
+    private LuceneResponse multipleCoreQuery(ComposedQuery query, String exportKey) throws Throwable {
         long t0 = System.currentTimeMillis();
         String resultCoreName = query.resultsFrom;
         List<String> otherCoreNames = new ArrayList<String>();
@@ -134,7 +134,7 @@ public class MultiLucene {
         return response;
     }
 
-    private Map<String, OpenBitSet> uniteFilter(ComposedQuery query) throws Exception {
+    private Map<String, OpenBitSet> uniteFilter(ComposedQuery query) throws Throwable {
         Map<String, OpenBitSet> keys = new HashMap<String, OpenBitSet>();
         for (Unite unite : query.getUnites()) {
             String keyNameA = query.keyName(unite.coreA, unite.coreB);
@@ -176,7 +176,7 @@ public class MultiLucene {
         return luceneQuery;
     }
 
-    private Map<String, OpenBitSet> coreQueries(String coreName, String otherCoreName, ComposedQuery query, Map<String, OpenBitSet> keysForKeyName) throws Exception {
+    private Map<String, OpenBitSet> coreQueries(String coreName, String otherCoreName, ComposedQuery query, Map<String, OpenBitSet> keysForKeyName) throws Throwable {
         Query luceneQuery = luceneQueryForCore(coreName, query);
         if (luceneQuery != null) {
             OpenBitSet collectedKeys = this.lucenes.get(coreName).collectKeys(null, query.keyName(coreName, otherCoreName), luceneQuery, false);
@@ -196,7 +196,7 @@ public class MultiLucene {
         return queryConverters;
     }
 
-    public List<AggregateScoreSuperCollector> createAggregateScoreCollectors(ComposedQuery query) throws Exception {
+    public List<AggregateScoreSuperCollector> createAggregateScoreCollectors(ComposedQuery query) throws Throwable {
         Map<String, List<ScoreSuperCollector>> scoreCollectors = new HashMap<String, List<ScoreSuperCollector>>();
         for (String coreName : query.cores) {
             String resultsKeyName = query.keyName(query.resultsFrom, coreName);

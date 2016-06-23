@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
@@ -85,15 +86,22 @@ public class SuperIndexSearcher extends IndexSearcher {
         return smallest_i;
     }
 
-    public void search(Query q, Filter f, SuperCollector<?> c) throws IOException, InterruptedException,
-            ExecutionException {
+    public void search(Query q, Filter f, SuperCollector<?> c) throws Throwable {
         Weight weight = super.createNormalizedWeight(wrapFilter(q, f));
         ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(this.executor);
+        List<Future<String>> futures = new ArrayList<Future<String>>();
         for (List<AtomicReaderContext> leaf_group : this.grouped_leaves.subList(1, this.grouped_leaves.size()))
-            ecs.submit(new SearchTask(leaf_group, weight, c.subCollector()), "Done");
+            futures.add(ecs.submit(new SearchTask(leaf_group, weight, c.subCollector()), "Done"));
         new SearchTask(this.grouped_leaves.get(0), weight, c.subCollector()).run();
-        for (int i = 0; i < this.grouped_leaves.size() - 1; i++) {
-            ecs.take().get();
+        try {
+            for (int i = 0; i < this.grouped_leaves.size() - 1; i++) {
+                ecs.take().get();
+            }
+        } catch (ExecutionException e) {
+            throw e.getCause();
+        } finally {
+            for (Future<String> future : futures)
+                future.cancel(true);
         }
         c.complete();
     }

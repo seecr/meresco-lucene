@@ -115,7 +115,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testQueryOneIndexWithComposedQuery() throws Exception {
+    public void testQueryOneIndexWithComposedQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
         LuceneResponse result = multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
@@ -123,7 +123,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testQueryOneIndexWithComposedQueryWithFilterQueries() throws Exception {
+    public void testQueryOneIndexWithComposedQueryWithFilterQueries() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.addFilterQuery("coreA", new TermQuery(new Term("Q", "true")));
         LuceneResponse result = multiLucene.executeComposedQuery(q);
@@ -132,7 +132,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinQuery() throws Exception {
+    public void testJoinQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA", new MatchAllDocsQuery());
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "A", "B");
@@ -143,7 +143,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
 //    testMultipleJoinQueriesKeepsCachesWithinMaxSize
     @Test
-    public void testJoinQueryWithFilters() throws Exception {
+    public void testJoinQueryWithFilters() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.addFilterQuery("coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "A", "B");
@@ -154,7 +154,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinWithFacetInResultCore() throws Exception {
+    public void testJoinWithFacetInResultCore() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
         q.addFacet("coreA", new QueryConverter.FacetRequest("cat_M", 10));
@@ -168,7 +168,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinFacet() throws Exception {
+    public void testJoinFacet() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
         q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
@@ -189,7 +189,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinFacetWithDrilldownQueryFilters() throws Exception {
+    public void testJoinFacetWithDrilldownQueryFilters() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
         q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
@@ -209,7 +209,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testMultipleDrilldownQueries() throws Exception {
+    public void testMultipleDrilldownQueries() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.addDrilldownQuery("coreA", "cat_Q", "true");
         q.addDrilldownQuery("coreA", "cat_Q", "false");
@@ -219,7 +219,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinFacetWithJoinDrilldownQueryFilters() throws Exception {
+    public void testJoinFacetWithJoinDrilldownQueryFilters() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
         q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
@@ -237,7 +237,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinDrilldownQueryFilters() throws Exception {
+    public void testJoinDrilldownQueryFilters() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
         q.addDrilldownQuery("coreA", "cat_Q", "true");
@@ -248,7 +248,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinFacetWithFilter() throws Exception {
+    public void testJoinFacetWithFilter() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
         q.addFilterQuery("coreA", new TermQuery(new Term("Q", "true")));
@@ -269,7 +269,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinFacetWillNotFilter() throws Exception {
+    public void testJoinFacetWillNotFilter() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
         q.addMatch("coreA", "coreB", "A", "B");
@@ -288,7 +288,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinFacetAndQuery() throws Exception {
+    public void testJoinFacetAndQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
         q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
@@ -316,7 +316,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testUniteResultFromTwoIndexes() throws Exception {
+    public void testUniteResultFromTwoIndexes() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.setCoreQuery("coreB", null);
@@ -328,20 +328,20 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testUniteResultFromTwoIndexesCached() throws Exception {
+    public void testUniteResultFromTwoIndexesCached() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.setCoreQuery("coreB", null);
         q.addMatch("coreA", "coreB", "A", "B");
         q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
         LuceneResponse resultOne = multiLucene.executeComposedQuery(q);
-        
+
         q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("U", "true")));
         q.addMatch("coreA", "coreB", "A", "B");
-        q.addUnite("coreA", new TermQuery(new Term("U", "false")), "coreB", new TermQuery(new Term("N", "true")));        
+        q.addUnite("coreA", new TermQuery(new Term("U", "false")), "coreB", new TermQuery(new Term("N", "true")));
         multiLucene.executeComposedQuery(q);
-        
+
         q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.setCoreQuery("coreB", null);
@@ -349,14 +349,14 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
         LuceneResponse resultAgain = multiLucene.executeComposedQuery(q);
         assertEquals(resultOne.total, resultAgain.total);
-        
+
         for (int i = 0; i < resultOne.hits.size(); i++) {
             assertEquals(resultOne.hits.get(i).id, resultAgain.hits.get(i).id);
         }
     }
 
      @Test
-     public void testUniteResultFromTwoIndexesCachedAfterUpdate() throws Exception {
+     public void testUniteResultFromTwoIndexesCachedAfterUpdate() throws Throwable {
          ComposedQuery q = new ComposedQuery("coreA");
          q.setCoreQuery("coreA", new TermQuery(new Term("Q", "true")));
          q.setCoreQuery("coreB", null);
@@ -364,14 +364,14 @@ public class MultiLuceneTest extends SeecrTestCase {
          q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
          LuceneResponse resultOne = multiLucene.executeComposedQuery(q);
          assertEquals(3, resultOne.total);
-         
+
          LuceneTest.addDocument(luceneA, "A-MQU", new HashMap() {{put("A", 8);}}, new HashMap() {{put("M", "true"); put("Q", "false"); put("U", "true"); put("S", "8");}});
          LuceneResponse resultAgain = multiLucene.executeComposedQuery(q);
          assertEquals(2, resultAgain.total);
     }
 
     @Test
-    public void testUniteResultFromTwoIndexes_filterQueries() throws Exception {
+    public void testUniteResultFromTwoIndexes_filterQueries() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.addFilterQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.addMatch("coreA", "coreB", "A", "B");
@@ -382,7 +382,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testUniteAndFacets() throws Exception {
+    public void testUniteAndFacets() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.addFacet("coreA", new QueryConverter.FacetRequest("cat_Q", 10));
         q.addFacet("coreA", new QueryConverter.FacetRequest("cat_U", 10));
@@ -424,7 +424,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testUniteAndFacetsWithForeignQuery() throws Exception {
+    public void testUniteAndFacetsWithForeignQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
         q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
@@ -452,7 +452,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testUniteAndFacetsWithForeignQueryWithSpecialFacetsQuery() throws Exception {
+    public void testUniteAndFacetsWithForeignQueryWithSpecialFacetsQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
         q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
@@ -479,7 +479,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testUniteMakesItTwoCoreQuery() throws Exception {
+    public void testUniteMakesItTwoCoreQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
@@ -491,7 +491,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testStartStopSortKeys() throws Exception {
+    public void testStartStopSortKeys() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.setCoreQuery("coreB", null);
@@ -517,7 +517,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
     @Test
-    public void testCachingCollectorsAfterUpdate() throws Exception {
+    public void testCachingCollectorsAfterUpdate() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
@@ -535,7 +535,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
     @Test
-    public void testCachingCollectorsAfterUpdateInSegmentWithMultipleDocuments() throws Exception {
+    public void testCachingCollectorsAfterUpdateInSegmentWithMultipleDocuments() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
@@ -555,7 +555,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
     @Test
-    public void testCachingCollectorsAfterDelete() throws Exception {
+    public void testCachingCollectorsAfterDelete() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
@@ -569,7 +569,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinQueryOnOptionalKey() throws Exception {
+    public void testJoinQueryOnOptionalKey() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "C", "B");
@@ -580,7 +580,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinQueryOnOptionalKeyOtherSide() throws Exception {
+    public void testJoinQueryOnOptionalKeyOtherSide() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "A", "D");
@@ -591,7 +591,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinQueryThreeCores() throws Exception {
+    public void testJoinQueryThreeCores() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
         q.setCoreQuery("coreC", new TermQuery(new Term("R", "true")));
@@ -626,7 +626,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testRankQuery() throws Exception {
+    public void testRankQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
@@ -640,7 +640,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testMultipleRankQuery() throws Exception {
+    public void testMultipleRankQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
@@ -656,7 +656,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
     @Test
-    public void testScoreCollectorCacheInvalidation() throws Exception {
+    public void testScoreCollectorCacheInvalidation() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setRankQuery("coreC", new TermQuery(new Term("S", "true")));
         q.addMatch("coreA", "coreC", "A", "C");
@@ -679,7 +679,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
     @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
     @Test
-    public void testNullIteratorOfPForDeltaIsIgnoredInFinalKeySet() throws Exception {
+    public void testNullIteratorOfPForDeltaIsIgnoredInFinalKeySet() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "no_match")));
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
@@ -697,7 +697,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
      @SuppressWarnings({ "unchecked", "rawtypes", "serial" })
      @Test
-     public void testKeyFilterIgnoresKeysOutOfBoundsOfKeySet() throws Exception {
+     public void testKeyFilterIgnoresKeysOutOfBoundsOfKeySet() throws Throwable {
          LuceneTest.addDocument(luceneB, "100", new HashMap() {{put("B", 100);}}, null); // Force key to be much more than bits in long[] in FixedBitSet, so it must be OutOfBounds
          ComposedQuery q = new ComposedQuery("coreA");
          q.setCoreQuery("coreA", new MatchAllDocsQuery());
@@ -708,7 +708,7 @@ public class MultiLuceneTest extends SeecrTestCase {
      }
 
      @Test
-     public void testCollectScoresWithNoResultAndBooleanQueryDoesntFailOnFakeScorerInAggregateScoreCollector() throws Exception {
+     public void testCollectScoresWithNoResultAndBooleanQueryDoesntFailOnFakeScorerInAggregateScoreCollector() throws Throwable {
          BooleanQuery q = new BooleanQuery();
          q.add(new TermQuery(new Term("M", "true")), Occur.SHOULD);
          q.add(new TermQuery(new Term("M", "true")), Occur.SHOULD);
@@ -723,7 +723,7 @@ public class MultiLuceneTest extends SeecrTestCase {
      }
 
     @Test
-    public void testCachingKeyCollectorsIntersectsWithACopyOfTheKeys() throws Exception {
+    public void testCachingKeyCollectorsIntersectsWithACopyOfTheKeys() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
@@ -742,7 +742,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testTwoCoreQueryWithThirdCoreDrilldownWithOtherCore() throws Exception {
+    public void testTwoCoreQueryWithThirdCoreDrilldownWithOtherCore() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.setCoreQuery("coreB", new MatchAllDocsQuery());
@@ -760,7 +760,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testFilterQueryInTwoDifferentCores() throws Exception {
+    public void testFilterQueryInTwoDifferentCores() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.setCoreQuery("coreB", new MatchAllDocsQuery());
@@ -773,7 +773,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testScoreCollectorOnDifferentKeys() throws Exception {
+    public void testScoreCollectorOnDifferentKeys() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.setRankQuery("coreB", new TermQuery(new Term("N", "true")));
@@ -790,7 +790,7 @@ public class MultiLuceneTest extends SeecrTestCase {
 
 
     @Test
-    public void testQueryConvertors() throws Exception {
+    public void testQueryConvertors() throws Throwable {
         luceneA.getSettings().facetsConfig.setIndexFieldName("dim1", "otherfield");
         Map<String, QueryConverter> converters = multiLucene.getQueryConverters();
         Term drilldownTerm = converters.get("coreA").createDrilldownTerm("dim1");
@@ -799,9 +799,9 @@ public class MultiLuceneTest extends SeecrTestCase {
         drilldownTerm = converters.get("coreB").createDrilldownTerm("dim1");
         assertEquals("$facets", drilldownTerm.field());
     }
-    
+
     @Test
-    public void testExportKeys() throws Exception {
+    public void testExportKeys() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
@@ -815,9 +815,9 @@ public class MultiLuceneTest extends SeecrTestCase {
         expected.set(8);
         assertEquals(expected, result.keys);
     }
-    
+
     @Test
-    public void testExportKeysSingleCore() throws Exception {
+    public void testExportKeysSingleCore() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
         LuceneResponse result = multiLucene.executeComposedQuery(q, "A");
@@ -828,5 +828,5 @@ public class MultiLuceneTest extends SeecrTestCase {
         expected.set(7);
         expected.set(8);
         assertEquals(expected, result.keys);
-    }    
+    }
 }

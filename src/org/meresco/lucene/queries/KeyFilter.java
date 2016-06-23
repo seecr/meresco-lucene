@@ -49,7 +49,7 @@ public class KeyFilter extends Filter {
 	@Override
 	public DocIdSet getDocIdSet(final AtomicReaderContext context,
 			Bits acceptDocs) throws IOException {
-		return BitsFilteredDocIdSet.wrap(new DocIdSet() {
+	    return BitsFilteredDocIdSet.wrap(new DocIdSet() {
 			@Override
 			public DocIdSetIterator iterator() throws IOException {
 				return new DocIdSetIterator() {

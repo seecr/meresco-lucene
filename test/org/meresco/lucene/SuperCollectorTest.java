@@ -55,7 +55,7 @@ import org.meresco.lucene.search.TotalHitCountSuperCollector;
 public class SuperCollectorTest extends SeecrTestCase {
 
     @Test
-    public void testSearch() throws Exception {
+    public void testSearch() throws Throwable {
         TotalHitCountSuperCollector C = new TotalHitCountSuperCollector();
         Lucene I = new Lucene(this.tmpDir, new LuceneSettings());
         MatchAllDocsQuery Q = new MatchAllDocsQuery();
@@ -69,7 +69,7 @@ public class SuperCollectorTest extends SeecrTestCase {
     }
 
     @Test
-    public void testSearchTopDocs() throws Exception {
+    public void testSearchTopDocs() throws Throwable {
         Lucene I = new Lucene(this.tmpDir, new LuceneSettings());
         I.addDocument("id1", document("one", "aap noot mies"));
         I.addDocument("id2", document("two", "aap vuur boom"));
@@ -86,7 +86,7 @@ public class SuperCollectorTest extends SeecrTestCase {
     }
 
     @Test
-    public void testSearchTopDocsWithStart() throws Exception {
+    public void testSearchTopDocsWithStart() throws Throwable {
         Lucene I = new Lucene(this.tmpDir, new LuceneSettings());
         I.addDocument("id1", document("one", "aap noot mies"));
         I.addDocument("id2", document("two", "aap vuur boom"));
@@ -104,7 +104,7 @@ public class SuperCollectorTest extends SeecrTestCase {
     }
 
     @Test
-    public void testFacetSuperCollector() throws Exception {
+    public void testFacetSuperCollector() throws Throwable {
         Lucene I = new Lucene(this.tmpDir, new LuceneSettings());
         for (int i = 0; i < 1000; i++) {
             Map<String, String> fields = new HashMap<String, String>();
@@ -137,7 +137,7 @@ public class SuperCollectorTest extends SeecrTestCase {
     }
 
     @Test
-    public void testFacetAndTopsMultiCollector() throws Exception {
+    public void testFacetAndTopsMultiCollector() throws Throwable {
         Lucene I = new Lucene(this.tmpDir, new LuceneSettings());
         for (int i = 0; i < 99; i++) {
             Map<String, String> fields = new HashMap<String, String>();
@@ -181,7 +181,7 @@ public class SuperCollectorTest extends SeecrTestCase {
     }
 
     @Test
-    public void testSearchTopField() throws Exception {
+    public void testSearchTopField() throws Throwable {
         Lucene I = new Lucene(this.tmpDir, new LuceneSettings());
         I.addDocument("id1", document("one", "aap noot mies"));
         I.commit();

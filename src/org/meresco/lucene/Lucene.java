@@ -205,17 +205,17 @@ public class Lucene {
         data.commit();
     }
 
-    public LuceneResponse executeQuery(QueryData q) throws Exception {
+    public LuceneResponse executeQuery(QueryData q) throws Throwable {
         return executeQuery(q, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(Query query) throws Exception {
+    public LuceneResponse executeQuery(Query query) throws Throwable {
         QueryData q = new QueryData();
         q.query = query;
         return executeQuery(q, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(Query query, int start, int stop) throws Exception {
+    public LuceneResponse executeQuery(Query query, int start, int stop) throws Throwable {
         QueryData q = new QueryData();
         q.query = query;
         q.start = start;
@@ -223,14 +223,14 @@ public class Lucene {
         return executeQuery(q, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(Query query, List<FacetRequest> facets) throws Exception {
+    public LuceneResponse executeQuery(Query query, List<FacetRequest> facets) throws Throwable {
         QueryData q = new QueryData();
         q.query = query;
         q.facets = facets;
         return executeQuery(q, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Filter> filters, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws Exception {
+    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Filter> filters, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws Throwable {
         int totalHits;
         List<LuceneResponse.Hit> hits;
         Collectors collectors = null;
@@ -399,7 +399,7 @@ public class Lucene {
         return hits;
     }
 
-    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, List<String[]> drilldownQueries, Filter filter) throws Exception {
+    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, List<String[]> drilldownQueries, Filter filter) throws Throwable {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             FacetSuperCollector facetCollector = facetCollector(facets, reference.taxonomyReader);
@@ -643,7 +643,7 @@ public class Lucene {
         }
     }
 
-    public void search(Query query, Query filterQuery, SuperCollector<?> collector) throws Exception {
+    public void search(Query query, Query filterQuery, SuperCollector<?> collector) throws Throwable {
         Filter filter_ = null;
         if (filterQuery != null)
             filter_ = new QueryWrapperFilter(filterQuery);
@@ -655,11 +655,11 @@ public class Lucene {
         }
     }
 
-    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Exception {
+    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
         return collectKeys(filterQuery, keyName, query, true);
     }
 
-    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Exception {
+    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Throwable {
         if (cacheCollectedKeys) {
             KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, filterQuery);
             OpenBitSet keys = data.getKeyCollectorCache().get(keyNameQuery);
@@ -672,7 +672,7 @@ public class Lucene {
         return doCollectKeys(filterQuery, keyName, query);
     }
 
-    private OpenBitSet doCollectKeys(Query filterQuery, String keyName, Query query) throws Exception {
+    private OpenBitSet doCollectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
         KeySuperCollector keyCollector = new KeySuperCollector(keyName);
         if (query == null)
             query = new MatchAllDocsQuery();
@@ -696,7 +696,7 @@ public class Lucene {
         return new QueryConverter(this.data.getFacetsConfig());
     }
 
-    public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Exception {
+    public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Throwable {
         KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, query);
         ScoreSuperCollector scoreCollector = data.getScoreCollectorCache().get(keyNameQuery);
         if (scoreCollector == null) {
@@ -706,7 +706,7 @@ public class Lucene {
         return scoreCollector;
     }
 
-    public ScoreSuperCollector doScoreCollecting(String keyName, Query query) throws Exception {
+    public ScoreSuperCollector doScoreCollecting(String keyName, Query query) throws Throwable {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             ScoreSuperCollector scoreCollector = new ScoreSuperCollector(keyName);
@@ -726,7 +726,7 @@ public class Lucene {
         }
     }
 
-    public LuceneResponse similarDocuments(String identifier) throws Exception {
+    public LuceneResponse similarDocuments(String identifier) throws Throwable {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             Query idQuery = new TermQuery(new Term(ID_FIELD, identifier));

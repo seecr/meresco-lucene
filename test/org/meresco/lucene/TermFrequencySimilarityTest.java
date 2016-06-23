@@ -42,7 +42,7 @@ import org.meresco.lucene.search.TermFrequencySimilarity;
 public class TermFrequencySimilarityTest extends SeecrTestCase {
 
     @Test
-    public void test() throws Exception {
+    public void test() throws Throwable {
         LuceneSettings settings = new LuceneSettings();
         settings.commitCount = 1;
         settings.similarity = new TermFrequencySimilarity();

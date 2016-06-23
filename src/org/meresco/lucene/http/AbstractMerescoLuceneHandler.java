@@ -57,7 +57,7 @@ public abstract class AbstractMerescoLuceneHandler extends AbstractHandler {
             response.getWriter().write("Lucene cores should be initialized first. Send a request to /'core-name'/settings to initialize.");
             baseRequest.setHandled(true);
             return;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write(Utils.getStackTrace(e));
             baseRequest.setHandled(true);
@@ -66,5 +66,5 @@ public abstract class AbstractMerescoLuceneHandler extends AbstractHandler {
         baseRequest.setHandled(true);
     }
 
-    public abstract void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception;
+    public abstract void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Throwable;
 }

@@ -62,7 +62,7 @@ public class GroupCollectorTest extends SeecrTestCase {
     }
 
     @Test
-    public void test() throws Exception {
+    public void test() throws Throwable {
         addDocument("id:0", 42L);
         addDocument("id:1", 42L);
         addDocument("id:2", 42L);

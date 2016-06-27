@@ -96,7 +96,7 @@ public class NumerateHttpServer {
 
     public static void registerShutdownHandler(final String stateDir, final TermNumerator termNumerator, final Server server) {
         File runningMarker = new File(stateDir, "running.marker");
-        if (runningMarker.exists()) { 
+        if (runningMarker.exists()) {
             System.err.println("Previous shutdown failed, will not start");
             System.exit(1);
         } else {
@@ -122,18 +122,20 @@ public class NumerateHttpServer {
     static void shutdown(final Server server, final TermNumerator termNumerator) {
         System.out.println("Shutting down termNumerator. Please wait...");
         try {
-            server.stop();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println("Http-server stopped");
-        try {
             termNumerator.close();
             System.out.println("Shutdown termNumerator completed.");
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Shutdown termNumerator failed.");
         }
+        try {
+            // Stop the server after(!) closing Lucene etc.
+            server.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("Http-server stopped");
+
         System.err.flush();
         System.out.flush();
         System.exit(0);

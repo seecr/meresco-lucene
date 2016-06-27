@@ -139,7 +139,6 @@ class LuceneServerTest(IntegrationTestCase):
         self.assertTrue("200 OK" in header.upper(), header)
 
         header, body = postRequest(self.luceneServerPort, self._path + '/query/', parse=False, data=JsonDict(query=dict(type="TermQuery", term=dict(field="__id__", value="idCommit"))).dumps())
-        print body
         response = loads(body)
         self.assertEqual(0, response['total'])
 

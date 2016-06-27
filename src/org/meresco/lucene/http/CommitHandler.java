@@ -50,7 +50,7 @@ public class CommitHandler extends AbstractMerescoLuceneHandler implements Handl
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
         termNumerator.commit();
         for (Lucene lucene : lucenes) {
-            lucene.commit();
+            lucene.realCommit();
         }
         response.setStatus(HttpServletResponse.SC_OK);
     }

@@ -55,7 +55,6 @@ if __name__ == '__main__':
             '_integration.lucenetest.LuceneTest',
             '_integration.luceneremoteservicetest.LuceneRemoteServiceTest',
             '_integration.luceneservertest.LuceneServerTest',
-            '_integration.numerateservertest.NumerateServerTest',
             '_integration.suggestionservertest.SuggestionServerTest',
         ],
         fastMode=fastMode).addToTestRunner(runner)

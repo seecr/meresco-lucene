@@ -45,14 +45,12 @@ class IntegrationState(SeecrIntegrationState):
         if not fastMode:
             system('rm -rf ' + self.integrationTempdir)
             system('mkdir --parents '+ self.integrationTempdir)
-        self.numerateServerPort = PortNumberGenerator.next()
         self.suggestionServerPort = PortNumberGenerator.next()
         self.luceneServerPort = PortNumberGenerator.next()
         self.httpPort = PortNumberGenerator.next()
         self.testdataDir = join(dirname(mydir), "data")
 
     def setUp(self):
-        self.startNumerateServer()
         self.startSuggestionServer()
         self.startLuceneServer()
         self.startExampleServer()
@@ -76,9 +74,6 @@ class IntegrationState(SeecrIntegrationState):
             print 'Error received while creating database for', self.stateName
             print_exc()
             exit(1)
-
-    def startNumerateServer(self):
-        self._startServer('numerate-server', self.binPath('start-numerate-server'), 'http://localhost:{}/info'.format(self.numerateServerPort), port=self.numerateServerPort, stateDir=join(self.integrationTempdir, 'numerate'))
 
     def startSuggestionServer(self):
         self._startServer('suggestion-server', self.binPath('start-suggestion-server'), 'http://localhost:{}/info'.format(self.suggestionServerPort), port=self.suggestionServerPort, stateDir=join(self.integrationTempdir, 'suggestion'))

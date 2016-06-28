@@ -42,18 +42,19 @@ public class SuggestionShutdown extends OutOfMemoryShutdown implements Shutdown 
     public void shutdown() {
         System.out.println("Shutting down suggestions. Please wait...");
         try {
-            server.stop();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        System.out.println("Http-server stopped");
-        try {
             suggestionIndex.close();
             System.out.println("Shutdown suggestions completed.");
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Shutdown suggestions failed.");
         }
+        try {
+            // Stop the server after(!) closing Lucene etc.
+            server.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("Http-server stopped");
         System.err.flush();
         System.out.flush();
         System.exit(0);

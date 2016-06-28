@@ -87,6 +87,6 @@ public class GroupCollectorTest extends SeecrTestCase {
         if (isformatof != null)
             doc.add(new NumericDocValuesField("__isformatof__", isformatof));
         lucene.addDocument(identifier, doc);
-        lucene.commit();
+        lucene.maybeCommitAfterUpdate();
     }
 }

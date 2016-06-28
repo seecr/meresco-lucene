@@ -998,7 +998,7 @@ public class LuceneTest extends SeecrTestCase {
             doc1.add(new NumericDocValuesField("field1", i));
             lucene.addDocument("id" + i, doc1);
         }
-        lucene.realCommit();
+        lucene.commit();
 
         long t0 = System.currentTimeMillis();
         ScoreSuperCollector scoreCollector1 = this.lucene.scoreCollector("field1", new MatchAllDocsQuery());
@@ -1013,7 +1013,7 @@ public class LuceneTest extends SeecrTestCase {
         Document doc3 = new Document();
         doc3.add(new NumericDocValuesField("field1", 100));
         lucene.addDocument("id3", doc3);
-        lucene.realCommit();
+        lucene.commit();
         scoreCollector1 = this.lucene.scoreCollector("field1", new MatchAllDocsQuery());
         assertEquals(1.0, scoreCollector1.score(100), 0);
         assertNotSame(scoreCollector1, scoreCollector2);
@@ -1028,7 +1028,7 @@ public class LuceneTest extends SeecrTestCase {
             doc1.add(new NumericDocValuesField("field1", i));
             lucene.addDocument("id" + i, doc1);
         }
-        lucene.realCommit();
+        lucene.commit();
         long t0 = System.currentTimeMillis();
         OpenBitSet keys1 = this.lucene.collectKeys(new MatchAllDocsQuery(), "field1", null);
         long t1 = System.currentTimeMillis();
@@ -1044,7 +1044,7 @@ public class LuceneTest extends SeecrTestCase {
         Document doc3 = new Document();
         doc3.add(new NumericDocValuesField("field1", 100));
         lucene.addDocument("id3", doc3);
-        lucene.realCommit();
+        lucene.commit();
         keys1 = this.lucene.collectKeys(new MatchAllDocsQuery(), "field1", null);
         assertTrue(keys1.get(1));
         assertTrue(keys1.get(2));
@@ -1059,14 +1059,14 @@ public class LuceneTest extends SeecrTestCase {
         lucene.addDocument("id1", doc1);
         ScoreSuperCollector scoreCollector1 = lucene.scoreCollector("keyfield", new MatchAllDocsQuery());
         OpenBitSet keys1 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
-        lucene.realCommit();
-        lucene.realCommit();
+        lucene.commit();
+        lucene.commit();
         ScoreSuperCollector scoreCollector2 = lucene.scoreCollector("keyfield", new MatchAllDocsQuery());
         OpenBitSet keys2 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
         assertSame(scoreCollector1, scoreCollector2);
         assertSame(keys1, keys2);
         lucene.addDocument("id1", new Document());
-        lucene.realCommit();
+        lucene.commit();
         ScoreSuperCollector scoreCollector3 = lucene.scoreCollector("keyfield", new MatchAllDocsQuery());
         OpenBitSet keys3 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
         assertNotSame(scoreCollector1, scoreCollector3);
@@ -1159,6 +1159,6 @@ public class LuceneTest extends SeecrTestCase {
                 }
         }
         lucene.addDocument(identifier, doc);
-        lucene.commit();
+        lucene.maybeCommitAfterUpdate();
     }
 }

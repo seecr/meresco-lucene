@@ -148,7 +148,7 @@ public class SuperCollectorTest extends SeecrTestCase {
             Document document1 = createDocument(fields,facets);
             I.addDocument("id" + i, document1);
         }
-        I.commit();
+        I.maybeCommitAfterUpdate();
         I.close();
         I = new Lucene(this.tmpDir, new LuceneSettings());
 
@@ -184,11 +184,11 @@ public class SuperCollectorTest extends SeecrTestCase {
     public void testSearchTopField() throws Throwable {
         Lucene I = new Lucene(this.tmpDir, new LuceneSettings());
         I.addDocument("id1", document("one", "aap noot mies"));
-        I.commit();
+        I.maybeCommitAfterUpdate();
         I.addDocument("id2", document("two", "aap vuur boom"));
-        I.commit();
+        I.maybeCommitAfterUpdate();
         I.addDocument("id3", document("three", "noot boom mies"));
-        I.commit();
+        I.maybeCommitAfterUpdate();
         I.close();
         I = new Lucene(this.tmpDir, new LuceneSettings());
         Sort sort = new Sort(new SortField("name", SortField.Type.STRING, true));

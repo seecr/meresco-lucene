@@ -76,7 +76,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         if (sort != null)
             doc.add(new NumericDocValuesField("__sort__", sort));
         lucene.addDocument(identifier, doc);
-        lucene.commit();  // Explicitly, not required: since commitCount=1.
+        lucene.maybeCommitAfterUpdate();  // Explicitly, not required: since commitCount=1.
     }
 
     @Test

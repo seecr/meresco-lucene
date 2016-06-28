@@ -158,33 +158,33 @@ public class Lucene {
     public void addDocument(Document doc) throws Exception {
         doc = data.getFacetsConfig().build(data.getTaxoWriter(), doc);
         data.getIndexWriter().addDocument(doc);
-        commit();
+        maybeCommitAfterUpdate();
     }
 
     public void addDocument(String identifier, Document doc) throws Exception {
         doc.add(new StringField(ID_FIELD, identifier, Store.YES));
         doc = data.getFacetsConfig().build(data.getTaxoWriter(), doc);
         data.getIndexWriter().updateDocument(new Term(ID_FIELD, identifier), doc);
-        commit();
+        maybeCommitAfterUpdate();
     }
 
     public void deleteDocument(String identifier) throws Exception {
         data.getIndexWriter().deleteDocuments(new Term(ID_FIELD, identifier));
-        commit();
+        maybeCommitAfterUpdate();
     }
 
-    public void commit() throws Exception {
+    public void maybeCommitAfterUpdate() throws Exception {
         commitCount++;
         LuceneSettings settings = data.getSettings();
         if (commitCount >= settings.commitCount) {
-            realCommit();
+            commit();
             return;
         }
         if (commitTimer == null) {
             TimerTask timerTask = new TimerTask() {
                 public void run() {
                     try {
-                        realCommit();
+                        commit();
                     } catch (Exception e) {
                         throw new RuntimeException();
                     }
@@ -195,7 +195,7 @@ public class Lucene {
         }
     }
 
-    public synchronized void realCommit() throws Exception {
+    public synchronized void commit() throws Exception {
         commitCount = 0;
         if (commitTimer != null) {
             commitTimer.cancel();

@@ -97,9 +97,9 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneTest.addDocument(luceneC, "C-S", new HashMap() {{put("C", 8);}}, new HashMap() {{put("S", "true");}});
         LuceneTest.addDocument(luceneC, "C-S2", new HashMap() {{put("C", 7);}}, new HashMap() {{put("S", "false");}});
 
-        luceneA.realCommit();
-        luceneB.realCommit();
-        luceneC.realCommit();
+        luceneA.commit();
+        luceneB.commit();
+        luceneC.commit();
 
         settingsA.commitCount = 1;
         settingsB.commitCount = 1;
@@ -685,7 +685,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "UNKOWN", "UNKOWN");
         multiLucene.executeComposedQuery(q);
-        luceneB.commit(); // Force to write new segment; Old segment remains in seen list
+        luceneB.maybeCommitAfterUpdate(); // Force to write new segment; Old segment remains in seen list
         LuceneTest.addDocument(luceneB, "new", null, new HashMap() {{put("ignored", "true");}}); // Add new document to force recreating finalKeySet
         try {
             LuceneResponse result = multiLucene.executeComposedQuery(q);

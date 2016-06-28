@@ -74,7 +74,7 @@ public class MerescoClustererTest extends SeecrTestCase {
             doc.add(new Field("termvector.field", "iets anders", fieldType));
             lucene.addDocument("id:" + i, doc);
         }
-        lucene.commit();
+        lucene.maybeCommitAfterUpdate();
         IndexReader reader = lucene.data.getManager().acquire().searcher.getIndexReader();
         collector = new MerescoClusterer(reader, 0.5);
     }

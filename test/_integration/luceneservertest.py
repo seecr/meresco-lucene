@@ -132,22 +132,26 @@ class LuceneServerTest(IntegrationTestCase):
         header, body = postRequest(self.luceneServerPort, self._path + '/settings/', data=JsonDict(commitCount=10).dumps())
         self.assertTrue("200 OK" in header.upper(), header)
 
-        data = JsonList([
-                {"type": "TextField", "name": "fieldname", "value": "value"}
-            ]).dumps()
-        header, body = postRequest(self.luceneServerPort, self._path + '/update/?identifier=idCommit', data=data)
-        self.assertTrue("200 OK" in header.upper(), header)
+        try:
+            data = JsonList([
+                    {"type": "TextField", "name": "fieldname", "value": "value"}
+                ]).dumps()
+            header, body = postRequest(self.luceneServerPort, self._path + '/update/?identifier=idCommit', data=data)
+            self.assertTrue("200 OK" in header.upper(), header)
 
-        header, body = postRequest(self.luceneServerPort, self._path + '/query/', parse=False, data=JsonDict(query=dict(type="TermQuery", term=dict(field="__id__", value="idCommit"))).dumps())
-        response = loads(body)
-        self.assertEqual(0, response['total'])
+            header, body = postRequest(self.luceneServerPort, self._path + '/query/', parse=False, data=JsonDict(query=dict(type="TermQuery", term=dict(field="__id__", value="idCommit"))).dumps())
+            response = loads(body)
+            self.assertEqual(0, response['total'])
 
-        header, body = postRequest(self.luceneServerPort, '/commit/', parse=False)
-        self.assertTrue("200 OK" in header.upper(), header)
+            header, body = postRequest(self.luceneServerPort, '/commit/', parse=False)
+            self.assertTrue("200 OK" in header.upper(), header)
 
-        header, body = postRequest(self.luceneServerPort, self._path + '/query/', parse=False, data=JsonDict(query=dict(type="TermQuery", term=dict(field="__id__", value="idCommit"))).dumps())
-        response = loads(body)
-        self.assertEqual(1, response['total'])
+            header, body = postRequest(self.luceneServerPort, self._path + '/query/', parse=False, data=JsonDict(query=dict(type="TermQuery", term=dict(field="__id__", value="idCommit"))).dumps())
+            response = loads(body)
+            self.assertEqual(1, response['total'])
+        finally:
+            header, body = postRequest(self.luceneServerPort, self._path + '/delete/?identifier=idCommit', data=data)
+            self.assertTrue("200 OK" in header.upper(), header)
 
     def testExportKeys(self):
         composedQuery = ComposedQuery('main')

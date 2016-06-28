@@ -70,7 +70,7 @@ public class SuggestionHttpServer {
             commandLine = parser.parse(options, args);
         } catch (MissingOptionException e) {
             HelpFormatter helpFormatter = new HelpFormatter();
-            helpFormatter.printHelp("start-numerate-server" , options);
+            helpFormatter.printHelp("start-suggestion-server" , options);
             System.exit(1);
         }
 
@@ -83,7 +83,7 @@ public class SuggestionHttpServer {
         }
 
         SuggestionIndex suggestionIndex = new SuggestionIndex(stateDir + "/suggestions", stateDir + "/ngram", MIN_SHINGLE_SIZE, MAX_SHINGLE_SIZE, COMMIT_COUNT);
-        
+
         ExecutorThreadPool pool = new ExecutorThreadPool(50, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1000));
         Server server = new Server(pool);
         ServerConnector http = new ServerConnector(server, new HttpConnectionFactory());

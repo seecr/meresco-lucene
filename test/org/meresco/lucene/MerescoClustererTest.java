@@ -84,8 +84,6 @@ public class MerescoClustererTest extends SeecrTestCase {
             lucene.addDocument("id:" + i, doc);
         }
         lucene.maybeCommitAfterUpdate();
-        IndexReader reader = lucene.data.getManager().acquire().searcher.getIndexReader();
-        merescoClusterer = new MerescoClusterer(reader, 0.5);
     }
 
     @After

@@ -701,7 +701,7 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
-    public void testClusteringOnVectorsMultipleStrategies() throws IOException, Exception {
+    public void testClusteringOnVectorsMultipleStrategies() throws Throwable {
         FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
         fieldType.setStoreTermVectors(true);
         for (int i=0; i<5; i++) {

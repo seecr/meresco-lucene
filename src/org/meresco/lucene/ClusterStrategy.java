@@ -19,14 +19,16 @@ public class ClusterStrategy {
 	}
 
 	public ClusterStrategy addField(ClusterField field) {
-		this.clusterFields.add(field);
+		if (field.weight != 0.0) {
+			this.clusterFields.add(field);
+		}
 		return this;
 	}
-	
+
 	public ClusterStrategy addField(String fieldname, double weight, String filterValue) {
 		return addField(new ClusterField(fieldname, weight, filterValue));
 	}
-	
+
 	public static ClusterStrategy parseFromJsonObject(JsonObject jsonObject) {
 		ClusterStrategy result = null;
 		ClusterStrategy strategy = new ClusterStrategy();
@@ -41,25 +43,24 @@ public class ClusterStrategy {
             	result = strategy;
                 break;
             case "fields":
-            	strategy.clusterFields = parseClusterFields(jsonObject.getJsonObject(key));
-            	result = strategy;
+                strategy.parseClusterFields(jsonObject.getJsonObject(key));
+                result = strategy;
                 break;
             }
         }
         return result;
 	}
 
+	@Override
 	public String toString() {
 		return "ClusterStrategy(clusteringEps=" + clusteringEps + ", clusteringMinPoints=" + clusteringMinPoints + ", clusterFields=" + clusterFields.toString() + ")";
 	}
 
-    private static List<ClusterField> parseClusterFields(JsonObject jsonClusterFields) {
-        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+    private void parseClusterFields(JsonObject jsonClusterFields) {
         for (String key: jsonClusterFields.keySet()) {
             JsonObject clusterField = jsonClusterFields.getJsonObject(key);
             String filterValue = clusterField.getString("filterValue", null);
-            clusterFields.add(new ClusterField(clusterField.getString("fieldname"), clusterField.getJsonNumber("weight").doubleValue(), filterValue));
+            addField(clusterField.getString("fieldname"), clusterField.getJsonNumber("weight").doubleValue(), filterValue);
         }
-        return clusterFields;
     }
 }

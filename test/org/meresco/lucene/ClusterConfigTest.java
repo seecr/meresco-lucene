@@ -62,7 +62,10 @@ public class ClusterConfigTest {
     		   					.add("weight", 0.4))
     		           		.add("dcterms:creator", Json.createObjectBuilder()
     		           			.add("fieldname", "dcterms:creator")
-    		           			.add("weight", 0.6)))))            	
+    		           			.add("weight", 0.6))
+    		           		.add("dcterms:subject", Json.createObjectBuilder()
+        		           			.add("fieldname", "dcterms:subject")
+        		           			.add("weight", 0.0))))) // 0.0 weight field must be skipped
             .build();
         ClusterConfig clusterConfig = ClusterConfig.parseFromJsonObject(json);
   	    assertEquals(200, clusterConfig.clusterMoreRecords);

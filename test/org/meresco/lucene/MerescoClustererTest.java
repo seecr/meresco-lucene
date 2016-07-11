@@ -31,17 +31,14 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.facet.taxonomy.SearcherTaxonomyManager.SearcherAndTaxonomy;
 import org.apache.lucene.index.IndexReader;
 import org.junit.After;
 import org.junit.Before;
@@ -49,15 +46,15 @@ import org.junit.Test;
 import org.meresco.lucene.Lucene.UninitializedException;
 import org.meresco.lucene.search.InterpolateEpsilon;
 import org.meresco.lucene.search.MerescoCluster;
-import org.meresco.lucene.search.MerescoClusterer;
-import org.meresco.lucene.search.SuperIndexSearcher;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
+import org.meresco.lucene.search.MerescoClusterer;
 
 
 public class MerescoClustererTest extends SeecrTestCase {
     private Lucene lucene;
 
-    @Before
+    @Override
+	@Before
     public void setUp() throws Exception {
         super.setUp();
         Document doc;
@@ -86,7 +83,8 @@ public class MerescoClustererTest extends SeecrTestCase {
         lucene.maybeCommitAfterUpdate();
     }
 
-    @After
+    @Override
+	@After
     public void tearDown() throws Exception {
         lucene.close();
         super.tearDown();

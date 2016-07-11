@@ -35,9 +35,9 @@ import javax.json.JsonValue;
 public class ClusterConfig {
 	public int clusterMoreRecords = 0;
 	public List<ClusterStrategy> strategies = new ArrayList<>();
-	
+
 	public ClusterConfig() {
-	}	
+	}
 
 	public ClusterConfig(int clusterMoreRecords) {
 		this.clusterMoreRecords = clusterMoreRecords;
@@ -52,7 +52,7 @@ public class ClusterConfig {
 		this.strategies.add(strategy);
 		return this;
 	}
-	
+
 	public static ClusterConfig parseFromJsonObject(JsonObject jsonObject) {
 		ClusterConfig result = null;
 		ClusterConfig clusterConfig = new ClusterConfig();
@@ -66,16 +66,11 @@ public class ClusterConfig {
             	clusterConfig.strategies = parseClusterStrategies(jsonObject.getJsonArray(key));
             	result = clusterConfig;
                 break;
-            case "fields":  // for backwards compatibility
-            	ClusterStrategy clusterStrategy = ClusterStrategy.parseFromJsonObject(jsonObject);
-            	clusterConfig.strategies.add(clusterStrategy);
-            	result = clusterConfig;
-            	break;
             }
         }
         return result;
 	}
-	
+
 	public String toString() {
 		return "ClusterConfig(clusterMoreRecords=" + clusterMoreRecords + ", strategies=" + strategies.toString() + ")";
 	}

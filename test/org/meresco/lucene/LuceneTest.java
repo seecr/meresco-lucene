@@ -74,7 +74,7 @@ import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.GroupingHit;
 import org.meresco.lucene.LuceneResponse.Hit;
-import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.search.InterpolateEpsilon;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;
@@ -545,7 +545,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals("value2", lucene.suggest("value0", 2, "field5")[0].string);
         assertEquals("value2", lucene.suggest("valeu", 2, "field5")[0].string);
 
-        QueryConverter.SuggestionRequest sr = new QueryConverter.SuggestionRequest("field5", 2);
+        JsonQueryConverter.SuggestionRequest sr = new JsonQueryConverter.SuggestionRequest("field5", 2);
         sr.add("value0");
         sr.add("valeu");
         QueryData q = new QueryData();
@@ -1133,7 +1133,7 @@ public class LuceneTest extends SeecrTestCase {
     @Test
     public void testQueryConvert() throws Throwable {
         lucene.getSettings().facetsConfig.setIndexFieldName("dim1", "otherfield");
-        QueryConverter queryConverter = lucene.getQueryConverter();
+        JsonQueryConverter queryConverter = lucene.getQueryConverter();
         Term drilldownTerm = queryConverter.createDrilldownTerm("dim1");
         assertEquals("otherfield", drilldownTerm.field());
     }

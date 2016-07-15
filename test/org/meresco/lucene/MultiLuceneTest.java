@@ -47,7 +47,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
-import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 
 public class MultiLuceneTest extends SeecrTestCase {
@@ -157,7 +157,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     public void testJoinWithFacetInResultCore() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
-        q.addFacet("coreA", new QueryConverter.FacetRequest("cat_M", 10));
+        q.addFacet("coreA", new JsonQueryConverter.FacetRequest("cat_M", 10));
         q.addMatch("coreA", "coreB", "A", "B");
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
@@ -170,8 +170,8 @@ public class MultiLuceneTest extends SeecrTestCase {
     @Test
     public void testJoinFacet() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_N", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_O", 10));
         q.addMatch("coreA", "coreB", "A", "B");
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
@@ -192,7 +192,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     public void testJoinFacetWithDrilldownQueryFilters() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_O", 10));
         q.addDrilldownQuery("coreA", "cat_Q", "true");
         q.addMatch("coreA", "coreB", "A", "B");
 
@@ -222,7 +222,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     public void testJoinFacetWithJoinDrilldownQueryFilters() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_O", 10));
         q.addDrilldownQuery("coreB", "cat_O", "true");
         q.addMatch("coreA", "coreB", "A", "B");
 
@@ -252,7 +252,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
         q.addFilterQuery("coreA", new TermQuery(new Term("Q", "true")));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_O", 10));
         q.addMatch("coreA", "coreB", "A", "B");
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
@@ -271,7 +271,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     @Test
     public void testJoinFacetWillNotFilter() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_N", 10));
         q.addMatch("coreA", "coreB", "A", "B");
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
@@ -291,8 +291,8 @@ public class MultiLuceneTest extends SeecrTestCase {
     public void testJoinFacetAndQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_N", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_O", 10));
         q.addMatch("coreA", "coreB", "A", "B");
 
         LuceneResponse result = multiLucene.executeComposedQuery(q);
@@ -385,10 +385,10 @@ public class MultiLuceneTest extends SeecrTestCase {
     @Test
     public void testUniteAndFacets() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
-        q.addFacet("coreA", new QueryConverter.FacetRequest("cat_Q", 10));
-        q.addFacet("coreA", new QueryConverter.FacetRequest("cat_U", 10));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
+        q.addFacet("coreA", new JsonQueryConverter.FacetRequest("cat_Q", 10));
+        q.addFacet("coreA", new JsonQueryConverter.FacetRequest("cat_U", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_N", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_O", 10));
         q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
         q.addOtherCoreFacetFilter("coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "A", "B");
@@ -428,8 +428,8 @@ public class MultiLuceneTest extends SeecrTestCase {
     public void testUniteAndFacetsWithForeignQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_N", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_O", 10));
         q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "A", "B");
 
@@ -456,8 +456,8 @@ public class MultiLuceneTest extends SeecrTestCase {
     public void testUniteAndFacetsWithForeignQueryWithSpecialFacetsQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_O", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_N", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_O", 10));
         q.addUnite("coreA", new TermQuery(new Term("U", "true")), "coreB", new TermQuery(new Term("N", "true")));
         q.addOtherCoreFacetFilter("coreB", new TermQuery(new Term("N", "true")));
         q.addMatch("coreA", "coreB", "A", "B");
@@ -596,9 +596,9 @@ public class MultiLuceneTest extends SeecrTestCase {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreB", new TermQuery(new Term("N", "true")));
         q.setCoreQuery("coreC", new TermQuery(new Term("R", "true")));
-        q.addFacet("coreA", new QueryConverter.FacetRequest("cat_M", 10));
-        q.addFacet("coreB", new QueryConverter.FacetRequest("cat_N", 10));
-        q.addFacet("coreC", new QueryConverter.FacetRequest("cat_R", 10));
+        q.addFacet("coreA", new JsonQueryConverter.FacetRequest("cat_M", 10));
+        q.addFacet("coreB", new JsonQueryConverter.FacetRequest("cat_N", 10));
+        q.addFacet("coreC", new JsonQueryConverter.FacetRequest("cat_R", 10));
         q.addMatch("coreA", "coreB", "A", "B");
         q.addMatch("coreA", "coreC", "A", "C");
 
@@ -794,7 +794,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     @Test
     public void testQueryConvertors() throws Throwable {
         luceneA.getSettings().facetsConfig.setIndexFieldName("dim1", "otherfield");
-        Map<String, QueryConverter> converters = multiLucene.getQueryConverters();
+        Map<String, JsonQueryConverter> converters = multiLucene.getQueryConverters();
         Term drilldownTerm = converters.get("coreA").createDrilldownTerm("dim1");
         assertEquals("otherfield", drilldownTerm.field());
 

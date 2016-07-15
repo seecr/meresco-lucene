@@ -53,13 +53,13 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.junit.Test;
-import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.search.JoinSortField;
 
 public class QueryConverterTest {
 
 
-    private QueryConverter queryConverter = new QueryConverter(new FacetsConfig(), "coreA");
+    private JsonQueryConverter queryConverter = new JsonQueryConverter(new FacetsConfig(), "coreA");
 
     @Test
     public void testTermQuery() {

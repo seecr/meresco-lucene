@@ -64,7 +64,6 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -92,7 +91,7 @@ import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.LuceneResponse.GroupingHit;
 import org.meresco.lucene.LuceneResponse.Hit;
-import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.search.DeDupFilterSuperCollector;
 import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.GroupSuperCollector;
@@ -183,7 +182,8 @@ public class Lucene {
         }
         if (commitTimer == null) {
             TimerTask timerTask = new TimerTask() {
-                public void run() {
+                @Override
+				public void run() {
                     try {
                         commit();
                     } catch (Exception e) {
@@ -309,16 +309,16 @@ public class Lucene {
         if (filter == null) {
             return query;
         }
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(query, BooleanClause.Occur.MUST);
-        builder.add(filter, BooleanClause.Occur.FILTER);
-        return builder.build();
+        return new BooleanQuery.Builder()
+        	.add(query, BooleanClause.Occur.MUST)
+        	.add(filter, BooleanClause.Occur.FILTER)
+        	.build();
     }
 
     private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader, ClusterConfig clusterConfig) throws Exception {
     	int totalHits = collectors.topCollector.getTotalHits();
         TopDocs topDocs = collectors.topCollector.topDocs(q.start);
-        
+
     	MerescoClusterer clusterer = new MerescoClusterer(indexReader, clusterConfig, this.getSettings().interpolateEpsilon, totalHits, q.stop - q.start);
         long t0 = System.currentTimeMillis();
         clusterer.processTopDocs(topDocs);
@@ -326,7 +326,7 @@ public class Lucene {
         t0 = System.currentTimeMillis();
         clusterer.finish();
         times.put("clusteringAlgorithm", System.currentTimeMillis() - t0);
-        
+
         List<LuceneResponse.Hit> hits = new ArrayList<>();
         int count = q.start;
         HashSet<Integer> seenDocIds = new HashSet<>();
@@ -336,7 +336,7 @@ public class Lucene {
                 break;
             if (seenDocIds.contains(scoreDoc.doc))
                 continue;
-            
+
             Integer representative = null;
             MerescoCluster cluster = clusterer.cluster(scoreDoc.doc);
             if (cluster == null) {
@@ -351,7 +351,7 @@ public class Lucene {
                 	seenDocIds.add(ds.docId);
                 }
             }
-            
+
             ClusterHit hit = new ClusterHit(getDocument(representative).get(ID_FIELD), scoreDoc.score);
             if (cluster != null) {
             	hit.topTerms = cluster.topTerms;
@@ -456,7 +456,7 @@ public class Lucene {
         if (filters.size() == 0)
             return null;
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        filters.stream().forEach(f -> builder.add(f, Occur.FILTER));
+        filters.forEach(f -> builder.add(f, Occur.FILTER));
         return builder.build();
     }
 
@@ -668,7 +668,7 @@ public class Lucene {
             data.getManager().release(reference);
         }
     }
-    
+
     public void search(Query query, Query filterQuery, SuperCollector<?> collector) throws Throwable {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
@@ -715,8 +715,8 @@ public class Lucene {
         return q.build();
     }
 
-    public QueryConverter getQueryConverter() throws Exception {
-        return new QueryConverter(this.data.getFacetsConfig(), this.name);
+    public JsonQueryConverter getQueryConverter() throws Exception {
+        return new JsonQueryConverter(this.data.getFacetsConfig(), this.name);
     }
 
     public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Throwable {
@@ -778,8 +778,8 @@ public class Lucene {
             data.getManager().release(reference);
         }
     }
-    
-    
+
+
     public static class Collectors {
         public GroupSuperCollector groupingCollector;
         public DeDupFilterSuperCollector dedupCollector;

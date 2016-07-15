@@ -38,8 +38,8 @@ import javax.json.JsonString;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.meresco.lucene.QueryConverter.FacetRequest;
-import org.meresco.lucene.QueryConverter.SuggestionRequest;
+import org.meresco.lucene.JsonQueryConverter.FacetRequest;
+import org.meresco.lucene.JsonQueryConverter.SuggestionRequest;
 
 
 public class QueryData {
@@ -56,7 +56,7 @@ public class QueryData {
     public boolean clustering;
     public ClusterConfig clusterConfig;
 
-    public QueryData(Reader queryReader, QueryConverter converter) {
+    public QueryData(Reader queryReader, JsonQueryConverter converter) {
         JsonObject object = Json.createReader(queryReader).readObject();
         this.query = converter.convertToQuery(object.getJsonObject("query"));
         this.facets = converter.convertToFacets(object.getJsonArray("facets"));

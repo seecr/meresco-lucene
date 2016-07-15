@@ -57,7 +57,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.meresco.lucene.search.JoinSortField;
 
-public class QueryConverter {
+public class JsonQueryConverter {
 
     private static final String SORT_ON_SCORE = "score";
 
@@ -65,7 +65,7 @@ public class QueryConverter {
 
     private String coreName;
 
-    public QueryConverter(FacetsConfig facetsConfig, String coreName) {
+    public JsonQueryConverter(FacetsConfig facetsConfig, String coreName) {
         this.facetsConfig = facetsConfig;
         this.coreName = coreName;
     }

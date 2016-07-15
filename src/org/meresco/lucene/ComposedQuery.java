@@ -41,7 +41,7 @@ import javax.json.JsonValue;
 import javax.json.JsonString;
 
 import org.apache.lucene.search.Query;
-import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 
 
 public class ComposedQuery {
@@ -67,7 +67,7 @@ public class ComposedQuery {
         this.queries.put(resultsFrom, query);
     }
 
-    public static ComposedQuery fromJsonString(Reader jsonStringReader, Map<String, QueryConverter> converters) {
+    public static ComposedQuery fromJsonString(Reader jsonStringReader, Map<String, JsonQueryConverter> converters) {
         if (jsonStringReader == null)
             return null;
         JsonObject json = Json.createReader(jsonStringReader).readObject();

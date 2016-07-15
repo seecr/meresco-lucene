@@ -36,7 +36,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.ComposedQuery.Unite;
-import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.queries.KeyFilter;
 import org.meresco.lucene.search.JoinSortCollector;
 import org.meresco.lucene.search.JoinSortField;
@@ -207,8 +207,8 @@ public class MultiLucene {
         return keysForKeyName;
     }
 
-    public Map<String, QueryConverter> getQueryConverters() throws Exception {
-        Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>();
+    public Map<String, JsonQueryConverter> getQueryConverters() throws Exception {
+        Map<String, JsonQueryConverter> queryConverters = new HashMap<String, JsonQueryConverter>();
         for (Lucene lucene : this.lucenes.values())
             queryConverters.put(lucene.name, lucene.getQueryConverter());
         return queryConverters;

@@ -193,7 +193,8 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator impl
         super.copy(slot, this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this));
     }
 
-    public void setOtherCoreContext(LeafReaderContext context) {
+    @Override
+	public void setOtherCoreContext(LeafReaderContext context) {
         try {
             super.getLeafComparator(context);
         } catch (IOException e) {
@@ -209,19 +210,23 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
     private Integer topValue;
     private Integer bottomValue;
     private int[] values;
+    private static Field valuesField;
+
+    {{
+		try {
+			valuesField = FieldComparator.IntComparator.class.getDeclaredField("values");
+	        valuesField.setAccessible(true);
+		} catch (NoSuchFieldException | SecurityException e) {
+            throw new RuntimeException(e);
+		}
+    }}
 
     public JoinIntComparator(int numHits, String field, Integer missingValue, JoinSortCollector collector) {
         super(numHits, field, missingValue == null ? 0 : missingValue);
         this.collector = collector;
-        this.values = accessValuesFromSuper();
-    }
-
-    private int[] accessValuesFromSuper() {
         try {
-            Field valuesField = FieldComparator.IntComparator.class.getDeclaredField("values");
-            valuesField.setAccessible(true);
-            return (int[]) valuesField.get(this);
-        } catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
+            this.values = (int[]) valuesField.get(this);
+        } catch (SecurityException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
@@ -232,12 +237,14 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
         super.doSetNextReader(context);
     }
 
-    public void setTopValue(Integer value) {
+    @Override
+	public void setTopValue(Integer value) {
         this.topValue = value;
         super.setTopValue(value);
     }
 
-    public void setBottom(final int bottom) {
+    @Override
+	public void setBottom(final int bottom) {
         this.bottomValue = this.value(bottom);
         super.setBottom(bottom);
     }
@@ -269,7 +276,8 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
         }
     }
 
-    public void setOtherCoreContext(LeafReaderContext context) {
+    @Override
+	public void setOtherCoreContext(LeafReaderContext context) {
         if (context == null) {
             return;
         }
@@ -288,19 +296,23 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
     private Double topValue;
     private Double bottomValue;
     private double[] values;
+    private static Field valuesField;
+
+    {{
+		try {
+			valuesField = FieldComparator.DoubleComparator.class.getDeclaredField("values");
+	        valuesField.setAccessible(true);
+		} catch (NoSuchFieldException | SecurityException e) {
+            throw new RuntimeException(e);
+		}
+    }}
 
     public JoinDoubleComparator(int numHits, String field, Double missingValue, JoinSortCollector collector) {
         super(numHits, field, missingValue == null ? 0 : missingValue);
         this.collector = collector;
-        this.values = accessValuesFromSuper();
-    }
-
-    private double[] accessValuesFromSuper() {
         try {
-            Field valuesField = FieldComparator.DoubleComparator.class.getDeclaredField("values");
-            valuesField.setAccessible(true);
-            return (double[]) valuesField.get(this);
-        } catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
+            this.values = (double[]) valuesField.get(this);
+        } catch (SecurityException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
@@ -311,12 +323,14 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
         super.doSetNextReader(context);
     }
 
-    public void setTopValue(Double value) {
+    @Override
+	public void setTopValue(Double value) {
         this.topValue = value;
         super.setTopValue(value);
     }
 
-    public void setBottom(final int bottom) {
+    @Override
+	public void setBottom(final int bottom) {
         this.bottomValue = this.value(bottom);
         super.setBottom(bottom);
     }
@@ -348,7 +362,8 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
         }
     }
 
-    public void setOtherCoreContext(LeafReaderContext context) {
+    @Override
+	public void setOtherCoreContext(LeafReaderContext context) {
         if (context == null) {
             return;
         }

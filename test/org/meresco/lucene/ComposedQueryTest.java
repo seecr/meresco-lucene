@@ -44,7 +44,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
 import org.meresco.lucene.ComposedQuery.Unite;
-import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 
 
 public class ComposedQueryTest {
@@ -136,9 +136,9 @@ public class ComposedQueryTest {
 			            					.add("filterValue", "a")
 			            					.add("weight", 0.3))))))
                 .build();
-        Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
-            put("coreA", new QueryConverter(new FacetsConfig(), "coreA"));
-            put("coreB", new QueryConverter(new FacetsConfig(), "coreB"));
+        Map<String, JsonQueryConverter> queryConverters = new HashMap<String, JsonQueryConverter>() {{
+            put("coreA", new JsonQueryConverter(new FacetsConfig(), "coreA"));
+            put("coreB", new JsonQueryConverter(new FacetsConfig(), "coreB"));
         }};
         ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         assertEquals("coreA", q.resultsFrom);
@@ -206,8 +206,8 @@ public class ComposedQueryTest {
         JsonObject json = Json.createObjectBuilder()
                     .add("resultsFrom", "coreA")
                     .build();
-        Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
-            put("coreA", new QueryConverter(new FacetsConfig(), "coreA"));
+        Map<String, JsonQueryConverter> queryConverters = new HashMap<String, JsonQueryConverter>() {{
+            put("coreA", new JsonQueryConverter(new FacetsConfig(), "coreA"));
         }};
         ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         assertEquals(0, q.queryData.start);
@@ -250,9 +250,9 @@ public class ComposedQueryTest {
                                     .add("value", "value1"))))
                     ))
                 .build();
-        Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
-            put("coreA", new QueryConverter(new FacetsConfig(), "coreA"));
-            put("coreB", new QueryConverter(new FacetsConfig(), "coreB"));
+        Map<String, JsonQueryConverter> queryConverters = new HashMap<String, JsonQueryConverter>() {{
+            put("coreA", new JsonQueryConverter(new FacetsConfig(), "coreA"));
+            put("coreB", new JsonQueryConverter(new FacetsConfig(), "coreB"));
         }};
         ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         List<Unite> unites = q.getUnites();

@@ -30,10 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.OpenBitSet;
 import org.meresco.lucene.ComposedQuery.Unite;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.queries.KeyFilter;
@@ -74,7 +72,7 @@ public class MultiLucene {
     private LuceneResponse multipleCoreQuery(ComposedQuery query, String exportKey) throws Throwable {
         long t0 = System.currentTimeMillis();
         String resultCoreName = query.resultsFrom;
-        List<String> otherCoreNames = new ArrayList<String>();
+        List<String> otherCoreNames = new ArrayList<>();
         for (String core : query.cores)
             if (!core.equals(resultCoreName))
                 otherCoreNames.add(core);
@@ -83,7 +81,7 @@ public class MultiLucene {
         for (String otherCoreName : otherCoreNames)
             finalKeys = coreQueries(otherCoreName, resultCoreName, query, finalKeys);
 
-        List<Filter> resultFilters = new ArrayList<Filter>();
+        List<Query> resultFilters = new ArrayList<>();
         for (String keyName : finalKeys.keySet())
             resultFilters.add(new KeyFilter(finalKeys.get(keyName), keyName));
 
@@ -91,7 +89,7 @@ public class MultiLucene {
         if (resultCoreQuery == null)
                 resultCoreQuery = new MatchAllDocsQuery();
         List<AggregateScoreSuperCollector> aggregateScoreCollectors = createAggregateScoreCollectors(query);
-        Map<String, KeySuperCollector> keyCollectors = new HashMap<String, KeySuperCollector>();
+        Map<String, KeySuperCollector> keyCollectors = new HashMap<>();
         for (String keyName : query.keyNames(resultCoreName)) {
             keyCollectors.put(keyName, new KeySuperCollector(keyName));
         }

@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedDocValues;
@@ -46,7 +46,7 @@ interface JoinFieldComparator {
     public int compareBottom(int doc);
     public int compareTop(int doc);
     public void copy(int slot, int doc);
-    void setOtherCoreContext(AtomicReaderContext context);
+    void setOtherCoreContext(LeafReaderContext context);
 }
 
 
@@ -103,7 +103,7 @@ public class JoinSortCollector extends Collector {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    public void setNextReader(LeafReaderContext context) throws IOException {
         if (this.topLevelReaderContext == null) {
             this.topLevelReaderContext = ReaderUtil.getTopLevelContext(context);
         }
@@ -121,7 +121,7 @@ public class JoinSortCollector extends Collector {
             int otherDoc = this.docIdsByKey[key];
             if (otherDoc > 0) {
                 otherDoc -= 1;
-                AtomicReaderContext context = this.contextForDocId(otherDoc);
+                LeafReaderContext context = this.contextForDocId(otherDoc);
                 comparator.setOtherCoreContext(context);
                 return otherDoc - context.docBase;
             }
@@ -130,8 +130,8 @@ public class JoinSortCollector extends Collector {
         return -1;
     }
 
-    private AtomicReaderContext contextForDocId(int docId) {
-        List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
+    private LeafReaderContext contextForDocId(int docId) {
+        List<LeafReaderContext> leaves = this.topLevelReaderContext.leaves();
         return leaves.get(ReaderUtil.subIndex(docId, leaves));
     }
 }
@@ -147,7 +147,7 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator impl
     }
 
     @Override
-    protected SortedDocValues getSortedDocValues(AtomicReaderContext context, String field) throws IOException {
+    protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
         if (context != null)
             return super.getSortedDocValues(context, field);
         return new SortedDocValues() {
@@ -175,7 +175,7 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator impl
     }
 
     @Override
-    public JoinTermOrdValComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public JoinTermOrdValComparator setNextReader(LeafReaderContext context) throws IOException {
         this.resultKeys = KeyValuesCache.get(context, this.collector.resultKeyName);
         return this;
     }
@@ -195,7 +195,7 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator impl
         super.copy(slot, this.collector.otherDocIdForKey(resultKeys[doc], this));
     }
 
-    public void setOtherCoreContext(AtomicReaderContext context) {
+    public void setOtherCoreContext(LeafReaderContext context) {
         try {
             super.setNextReader(context);
         } catch (IOException e) {
@@ -229,7 +229,7 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
     }
 
     @Override
-    public JoinIntComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public JoinIntComparator setNextReader(LeafReaderContext context) throws IOException {
         this.resultKeys = KeyValuesCache.get(context, this.collector.resultKeyName);
         return this;
     }
@@ -271,7 +271,7 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
         }
     }
 
-    public void setOtherCoreContext(AtomicReaderContext context) {
+    public void setOtherCoreContext(LeafReaderContext context) {
         if (context == null) {
             return;
         }
@@ -308,7 +308,7 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
     }
 
     @Override
-    public JoinDoubleComparator setNextReader(AtomicReaderContext context) throws IOException {
+    public JoinDoubleComparator setNextReader(LeafReaderContext context) throws IOException {
         this.resultKeys = KeyValuesCache.get(context, this.collector.resultKeyName);
         return this;
     }
@@ -350,7 +350,7 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
         }
     }
 
-    public void setOtherCoreContext(AtomicReaderContext context) {
+    public void setOtherCoreContext(LeafReaderContext context) {
         if (context == null) {
             return;
         }

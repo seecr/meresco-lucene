@@ -2,7 +2,7 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
  *
@@ -28,16 +28,20 @@ package org.meresco.lucene.queries;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.BitsFilteredDocIdSet;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.meresco.lucene.search.join.KeyValuesCache;
 
 
-public class KeyFilter extends Filter {
+public class KeyFilter extends Query {
 	private String keyName;
 	public Bits keySet;
 
@@ -47,51 +51,67 @@ public class KeyFilter extends Filter {
 	}
 
 	@Override
-	public DocIdSet getDocIdSet(final AtomicReaderContext context,
-			Bits acceptDocs) throws IOException {
-	    return BitsFilteredDocIdSet.wrap(new DocIdSet() {
-			@Override
-			public DocIdSetIterator iterator() throws IOException {
-				return new DocIdSetIterator() {
-					private int[] keyValuesArray = KeyValuesCache.get(context, keyName);
-					private int maxDoc = context.reader().maxDoc();
-					int docId;
+	public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
+        return new ConstantScoreWeight(this) {
+            @Override
+            public Scorer scorer(LeafReaderContext context) throws IOException {
+                return new ConstantScoreScorer(this, score(), new DocIdSetIterator() {
+                    private int[] keyValuesArray = KeyValuesCache.get(context, keyName);
+                    private int maxDoc = context.reader().maxDoc();
+                    int docId = -1;
 
-					@Override
-					public int docID() {
-						throw new UnsupportedOperationException();
-					}
+                    @Override
+                    public int docID() {
+                       return this.docId;
+                    }
 
-					@Override
-					public int nextDoc() throws IOException {
-						if (keyValuesArray != null) {
-							try {
-								while (this.docId < this.maxDoc) {
-									int key = this.keyValuesArray[this.docId];
-									if (keySet.get(key)) {
-										return this.docId++;
-									}
-									docId++;
-								}
-							} catch (IndexOutOfBoundsException e) {
-							}
-						}
-						this.docId = DocIdSetIterator.NO_MORE_DOCS;
-						return this.docId;
-					}
+                    @Override
+                    public int nextDoc() throws IOException {
+                        if (this.docId == -1)
+                            this.docId++;
+                        if (keyValuesArray != null) {
+                            try {
+                                while (this.docId < this.maxDoc) {
+                                    int key = this.keyValuesArray[this.docId];
+                                    if (keySet.get(key)) {
+                                        return this.docId++;
+                                    }
+                                    docId++;
+                                }
+                            } catch (IndexOutOfBoundsException e) {
+                            }
+                        }
+                        this.docId = DocIdSetIterator.NO_MORE_DOCS;
+                        return this.docId;
+                    }
 
-					@Override
-					public int advance(int target) throws IOException {
-						this.docId = target;
-						return nextDoc();
-					}
+                    @Override
+                    public int advance(int target) throws IOException {
+                        this.docId = target;
+                        return nextDoc();
+                    }
 
-					@Override
-					public long cost() {
-						throw new UnsupportedOperationException();
-					}
-				};
-			}
-		}, acceptDocs);
-	}
+                    @Override
+                    public long cost() {
+                        return 1L;
+                    }
+               });
+           }
+       };
+    }
+
+    @Override
+    public String toString(String field) {
+       return "KeyFilter(" + keyName + ")";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+       return sameClassAs(o) && ((KeyFilter) o).keyName == keyName && ((KeyFilter) o).keySet.equals(keySet);
+    }
+
+    @Override
+    public int hashCode() {
+       return classHash();
+    }
 }

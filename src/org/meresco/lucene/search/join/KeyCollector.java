@@ -27,9 +27,9 @@ package org.meresco.lucene.search.join;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.OpenBitSet;
+import org.meresco.lucene.OpenBitSet;
 import org.meresco.lucene.search.SubCollector;
 
 
@@ -57,13 +57,13 @@ public class KeyCollector extends SubCollector {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
         keyValuesArray = KeyValuesCache.get(context, keyName);
     }
 
     @Override
-    public boolean acceptsDocsOutOfOrder() {
-        return true;
+    public boolean needsScores() {
+        return false;
     }
 
     @Override

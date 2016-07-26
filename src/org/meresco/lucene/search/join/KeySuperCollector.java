@@ -28,7 +28,7 @@ package org.meresco.lucene.search.join;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.OpenBitSet;
+import org.meresco.lucene.OpenBitSet;
 import org.meresco.lucene.search.SuperCollector;
 
 public class KeySuperCollector extends SuperCollector<KeyCollector> {

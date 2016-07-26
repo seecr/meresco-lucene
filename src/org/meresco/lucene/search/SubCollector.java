@@ -45,5 +45,9 @@ public abstract class SubCollector extends SimpleCollector {
      * @throws IOException
      */
     public abstract void complete() throws IOException;
+
+    public void setNextReader(LeafReaderContext context) throws IOException {
+        getLeafCollector(context);
+    }
     
 }

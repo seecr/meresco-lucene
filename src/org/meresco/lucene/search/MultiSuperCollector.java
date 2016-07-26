@@ -27,8 +27,10 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorer;
 
 public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
@@ -71,26 +73,16 @@ class MultiSubCollector extends SubCollector {
     }
 
     @Override
-    public boolean acceptsDocsOutOfOrder() {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
         for (SubCollector c : this.subCollectors) {
-            if (!c.acceptsDocsOutOfOrder()) {
-                return false;
-            }
+            c.getLeafCollector(context);
         }
-        return true;
     }
-
+    
     @Override
     public void setScorer(Scorer s) throws IOException {
         for (SubCollector c : this.subCollectors) {
             c.setScorer(s);
-        }
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext context) throws IOException {
-        for (SubCollector c : this.subCollectors) {
-            c.setNextReader(context);
         }
     }
 
@@ -106,5 +98,10 @@ class MultiSubCollector extends SubCollector {
         for (SubCollector c : this.subCollectors) {
             c.complete();
         }
+    }
+
+    @Override
+    public boolean needsScores() {
+        return Stream.of(this.subCollectors).anyMatch(c -> c.needsScores());
     }
 }

@@ -109,4 +109,9 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
         this.parent.mergePool(values);
     }
 
+    @Override
+    public boolean needsScores() {
+        return false;
+    }
+
 }

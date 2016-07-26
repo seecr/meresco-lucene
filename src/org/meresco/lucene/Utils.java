@@ -40,8 +40,6 @@ import java.io.Writer;
 import java.util.Formatter;
 import java.util.List;
 
-import org.apache.lucene.util.OpenBitSet;
-
 public class Utils {
 	public static String getStackTrace(Throwable aThrowable) {
 		/*

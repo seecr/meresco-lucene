@@ -27,38 +27,45 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorer;
 
 public abstract class DelegatingSubCollector<CollectorType extends Collector, SuperCollectorType extends SuperCollector<?>> extends SubCollector {
 
     protected CollectorType delegate;
     protected SuperCollectorType parent;
+    private LeafCollector leaf;
 
     public DelegatingSubCollector(CollectorType delegate, SuperCollectorType parent) throws IOException {
         super();
         this.delegate = delegate;
         this.parent = parent;
     }
-
+    
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
-        this.delegate.setNextReader(context);
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
+        leaf = this.delegate.getLeafCollector(context);
     }
-
+//
+//    @Override
+//    public void setNextReader(LeafReaderContext context) throws IOException {
+//        this.delegate.setNextReader(context);
+//    }
+//
     @Override
     public void setScorer(Scorer scorer) throws IOException {
-        this.delegate.setScorer(scorer);
+        this.leaf.setScorer(scorer);
     }
-
+    
     @Override
     public void collect(int doc) throws IOException {
-        this.delegate.collect(doc);
+        this.leaf.collect(doc);
     }
-
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-        return this.delegate.acceptsDocsOutOfOrder();
-    }
+//
+//    @Override
+//    public boolean acceptsDocsOutOfOrder() {
+//        return this.delegate.acceptsDocsOutOfOrder();
+//    }
 }

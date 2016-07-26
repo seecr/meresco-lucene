@@ -37,17 +37,17 @@ import javax.json.JsonValue;
 import javax.json.JsonValue.ValueType;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.meresco.lucene.numerate.TermNumerator;
 
@@ -88,13 +88,13 @@ public class DocumentStringToDocument {
                 field = new Field(name, jsonField.getString("value"), NO_TERMS_FREQUENCY_FIELD);
                 break;
             case "IntField":
-                field = new IntField(name, jsonField.getInt("value"), Store.NO);
+                field = new IntPoint(name, jsonField.getInt("value"));
                 break;
             case "DoubleField":
-                field = new DoubleField(name, jsonField.getInt("value"), Store.NO);
+                field = new DoublePoint(name, jsonField.getInt("value"));
                 break;
             case "LongField":
-                field = new LongField(name, jsonField.getInt("value"), Store.NO);
+                field = new LongPoint(name, jsonField.getInt("value"));
                 break;
             case "NumericField":
                 field = new NumericDocValuesField(name, jsonField.getJsonNumber("value").longValue());
@@ -131,9 +131,8 @@ public class DocumentStringToDocument {
 
     private static final FieldType NO_TERMS_FREQUENCY_FIELD = new FieldType();
     static {
-        NO_TERMS_FREQUENCY_FIELD.setIndexed(true);
         NO_TERMS_FREQUENCY_FIELD.setTokenized(true);
         NO_TERMS_FREQUENCY_FIELD.setOmitNorms(true);
-        NO_TERMS_FREQUENCY_FIELD.setIndexOptions(FieldInfo.IndexOptions.DOCS_ONLY);
+        NO_TERMS_FREQUENCY_FIELD.setIndexOptions(IndexOptions.DOCS);
     }
 }

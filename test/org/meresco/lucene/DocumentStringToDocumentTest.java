@@ -39,14 +39,15 @@ import javax.json.Json;
 import javax.json.JsonArray;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.junit.Test;
@@ -141,10 +142,9 @@ public class DocumentStringToDocumentTest {
                 .build();
         Document result = convert(json.toString());
         IndexableField field = result.getField("name");
-        assertTrue(field.fieldType().indexed());
         assertTrue(field.fieldType().tokenized());
         assertTrue(field.fieldType().omitNorms());
-        assertEquals(FieldInfo.IndexOptions.DOCS_ONLY, field.fieldType().indexOptions());
+        assertEquals(IndexOptions.DOCS, field.fieldType().indexOptions());
         assertEquals("value", field.stringValue());
     }
 
@@ -157,7 +157,7 @@ public class DocumentStringToDocumentTest {
                     .add("value", 1))
                 .build();
         Document result = convert(json.toString());
-        assertEquals(IntField.TYPE_NOT_STORED, result.getField("name").fieldType());
+        assertEquals(new IntPoint("name", 1).fieldType(), result.getField("name").fieldType());
         assertEquals(1, result.getField("name").numericValue().intValue());
     }
 
@@ -170,8 +170,8 @@ public class DocumentStringToDocumentTest {
                     .add("value", 1))
                 .build();
         Document result = convert(json.toString());
-        assertEquals(LongField.TYPE_NOT_STORED, result.getField("name").fieldType());
-        assertEquals(1, result.getField("name").numericValue().longValue());
+        assertEquals(new LongPoint("name", 1).fieldType(), result.getField("name").fieldType());
+        assertEquals(1L, result.getField("name").numericValue().longValue());
     }
 
     @Test
@@ -183,8 +183,8 @@ public class DocumentStringToDocumentTest {
                     .add("value", 1))
                 .build();
         Document result = convert(json.toString());
-        assertEquals(DoubleField.TYPE_NOT_STORED, result.getField("name").fieldType());
-        assertEquals(1, result.getField("name").numericValue().doubleValue(), 0);
+        assertEquals(new DoublePoint("name", 1).fieldType(), result.getField("name").fieldType());
+        assertEquals(1D, result.getField("name").numericValue().doubleValue(), 0);
     }
 
     @Test

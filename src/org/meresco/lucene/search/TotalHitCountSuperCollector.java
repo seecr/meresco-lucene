@@ -27,7 +27,7 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorer;
 
 public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSubCollector> {
@@ -55,10 +55,6 @@ class TotalHitCountSubCollector extends SubCollector {
     private int totalHits = 0;
 
     @Override
-    public void setNextReader(AtomicReaderContext context) {
-    }
-
-    @Override
     public void setScorer(Scorer scorer) throws IOException {
     }
 
@@ -67,16 +63,16 @@ class TotalHitCountSubCollector extends SubCollector {
         this.totalHits++;
     }
 
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-        return true;
-    }
-
     public int getTotalHits() {
         return totalHits;
     }
 
     @Override
     public void complete() {
+    }
+
+    @Override
+    public boolean needsScores() {
+        return false;
     }
 }

@@ -30,7 +30,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.lang.Math;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.SmallFloat;
@@ -106,7 +106,7 @@ class ScoreSubCollector extends SubCollector {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
         this.keyValues = context.reader().getNumericDocValues(parent.keyName);
     }
 
@@ -123,14 +123,13 @@ class ScoreSubCollector extends SubCollector {
         }
     }
 
-
-    @Override
-    public boolean acceptsDocsOutOfOrder() {
-        return true;
-    }
-
     @Override
     public void complete() {
         this.parent.mergePool(this.scores);
+    }
+
+    @Override
+    public boolean needsScores() {
+        return true;
     }
 }

@@ -32,13 +32,16 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
@@ -165,27 +168,27 @@ public class QueryConverter {
                 return null;
         }
         if (query.get("boost") != null)
-            q.setBoost((float) query.getJsonNumber("boost").doubleValue());
+            q = new BoostQuery(q, (float) query.getJsonNumber("boost").doubleValue());
         return q;
     }
 
     private Query createPhraseQuery(JsonObject query) {
-        PhraseQuery q = new PhraseQuery();
+        PhraseQuery.Builder b = new PhraseQuery.Builder();
         JsonArray terms = query.getJsonArray("terms");
         for (int i = 0; i < terms.size(); i++) {
-            q.add(createTerm(terms.getJsonObject(i)));
+            b.add(createTerm(terms.getJsonObject(i)));
         }
-        return q;
+        return b.build();
     }
 
     private Query createBooleanQuery(JsonObject query) {
-        BooleanQuery q = new BooleanQuery();
+        BooleanQuery.Builder b = new BooleanQuery.Builder();
         JsonArray clauses = query.getJsonArray("clauses");
         for (int i = 0; i < clauses.size(); i++) {
             JsonObject termQ = clauses.getJsonObject(i);
-            q.add(convertToQuery(termQ), occurForString(termQ.getString("occur")));
+            b.add(convertToQuery(termQ), occurForString(termQ.getString("occur")));
         }
-        return q;
+        return b.build();
     }
 
     private Query createRangeQuery(JsonObject query) {
@@ -195,14 +198,33 @@ public class QueryConverter {
         boolean lower = query.get("lowerTerm") != JsonValue.NULL;
         boolean upper = query.get("upperTerm") != JsonValue.NULL;
         switch (query.getString("rangeType")) {
+            //TODO: Inclusive/exclusive -1 +1
             case "String":
                 return TermRangeQuery.newStringRange(field, lower ? query.getString("lowerTerm") : null, upper ? query.getString("upperTerm") : null, includeLower, includeUpper);
             case "Int":
-                return NumericRangeQuery.newIntRange(field, lower ? query.getInt("lowerTerm") : null, upper ? query.getInt("upperTerm") : null, includeLower, includeUpper);
+                Integer iLowerValue = lower ? query.getInt("lowerTerm") : null;
+                Integer iUpperValue = upper ? query.getInt("upperTerm") : null;
+                if (!includeLower && iLowerValue != null)
+                    iLowerValue += 1;
+                if (!includeUpper && iUpperValue != null)
+                    iLowerValue -= 1;
+                return IntPoint.newRangeQuery(field, iLowerValue, iUpperValue);
             case "Long":
-                return NumericRangeQuery.newLongRange(field, lower ? query.getJsonNumber("lowerTerm").longValue() : null, upper ? query.getJsonNumber("upperTerm").longValue() : null, includeLower, includeUpper);
+                Long lLowerValue = lower ? query.getJsonNumber("lowerTerm").longValue() : null;
+                Long lUpperValue = upper ? query.getJsonNumber("upperTerm").longValue() : null;
+                if (!includeLower && lLowerValue != null)
+                    lLowerValue += 1;
+                if (!includeUpper && lUpperValue != null)
+                    lUpperValue -= 1;
+                return LongPoint.newRangeQuery(field, lLowerValue, lUpperValue);
             case "Double":
-                return NumericRangeQuery.newDoubleRange(field, lower ? query.getJsonNumber("lowerTerm").doubleValue() : null, upper ? query.getJsonNumber("upperTerm").doubleValue() : null, includeLower, includeUpper);
+                Double dLowerValue = lower ? query.getJsonNumber("lowerTerm").doubleValue() : null;
+                Double dUpperValue = upper ? query.getJsonNumber("upperTerm").doubleValue() : null;
+                if (!includeLower && dLowerValue != null)
+                    dLowerValue = Math.nextUp(dLowerValue);
+                if (!includeUpper && dUpperValue != null)
+                    dUpperValue = Math.nextDown(dUpperValue);
+                return DoublePoint.newRangeQuery(field, dLowerValue, dUpperValue);
         }
         return null;
     }

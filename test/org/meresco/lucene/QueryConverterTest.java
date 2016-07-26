@@ -34,15 +34,19 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
@@ -79,8 +83,8 @@ public class QueryConverterTest {
                         .add("value", "value")))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
-        TermQuery query = new TermQuery(new Term("field", "value"));
-        query.setBoost(2.1f);
+        Query query = new TermQuery(new Term("field", "value"));
+        query = new BoostQuery(query, 2.1f);
         assertEquals(query, q.query);
     }
 
@@ -117,13 +121,11 @@ public class QueryConverterTest {
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         TermQuery aQuery = new TermQuery(new Term("aField", "value"));
-        aQuery.setBoost(1.0f);
         TermQuery oQuery = new TermQuery(new Term("oField", "value"));
-        oQuery.setBoost(2.0f);
-        BooleanQuery query = new BooleanQuery();
-        query.add(aQuery, Occur.SHOULD);
-        query.add(oQuery, Occur.SHOULD);
-        assertEquals(query, q.query);
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
+        query.add(new BoostQuery(aQuery, 1.0f), Occur.SHOULD);
+        query.add(new BoostQuery(oQuery, 2.0f), Occur.SHOULD);
+        assertEquals(query.build(), q.query);
     }
 
     @Test
@@ -149,13 +151,11 @@ public class QueryConverterTest {
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         TermQuery aQuery = new TermQuery(new Term("aField", "value"));
-        aQuery.setBoost(1.0f);
         TermQuery oQuery = new TermQuery(new Term("oField", "value"));
-        oQuery.setBoost(2.0f);
-        BooleanQuery query = new BooleanQuery();
-        query.add(aQuery, Occur.MUST);
-        query.add(oQuery, Occur.MUST_NOT);
-        assertEquals(query, q.query);
+        BooleanQuery.Builder query = new BooleanQuery.Builder();
+        query.add(new BoostQuery(aQuery, 1.0f), Occur.MUST);
+        query.add(new BoostQuery(oQuery, 2.0f), Occur.MUST_NOT);
+        assertEquals(query.build(), q.query);
     }
 
     @Test
@@ -200,10 +200,10 @@ public class QueryConverterTest {
                             .add("value", "query"))))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
-        PhraseQuery query = new PhraseQuery();
+        PhraseQuery.Builder query = new PhraseQuery.Builder();
         query.add(new Term("field", "phrase"));
         query.add(new Term("field", "query"));
-        assertEquals(query, q.query);
+        assertEquals(query.build(), q.query);
     }
 
     @Test
@@ -253,7 +253,7 @@ public class QueryConverterTest {
                     .add("includeUpper", JsonValue.TRUE))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
-        NumericRangeQuery<Integer> query = NumericRangeQuery.newIntRange("field", 1, 5, false, true);
+        Query query = IntPoint.newRangeQuery("field", 2, 5);
         assertEquals(query, q.query);
     }
 
@@ -270,7 +270,7 @@ public class QueryConverterTest {
                     .add("includeUpper", JsonValue.TRUE))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
-        NumericRangeQuery<Long> query = NumericRangeQuery.newLongRange("field", 1L, 5L, false, true);
+        Query query = LongPoint.newRangeQuery("field", 2L, 5L);
         assertEquals(query, q.query);
     }
 
@@ -287,7 +287,7 @@ public class QueryConverterTest {
                     .add("includeUpper", JsonValue.TRUE))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
-        NumericRangeQuery<Double> query = NumericRangeQuery.newDoubleRange("field", 1.0, 5.0, false, true);
+        Query query = DoublePoint.newRangeQuery("field", Math.nextUp(1.0), 5.0);
         assertEquals(query, q.query);
     }
 
@@ -372,37 +372,37 @@ public class QueryConverterTest {
         assertEquals("fieldname", sortFields[0].getField());
         assertEquals(SortField.Type.STRING, sortFields[0].getType());
         assertEquals(false, sortFields[0].getReverse());
-        assertEquals(null, sortFields[0].missingValue);
+        assertEquals(null, sortFields[0].getMissingValue());
 
         assertEquals(null, sortFields[1].getField());
         assertEquals(SortField.Type.SCORE, sortFields[1].getType());
         assertEquals(true, sortFields[1].getReverse());
-        assertEquals(null, sortFields[1].missingValue);
+        assertEquals(null, sortFields[1].getMissingValue());
 
         assertEquals("intfield", sortFields[2].getField());
         assertEquals(SortField.Type.INT, sortFields[2].getType());
         assertEquals(true, sortFields[2].getReverse());
-        assertEquals(null, sortFields[2].missingValue);
+        assertEquals(null, sortFields[2].getMissingValue());
 
         assertEquals("fieldname", sortFields[3].getField());
         assertEquals(SortField.Type.STRING, sortFields[3].getType());
         assertEquals(true, sortFields[3].getReverse());
-        assertEquals(SortField.STRING_FIRST, sortFields[3].missingValue);
+        assertEquals(SortField.STRING_FIRST, sortFields[3].getMissingValue());
 
         assertEquals("fieldname", sortFields[4].getField());
         assertEquals(SortField.Type.STRING, sortFields[4].getType());
         assertEquals(true, sortFields[4].getReverse());
-        assertEquals(SortField.STRING_LAST, sortFields[4].missingValue);
+        assertEquals(SortField.STRING_LAST, sortFields[4].getMissingValue());
 
         assertEquals("longfield", sortFields[5].getField());
         assertEquals(SortField.Type.LONG, sortFields[5].getType());
         assertEquals(true, sortFields[5].getReverse());
-        assertEquals(null, sortFields[5].missingValue);
+        assertEquals(null, sortFields[5].getMissingValue());
 
         assertEquals("doublefield", sortFields[6].getField());
         assertEquals(SortField.Type.DOUBLE, sortFields[6].getType());
         assertEquals(true, sortFields[6].getReverse());
-        assertEquals(null, sortFields[6].missingValue);
+        assertEquals(null, sortFields[6].getMissingValue());
     }
 
     @Test

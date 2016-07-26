@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -68,8 +68,8 @@ public class GroupSuperCollector extends SuperCollector<GroupSubCollector> {
         if (this.topLevelReaderContext == null)
             this.topLevelReaderContext = ReaderUtil.getTopLevelContext(super.subs.get(0).context);
 
-        List<AtomicReaderContext> leaves = this.topLevelReaderContext.leaves();
-        AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
+        List<LeafReaderContext> leaves = this.topLevelReaderContext.leaves();
+        LeafReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
         NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
         if (docValues == null)
             return null;
@@ -93,7 +93,7 @@ class GroupSubCollector extends SubCollector {
     private final SubCollector delegate;
     private final String keyName;
     private NumericDocValues keyValues;
-    AtomicReaderContext context;
+    LeafReaderContext context;
     private TLongObjectHashMap<int []> keyToDocIds;
     private TLongIntHashMap keyToDocId;
     private GroupSuperCollector groupSuperCollector;
@@ -121,7 +121,7 @@ class GroupSubCollector extends SubCollector {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
         if (this.keyToDocIds == null) {
             float loadFactor = 0.75f;
             int maxDoc = (int) (ReaderUtil.getTopLevelContext(context).reader().maxDoc() * (1 + (1 - loadFactor)));
@@ -170,12 +170,12 @@ class GroupSubCollector extends SubCollector {
     }
 
     @Override
-    public boolean acceptsDocsOutOfOrder() {
-        return this.delegate.acceptsDocsOutOfOrder();
+    public void complete() throws IOException {
+        this.delegate.complete();
     }
 
     @Override
-    public void complete() throws IOException {
-        this.delegate.complete();
+    public boolean needsScores() {
+        return this.delegate.needsScores();
     }
 }

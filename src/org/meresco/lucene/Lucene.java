@@ -27,6 +27,7 @@ package org.meresco.lucene;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Stream;
 
 import org.apache.commons.collections4.map.LRUMap;
 import org.apache.lucene.document.Document;
@@ -66,15 +68,15 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
-import org.apache.lucene.queries.ChainedFilter;
 import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery.Builder;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.CachingWrapperFilter;
-import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.LRUQueryCache;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.ReferenceManager.RefreshListener;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -84,7 +86,6 @@ import org.apache.lucene.search.spell.DirectSpellChecker;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.Version;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
@@ -230,7 +231,7 @@ public class Lucene {
         return executeQuery(q, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Filter> filters, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws Throwable {
+    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Query> filters, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws Throwable {
         int totalHits;
         List<LuceneResponse.Hit> hits;
         Collectors collectors = null;
@@ -248,13 +249,13 @@ public class Lucene {
                     }
                 }
                 collectors = createCollectors(q, topCollectorStop + (q.clustering ? clusterConfig.clusterMoreRecords : 0), keyCollectors, scoreCollectors, reference);
-                Filter f = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Filter[0]));
+                Query filter = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Query[0]));
 
-                Query query = q.query;
-                if (drilldownQueries != null)
-                    query = createDrilldownQuery(query, drilldownQueries);
+                Query query = mergeQueryAndFilter(q.query, filter);
+//                if (drilldownQueries != null)
+//                    query = createDrilldownQuery(query, drilldownQueries);
                 long t1 = System.currentTimeMillis();
-                ((SuperIndexSearcher) reference.searcher).search(query, f, collectors.root);
+                ((SuperIndexSearcher) reference.searcher).search(query, collectors.root);
                 times.put("searchTime", System.currentTimeMillis() - t1);
 
                 totalHits = collectors.topCollector.getTotalHits();
@@ -302,6 +303,16 @@ public class Lucene {
         } finally {
             data.getManager().release(reference);
         }
+    }
+
+    private Query mergeQueryAndFilter(Query query, Query filter) {
+        if (filter == null) {
+            return query;
+        }
+        Builder builder = new BooleanQuery.Builder();
+        builder.add(query, BooleanClause.Occur.MUST);
+        builder.add(new ConstantScoreQuery(filter), BooleanClause.Occur.MUST);
+        return builder.build();
     }
 
     private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader, ClusterConfig clusterConfig) throws Exception {
@@ -407,46 +418,48 @@ public class Lucene {
         }
         return hits;
     }
-
-    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, List<String[]> drilldownQueries, Filter filter) throws Throwable {
-        SearcherAndTaxonomy reference = data.getManager().acquire();
-        try {
-            FacetSuperCollector facetCollector = facetCollector(facets, reference.taxonomyReader);
-            if (facetCollector == null)
-                return new ArrayList<DrilldownData>();
-            Filter filter_ = filtersFor(filterQueries, filter);
-            Query query = new MatchAllDocsQuery();
-            if (drilldownQueries != null)
-                query = createDrilldownQuery(query, drilldownQueries);
-            ((SuperIndexSearcher) reference.searcher).search(query, filter_, facetCollector);
-            return facetResult(facetCollector, facets);
-        } finally {
-            data.getManager().release(reference);
-        }
-    }
-
-    public Filter filterQuery(Query query) throws Exception {
-        Filter f = data.getFilterCache().get(query);
+//
+//    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, List<String[]> drilldownQueries, Object filter) throws Throwable {
+//        SearcherAndTaxonomy reference = data.getManager().acquire();
+//        try {
+//            FacetSuperCollector facetCollector = facetCollector(facets, reference.taxonomyReader);
+//            if (facetCollector == null)
+//                return new ArrayList<DrilldownData>();
+//            Filter filter_ = filtersFor(filterQueries, filter);
+//            Query query = new MatchAllDocsQuery();
+//            if (drilldownQueries != null)
+//                query = createDrilldownQuery(query, drilldownQueries);
+//            ((SuperIndexSearcher) reference.searcher).search(query, filter_, facetCollector);
+//            return facetResult(facetCollector, facets);
+//        } finally {
+//            data.getManager().release(reference);
+//        }
+//    }
+//
+    public Query filterQuery(Query query) throws Exception {
+        Query f = data.getFilterCache().get(query);
         if (f != null) {
             return f;
         }
-        CachingWrapperFilter filter = new CachingWrapperFilter(new QueryWrapperFilter(query));
+        CachingWrapperQuery filter = new CachingWrapperQuery(query);
         data.getFilterCache().put(query, filter);
         return filter;
     }
 
-    private Filter filtersFor(List<Query> filterQueries, Filter... filter) throws Exception {
-        List<Filter> filters = new ArrayList<Filter>();
+    private Query filtersFor(List<Query> filterQueries, Query... filter) throws Exception {
+        List<Query> filters = new ArrayList<>();
         if (filterQueries != null)
             for (Query query : filterQueries)
                 filters.add(filterQuery(query));
         if (filter != null)
-            for (Filter f : filter)
+            for (Query f : filter)
                 if (f != null)
                     filters.add(f);
         if (filters.size() == 0)
             return null;
-        return new ChainedFilter(filters.toArray(new Filter[0]), ChainedFilter.AND);
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        filters.stream().forEach(f -> builder.add(f, Occur.MUST));
+        return builder.build();
     }
 
     public Document getDocument(int docID) throws Exception {
@@ -581,7 +594,7 @@ public class Lucene {
             Terms termsEnum = MultiFields.getTerms(reader, field);
             if (termsEnum == null)
                 return terms;
-            TermsEnum iterator = termsEnum.iterator(null);
+            TermsEnum iterator = termsEnum.iterator();
             if (prefix != null) {
                 iterator.seekCeil(new BytesRef(prefix));
                 terms.add(new TermCount(iterator.term().utf8ToString(), iterator.docFreq()));
@@ -649,53 +662,50 @@ public class Lucene {
     }
 
     public void search(Query query, Query filterQuery, SuperCollector<?> collector) throws Throwable {
-        Filter filter_ = null;
-        if (filterQuery != null)
-            filter_ = new QueryWrapperFilter(filterQuery);
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
-            ((SuperIndexSearcher) reference.searcher).search(query, filter_, collector);
+            ((SuperIndexSearcher) reference.searcher).search(mergeQueryAndFilter(query, filterQuery), collector);
         } finally {
             data.getManager().release(reference);
         }
     }
-
-    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
-        return collectKeys(filterQuery, keyName, query, true);
-    }
-
-    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Throwable {
-        if (cacheCollectedKeys) {
-            KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, filterQuery);
-            OpenBitSet keys = data.getKeyCollectorCache().get(keyNameQuery);
-            if (keys == null) {
-                keys = doCollectKeys(filterQuery, keyName, query);
-                data.getKeyCollectorCache().put(keyNameQuery, keys);
-            }
-            return keys;
-        }
-        return doCollectKeys(filterQuery, keyName, query);
-    }
-
-    private OpenBitSet doCollectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
-        KeySuperCollector keyCollector = new KeySuperCollector(keyName);
-        if (query == null)
-            query = new MatchAllDocsQuery();
-        search(query, filterQuery, keyCollector);
-        return keyCollector.getCollectedKeys();
-    }
-
-    public Query createDrilldownQuery(Query luceneQuery, List<String[]> drilldownQueries) throws Exception {
-        BooleanQuery q = new BooleanQuery(true);
-        if (luceneQuery != null)
-            q.add(luceneQuery, Occur.MUST);
-        for (int i = 0; i<drilldownQueries.size(); i+=2) {
-            String field = drilldownQueries.get(i)[0];
-            String indexFieldName = data.getFacetsConfig().getDimConfig(field).indexFieldName;
-            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(i+1))), Occur.MUST);
-        }
-        return q;
-    }
+//
+//    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
+//        return collectKeys(filterQuery, keyName, query, true);
+//    }
+//
+//    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Throwable {
+//        if (cacheCollectedKeys) {
+//            KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, filterQuery);
+//            OpenBitSet keys = data.getKeyCollectorCache().get(keyNameQuery);
+//            if (keys == null) {
+//                keys = doCollectKeys(filterQuery, keyName, query);
+//                data.getKeyCollectorCache().put(keyNameQuery, keys);
+//            }
+//            return keys;
+//        }
+//        return doCollectKeys(filterQuery, keyName, query);
+//    }
+//
+//    private OpenBitSet doCollectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
+//        KeySuperCollector keyCollector = new KeySuperCollector(keyName);
+//        if (query == null)
+//            query = new MatchAllDocsQuery();
+//        search(query, filterQuery, keyCollector);
+//        return keyCollector.getCollectedKeys();
+//    }
+//
+//    public Query createDrilldownQuery(Query luceneQuery, List<String[]> drilldownQueries) throws Exception {
+//        BooleanQuery q = new BooleanQuery(true);
+//        if (luceneQuery != null)
+//            q.add(luceneQuery, Occur.MUST);
+//        for (int i = 0; i<drilldownQueries.size(); i+=2) {
+//            String field = drilldownQueries.get(i)[0];
+//            String indexFieldName = data.getFacetsConfig().getDimConfig(field).indexFieldName;
+//            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(i+1))), Occur.MUST);
+//        }
+//        return q;
+//    }
 
     public QueryConverter getQueryConverter() throws Exception {
         return new QueryConverter(this.data.getFacetsConfig());
@@ -715,7 +725,7 @@ public class Lucene {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             ScoreSuperCollector scoreCollector = new ScoreSuperCollector(keyName);
-            ((SuperIndexSearcher) reference.searcher).search(query, null, scoreCollector);
+            ((SuperIndexSearcher) reference.searcher).search(query, scoreCollector);
             return scoreCollector;
         } finally {
             data.getManager().release(reference);
@@ -745,17 +755,17 @@ public class Lucene {
             if (termVectors == null)
                 return new LuceneResponse(0);
             for (String field : termVectors) {
-                TermsEnum iterator = termVectors.terms(field).iterator(null);
+                TermsEnum iterator = termVectors.terms(field).iterator();
                 BytesRef b;
                 while ((b = iterator.next()) != null) {
                     Term term = new Term(field, b.utf8ToString());
                     commonQuery.add(term);
                 }
             }
-            BooleanQuery query = new BooleanQuery();
+            BooleanQuery.Builder query = new BooleanQuery.Builder();
             query.add(idQuery, Occur.MUST_NOT);
             query.add(commonQuery, Occur.MUST);
-            return executeQuery(query);
+            return executeQuery(query.build());
         } finally {
             data.getManager().release(reference);
         }
@@ -807,9 +817,9 @@ public class Lucene {
         private IndexWriter indexWriter;
         private DirectoryTaxonomyWriter taxoWriter;
         private LuceneSettings settings;
-        private Map<Query, Filter> filterCache;
+        private Map<Query, CachingWrapperQuery> filterCache;
         private Map<KeyNameQuery, ScoreSuperCollector> scoreCollectorCache;
-        private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
+//        private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
         private SearcherTaxonomyManager manager;
         private LuceneRefreshListener refreshListener = new LuceneRefreshListener();
 
@@ -819,7 +829,7 @@ public class Lucene {
             this.manager.maybeRefreshBlocking();
             if (this.refreshListener.isRefreshed()) {
                 this.scoreCollectorCache.clear();
-                this.keyCollectorCache.clear();
+//                this.keyCollectorCache.clear();
             }
         }
 
@@ -839,13 +849,13 @@ public class Lucene {
                 throw new Exception("Init settings is only allowed once");
             this.settings = settings;
 
-            MMapDirectory indexDirectory = new MMapDirectory(new File(stateDir, "index"));
+            MMapDirectory indexDirectory = new MMapDirectory(Paths.get(stateDir.getAbsolutePath(), "index"));
             indexDirectory.setUseUnmap(false);
 
-            MMapDirectory taxoDirectory = new MMapDirectory(new File(stateDir, "taxo"));
+            MMapDirectory taxoDirectory = new MMapDirectory(Paths.get(stateDir.getAbsolutePath(), "taxo"));
             taxoDirectory.setUseUnmap(false);
 
-            IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_4_10_4, settings.analyzer);
+            IndexWriterConfig config = new IndexWriterConfig(settings.analyzer);
             config.setSimilarity(settings.similarity);
             TieredMergePolicy mergePolicy = new TieredMergePolicy();
             mergePolicy.setMaxMergeAtOnce(settings.maxMergeAtOnce);
@@ -857,9 +867,9 @@ public class Lucene {
             this.taxoWriter = new DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(settings.lruTaxonomyWriterCacheSize));
             this.taxoWriter.commit();
 
-            this.filterCache = Collections.synchronizedMap(new LRUMap<Query, Filter>(50));
+            this.filterCache = Collections.synchronizedMap(new LRUMap<Query, CachingWrapperQuery>(50));
             this.scoreCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, ScoreSuperCollector>(50));
-            this.keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
+//            this.keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
 
             this.manager = new SearcherTaxonomyManager(indexDirectory, taxoDirectory, new MerescoSearchFactory(indexDirectory, taxoDirectory, settings));
             this.manager.addListener(refreshListener);
@@ -893,7 +903,7 @@ public class Lucene {
             return this.settings != null;
         }
 
-        public Map<Query, Filter> getFilterCache() throws UninitializedException {
+        public Map<Query, CachingWrapperQuery> getFilterCache() throws UninitializedException {
             if (this.settings == null)
                 throw new UninitializedException();
             return filterCache;
@@ -904,12 +914,12 @@ public class Lucene {
                 throw new UninitializedException();
             return scoreCollectorCache;
         }
-
-        public Map<KeyNameQuery, OpenBitSet> getKeyCollectorCache() throws UninitializedException {
-            if (this.settings == null)
-                throw new UninitializedException();
-            return keyCollectorCache;
-        }
+//
+//        public Map<KeyNameQuery, OpenBitSet> getKeyCollectorCache() throws UninitializedException {
+//            if (this.settings == null)
+//                throw new UninitializedException();
+//            return keyCollectorCache;
+//        }
 
         public SearcherTaxonomyManager getManager() throws UninitializedException {
             if (this.settings == null)

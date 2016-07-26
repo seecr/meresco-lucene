@@ -89,14 +89,7 @@ public class SuperIndexSearcher extends IndexSearcher {
         return smallest_i;
     }
 
-    public void search(Query q, Query f, SuperCollector<?> c) throws Throwable {
-        if (f != null) {
-            Builder builder = new BooleanQuery.Builder(); //TODO filter
-            builder.add(q, BooleanClause.Occur.MUST);
-            builder.add(new ConstantScoreQuery(f), BooleanClause.Occur.MUST);
-            q = builder.build();
-        }
-        
+    public void search(Query q, SuperCollector<?> c) throws Throwable {
         Weight weight = super.createNormalizedWeight(q, true);
         ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(this.executor);
         List<Future<String>> futures = new ArrayList<Future<String>>();

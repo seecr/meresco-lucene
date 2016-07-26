@@ -214,7 +214,7 @@ public class MerescoClusterer {
 	        boolean matched = (filterTerm == null);
 	        Terms terms = reader.getTermVector(docId, field);
 	        if (terms != null) {
-	            TermsEnum termsEnum = terms.iterator(null);
+	            TermsEnum termsEnum = terms.iterator();
 	            vector = new MerescoVector(docId);
 	            while (termsEnum.next() != null) {
 	                BytesRef term = termsEnum.term();

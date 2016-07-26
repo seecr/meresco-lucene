@@ -6,7 +6,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import org.apache.lucene.util.OpenBitSet;
 import org.junit.Before;
 import org.junit.Test;
 

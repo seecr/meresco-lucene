@@ -29,7 +29,8 @@ package org.meresco.lucene.search.join;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.meresco.lucene.search.SubCollector;
@@ -85,7 +86,7 @@ class AggregateScoreSubCollector extends SubCollector {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
         this.keyValues = KeyValuesCache.get(context, keyName);
         if (this.scorer != null)
             this.scorer.setKeyValues(this.keyValues);
@@ -98,13 +99,13 @@ class AggregateScoreSubCollector extends SubCollector {
     }
 
     @Override
-    public boolean acceptsDocsOutOfOrder() {
-        return this.delegate.acceptsDocsOutOfOrder();
+    public void complete() throws IOException {
+        this.delegate.complete();
     }
 
     @Override
-    public void complete() throws IOException {
-        this.delegate.complete();
+    public boolean needsScores() {
+        return true;
     }
 }
 
@@ -139,18 +140,6 @@ class AggregateSuperScorer extends Scorer {
         return this.scorer.freq();
     }
 
-    public long cost() {
-        return this.scorer.cost();
-    }
-
-    public int advance(int target) throws IOException {
-        return this.scorer.advance(target);
-    }
-
-    public int nextDoc() throws IOException {
-        return this.scorer.nextDoc();
-    }
-
     public int docID() {
         return this.scorer.docID();
     }
@@ -161,5 +150,10 @@ class AggregateSuperScorer extends Scorer {
         } catch (UnsupportedOperationException e) {
             return null;
         }
+    }
+
+    @Override
+    public DocIdSetIterator iterator() {
+        return this.scorer.iterator();
     }
 }

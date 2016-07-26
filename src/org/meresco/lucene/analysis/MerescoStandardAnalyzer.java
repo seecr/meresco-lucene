@@ -34,10 +34,12 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.standard.ClassicFilter;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class MerescoStandardAnalyzer extends Analyzer {
@@ -52,25 +54,26 @@ public class MerescoStandardAnalyzer extends Analyzer {
 
     public List<String> pre_analyse(String fieldName, String string) throws IOException {
         Reader reader = new StringReader(string);
-        TokenStream tok = this.pre_analyzer(reader).getTokenStream();
+        TokenStream tok = this.pre_analyzer().getTokenStream();
         return this.readTokenStream(tok);
     }
 
     public List<String> post_analyse(String fieldName, String string) throws IOException {
-        ClassicTokenizer src = new ClassicTokenizer(new StringReader(string));
+        ClassicTokenizer src = new ClassicTokenizer();
+        src.setReader(new StringReader(string));
         TokenStream tok = this.post_analyzer(fieldName, src);
         return this.readTokenStream(tok);
     }
 
-    public Analyzer.TokenStreamComponents createComponents(String fieldName, java.io.Reader reader) {
-        Analyzer.TokenStreamComponents tsc = this.pre_analyzer(reader);
+    public Analyzer.TokenStreamComponents createComponents(String fieldName) {
+        Analyzer.TokenStreamComponents tsc = this.pre_analyzer();
         TokenStream tok = tsc.getTokenStream();
         tok = this.post_analyzer(fieldName, tok);
         return new Analyzer.TokenStreamComponents(tsc.getTokenizer(), tok);
     }
 
-    protected Analyzer.TokenStreamComponents pre_analyzer(Reader reader) {
-        final ClassicTokenizer src = new ClassicTokenizer(reader);
+    protected Analyzer.TokenStreamComponents pre_analyzer() {
+        final ClassicTokenizer src = new ClassicTokenizer();
         TokenStream tok = new ClassicFilter(src);
         tok = new ASCIIFoldingFilter(tok);
         tok = new LowerCaseFilter(tok);

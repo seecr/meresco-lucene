@@ -42,7 +42,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.OpenBitSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -709,10 +708,10 @@ public class MultiLuceneTest extends SeecrTestCase {
 
      @Test
      public void testCollectScoresWithNoResultAndBooleanQueryDoesntFailOnFakeScorerInAggregateScoreCollector() throws Throwable {
-         BooleanQuery q = new BooleanQuery();
+         BooleanQuery.Builder q = new BooleanQuery.Builder();
          q.add(new TermQuery(new Term("M", "true")), Occur.SHOULD);
          q.add(new TermQuery(new Term("M", "true")), Occur.SHOULD);
-         ComposedQuery cq = new ComposedQuery("coreA", q);
+         ComposedQuery cq = new ComposedQuery("coreA", q.build());
          cq.queryData.start = 0;
          cq.queryData.stop = 0;
          cq.setRankQuery("coreC", new TermQuery(new Term("S", "true")));

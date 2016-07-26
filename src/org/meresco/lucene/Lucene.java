@@ -252,8 +252,8 @@ public class Lucene {
                 Query filter = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Query[0]));
 
                 Query query = mergeQueryAndFilter(q.query, filter);
-//                if (drilldownQueries != null)
-//                    query = createDrilldownQuery(query, drilldownQueries);
+                if (drilldownQueries != null)
+                    query = createDrilldownQuery(query, drilldownQueries);
                 long t1 = System.currentTimeMillis();
                 ((SuperIndexSearcher) reference.searcher).search(query, collectors.root);
                 times.put("searchTime", System.currentTimeMillis() - t1);
@@ -311,7 +311,7 @@ public class Lucene {
         }
         Builder builder = new BooleanQuery.Builder();
         builder.add(query, BooleanClause.Occur.MUST);
-        builder.add(new ConstantScoreQuery(filter), BooleanClause.Occur.MUST);
+        builder.add(filter, BooleanClause.Occur.MUST);
         return builder.build();
     }
 
@@ -418,24 +418,24 @@ public class Lucene {
         }
         return hits;
     }
-//
-//    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, List<String[]> drilldownQueries, Object filter) throws Throwable {
-//        SearcherAndTaxonomy reference = data.getManager().acquire();
-//        try {
-//            FacetSuperCollector facetCollector = facetCollector(facets, reference.taxonomyReader);
-//            if (facetCollector == null)
-//                return new ArrayList<DrilldownData>();
-//            Filter filter_ = filtersFor(filterQueries, filter);
-//            Query query = new MatchAllDocsQuery();
-//            if (drilldownQueries != null)
-//                query = createDrilldownQuery(query, drilldownQueries);
-//            ((SuperIndexSearcher) reference.searcher).search(query, filter_, facetCollector);
-//            return facetResult(facetCollector, facets);
-//        } finally {
-//            data.getManager().release(reference);
-//        }
-//    }
-//
+
+    public List<DrilldownData> facets(List<FacetRequest> facets, List<Query> filterQueries, List<String[]> drilldownQueries, Query filter) throws Throwable {
+        SearcherAndTaxonomy reference = data.getManager().acquire();
+        try {
+            FacetSuperCollector facetCollector = facetCollector(facets, reference.taxonomyReader);
+            if (facetCollector == null)
+                return new ArrayList<DrilldownData>();
+            Query filter_ = filtersFor(filterQueries, filter);
+            Query query = new MatchAllDocsQuery();
+            if (drilldownQueries != null)
+                query = createDrilldownQuery(query, drilldownQueries);
+            ((SuperIndexSearcher) reference.searcher).search(mergeQueryAndFilter(query, filter_), facetCollector);
+            return facetResult(facetCollector, facets);
+        } finally {
+            data.getManager().release(reference);
+        }
+    }
+
     public Query filterQuery(Query query) throws Exception {
         Query f = data.getFilterCache().get(query);
         if (f != null) {
@@ -459,7 +459,7 @@ public class Lucene {
             return null;
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         filters.stream().forEach(f -> builder.add(f, Occur.MUST));
-        return builder.build();
+        return new ConstantScoreQuery(builder.build());
     }
 
     public Document getDocument(int docID) throws Exception {
@@ -669,43 +669,43 @@ public class Lucene {
             data.getManager().release(reference);
         }
     }
-//
-//    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
-//        return collectKeys(filterQuery, keyName, query, true);
-//    }
-//
-//    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Throwable {
-//        if (cacheCollectedKeys) {
-//            KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, filterQuery);
-//            OpenBitSet keys = data.getKeyCollectorCache().get(keyNameQuery);
-//            if (keys == null) {
-//                keys = doCollectKeys(filterQuery, keyName, query);
-//                data.getKeyCollectorCache().put(keyNameQuery, keys);
-//            }
-//            return keys;
-//        }
-//        return doCollectKeys(filterQuery, keyName, query);
-//    }
-//
-//    private OpenBitSet doCollectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
-//        KeySuperCollector keyCollector = new KeySuperCollector(keyName);
-//        if (query == null)
-//            query = new MatchAllDocsQuery();
-//        search(query, filterQuery, keyCollector);
-//        return keyCollector.getCollectedKeys();
-//    }
-//
-//    public Query createDrilldownQuery(Query luceneQuery, List<String[]> drilldownQueries) throws Exception {
-//        BooleanQuery q = new BooleanQuery(true);
-//        if (luceneQuery != null)
-//            q.add(luceneQuery, Occur.MUST);
-//        for (int i = 0; i<drilldownQueries.size(); i+=2) {
-//            String field = drilldownQueries.get(i)[0];
-//            String indexFieldName = data.getFacetsConfig().getDimConfig(field).indexFieldName;
-//            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(i+1))), Occur.MUST);
-//        }
-//        return q;
-//    }
+
+    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
+        return collectKeys(filterQuery, keyName, query, true);
+    }
+
+    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Throwable {
+        if (cacheCollectedKeys) {
+            KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, filterQuery);
+            OpenBitSet keys = data.getKeyCollectorCache().get(keyNameQuery);
+            if (keys == null) {
+                keys = doCollectKeys(filterQuery, keyName, query);
+                data.getKeyCollectorCache().put(keyNameQuery, keys);
+            }
+            return keys;
+        }
+        return doCollectKeys(filterQuery, keyName, query);
+    }
+
+    private OpenBitSet doCollectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
+        KeySuperCollector keyCollector = new KeySuperCollector(keyName);
+        if (query == null)
+            query = new MatchAllDocsQuery();
+        search(query, filterQuery, keyCollector);
+        return keyCollector.getCollectedKeys();
+    }
+
+    public Query createDrilldownQuery(Query luceneQuery, List<String[]> drilldownQueries) throws Exception {
+        BooleanQuery.Builder q = new BooleanQuery.Builder(); //TODO: disableCoord ??
+        if (luceneQuery != null)
+            q.add(luceneQuery, Occur.MUST);
+        for (int i = 0; i<drilldownQueries.size(); i+=2) {
+            String field = drilldownQueries.get(i)[0];
+            String indexFieldName = data.getFacetsConfig().getDimConfig(field).indexFieldName;
+            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(i+1))), Occur.MUST);
+        }
+        return q.build();
+    }
 
     public QueryConverter getQueryConverter() throws Exception {
         return new QueryConverter(this.data.getFacetsConfig());
@@ -819,7 +819,7 @@ public class Lucene {
         private LuceneSettings settings;
         private Map<Query, CachingWrapperQuery> filterCache;
         private Map<KeyNameQuery, ScoreSuperCollector> scoreCollectorCache;
-//        private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
+        private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
         private SearcherTaxonomyManager manager;
         private LuceneRefreshListener refreshListener = new LuceneRefreshListener();
 
@@ -829,7 +829,7 @@ public class Lucene {
             this.manager.maybeRefreshBlocking();
             if (this.refreshListener.isRefreshed()) {
                 this.scoreCollectorCache.clear();
-//                this.keyCollectorCache.clear();
+                this.keyCollectorCache.clear();
             }
         }
 
@@ -869,7 +869,7 @@ public class Lucene {
 
             this.filterCache = Collections.synchronizedMap(new LRUMap<Query, CachingWrapperQuery>(50));
             this.scoreCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, ScoreSuperCollector>(50));
-//            this.keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
+            this.keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
 
             this.manager = new SearcherTaxonomyManager(indexDirectory, taxoDirectory, new MerescoSearchFactory(indexDirectory, taxoDirectory, settings));
             this.manager.addListener(refreshListener);
@@ -914,12 +914,12 @@ public class Lucene {
                 throw new UninitializedException();
             return scoreCollectorCache;
         }
-//
-//        public Map<KeyNameQuery, OpenBitSet> getKeyCollectorCache() throws UninitializedException {
-//            if (this.settings == null)
-//                throw new UninitializedException();
-//            return keyCollectorCache;
-//        }
+
+        public Map<KeyNameQuery, OpenBitSet> getKeyCollectorCache() throws UninitializedException {
+            if (this.settings == null)
+                throw new UninitializedException();
+            return keyCollectorCache;
+        }
 
         public SearcherTaxonomyManager getManager() throws UninitializedException {
             if (this.settings == null)

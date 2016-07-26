@@ -34,17 +34,22 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.taxonomy.DocValuesOrdinalsReader;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.util.BytesRef;
 import org.junit.Test;
 import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.MultiSuperCollector;
@@ -226,7 +231,8 @@ public class SuperCollectorTest extends SeecrTestCase {
     private Document document(String name, String price) {
         Document doc = new Document();
         doc.add(new StringField("name", name, Store.NO));
-        doc.add(new StringField("price", name, Store.NO));
+        doc.add(new StringField("price", price, Store.NO));
+        doc.add(new SortedDocValuesField("name", new BytesRef(name)));
         doc.add(new NumericDocValuesField("key", 1));
         return doc;
     }

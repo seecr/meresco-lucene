@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -57,10 +57,10 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
     public void setUp() throws Exception {
         super.setUp();
         this.executor = Executors.newFixedThreadPool(5);
-        Directory indexDirectory = new SimpleFSDirectory(this.tmpDir);
-        IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_4_10_4, new MerescoStandardAnalyzer());
+        Directory indexDirectory = new SimpleFSDirectory(this.tmpDir.toPath());
+        IndexWriterConfig conf = new IndexWriterConfig(new MerescoStandardAnalyzer());
         this.writer = new IndexWriter(indexDirectory, conf);
-        this.reader = DirectoryReader.open(this.writer, true);
+        this.reader = DirectoryReader.open(this.writer, true, true);
         this.sis = new SuperIndexSearcher(this.reader);
     }
 
@@ -74,52 +74,52 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
 
     @Test
     public void testGroupLeaves() {
-        List<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
+        List<LeafReaderContext> contexts = new ArrayList<LeafReaderContext>();
         contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
-        List<List<AtomicReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
+        List<List<LeafReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
         assertEquals(1, result.size());
-        List<AtomicReaderContext> firstContext = result.get(0);
+        List<LeafReaderContext> firstContext = result.get(0);
         assertEquals(1, firstContext.size());
     }
 
     @Test
     public void testGroupLeaves1ForEach() {
-        ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
+        ArrayList<LeafReaderContext> contexts = new ArrayList<LeafReaderContext>();
         contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(9).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(8).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(7).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(6).getContext());
-        List<List<AtomicReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
+        List<List<LeafReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
         assertEquals(5, result.size());
         for (int i = 0; i < 5; i++) {
-            List<AtomicReaderContext> context = result.get(i);
+            List<LeafReaderContext> context = result.get(i);
             assertEquals(1, context.size());
         }
     }
 
     @Test
     public void testGroupLeaves1TooMuch() {
-        ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
+        ArrayList<LeafReaderContext> contexts = new ArrayList<LeafReaderContext>();
         contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(9).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(8).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(7).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(6).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(5).getContext());
-        List<List<AtomicReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
+        List<List<LeafReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
         assertEquals(5, result.size());
         for (int i = 0; i < 4; i++) {
-            List<AtomicReaderContext> context = result.get(i);
+            List<LeafReaderContext> context = result.get(i);
             assertEquals(1, context.size());
         }
-        List<AtomicReaderContext> context = result.get(4);
+        List<LeafReaderContext> context = result.get(4);
         assertEquals(2, context.size());
     }
 
     @Test
     public void testGroupLeavesAllDouble() {
-        ArrayList<AtomicReaderContext> contexts = new ArrayList<AtomicReaderContext>();
+        ArrayList<LeafReaderContext> contexts = new ArrayList<LeafReaderContext>();
         contexts.add(DummyIndexReader.dummyIndexReader(10).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(9).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(8).getContext());
@@ -130,10 +130,10 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
         contexts.add(DummyIndexReader.dummyIndexReader(3).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(2).getContext());
         contexts.add(DummyIndexReader.dummyIndexReader(1).getContext());
-        List<List<AtomicReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
+        List<List<LeafReaderContext>> result = this.sis.group_leaves_test(contexts, 5);
         assertEquals(5, result.size());
         for (int i = 0; i < 4; i++) {
-            List<AtomicReaderContext> context = result.get(i);
+            List<LeafReaderContext> context = result.get(i);
             assertEquals(2, context.size());
             int totalDocs = context.get(0).reader().numDocs() + context.get(1).reader().numDocs();
             assertEquals(11, totalDocs);

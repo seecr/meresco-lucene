@@ -34,7 +34,7 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
     protected List<SubCollectorType> subs = new ArrayList<SubCollectorType>();
 
     /**
-     * Called before collecting from each {@link AtomicReaderContext} in a
+     * Called before collecting from each {@link LeafReaderContext} in a
      * separate thread. The returned {@link SubCollector} need not be thread
      * safe as its scope is limited to one segment.
      *
@@ -54,7 +54,7 @@ public abstract class SuperCollector<SubCollectorType extends SubCollector> {
      * Lower level factory method for SubCollectors.
      *
      * @param context
-     *            is an AtomicReaderContext
+     *            is an LeafReaderContext
      * @return SubCollector for this context
      * @throws IOException
      */

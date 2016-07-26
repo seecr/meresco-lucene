@@ -28,7 +28,7 @@ package org.meresco.lucene.search;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorer;
 
 public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
@@ -88,7 +88,7 @@ class MultiSubCollector extends SubCollector {
     }
 
     @Override
-    public void setNextReader(AtomicReaderContext context) throws IOException {
+    public void setNextReader(LeafReaderContext context) throws IOException {
         for (SubCollector c : this.subCollectors) {
             c.setNextReader(context);
         }

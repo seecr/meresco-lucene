@@ -25,12 +25,13 @@
 
 package org.meresco.lucene.test;
 
-import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -39,8 +40,8 @@ import org.apache.lucene.index.BinaryDocValues;
 import java.io.IOException;
 
 public class DummyIndexReader {
-    public static AtomicReader dummyIndexReader(final int maxDoc) {
-        return new AtomicReader() {
+    public static LeafReader dummyIndexReader(final int maxDoc) {
+        return new LeafReader() {
             @Override
             public int maxDoc() {
                 return maxDoc;
@@ -126,6 +127,11 @@ public class DummyIndexReader {
 
             @Override
             public void checkIntegrity() throws IOException {
+            }
+
+            @Override
+            public PointValues getPointValues() {
+                return null;
             }
         };
     }

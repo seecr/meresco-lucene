@@ -35,6 +35,7 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
@@ -51,6 +52,7 @@ import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.TopFieldSuperCollector;
 import org.meresco.lucene.search.TopScoreDocSuperCollector;
 import org.meresco.lucene.search.TotalHitCountSuperCollector;
+import org.meresco.lucene.search.join.ScoreSuperCollector;
 
 public class SuperCollectorTest extends SeecrTestCase {
 
@@ -202,11 +204,30 @@ public class SuperCollectorTest extends SeecrTestCase {
         assertEquals("id2", I.getDocument(td.scoreDocs[0].doc).get("__id__"));
         assertEquals("id3", I.getDocument(td.scoreDocs[1].doc).get("__id__"));
     }
+    
+    @Test
+    public void testScoreCollector() throws Throwable {
+        Lucene I = new Lucene(this.tmpDir, new LuceneSettings());
+        I.addDocument("id1", document("one", "aap noot mies"));
+        I.maybeCommitAfterUpdate();
+        I.addDocument("id2", document("two", "aap vuur boom"));
+        I.maybeCommitAfterUpdate();
+        I.addDocument("id3", document("three", "noot boom mies"));
+        I.maybeCommitAfterUpdate();
+        I.close();
+        I = new Lucene(this.tmpDir, new LuceneSettings());
+        ScoreSuperCollector C = new ScoreSuperCollector("key");
+        MatchAllDocsQuery Q = new MatchAllDocsQuery();
+        I.search(Q, null, C);
+        assertEquals(1, C.score(1), 0);
+        assertEquals(0, C.score(2), 0);
+    }
 
     private Document document(String name, String price) {
         Document doc = new Document();
         doc.add(new StringField("name", name, Store.NO));
         doc.add(new StringField("price", name, Store.NO));
+        doc.add(new NumericDocValuesField("key", 1));
         return doc;
     }
 

@@ -27,9 +27,12 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.SimpleCollector;
 
-public abstract class SubCollector extends Collector {
+public abstract class SubCollector extends SimpleCollector {
 
     /**
      * This method signals completion of the collect phase. It gives the
@@ -42,4 +45,5 @@ public abstract class SubCollector extends Collector {
      * @throws IOException
      */
     public abstract void complete() throws IOException;
+    
 }

@@ -45,7 +45,7 @@ public class MerescoSearchFactory extends SearcherFactory {
     }
     
     @Override
-    public IndexSearcher newSearcher(IndexReader reader) throws IOException {
+    public IndexSearcher newSearcher(IndexReader reader, IndexReader previousReader) throws IOException {
         SuperIndexSearcher searcher = new SuperIndexSearcher(reader, this.executor, this.settings.numberOfConcurrentTasks);
         searcher.setSimilarity(this.settings.similarity);
         return searcher;

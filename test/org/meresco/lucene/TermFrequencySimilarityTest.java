@@ -31,6 +31,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
@@ -59,7 +60,7 @@ public class TermFrequencySimilarityTest extends SeecrTestCase {
         LuceneResponse result = lucene.executeQuery(q);
         assertEquals(0.1, result.hits.get(0).score, 0.0002);
 
-        q.setBoost((float) 10.0);
+        q = new BoostQuery(q, (float) 10.0);
         result = lucene.executeQuery(q);
         assertEquals(1, result.hits.get(0).score, 0.0002);
     }

@@ -42,8 +42,8 @@ public class TermFrequencySimilarity extends Similarity {
     }
 
     @Override
-    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-        return new TermFrequencySimilarityWeight(queryBoost);
+    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
+        return new TermFrequencySimilarityWeight();
     }
 
     @Override
@@ -71,17 +71,14 @@ public class TermFrequencySimilarity extends Similarity {
     class TermFrequencySimilarityWeight extends SimWeight {
         float queryBoost;
 
-        public TermFrequencySimilarityWeight(float queryBoost) {
-            this.queryBoost = queryBoost;
-        }
-
         @Override
         public float getValueForNormalization() {
             return 1.0f;
         }
 
         @Override
-        public void normalize(float queryNorm, float topLevelBoost) {
+        public void normalize(float queryNorm, float boost) {
+            this.queryBoost = boost;
         }
     }
 

@@ -123,11 +123,11 @@ public class LuceneSettingsTest {
     @Test
     public void testBM25SimilarityWithKAndB() throws Exception {
         LuceneSettings settings = new LuceneSettings();
-        String json = "{\"similarity\": {\"type\": \"BM25Similarity\", \"k1\": 1.0, \"b\": 2.0}}";
+        String json = "{\"similarity\": {\"type\": \"BM25Similarity\", \"k1\": 1.0, \"b\": 0.5}}";
 
         settings.updateSettings(new StringReader(json));
         assertEquals(BM25Similarity.class, settings.similarity.getClass());
-        assertEquals(2.0f, ((BM25Similarity) settings.similarity).getB(), 0);
+        assertEquals(0.5f, ((BM25Similarity) settings.similarity).getB(), 0);
         assertEquals(1.0f, ((BM25Similarity) settings.similarity).getK1(), 0);
     }
 

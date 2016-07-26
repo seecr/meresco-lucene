@@ -29,6 +29,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldDocs;
 
 public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubCollector<?>> {
 
@@ -42,10 +43,12 @@ public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubColle
     }
 
     public TopDocs topDocs(int start) throws IOException {
-        TopDocs[] topdocs = new TopDocs[this.subs.size()];
+        TopDocs[] topdocs = this.sort == null ? new TopDocs[this.subs.size()] : new TopFieldDocs[this.subs.size()];
         for (int i = 0; i < topdocs.length; i++)
             topdocs[i] = this.subs.get(i).topdocs;
-        return TopDocs.merge(this.sort, start, this.numHits - start, topdocs);
+        if (this.sort == null)
+            return TopDocs.merge(start, numHits - start, topdocs);
+        return TopDocs.merge(this.sort, start, this.numHits - start, (TopFieldDocs[]) topdocs);
     }
 
     public int getTotalHits() throws IOException {

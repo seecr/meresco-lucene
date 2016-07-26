@@ -44,7 +44,6 @@ public class TopScoreDocSuperCollector extends TopDocSuperCollector {
 
     @Override
     protected TopDocSubCollector<TopScoreDocSuperCollector> createSubCollector() throws IOException {
-        return new TopDocSubCollector<TopScoreDocSuperCollector>(TopScoreDocCollector.create(super.numHits,
-                this.docsScoredInOrder), this);
+        return new TopDocSubCollector<TopScoreDocSuperCollector>(TopScoreDocCollector.create(super.numHits), this);
     }
 }

@@ -32,7 +32,6 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,7 +48,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
@@ -57,15 +55,13 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-//import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-//import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
-//import org.apache.lucene.util.OpenBitSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -214,7 +210,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1, result.drilldownData.size());
         assertEquals(2, result.drilldownData.get(0).terms.size());
 
-        //TODO: assertEquals(result.drilldownData, lucene.facets(facets, null, null, null));
+        assertEquals(result.drilldownData, lucene.facets(facets, null, null, null));
     }
 
     @Test
@@ -380,7 +376,6 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(0, result.hits.size());
     }
 
-    @SuppressWarnings("serial")
     @Test
     public void testQueryWithFilter() throws Throwable {
         Document doc1 = new Document();
@@ -432,7 +427,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(true, collectedKeys.get(1));
         assertEquals(true, collectedKeys.get(2));
         assertEquals(false, collectedKeys.get(3));
-        //TODO: assertEquals(collectedKeys, lucene.collectKeys(null, "field1", new MatchAllDocsQuery(), false));
+        assertEquals(collectedKeys, lucene.collectKeys(null, "field1", new MatchAllDocsQuery(), false));
 
         final KeySuperCollector k1 = new KeySuperCollector("field1");
         TermQuery field0Query = new TermQuery(new Term("field0", "value"));
@@ -444,7 +439,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(false, keysWithFilter.get(0));
         assertEquals(true, keysWithFilter.get(1));
         assertEquals(false, keysWithFilter.get(2));
-        //TODO: assertEquals(keysWithFilter, lucene.collectKeys(field0Query, "field1", new MatchAllDocsQuery()));
+        assertEquals(keysWithFilter, lucene.collectKeys(field0Query, "field1", new MatchAllDocsQuery()));
 
     }
 
@@ -486,14 +481,14 @@ public class LuceneTest extends SeecrTestCase {
         doc3.add(new StringField("field1", "value2", Store.NO));
         lucene.addDocument("id3", doc3);
 
-        //TODO: List<TermCount> terms = lucene.termsForField("field1", "val", 10);
-        /*assertEquals(3, terms.size());
+        List<TermCount> terms = lucene.termsForField("field1", "val", 10);
+        assertEquals(3, terms.size());
         assertEquals("value0", terms.get(0).term);
         assertEquals(1, terms.get(0).count);
         assertEquals("value1", terms.get(1).term);
         assertEquals(1, terms.get(0).count);
         assertEquals("value2", terms.get(2).term);
-        assertEquals(1, terms.get(0).count);*/
+        assertEquals(1, terms.get(0).count);
     }
 
     @Test
@@ -662,7 +657,6 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(5, result.hits.size());
     }
 
-    @SuppressWarnings("serial")
     @Test
     public void testClusteringOnVectors() throws Throwable {
         LuceneSettings settings = lucene.getSettings();
@@ -1032,12 +1026,13 @@ public class LuceneTest extends SeecrTestCase {
             final int j = i;
             addDocument(lucene, "id:" + i, null, new HashMap<String, String>() {{put("field" + j, "value0");}});
         }
-        /*TODO final BooleanQuery query = new BooleanQuery();
+        final Builder b = new BooleanQuery.Builder();
         for (int i=0; i<100; i++)
-            query.add(new TermQuery(new Term("field" + i, "value0")), Occur.SHOULD);
-        LuceneResponse response = lucene.executeQuery(new QueryData(), new ArrayList<Query>() {{ add(query); }}, null, null, null, null);
-        LuceneResponse responseWithCaching = lucene.executeQuery(new QueryData(), new ArrayList<Query>() {{ add(query); }}, null, null, null, null);
-        assertTrue(responseWithCaching.queryTime < response.queryTime);*/
+            b.add(new TermQuery(new Term("field" + i, "value0")), Occur.SHOULD);
+        final BooleanQuery query = b.build();
+        LuceneResponse response = lucene.executeQuery(new QueryData(), Arrays.asList(query), null, null, null, null);
+        LuceneResponse responseWithCaching = lucene.executeQuery(new QueryData(), Arrays.asList(query), null, null, null, null);
+        assertTrue(responseWithCaching.queryTime < response.queryTime);
     }
 
     @Test
@@ -1070,7 +1065,6 @@ public class LuceneTest extends SeecrTestCase {
         assertNotSame(scoreCollector1, scoreCollector2);
     }
     
-    /* TODO:
     @Test
     public void testKeyCollectorCaching() throws Throwable {
         lucene.getSettings().commitCount = 1000;
@@ -1174,7 +1168,7 @@ public class LuceneTest extends SeecrTestCase {
 
         LuceneResponse response = lucene.similarDocuments("id:0");
         assertEquals(0, response.total);
-    }*/
+    }
 
     public static void compareHits(LuceneResponse response, String... hitIds) {
         Set<String> responseHitIds = new HashSet<String>();

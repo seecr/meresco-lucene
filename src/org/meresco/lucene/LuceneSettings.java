@@ -50,7 +50,7 @@ public class LuceneSettings {
     public int maxMergeAtOnce = 2;
     public double segmentsPerTier = 8.0;
     public int lruTaxonomyWriterCacheSize = 4000;
-    public int numberOfConcurrentTasks = 1; // TODO: Should be 6
+    public int numberOfConcurrentTasks = 6;
     public int commitTimeout = 10;
     public int commitCount = 100000;
     public FacetsConfig facetsConfig = new FacetsConfig();

@@ -768,6 +768,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.addMatch("coreA", "coreB", "A", "B");
         q.addMatch("coreA", "coreC", "C", "C2");
         LuceneResponse result = multiLucene.executeComposedQuery(q);
+        LuceneTest.compareHits(result, "A-MU");
         assertEquals(1, result.total);
     }
 

@@ -73,11 +73,11 @@ if [ ! -f ${JUNIT} ]; then
 fi
 
 JARS=$(find ../jars -type f -name "*.jar")
-LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*-4.10.*.jar")
+LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*-6.1.*.jar")
 
 CP="$JUNIT:$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':'):../build"
 
-javaFiles=$(find ../src -name "*.java")
+javaFiles=$(find ../src -name "*.java" | grep -v JoinSort | grep -v py_analysis)
 javac -d ${BUILDDIR} -cp $CP $javaFiles
 if [ "$?" != "0" ]; then
     echo "Build failed"

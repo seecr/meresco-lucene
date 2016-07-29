@@ -67,7 +67,8 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                 {
                     "name": "sorted.field3",
                     "type": "StringField",
-                    "value": "value3"
+                    "value": "value3",
+                    "sort": True,
                 },
                 {
                     "name": "__numeric__.field6",

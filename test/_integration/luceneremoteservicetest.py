@@ -68,8 +68,25 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         lists = bodyLxml.xpath('//ul')
         fieldList = lists[0]
         fields = fieldList.xpath('li/a/text()')
-        self.assertEquals(12, len(fields))
-        self.assertEqual(['$facets', '__id__', 'copy', 'field1', 'field2', 'field3', 'field4', 'field5', 'intfield1', 'intfield2', 'intfield3', 'untokenized.field3'], fields)
+        self.assertEquals(16, len(fields))
+        self.assertEqual([
+                '$facets',
+                'copy',
+                'intfield3',
+                'field2',
+                'field3',
+                'sorted.field4',
+                'field1',
+                'sorted.field2',
+                'field4',
+                'sorted.intfield1',
+                'intfield2',
+                'intfield1',
+                'untokenized.field3',
+                'field5',
+                '__id__',
+                '__key__.field'
+            ], fields)
 
         drilldownFieldList = lists[1]
         drilldownFields = drilldownFieldList.xpath('li/a/text()')

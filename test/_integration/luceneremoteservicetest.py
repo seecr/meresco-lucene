@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -68,11 +68,14 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         lists = bodyLxml.xpath('//ul')
         fieldList = lists[0]
         fields = fieldList.xpath('li/a/text()')
-        self.assertEquals(13, len(fields))
+        self.assertEquals(12, len(fields))
+        self.assertEqual(['$facets', '__id__', 'copy', 'field1', 'field2', 'field3', 'field4', 'field5', 'intfield1', 'intfield2', 'intfield3', 'untokenized.field3'], fields)
 
         drilldownFieldList = lists[1]
         drilldownFields = drilldownFieldList.xpath('li/a/text()')
         self.assertEquals(set(['untokenized.field2', 'untokenized.fieldHier', 'untokenized.field2.copy']), set(drilldownFields))
+
+        # TODO: Show sorted fields
 
     def testRemoteInfoField(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__id__', name='main'), parse=False)

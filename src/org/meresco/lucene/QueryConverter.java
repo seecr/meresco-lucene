@@ -198,7 +198,6 @@ public class QueryConverter {
         boolean lower = query.get("lowerTerm") != JsonValue.NULL;
         boolean upper = query.get("upperTerm") != JsonValue.NULL;
         switch (query.getString("rangeType")) {
-            //TODO: Inclusive/exclusive -1 +1
             case "String":
                 return TermRangeQuery.newStringRange(field, lower ? query.getString("lowerTerm") : null, upper ? query.getString("upperTerm") : null, includeLower, includeUpper);
             case "Int":

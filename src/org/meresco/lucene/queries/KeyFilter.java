@@ -67,16 +67,15 @@ public class KeyFilter extends Query {
 
                     @Override
                     public int nextDoc() throws IOException {
-                        if (this.docId == -1)
-                            this.docId++;
+                        this.docId++;
                         if (keyValuesArray != null) {
                             try {
                                 while (this.docId < this.maxDoc) {
                                     int key = this.keyValuesArray[this.docId];
                                     if (keySet.get(key)) {
-                                        return this.docId++;
+                                        return this.docId;
                                     }
-                                    docId++;
+                                    this.docId++;
                                 }
                             } catch (IndexOutOfBoundsException e) {
                             }
@@ -87,7 +86,7 @@ public class KeyFilter extends Query {
 
                     @Override
                     public int advance(int target) throws IOException {
-                        this.docId = target;
+                        this.docId = target - 1;
                         return nextDoc();
                     }
 

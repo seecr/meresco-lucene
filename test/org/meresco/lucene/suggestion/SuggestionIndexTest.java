@@ -191,8 +191,8 @@ public class SuggestionIndexTest extends SeecrTestCase {
         assertEquals(2, suggestions.length);
         assertEquals("Lord magic", suggestions[0].suggestion);
         assertEquals("Lord of the rings", suggestions[1].suggestion);
-        assertEquals(0.21019981801509857, suggestions[0].score, 0);
-        assertEquals( 0.1839248389005661, suggestions[1].score, 0);
+        assertEquals(0.3498380780220032, suggestions[0].score, 0);
+        assertEquals( 0.30888697504997253, suggestions[1].score, 0);
     }
 
     @Test

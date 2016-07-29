@@ -164,6 +164,8 @@ class _FieldDefinition(object):
         )
         if termVectors:
             field['termVectors'] = True
+        if name.startswith(SORTED_PREFIX):
+            field["sort"] = True
         return field
 
 STRINGFIELD_STORED = _FieldDefinition("StringFieldStored",

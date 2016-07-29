@@ -85,6 +85,11 @@ def uploadHelix(lucene, storageComponent, drilldownFields, fieldRegistry):
                                     indexHelix,
                                 )
                             ),
+                            (FilterField(lambda name: name in ['field2', 'field4']),
+                                (RenameField(lambda name: SORTED_PREFIX + name),
+                                    indexHelix,
+                                )
+                            ),
                             (FilterField(lambda name: name in ['field2', 'field3']),
                                 (RenameField(lambda name: UNTOKENIZED_PREFIX + name),
                                     indexHelix,

@@ -25,8 +25,6 @@
 
 package org.meresco.lucene.suggestion;
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -44,8 +42,8 @@ class ShingleAnalyzer extends Analyzer {
     }
 
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer source = new StandardTokenizer(reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new StandardTokenizer();
         TokenStream src = new LowerCaseFilter(source);
         ShingleFilter filter = new ShingleFilter(src, this.minShingleSize, this.maxShingleSize);
         return new TokenStreamComponents(source, filter);

@@ -25,13 +25,14 @@
 
 package org.meresco.lucene.suggestion;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -40,38 +41,31 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.queries.ChainedFilter;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.CachingWrapperFilter;
-import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Version;
+import org.meresco.lucene.CachingWrapperQuery;
 import org.meresco.lucene.Utils;
-import org.meresco.lucene.search.SuperIndexSearcher;
-import org.meresco.lucene.search.TopScoreDocSuperCollector;
 import org.meresco.lucene.suggestion.SuggestionIndex.IndexingState;
 
 
@@ -105,28 +99,29 @@ public class SuggestionNGramIndex {
 
 	public SuggestionNGramIndex(String directory, int commitCount) throws IOException {
 		this.maxCommitCount = commitCount;
-        this.directory = FSDirectory.open(new File(directory));
-        IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new StandardAnalyzer());
+        this.directory = FSDirectory.open(Paths.get(directory));
+        IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
         this.writer = new IndexWriter(this.directory, config);
         this.writer.commit();
 	}
 
 	public void createSuggestions(IndexReader reader, String suggestionFieldname, String keyFieldname, IndexingState indexingState) throws IOException {
         Bits liveDocs = MultiFields.getLiveDocs(reader);
-        List<AtomicReaderContext> leaves = reader.leaves();
+        List<LeafReaderContext> leaves = reader.leaves();
         Terms terms = MultiFields.getTerms(reader, suggestionFieldname);
         if (terms == null)
             return;
-		TermsEnum termsEnum = terms.iterator(null);
+		TermsEnum termsEnum = terms.iterator();
     	BytesRef term;
     	while ((term = termsEnum.next()) != null) {
     	    List<Long> keys = new ArrayList<>();
-    	    DocsEnum docsEnum = termsEnum.docs(liveDocs, null, DocsEnum.FLAG_NONE);
+    	    PostingsEnum postings = termsEnum.postings(null, PostingsEnum.NONE);
     	    while (true) {
-                int docId = docsEnum.nextDoc();
-                if (docId == DocsEnum.NO_MORE_DOCS) {
+                int docId = postings.nextDoc();
+                if (docId == PostingsEnum.NO_MORE_DOCS)
                     break;
-                }
+                if (!liveDocs.get(docId))
+                    continue;
                 keys.add(keyForDoc(docId, leaves, keyFieldname));
     	    }
             if (keys.size() > 0) {
@@ -138,8 +133,8 @@ public class SuggestionNGramIndex {
     	this.commit();
     }
 
-	private Long keyForDoc(int docId, List<AtomicReaderContext> leaves, String keyFieldname) throws IOException {
-        AtomicReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
+	private Long keyForDoc(int docId, List<LeafReaderContext> leaves, String keyFieldname) throws IOException {
+	    LeafReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
         return context.reader().getNumericDocValues(keyFieldname).get(docId - context.docBase);
     }
 
@@ -206,8 +201,8 @@ public class SuggestionNGramIndex {
     	private DirectoryReader reader;
         private IndexSearcher searcher;
         private Map<String, DocIdSet> filterKeySets;
-        private Map<String, Filter> keySetFilters = new HashMap<>();
-        private Map<String, Filter> filterCache = new HashMap<>();
+        private Map<String, Query> keySetFilters = new HashMap<>();
+        private Map<String, Query> filterCache = new HashMap<>();
 
     	public Reader(FSDirectory directory, Map<String, DocIdSet> filterKeySets) throws IOException {
     	    this.directory = directory;
@@ -225,29 +220,30 @@ public class SuggestionNGramIndex {
 
     	public Suggestion[] suggest(String value, Boolean trigram, String[] filters, String keySetName) throws Exception {
             String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
-            BooleanQuery query = new BooleanQuery();
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
             List<String> ngrams = ngrams(value, trigram);
             int SKIP_LAST_DOLLAR = 1;
             int ngramSize = ngrams.size() - SKIP_LAST_DOLLAR;
             for (int i = 0; i < ngramSize; i++) {
-                query.add(new TermQuery(new Term(ngramFieldName, ngrams.get(i))), BooleanClause.Occur.MUST);
+                builder.add(new TermQuery(new Term(ngramFieldName, ngrams.get(i))), BooleanClause.Occur.MUST);
             }
-            Filter keySetFilter = this.keySetFilters.get(keySetName);
+            Query keySetFilter = this.keySetFilters.get(keySetName);
             if (keySetFilter == null) {
                 DocIdSet keys = filterKeySets.get(keySetName);
                 if (keys != null) {
-                    keySetFilter = new CachingWrapperFilter(new SuggestionNGramKeysFilter(keys, KEY_FIELDNAME));
+                    keySetFilter = new CachingWrapperQuery(new SuggestionNGramKeysFilter(keys, KEY_FIELDNAME));
                     this.keySetFilters.put(keySetName, keySetFilter);
                 }
             }
-            Filter filter = createFilter(filters);
+            Query filter = createFilter(filters);
             if (filter == null) {
-                filter = keySetFilter;
+                builder.add(keySetFilter, Occur.MUST);
             }
             else if (keySetFilter != null) {
-                filter = new ChainedFilter(new Filter[]{filter, keySetFilter}, ChainedFilter.AND);
+                builder.add(filter, Occur.MUST);
+                builder.add(keySetFilter, Occur.MUST);
             }
-            TopDocs t = searcher.search(query, filter, 25);
+            TopDocs t = searcher.search(builder.build(), 25);
             Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
             int i = 0;
             for (ScoreDoc d : t.scoreDocs) {
@@ -257,23 +253,25 @@ public class SuggestionNGramIndex {
             return suggestions;
         }
 
-        public Filter createFilter(String[] filters) {
+        public Query createFilter(String[] filters) {
             if (filters == null || filters.length == 0)
                 return null;
-            Filter[] chain = new Filter[filters.length];
+            Query[] chain = new Query[filters.length];
             for (int i=0; i<filters.length; i++) {
                 String filterString = filters[i];
-                Filter filter = filterCache.get(filterString);
+                Query filter = filterCache.get(filterString);
                 if (filter == null) {
                     String[] f = filterString.split("=", 2);
-                    filter = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term(f[0], f[1]))));
+                    filter = new CachingWrapperQuery(new TermQuery(new Term(f[0], f[1])));
                     filterCache.put(filterString, filter);
                 }
                 chain[i] = filter;
             }
             if (chain.length == 1)
                 return chain[0];
-            return new ChainedFilter(chain, ChainedFilter.OR);
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            Stream.of(chain).forEach(f -> builder.add(f, Occur.SHOULD));
+            return builder.build();
         }
 
         public void close() throws IOException {

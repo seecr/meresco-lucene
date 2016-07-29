@@ -24,8 +24,6 @@
 
 package org.meresco.lucene.suggestion;
 
-import java.io.DataInputStream;
-
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
@@ -35,7 +33,6 @@ import javax.json.JsonValue;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.lucene.util.OpenBitSet;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.OutOfMemoryShutdown;

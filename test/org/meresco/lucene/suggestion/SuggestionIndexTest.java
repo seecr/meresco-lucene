@@ -24,18 +24,18 @@
 
 package org.meresco.lucene.suggestion;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.OpenBitSet;
 import org.junit.Before;
 import org.junit.Test;
+import org.meresco.lucene.OpenBitSet;
 import org.meresco.lucene.SeecrTestCase;
 import org.meresco.lucene.suggestion.SuggestionIndex.IndexingState;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;

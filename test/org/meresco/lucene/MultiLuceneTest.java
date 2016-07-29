@@ -65,9 +65,9 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneSettings settingsC = new LuceneSettings();
         settingsC.similarity = new TermFrequencySimilarity();
 
-        luceneA = new Lucene("coreA", new File(this.tmpDir, "a"), settingsA);
-        luceneB = new Lucene("coreB", new File(this.tmpDir, "b"), settingsB);
-        luceneC = new Lucene("coreC", new File(this.tmpDir, "c"), settingsC);
+        luceneA = new Lucene("coreA", this.tmpDir.resolve("a"), settingsA);
+        luceneB = new Lucene("coreB", this.tmpDir.resolve("b"), settingsB);
+        luceneC = new Lucene("coreC", this.tmpDir.resolve("c"), settingsC);
 
         multiLucene = new MultiLucene(new ArrayList<Lucene>() {{ add(luceneA); add(luceneB); add(luceneC);}});
 

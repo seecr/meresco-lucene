@@ -32,13 +32,12 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.lucene.util.Version;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,7 +56,7 @@ public class SuperIndexSearcherTest extends SeecrTestCase {
     public void setUp() throws Exception {
         super.setUp();
         this.executor = Executors.newFixedThreadPool(5);
-        Directory indexDirectory = new SimpleFSDirectory(this.tmpDir.toPath());
+        Directory indexDirectory = new SimpleFSDirectory(this.tmpDir);
         IndexWriterConfig conf = new IndexWriterConfig(new MerescoStandardAnalyzer());
         this.writer = new IndexWriter(indexDirectory, conf);
         this.reader = DirectoryReader.open(this.writer, true, true);

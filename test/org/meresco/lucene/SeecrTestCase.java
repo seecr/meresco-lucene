@@ -25,14 +25,14 @@
 
 package org.meresco.lucene;
 
-import java.io.File;
+import java.nio.file.Path;
 
 import org.junit.After;
 import org.junit.Before;
 
 
 public class SeecrTestCase {
-    protected File tmpDir;
+    protected Path tmpDir;
 
     public SeecrTestCase() {
         super();
@@ -40,11 +40,11 @@ public class SeecrTestCase {
 
     @Before
     public void setUp() throws Exception {
-        this.tmpDir = TestUtils.createTempDirectory();
+        this.tmpDir = TestUtils.createTempDirectory().toPath();
     }
 
     @After
     public void tearDown() throws Exception {
-        TestUtils.deleteDirectory(this.tmpDir);
+        TestUtils.deleteDirectory(this.tmpDir.toFile());
     }
 }

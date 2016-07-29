@@ -28,6 +28,7 @@ package org.meresco.lucene.http;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -93,11 +94,11 @@ public class LuceneHttpServer {
             System.exit(1);
         }
 
-        TermNumerator termNumerator = new TermNumerator(new File(storeLocation, "keys-termnumerator"));
+        TermNumerator termNumerator = new TermNumerator(Paths.get(storeLocation, "keys-termnumerator"));
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         List<Lucene> lucenes = new ArrayList<Lucene>();
         for (String core : cores) {
-            Lucene lucene = new Lucene(core, new File(storeLocation, "lucene-" + core));
+            Lucene lucene = new Lucene(core, Paths.get(storeLocation, "lucene-" + core));
             lucenes.add(lucene);
         }
         

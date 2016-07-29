@@ -27,6 +27,7 @@ package org.meresco.lucene;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -118,21 +119,21 @@ public class Lucene {
     private int commitCount = 0;
     private Timer commitTimer;
     public String name;
-    private File stateDir;
+    private Path stateDir;
     private Map<String, CachedOrdinalsReader> cachedOrdinalsReader = new HashMap<String, CachedOrdinalsReader>();
     private DirectSpellChecker spellChecker = new DirectSpellChecker();
     LuceneData data = new LuceneData();
 
-    public Lucene(String name, File stateDir) {
+    public Lucene(String name, Path stateDir) {
         this.name = name;
         this.stateDir = stateDir;
     }
 
-    public Lucene(File stateDir, LuceneSettings settings) throws Exception {
+    public Lucene(Path stateDir, LuceneSettings settings) throws Exception {
         this(null, stateDir, settings);
     }
 
-    public Lucene(String name, File stateDir, LuceneSettings settings) throws Exception {
+    public Lucene(String name, Path stateDir, LuceneSettings settings) throws Exception {
         this.name = name;
         this.stateDir = stateDir;
         initSettings(settings);
@@ -844,15 +845,15 @@ public class Lucene {
                 this.indexWriter.close();
         }
 
-        public void initSettings(File stateDir, LuceneSettings settings) throws Exception {
+        public void initSettings(Path stateDir, LuceneSettings settings) throws Exception {
             if (this.settings != null)
                 throw new Exception("Init settings is only allowed once");
             this.settings = settings;
 
-            MMapDirectory indexDirectory = new MMapDirectory(Paths.get(stateDir.getAbsolutePath(), "index"));
+            MMapDirectory indexDirectory = new MMapDirectory(stateDir.resolve("index"));
             indexDirectory.setUseUnmap(false);
 
-            MMapDirectory taxoDirectory = new MMapDirectory(Paths.get(stateDir.getAbsolutePath(), "taxo"));
+            MMapDirectory taxoDirectory = new MMapDirectory(stateDir.resolve("taxo"));
             taxoDirectory.setUseUnmap(false);
 
             IndexWriterConfig config = new IndexWriterConfig(settings.analyzer);

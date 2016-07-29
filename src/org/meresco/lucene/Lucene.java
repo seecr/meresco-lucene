@@ -57,6 +57,8 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenIterator;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -622,11 +624,11 @@ public class Lucene {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             List<String> fieldnames = new ArrayList<String>();
-            Fields fields = MultiFields.getFields(reference.searcher.getIndexReader());
+            FieldInfos fields = MultiFields.getMergedFieldInfos(reference.searcher.getIndexReader());
             if (fields == null)
                 return fieldnames;
-            for (Iterator<String> iterator = fields.iterator(); iterator.hasNext();) {
-                fieldnames.add(iterator.next());
+            for (Iterator<FieldInfo> iterator = fields.iterator(); iterator.hasNext();) {
+                fieldnames.add(iterator.next().name);
             }
             return fieldnames;
         }  finally {

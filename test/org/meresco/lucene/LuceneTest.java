@@ -502,7 +502,6 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1, lucene.numDocs());
     }
 
-    @SuppressWarnings("serial")
     @Test
     public void testFieldname() throws Throwable {
         Document doc1 = new Document();
@@ -511,7 +510,7 @@ public class LuceneTest extends SeecrTestCase {
 
         List<String> fieldnames = lucene.fieldnames();
         assertEquals(2, fieldnames.size());
-        assertEquals(new ArrayList<String>() {{ add("__id__"); add("field1"); }}, fieldnames);
+        assertEquals(Arrays.asList("field1", "__id__"), fieldnames);
     }
 
     @SuppressWarnings("serial")

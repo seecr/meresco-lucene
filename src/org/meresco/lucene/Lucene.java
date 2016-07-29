@@ -630,6 +630,7 @@ public class Lucene {
             for (Iterator<FieldInfo> iterator = fields.iterator(); iterator.hasNext();) {
                 fieldnames.add(iterator.next().name);
             }
+            Collections.sort(fieldnames);
             return fieldnames;
         }  finally {
             data.getManager().release(reference);

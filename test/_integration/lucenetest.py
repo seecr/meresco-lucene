@@ -79,20 +79,20 @@ class LuceneTest(IntegrationTestCase):
         self.assertEquals(records[50:60], xpath(body, '//srw:recordIdentifier/text()'))
 
     def testSortKeys(self):
-        body = self.doSruQuery('*', sortKeys='intfield1,,1')
+        body = self.doSruQuery('*', sortKeys='sorted.intfield1,,1')
         records = xpath(body, '//srw:recordIdentifier/text()')
         self.assertEquals(['record:%s' % i for i in xrange(1,11)], records)
 
-        body = self.doSruQuery('*', sortKeys='intfield1,,0')
+        body = self.doSruQuery('*', sortKeys='sorted.intfield1,,0')
         records = xpath(body, '//srw:recordIdentifier/text()')
         self.assertEquals(['record:%s' % i for i in xrange(100,90, -1)], records)
 
     def testSortKeysWithMissingValues(self):
-        body = self.doSruQuery('*', sortKeys='field4,,1')
+        body = self.doSruQuery('*', sortKeys='sorted.field4,,1')
         records = xpath(body, '//srw:recordIdentifier/text()')
         self.assertEquals('record:1', records[0])
 
-        body = self.doSruQuery('*', sortKeys='field4,,0')
+        body = self.doSruQuery('*', sortKeys='sorted.field4,,0')
         records = xpath(body, '//srw:recordIdentifier/text()')
         self.assertEquals('record:1', records[0])
 
@@ -151,26 +151,26 @@ class LuceneTest(IntegrationTestCase):
         q = ComposedQuery('main', query=cqlToExpression('*'))
         q.addMatch(dict(core='main', uniqueKey=KEY_PREFIX+'field'), dict(core='main2', key=KEY_PREFIX+'field'))
         q.addFacet(core='main2', facet=dict(fieldname='untokenized.field2', maxTerms=5))
-        q.addSortKey(dict(core="main", sortBy="field4", sortDescending=True))
+        q.addSortKey(dict(core="main", sortBy="sorted.field4", sortDescending=True))
         response = remote.executeComposedQuery(query=q)
         self.assertEqual("record:1", response.hits[0].id)
         del q._sortKeys[:]
-        q.addSortKey(dict(core="main", sortBy="field4", sortDescending=False))
+        q.addSortKey(dict(core="main", sortBy="sorted.field4", sortDescending=False))
         response = remote.executeComposedQuery(query=q)
         self.assertEqual("record:1", response.hits[0].id)
 
 
     def testDedup(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.field", core="main", stop=3, sortKeys=[{'sortBy': '__id__', 'sortDescending': False}])
+        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.field", core="main", stop=3)
         self.assertEqual(100, response.total)
         self.assertEqual(100, response.totalWithDuplicates)
         self.assertEquals(
-            [('record:1', 1), ('record:10', 1), ('record:100', 1)],
-            [(hit.id, hit.duplicateCount['__key__.field']) for hit in response.hits]
+            [1, 1, 1],
+            [hit.duplicateCount['__key__.field'] for hit in response.hits]
         )
 
-        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.groupfield", dedupSortField="__id__", core="main2", stop=3, sortKeys=[{'sortBy': '__id__', 'sortDescending': False}])
+        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.groupfield", dedupSortField="__id__", core="main2", stop=3)
         self.assertEqual(10, response.total)
         self.assertEqual(1000, response.totalWithDuplicates)
         self.assertEquals(
@@ -198,11 +198,11 @@ class LuceneTest(IntegrationTestCase):
 
     def testGrouping(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), groupingField="__key__.groupfield", core="main2", stop=3, sortKeys=[{'sortBy': '__id__', 'sortDescending': False}])
+        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), groupingField="__key__.groupfield", core="main2", stop=3, sortKeys=[{'sortBy': 'sorted.field4', 'sortDescending': False}])
         self.assertEqual(3, len(response.hits))
         self.assertEquals(
-            [('record:1', 100), ('record:100', 100), ('record:200', 100)],
-            [(hit.id, len(hit.duplicates['__key__.groupfield'])) for hit in response.hits]
+            [100, 100, 100],
+            [len(hit.duplicates['__key__.groupfield']) for hit in response.hits]
         )
 
     def testQueryAfterRestartDoesReInitSettings(self):

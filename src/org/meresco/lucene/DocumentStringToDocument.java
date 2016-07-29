@@ -43,12 +43,16 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 import org.meresco.lucene.numerate.TermNumerator;
 
 public class DocumentStringToDocument {
@@ -76,7 +80,11 @@ public class DocumentStringToDocument {
         Field field = null;
         switch (jsonField.getString("type")) {
             case "StringField":
-                field = new Field(name, jsonField.getString("value"), maybeAddTermVectors(jsonField, StringField.TYPE_NOT_STORED));
+                String stringValue = jsonField.getString("value");
+                if (jsonField.getBoolean("sort", false))
+                    field = new SortedDocValuesField(name, new BytesRef(stringValue));
+                else
+                    field = new Field(name, stringValue, maybeAddTermVectors(jsonField, StringField.TYPE_NOT_STORED));
                 break;
             case "StringFieldStored":
                 field = new Field(name, jsonField.getString("value"), maybeAddTermVectors(jsonField, StringField.TYPE_STORED));
@@ -88,13 +96,25 @@ public class DocumentStringToDocument {
                 field = new Field(name, jsonField.getString("value"), NO_TERMS_FREQUENCY_FIELD);
                 break;
             case "IntField":
-                field = new IntPoint(name, jsonField.getInt("value"));
+                int intValue = jsonField.getInt("value");
+                if (jsonField.getBoolean("sort", false))
+                    field = new SortedNumericDocValuesField(name, intValue);
+                else
+                    field = new IntPoint(name, intValue);
                 break;
             case "DoubleField":
-                field = new DoublePoint(name, jsonField.getInt("value"));
+                double doubleValue = jsonField.getJsonNumber("value").doubleValue();
+                if (jsonField.getBoolean("sort", false))
+                    field = new SortedNumericDocValuesField(name, NumericUtils.doubleToSortableLong(doubleValue));
+                else
+                    field = new DoublePoint(name, doubleValue);
                 break;
             case "LongField":
-                field = new LongPoint(name, jsonField.getInt("value"));
+                long longValue = jsonField.getJsonNumber("value").longValue();
+                if (jsonField.getBoolean("sort", false))
+                    field = new SortedNumericDocValuesField(name, longValue);
+                else
+                    field = new LongPoint(name, longValue);
                 break;
             case "NumericField":
                 field = new NumericDocValuesField(name, jsonField.getJsonNumber("value").longValue());

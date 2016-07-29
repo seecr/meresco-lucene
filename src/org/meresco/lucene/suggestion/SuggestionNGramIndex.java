@@ -55,6 +55,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -120,7 +121,7 @@ public class SuggestionNGramIndex {
                 int docId = postings.nextDoc();
                 if (docId == PostingsEnum.NO_MORE_DOCS)
                     break;
-                if (!liveDocs.get(docId))
+                if (liveDocs != null && !liveDocs.get(docId))
                     continue;
                 keys.add(keyForDoc(docId, leaves, keyFieldname));
     	    }
@@ -236,13 +237,10 @@ public class SuggestionNGramIndex {
                 }
             }
             Query filter = createFilter(filters);
-            if (filter == null) {
-                builder.add(keySetFilter, Occur.MUST);
-            }
-            else if (keySetFilter != null) {
-                builder.add(filter, Occur.MUST);
-                builder.add(keySetFilter, Occur.MUST);
-            }
+            if (filter != null)
+                builder.add(new ConstantScoreQuery(filter), Occur.MUST);
+            if (keySetFilter != null)
+                builder.add(new ConstantScoreQuery(keySetFilter), Occur.MUST);
             TopDocs t = searcher.search(builder.build(), 25);
             Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
             int i = 0;

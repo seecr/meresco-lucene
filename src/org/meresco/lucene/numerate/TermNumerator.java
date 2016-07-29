@@ -24,8 +24,8 @@
 
 package org.meresco.lucene.numerate;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -40,7 +40,7 @@ public class TermNumerator {
 
     protected TermNumerator() {};  // for easier mocking by subclass
     
-    public TermNumerator(File path) throws IOException {
+    public TermNumerator(Path path) throws IOException {
         MMapDirectory taxoDirectory = new MMapDirectory(path);
         taxoDirectory.setUseUnmap(false);
         taxoWriter = new DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(100));

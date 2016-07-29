@@ -27,6 +27,7 @@ package org.meresco.lucene.suggestion;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,13 +41,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.Version;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;
 
 
@@ -62,15 +62,13 @@ public class SuggestionIndex {
     public static final FieldType SIMPLE_NOT_STORED_STRING_FIELD = new FieldType();
     public static final FieldType SIMPLE_STORED_STRING_FIELD = new FieldType();
     static {
-        SIMPLE_NOT_STORED_STRING_FIELD.setIndexed(true);
         SIMPLE_NOT_STORED_STRING_FIELD.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
         SIMPLE_NOT_STORED_STRING_FIELD.setOmitNorms(false);
         SIMPLE_NOT_STORED_STRING_FIELD.setStored(false);
         SIMPLE_NOT_STORED_STRING_FIELD.setTokenized(false);
         SIMPLE_NOT_STORED_STRING_FIELD.freeze();
 
-        SIMPLE_STORED_STRING_FIELD.setIndexed(true);
-        SIMPLE_STORED_STRING_FIELD.setIndexOptions(IndexOptions.DOCS_ONLY);
+        SIMPLE_STORED_STRING_FIELD.setIndexOptions(IndexOptions.DOCS);
         SIMPLE_STORED_STRING_FIELD.setOmitNorms(true);
         SIMPLE_STORED_STRING_FIELD.setStored(true);
         SIMPLE_STORED_STRING_FIELD.setTokenized(false);
@@ -101,8 +99,8 @@ public class SuggestionIndex {
 
         this.shingleAnalyzer = new ShingleAnalyzer(minShingleSize, maxShingleSize);
 
-        this.suggestionIndexDir = FSDirectory.open(new File(suggestionIndexDir));
-        IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new StandardAnalyzer());
+        this.suggestionIndexDir = FSDirectory.open(Paths.get(suggestionIndexDir));
+        IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
         this.writer = new IndexWriter(this.suggestionIndexDir, config);
         this.writer.commit();
         this.suggestionNGramIndexDir = suggestionNGramIndexDir;

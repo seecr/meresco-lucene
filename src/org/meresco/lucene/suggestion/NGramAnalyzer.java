@@ -1,7 +1,6 @@
 package org.meresco.lucene.suggestion;
 
 import java.io.IOException;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -22,8 +21,8 @@ class NGramAnalyzer extends Analyzer {
     }
 
     @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer source = new StandardTokenizer(reader);
+    protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer source = new StandardTokenizer();
         TokenStream src = new LowerCaseFilter(source);
         src = new AddWordBoundaryFilter(src);
         NGramTokenFilter filter = new NGramTokenFilter(src, this.minShingleSize, this.maxShingleSize);

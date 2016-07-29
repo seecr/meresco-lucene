@@ -71,21 +71,21 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         self.assertEquals(16, len(fields))
         self.assertEqual([
                 '$facets',
+                '__id__',
+                '__key__.field',
                 'copy',
-                'intfield3',
+                'field1',
                 'field2',
                 'field3',
-                'sorted.field4',
-                'field1',
-                'sorted.field2',
                 'field4',
-                'sorted.intfield1',
-                'intfield2',
-                'intfield1',
-                'untokenized.field3',
                 'field5',
-                '__id__',
-                '__key__.field'
+                'intfield1',
+                'intfield2',
+                'intfield3',
+                'sorted.field2',
+                'sorted.field4',
+                'sorted.intfield1',
+                'untokenized.field3',
             ], fields)
 
         drilldownFieldList = lists[1]

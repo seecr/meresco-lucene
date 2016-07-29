@@ -510,7 +510,7 @@ public class LuceneTest extends SeecrTestCase {
 
         List<String> fieldnames = lucene.fieldnames();
         assertEquals(2, fieldnames.size());
-        assertEquals(Arrays.asList("field1", "__id__"), fieldnames);
+        assertEquals(Arrays.asList("__id__", "field1"), fieldnames);
     }
 
     @SuppressWarnings("serial")

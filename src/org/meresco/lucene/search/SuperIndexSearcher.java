@@ -2,7 +2,7 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2014 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2014, 2016 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  *
  * This file is part of "Meresco Lucene"
@@ -86,12 +86,13 @@ public class SuperIndexSearcher extends IndexSearcher {
     }
 
     public void search(Query q, SuperCollector<?> c) throws Throwable {
-        Weight weight = super.createNormalizedWeight(q, true);
+        SubCollector subCollector = c.subCollector();
+        Weight weight = super.createNormalizedWeight(q, subCollector.needsScores());
         ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(this.executor);
         List<Future<String>> futures = new ArrayList<Future<String>>();
         for (List<LeafReaderContext> leaf_group : this.grouped_leaves.subList(1, this.grouped_leaves.size()))
             futures.add(ecs.submit(new SearchTask(leaf_group, weight, c.subCollector()), "Done"));
-        new SearchTask(this.grouped_leaves.get(0), weight, c.subCollector()).run();
+        new SearchTask(this.grouped_leaves.get(0), weight, subCollector).run();
         try {
             for (int i = 0; i < this.grouped_leaves.size() - 1; i++) {
                 ecs.take().get();

@@ -48,12 +48,7 @@ public abstract class DelegatingSubCollector<CollectorType extends Collector, Su
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
         leaf = this.delegate.getLeafCollector(context);
     }
-//
-//    @Override
-//    public void setNextReader(LeafReaderContext context) throws IOException {
-//        this.delegate.setNextReader(context);
-//    }
-//
+
     @Override
     public void setScorer(Scorer scorer) throws IOException {
         this.leaf.setScorer(scorer);
@@ -63,9 +58,4 @@ public abstract class DelegatingSubCollector<CollectorType extends Collector, Su
     public void collect(int doc) throws IOException {
         this.leaf.collect(doc);
     }
-//
-//    @Override
-//    public boolean acceptsDocsOutOfOrder() {
-//        return this.delegate.acceptsDocsOutOfOrder();
-//    }
 }

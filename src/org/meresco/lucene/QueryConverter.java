@@ -201,24 +201,24 @@ public class QueryConverter {
             case "String":
                 return TermRangeQuery.newStringRange(field, lower ? query.getString("lowerTerm") : null, upper ? query.getString("upperTerm") : null, includeLower, includeUpper);
             case "Int":
-                Integer iLowerValue = lower ? query.getInt("lowerTerm") : null;
-                Integer iUpperValue = upper ? query.getInt("upperTerm") : null;
+                Integer iLowerValue = lower ? query.getInt("lowerTerm") : Integer.MIN_VALUE;
+                Integer iUpperValue = upper ? query.getInt("upperTerm") : Integer.MAX_VALUE;
                 if (!includeLower && iLowerValue != null)
                     iLowerValue += 1;
                 if (!includeUpper && iUpperValue != null)
                     iLowerValue -= 1;
                 return IntPoint.newRangeQuery(field, iLowerValue, iUpperValue);
             case "Long":
-                Long lLowerValue = lower ? query.getJsonNumber("lowerTerm").longValue() : null;
-                Long lUpperValue = upper ? query.getJsonNumber("upperTerm").longValue() : null;
+                Long lLowerValue = lower ? query.getJsonNumber("lowerTerm").longValue() : Long.MIN_VALUE;
+                Long lUpperValue = upper ? query.getJsonNumber("upperTerm").longValue() : Long.MAX_VALUE;
                 if (!includeLower && lLowerValue != null)
                     lLowerValue += 1;
                 if (!includeUpper && lUpperValue != null)
                     lUpperValue -= 1;
                 return LongPoint.newRangeQuery(field, lLowerValue, lUpperValue);
             case "Double":
-                Double dLowerValue = lower ? query.getJsonNumber("lowerTerm").doubleValue() : null;
-                Double dUpperValue = upper ? query.getJsonNumber("upperTerm").doubleValue() : null;
+                Double dLowerValue = lower ? query.getJsonNumber("lowerTerm").doubleValue() : Double.MIN_VALUE;
+                Double dUpperValue = upper ? query.getJsonNumber("upperTerm").doubleValue() : Double.MAX_VALUE;
                 if (!includeLower && dLowerValue != null)
                     dLowerValue = Math.nextUp(dLowerValue);
                 if (!includeUpper && dUpperValue != null)

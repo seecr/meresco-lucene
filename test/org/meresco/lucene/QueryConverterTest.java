@@ -256,7 +256,23 @@ public class QueryConverterTest {
         Query query = IntPoint.newRangeQuery("field", 2, 5);
         assertEquals(query, q.query);
     }
-
+    
+    @Test
+    public void testIntRangeQueryWithNoBounds() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "RangeQuery")
+                    .add("rangeType", "Int")
+                    .add("field", "field")
+                    .add("lowerTerm", JsonValue.NULL)
+                    .add("upperTerm", JsonValue.NULL)
+                    .add("includeLower", JsonValue.FALSE)
+                    .add("includeUpper", JsonValue.TRUE))
+                .build();
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
+        Query query = IntPoint.newRangeQuery("field", Integer.MIN_VALUE + 1, Integer.MAX_VALUE);
+        assertEquals(query, q.query);
+    }
     @Test
     public void testLongRangeQuery() {
         JsonObject json = Json.createObjectBuilder()
@@ -271,6 +287,23 @@ public class QueryConverterTest {
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         Query query = LongPoint.newRangeQuery("field", 2L, 5L);
+        assertEquals(query, q.query);
+    }
+    
+    @Test
+    public void testLongRangeQueryWithNoBounds() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "RangeQuery")
+                    .add("rangeType", "Long")
+                    .add("field", "field")
+                    .add("lowerTerm", JsonValue.NULL)
+                    .add("upperTerm", JsonValue.NULL)
+                    .add("includeLower", JsonValue.FALSE)
+                    .add("includeUpper", JsonValue.TRUE))
+                .build();
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
+        Query query = LongPoint.newRangeQuery("field", Long.MIN_VALUE + 1, Long.MAX_VALUE);
         assertEquals(query, q.query);
     }
 
@@ -290,6 +323,23 @@ public class QueryConverterTest {
         Query query = DoublePoint.newRangeQuery("field", Math.nextUp(1.0), 5.0);
         assertEquals(query, q.query);
     }
+    
+    @Test
+    public void testDoubleRangeQueryWithNoBounds() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "RangeQuery")
+                    .add("rangeType", "Double")
+                    .add("field", "field")
+                    .add("lowerTerm", JsonValue.NULL)
+                    .add("upperTerm", JsonValue.NULL)
+                    .add("includeLower", JsonValue.FALSE)
+                    .add("includeUpper", JsonValue.TRUE))
+                .build();
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
+        Query query = DoublePoint.newRangeQuery("field", Math.nextUp(Double.MIN_VALUE), Double.MAX_VALUE);
+        assertEquals(query, q.query);
+    }
 
     @Test
     public void testDrilldownQuery() {
@@ -306,7 +356,7 @@ public class QueryConverterTest {
         TermQuery query = new TermQuery(DrillDownQuery.term("$facets", "dd-field", "value"));
         assertEquals(query, q.query);
     }
-
+   
     @Test
     public void testFacets() {
         JsonObject json = Json.createObjectBuilder()

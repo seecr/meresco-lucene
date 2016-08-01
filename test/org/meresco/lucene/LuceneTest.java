@@ -62,6 +62,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -422,7 +423,7 @@ public class LuceneTest extends SeecrTestCase {
         final KeySuperCollector k = new KeySuperCollector("field1");
         assertEquals(2, lucene.executeQuery(new QueryData(), null, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k); }}).total);
 
-        OpenBitSet collectedKeys = k.getCollectedKeys();
+        FixedBitSet collectedKeys = k.getCollectedKeys();
         assertEquals(false, collectedKeys.get(0));
         assertEquals(true, collectedKeys.get(1));
         assertEquals(true, collectedKeys.get(2));
@@ -435,7 +436,7 @@ public class LuceneTest extends SeecrTestCase {
         q.query = field0Query;
         assertEquals(1, lucene.executeQuery(q, null, null, null, null, new ArrayList<KeySuperCollector>() {{ add(k1); }}).total);
 
-        OpenBitSet keysWithFilter = k1.getCollectedKeys();
+        FixedBitSet keysWithFilter = k1.getCollectedKeys();
         assertEquals(false, keysWithFilter.get(0));
         assertEquals(true, keysWithFilter.get(1));
         assertEquals(false, keysWithFilter.get(2));
@@ -1077,9 +1078,9 @@ public class LuceneTest extends SeecrTestCase {
         }
         lucene.commit();
         long t0 = System.currentTimeMillis();
-        OpenBitSet keys1 = this.lucene.collectKeys(new MatchAllDocsQuery(), "field1", null);
+        FixedBitSet keys1 = this.lucene.collectKeys(new MatchAllDocsQuery(), "field1", null);
         long t1 = System.currentTimeMillis();
-        OpenBitSet keys2 = this.lucene.collectKeys(new MatchAllDocsQuery(), "field1", null);
+        FixedBitSet keys2 = this.lucene.collectKeys(new MatchAllDocsQuery(), "field1", null);
         long t2 = System.currentTimeMillis();
         assertTrue(t2 - t1 <= t1 - t0);
         assertTrue(t2 - t1 < 2);
@@ -1105,17 +1106,17 @@ public class LuceneTest extends SeecrTestCase {
         doc1.add(new NumericDocValuesField("keyfield", 1));
         lucene.addDocument("id1", doc1);
         ScoreSuperCollector scoreCollector1 = lucene.scoreCollector("keyfield", new MatchAllDocsQuery());
-        OpenBitSet keys1 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
+        FixedBitSet keys1 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
         lucene.commit();
         lucene.commit();
         ScoreSuperCollector scoreCollector2 = lucene.scoreCollector("keyfield", new MatchAllDocsQuery());
-        OpenBitSet keys2 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
+        FixedBitSet keys2 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
         assertSame(scoreCollector1, scoreCollector2);
         assertSame(keys1, keys2);
         lucene.addDocument("id1", new Document());
         lucene.commit();
         ScoreSuperCollector scoreCollector3 = lucene.scoreCollector("keyfield", new MatchAllDocsQuery());
-        OpenBitSet keys3 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
+        FixedBitSet keys3 = lucene.collectKeys(new MatchAllDocsQuery(), "keyfield", null);
         assertNotSame(scoreCollector1, scoreCollector3);
         assertNotSame(keys1, keys3);
     }

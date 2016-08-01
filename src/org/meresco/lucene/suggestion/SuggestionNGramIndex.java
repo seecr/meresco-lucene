@@ -55,7 +55,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -190,7 +189,7 @@ public class SuggestionNGramIndex {
         return ngram;
     }
 
-    public Reader createReader(Map<String, DocIdSet> keySetFilters) throws IOException {
+    public Reader createReader(Map<String, Bits> keySetFilters) throws IOException {
     	return new Reader(directory, keySetFilters);
     }
 
@@ -199,10 +198,10 @@ public class SuggestionNGramIndex {
         private FSDirectory directory;
     	private DirectoryReader reader;
         private IndexSearcher searcher;
-        private Map<String, DocIdSet> filterKeySets;
+        private Map<String, Bits> filterKeySets;
         private Map<String, Query> keySetFilters = new HashMap<>();
 
-    	public Reader(FSDirectory directory, Map<String, DocIdSet> filterKeySets) throws IOException {
+    	public Reader(FSDirectory directory, Map<String, Bits> filterKeySets) throws IOException {
     	    this.directory = directory;
             this.filterKeySets = filterKeySets;
     		reopen();
@@ -227,7 +226,7 @@ public class SuggestionNGramIndex {
             }
             Query keySetFilter = this.keySetFilters.get(keySetName);
             if (keySetFilter == null) {
-                DocIdSet keys = filterKeySets.get(keySetName);
+                Bits keys = filterKeySets.get(keySetName);
                 if (keys != null) {
                     keySetFilter = new SuggestionNGramKeysFilter(keys, KEY_FIELDNAME);
                     this.keySetFilters.put(keySetName, keySetFilter);

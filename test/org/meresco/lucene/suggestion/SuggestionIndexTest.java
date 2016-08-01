@@ -33,9 +33,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.lucene.util.FixedBitSet;
 import org.junit.Before;
 import org.junit.Test;
-import org.meresco.lucene.OpenBitSet;
 import org.meresco.lucene.SeecrTestCase;
 import org.meresco.lucene.suggestion.SuggestionIndex.IndexingState;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;
@@ -122,8 +122,8 @@ public class SuggestionIndexTest extends SeecrTestCase {
         index.add("id:2", 2, new String[] {"fietsbel"}, new String[]{"uri:book"}, new String[] {"Anonymous"});
         index.createSuggestionNGramIndex(true, false);
         
-        OpenBitSet bits = new OpenBitSet();
-        bits.set(2L);
+        FixedBitSet bits = new FixedBitSet(3);
+        bits.set(2);
         index.registerFilterKeySet("apikey-abc", bits);
         
         Suggestion[] suggestions = index.getSuggestionsReader().suggest("fi", false, null, "apikey-abc");

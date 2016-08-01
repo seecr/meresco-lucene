@@ -32,6 +32,7 @@ import java.util.Map;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.ComposedQuery.Unite;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.queries.KeyFilter;
@@ -77,7 +78,7 @@ public class MultiLucene {
             if (!core.equals(resultCoreName))
                 otherCoreNames.add(core);
 
-        Map<String, OpenBitSet> finalKeys = uniteFilter(query);
+        Map<String, FixedBitSet> finalKeys = uniteFilter(query);
         for (String otherCoreName : otherCoreNames)
             finalKeys = coreQueries(otherCoreName, resultCoreName, query, finalKeys);
 
@@ -132,13 +133,13 @@ public class MultiLucene {
         return response;
     }
 
-    private Map<String, OpenBitSet> uniteFilter(ComposedQuery query) throws Throwable {
-        Map<String, OpenBitSet> keys = new HashMap<String, OpenBitSet>();
+    private Map<String, FixedBitSet> uniteFilter(ComposedQuery query) throws Throwable {
+        Map<String, FixedBitSet> keys = new HashMap<String, FixedBitSet>();
         for (Unite unite : query.getUnites()) {
             String keyNameA = query.keyName(unite.coreA, unite.coreB);
             String keyNameB = query.keyName(unite.coreB, unite.coreA);
             String resultKeyName = query.resultsFrom.equals(unite.coreA) ? keyNameA : keyNameB;
-            OpenBitSet collectedKeys = lucenes.get(unite.coreA).collectKeys(unite.queryA, query.keyName(unite.coreA, unite.coreB), null);
+            FixedBitSet collectedKeys = lucenes.get(unite.coreA).collectKeys(unite.queryA, query.keyName(unite.coreA, unite.coreB), null);
             unionCollectedKeys(keys, collectedKeys, resultKeyName);
 
             collectedKeys = lucenes.get(unite.coreB).collectKeys(unite.queryB, query.keyName(unite.coreB, unite.coreA), null);
@@ -149,9 +150,9 @@ public class MultiLucene {
             for (Query q : query.filterQueries.get(core)) {
                 String keyNameResult = query.keyName(query.resultsFrom, core);
                 String keyNameOther = query.keyName(core, query.resultsFrom);
-                OpenBitSet collectedKeys = lucenes.get(core).collectKeys(q, keyNameOther, null);
+                FixedBitSet collectedKeys = lucenes.get(core).collectKeys(q, keyNameOther, null);
                 if (keys.containsKey(keyNameResult))
-                    keys.get(keyNameResult).intersect(collectedKeys);
+                    keys.get(keyNameResult).and(collectedKeys);
                 else
                     keys.put(keyNameResult, collectedKeys.clone());
             }
@@ -159,10 +160,12 @@ public class MultiLucene {
         return keys;
     }
 
-    private void unionCollectedKeys(Map<String, OpenBitSet> keys, OpenBitSet collectedKeys, String keyName) {
-        if (keys.containsKey(keyName))
-            keys.get(keyName).union(collectedKeys);
-        else
+    private void unionCollectedKeys(Map<String, FixedBitSet> keys, FixedBitSet collectedKeys, String keyName) {
+        if (keys.containsKey(keyName)) {
+            FixedBitSet bitSet = FixedBitSet.ensureCapacity(keys.get(keyName), collectedKeys.length());
+            bitSet.or(collectedKeys);
+            keys.put(keyName, bitSet);
+        } else
             keys.put(keyName, collectedKeys.clone());
     }
 
@@ -174,13 +177,13 @@ public class MultiLucene {
         return luceneQuery;
     }
 
-    private Map<String, OpenBitSet> coreQueries(String coreName, String otherCoreName, ComposedQuery query, Map<String, OpenBitSet> keysForKeyName) throws Throwable {
+    private Map<String, FixedBitSet> coreQueries(String coreName, String otherCoreName, ComposedQuery query, Map<String, FixedBitSet> keysForKeyName) throws Throwable {
         Query luceneQuery = luceneQueryForCore(coreName, query);
         if (luceneQuery != null) {
-            OpenBitSet collectedKeys = this.lucenes.get(coreName).collectKeys(null, query.keyName(coreName, otherCoreName), luceneQuery, false);
+            FixedBitSet collectedKeys = this.lucenes.get(coreName).collectKeys(null, query.keyName(coreName, otherCoreName), luceneQuery, false);
             String otherKeyName = query.keyName(otherCoreName, coreName);
             if (keysForKeyName.containsKey(otherKeyName))
-                keysForKeyName.get(otherKeyName).intersect(collectedKeys);
+                keysForKeyName.get(otherKeyName).and(collectedKeys);
             else
                 keysForKeyName.put(otherKeyName, collectedKeys);
         }

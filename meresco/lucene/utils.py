@@ -27,7 +27,7 @@ from struct import unpack
 
 from simplejson import dumps, JSONEncoder, loads
 
-from org.apache.lucene.util import OpenBitSet
+from org.apache.lucene.util import FixedBitSet
 
 
 def simplifiedDict(aDict):
@@ -39,10 +39,10 @@ class _JsonEncoder(JSONEncoder):
             return str(o)
         return JSONEncoder.default(self, o)
 
-def readOpenBitSet(data):
-    numWords = unpack('>i', data[:4])[0]
+def readFixedBitSet(data):
     numBits = unpack('>i', data[4:8])[0]
+    numWords = unpack('>i', data[:4])[0]
     longs = []
     for i in xrange(8, len(data), 8):
         longs.append(long(unpack('>q', data[i:i+8])[0]))
-    return OpenBitSet(longs, numWords)
+    return FixedBitSet(longs, numBits)

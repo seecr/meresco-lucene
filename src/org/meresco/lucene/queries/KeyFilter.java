@@ -31,7 +31,6 @@ import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -45,8 +44,8 @@ public class KeyFilter extends Query {
 	private String keyName;
 	public Bits keySet;
 
-	public KeyFilter(DocIdSet keySet, String keyName) throws IOException {
-		this.keySet = keySet.bits();
+	public KeyFilter(Bits keySet, String keyName) throws IOException {
+		this.keySet = keySet;
 		this.keyName = keyName;
 	}
 

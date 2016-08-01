@@ -58,6 +58,6 @@ public class ExportKeysHandler extends AbstractMerescoLuceneHandler {
         }
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/octet-stream");
-        Utils.writeOpenBitSet(luceneResponse.keys, response.getOutputStream());
+        Utils.writeFixedBitSet(luceneResponse.keys, response.getOutputStream());
     }
 }

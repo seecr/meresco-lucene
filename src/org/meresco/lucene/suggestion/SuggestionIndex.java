@@ -47,6 +47,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Bits;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Reader;
 
 
@@ -87,7 +88,7 @@ public class SuggestionIndex {
 	private SuggestionNGramIndex suggestionNGramIndex;
 	private String suggestionNGramIndexDir;
     private Reader currentReader;
-    private Map<String, DocIdSet> filterKeySets = new HashMap<>();
+    private Map<String, Bits> filterKeySets = new HashMap<>();
 
 
     public SuggestionIndex(String suggestionIndexDir, String suggestionNGramIndexDir, int minShingleSize, int maxShingleSize) throws IOException {
@@ -124,7 +125,7 @@ public class SuggestionIndex {
         maybeCommitAfterUpdate();
     }
     
-    public void registerFilterKeySet(String name, DocIdSet keySet) throws IOException {
+    public void registerFilterKeySet(String name, Bits keySet) throws IOException {
         this.filterKeySets.put(name, keySet);
     }
 

@@ -38,6 +38,7 @@ import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
 import org.apache.lucene.search.spell.SuggestWord;
+import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;
@@ -50,7 +51,7 @@ public class LuceneResponse {
     public long queryTime = 0;
     public Map<String,SuggestWord[]> suggestions = new HashMap<>();
     public Map<String, Long> times = new HashMap<>();
-    public OpenBitSet keys;
+    public FixedBitSet keys;
 
     public LuceneResponse(int totalHits) {
         total = totalHits;

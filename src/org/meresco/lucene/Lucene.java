@@ -83,6 +83,7 @@ import org.apache.lucene.search.spell.DirectSpellChecker;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
@@ -657,14 +658,14 @@ public class Lucene {
         }
     }
 
-    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
+    public FixedBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
         return collectKeys(filterQuery, keyName, query, true);
     }
 
-    public OpenBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Throwable {
+    public FixedBitSet collectKeys(Query filterQuery, String keyName, Query query, boolean cacheCollectedKeys) throws Throwable {
         if (cacheCollectedKeys) {
             KeyNameQuery keyNameQuery = new KeyNameQuery(keyName, filterQuery);
-            OpenBitSet keys = data.getKeyCollectorCache().get(keyNameQuery);
+            FixedBitSet keys = data.getKeyCollectorCache().get(keyNameQuery);
             if (keys == null) {
                 keys = doCollectKeys(filterQuery, keyName, query);
                 data.getKeyCollectorCache().put(keyNameQuery, keys);
@@ -674,7 +675,7 @@ public class Lucene {
         return doCollectKeys(filterQuery, keyName, query);
     }
 
-    private OpenBitSet doCollectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
+    private FixedBitSet doCollectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
         KeySuperCollector keyCollector = new KeySuperCollector(keyName);
         if (query == null)
             query = new MatchAllDocsQuery();
@@ -805,7 +806,7 @@ public class Lucene {
         private DirectoryTaxonomyWriter taxoWriter;
         private LuceneSettings settings;
         private Map<KeyNameQuery, ScoreSuperCollector> scoreCollectorCache;
-        private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
+        private Map<KeyNameQuery, FixedBitSet> keyCollectorCache;
         private SearcherTaxonomyManager manager;
         private LuceneRefreshListener refreshListener = new LuceneRefreshListener();
 
@@ -854,7 +855,7 @@ public class Lucene {
             this.taxoWriter.commit();
 
             this.scoreCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, ScoreSuperCollector>(50));
-            this.keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
+            this.keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, FixedBitSet>(50));
 
             this.manager = new SearcherTaxonomyManager(indexDirectory, taxoDirectory, new MerescoSearchFactory(indexDirectory, taxoDirectory, settings));
             this.manager.addListener(refreshListener);
@@ -894,7 +895,7 @@ public class Lucene {
             return scoreCollectorCache;
         }
 
-        public Map<KeyNameQuery, OpenBitSet> getKeyCollectorCache() throws UninitializedException {
+        public Map<KeyNameQuery, FixedBitSet> getKeyCollectorCache() throws UninitializedException {
             if (this.settings == null)
                 throw new UninitializedException();
             return keyCollectorCache;

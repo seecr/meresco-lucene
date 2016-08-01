@@ -28,12 +28,12 @@ package org.meresco.lucene.search.join;
 
 import java.io.IOException;
 
-import org.meresco.lucene.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.search.SuperCollector;
 
 public class KeySuperCollector extends SuperCollector<KeyCollector> {
     protected final String keyName;
-    private OpenBitSet currentKeySet;
+    private FixedBitSet currentKeySet;
 
     public KeySuperCollector(String keyName) {
         this.keyName = keyName;
@@ -46,15 +46,17 @@ public class KeySuperCollector extends SuperCollector<KeyCollector> {
 
     @Override
     public void complete() throws IOException {
-        OpenBitSet currentKeySet = super.subs.get(0).currentKeySet;
+        FixedBitSet currentKeySet = super.subs.get(0).currentKeySet;
         for (int i = 1; i < super.subs.size(); i++) {
-            currentKeySet.or(super.subs.get(i).currentKeySet);
+            FixedBitSet otherKeySet = super.subs.get(i).currentKeySet;
+            currentKeySet = FixedBitSet.ensureCapacity(currentKeySet, otherKeySet.length() + 1);
+            currentKeySet.or(otherKeySet);
         }
         super.subs.clear();
         this.currentKeySet = currentKeySet;
     }
 
-    public OpenBitSet getCollectedKeys() {
+    public FixedBitSet getCollectedKeys() {
         return this.currentKeySet;
     }
 }

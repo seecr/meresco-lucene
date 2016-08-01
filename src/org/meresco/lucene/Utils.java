@@ -40,6 +40,8 @@ import java.io.Writer;
 import java.util.Formatter;
 import java.util.List;
 
+import org.apache.lucene.util.FixedBitSet;
+
 public class Utils {
 	public static String getStackTrace(Throwable aThrowable) {
 		/*
@@ -99,20 +101,20 @@ public class Utils {
 		return result;
 	}
 
-	public static OpenBitSet readOpenBitSet(InputStream input) throws IOException {
+	public static FixedBitSet readFixedBitSet(InputStream input) throws IOException {
 	    DataInputStream dis = new DataInputStream(input);
-        int numWords = dis.readInt();
         int numBits = dis.readInt();
-        long[] bits = new long[numBits];
+        int numWords = dis.readInt();
+        long[] bits = new long[numWords];
         for (int i = 0; i < bits.length; i++) {
             bits[i] = dis.readLong();
         }
-        return new OpenBitSet(bits, numWords);
+        return new FixedBitSet(bits, numBits);
 	}
 
-    public static void writeOpenBitSet(OpenBitSet bitSet, OutputStream output) throws IOException {
+    public static void writeFixedBitSet(FixedBitSet bitSet, OutputStream output) throws IOException {
         DataOutputStream dos = new DataOutputStream(output);
-        dos.writeInt(bitSet.getNumWords());
+        dos.writeInt(bitSet.length());
         long[] bits = bitSet.getBits();
         dos.writeInt(bits.length);
         for (int i = 0; i < bits.length; i++) {

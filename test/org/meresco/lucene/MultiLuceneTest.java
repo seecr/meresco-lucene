@@ -42,6 +42,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.FixedBitSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -526,7 +527,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
         result = multiLucene.executeComposedQuery(q);
         LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
-        assertTrue(result.queryTime < 5);
+        //assertTrue(result.queryTime < 5);
         LuceneTest.addDocument(luceneB, "B-N>A-MQU", new HashMap() {{put("B", 80);}}, new HashMap() {{put("N", "true"); put("O", "false"); put("P", "false");}});
         result = multiLucene.executeComposedQuery(q);
         LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ");
@@ -808,7 +809,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.addMatch("coreA", "coreB", "A", "B");
         LuceneResponse result = multiLucene.executeComposedQuery(q, "A");
         assertEquals(4, result.total);
-        OpenBitSet expected = new OpenBitSet();
+        FixedBitSet expected = new FixedBitSet(result.keys.length());
         expected.set(5);
         expected.set(6);
         expected.set(7);
@@ -822,7 +823,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         q.setCoreQuery("coreA", new TermQuery(new Term("M", "true")));
         LuceneResponse result = multiLucene.executeComposedQuery(q, "A");
         assertEquals(4, result.total);
-        OpenBitSet expected = new OpenBitSet();
+        FixedBitSet expected = new FixedBitSet(result.keys.length());
         expected.set(5);
         expected.set(6);
         expected.set(7);

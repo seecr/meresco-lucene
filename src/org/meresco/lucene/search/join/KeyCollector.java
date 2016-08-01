@@ -29,14 +29,14 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorer;
-import org.meresco.lucene.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.search.SubCollector;
 
 
 public class KeyCollector extends SubCollector {
     protected String keyName;
     private int[] keyValuesArray;
-    protected OpenBitSet currentKeySet = new OpenBitSet();
+    protected FixedBitSet currentKeySet = new FixedBitSet(0);
     protected int biggestKeyFound = 0;
 
     public KeyCollector(String keyName) {
@@ -48,6 +48,7 @@ public class KeyCollector extends SubCollector {
         if (this.keyValuesArray != null) {
         	int value = this.keyValuesArray[docId];
         	if (value > 0) {
+        	    this.currentKeySet = FixedBitSet.ensureCapacity(this.currentKeySet, value + 1);
                 this.currentKeySet.set(value);
                 if (value > this.biggestKeyFound) {
                     this.biggestKeyFound = value;
@@ -70,7 +71,7 @@ public class KeyCollector extends SubCollector {
     public void setScorer(Scorer scorer) throws IOException {
     }
 
-    public OpenBitSet getCollectedKeys() throws IOException {
+    public FixedBitSet getCollectedKeys() throws IOException {
         return this.currentKeySet;
     }
 

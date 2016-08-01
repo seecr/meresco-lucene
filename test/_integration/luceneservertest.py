@@ -31,7 +31,7 @@ from seecr.test.utils import postRequest, getRequest
 from meresco.components.http.utils import CRLF
 from meresco.components.json import JsonList, JsonDict
 
-from meresco.lucene import ComposedQuery, readOpenBitSet
+from meresco.lucene import ComposedQuery, readFixedBitSet
 
 
 class LuceneServerTest(IntegrationTestCase):
@@ -161,7 +161,7 @@ class LuceneServerTest(IntegrationTestCase):
         composedQuery.setCoreQuery('main', query=dict(type="MatchAllDocsQuery"))
         header, body = postRequest(self.luceneServerPort, '/exportkeys/?exportKey=__key__.field', data=JsonDict(composedQuery.asDict()).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header + 2 * CRLF + body)
-        bitSet = readOpenBitSet(body)
+        bitSet = readFixedBitSet(body)
         for i in xrange(0, 102):
             isSet = bitSet.get(i)
             if 2 < i < 101:

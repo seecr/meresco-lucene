@@ -58,4 +58,4 @@ from multilucene import MultiLucene
 from composedquery import ComposedQuery
 from drilldownfield import DrilldownField
 from fieldslisttolucenedocument import FieldsListToLuceneDocument
-from utils import readOpenBitSet
+from utils import readFixedBitSet

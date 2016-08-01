@@ -93,7 +93,7 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
         	    response.getWriter().write(data);
         	    break;
         	case "/registerFilterKeySet":
-         	    suggestionIndex.registerFilterKeySet(request.getParameter("name"), Utils.readOpenBitSet(request.getInputStream()));
+         	    suggestionIndex.registerFilterKeySet(request.getParameter("name"), Utils.readFixedBitSet(request.getInputStream()));
          	    break;
             default:
         	    response.setStatus(HttpServletResponse.SC_NOT_FOUND);

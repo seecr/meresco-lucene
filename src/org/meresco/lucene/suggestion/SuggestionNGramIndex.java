@@ -55,7 +55,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -65,7 +64,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.meresco.lucene.CachingWrapperQuery;
 import org.meresco.lucene.Utils;
 import org.meresco.lucene.suggestion.SuggestionIndex.IndexingState;
 
@@ -203,7 +201,6 @@ public class SuggestionNGramIndex {
         private IndexSearcher searcher;
         private Map<String, DocIdSet> filterKeySets;
         private Map<String, Query> keySetFilters = new HashMap<>();
-        private Map<String, Query> filterCache = new HashMap<>();
 
     	public Reader(FSDirectory directory, Map<String, DocIdSet> filterKeySets) throws IOException {
     	    this.directory = directory;
@@ -232,15 +229,15 @@ public class SuggestionNGramIndex {
             if (keySetFilter == null) {
                 DocIdSet keys = filterKeySets.get(keySetName);
                 if (keys != null) {
-                    keySetFilter = new CachingWrapperQuery(new SuggestionNGramKeysFilter(keys, KEY_FIELDNAME));
+                    keySetFilter = new SuggestionNGramKeysFilter(keys, KEY_FIELDNAME);
                     this.keySetFilters.put(keySetName, keySetFilter);
                 }
             }
             Query filter = createFilter(filters);
             if (filter != null)
-                builder.add(new ConstantScoreQuery(filter), Occur.MUST);
+                builder.add(filter, Occur.FILTER);
             if (keySetFilter != null)
-                builder.add(new ConstantScoreQuery(keySetFilter), Occur.MUST);
+                builder.add(keySetFilter, Occur.FILTER);
             TopDocs t = searcher.search(builder.build(), 25);
             Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
             int i = 0;
@@ -257,13 +254,8 @@ public class SuggestionNGramIndex {
             Query[] chain = new Query[filters.length];
             for (int i=0; i<filters.length; i++) {
                 String filterString = filters[i];
-                Query filter = filterCache.get(filterString);
-                if (filter == null) {
-                    String[] f = filterString.split("=", 2);
-                    filter = new CachingWrapperQuery(new TermQuery(new Term(f[0], f[1])));
-                    filterCache.put(filterString, filter);
-                }
-                chain[i] = filter;
+                String[] f = filterString.split("=", 2);
+                chain[i] = new TermQuery(new Term(f[0], f[1]));
             }
             if (chain.length == 1)
                 return chain[0];
@@ -279,7 +271,6 @@ public class SuggestionNGramIndex {
         public synchronized void reopen() throws IOException {
             this.reader = DirectoryReader.open(directory);
             this.keySetFilters.clear();
-            this.filterCache.clear();
             this.searcher = new IndexSearcher(this.reader, Executors.newFixedThreadPool(10));
         }
     }

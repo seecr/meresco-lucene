@@ -1030,6 +1030,8 @@ public class LuceneTest extends SeecrTestCase {
             b.add(new TermQuery(new Term("field" + i, "value0")), Occur.SHOULD);
         final BooleanQuery query = b.build();
         LuceneResponse response = lucene.executeQuery(new QueryData(), Arrays.asList(query), null, null, null, null);
+        for (int i =0; i <10; i++)
+            lucene.executeQuery(new QueryData(), Arrays.asList(query), null, null, null, null);
         LuceneResponse responseWithCaching = lucene.executeQuery(new QueryData(), Arrays.asList(query), null, null, null, null);
         assertTrue(responseWithCaching.queryTime < response.queryTime);
     }
@@ -1063,7 +1065,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1.0, scoreCollector1.score(100), 0);
         assertNotSame(scoreCollector1, scoreCollector2);
     }
-    
+
     @Test
     public void testKeyCollectorCaching() throws Throwable {
         lucene.getSettings().commitCount = 1000;

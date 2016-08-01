@@ -72,7 +72,6 @@ import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ReferenceManager.RefreshListener;
@@ -308,7 +307,7 @@ public class Lucene {
         }
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         builder.add(query, BooleanClause.Occur.MUST);
-        builder.add(filter, BooleanClause.Occur.MUST);
+        builder.add(filter, BooleanClause.Occur.FILTER);
         return builder.build();
     }
 
@@ -433,21 +432,11 @@ public class Lucene {
         }
     }
 
-    public Query filterQuery(Query query) throws Exception {
-        Query f = data.getFilterCache().get(query);
-        if (f != null) {
-            return f;
-        }
-        CachingWrapperQuery filter = new CachingWrapperQuery(query);
-        data.getFilterCache().put(query, filter);
-        return filter;
-    }
-
     private Query filtersFor(List<Query> filterQueries, Query... filter) throws Exception {
         List<Query> filters = new ArrayList<>();
         if (filterQueries != null)
             for (Query query : filterQueries)
-                filters.add(filterQuery(query));
+                filters.add(query);
         if (filter != null)
             for (Query f : filter)
                 if (f != null)
@@ -455,8 +444,8 @@ public class Lucene {
         if (filters.size() == 0)
             return null;
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        filters.stream().forEach(f -> builder.add(f, Occur.MUST));
-        return new ConstantScoreQuery(builder.build());
+        filters.stream().forEach(f -> builder.add(f, Occur.FILTER));
+        return builder.build();
     }
 
     public Document getDocument(int docID) throws Exception {
@@ -815,7 +804,6 @@ public class Lucene {
         private IndexWriter indexWriter;
         private DirectoryTaxonomyWriter taxoWriter;
         private LuceneSettings settings;
-        private Map<Query, CachingWrapperQuery> filterCache;
         private Map<KeyNameQuery, ScoreSuperCollector> scoreCollectorCache;
         private Map<KeyNameQuery, OpenBitSet> keyCollectorCache;
         private SearcherTaxonomyManager manager;
@@ -865,7 +853,6 @@ public class Lucene {
             this.taxoWriter = new DirectoryTaxonomyWriter(taxoDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(settings.lruTaxonomyWriterCacheSize));
             this.taxoWriter.commit();
 
-            this.filterCache = Collections.synchronizedMap(new LRUMap<Query, CachingWrapperQuery>(50));
             this.scoreCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, ScoreSuperCollector>(50));
             this.keyCollectorCache = Collections.synchronizedMap(new LRUMap<KeyNameQuery, OpenBitSet>(50));
 
@@ -899,12 +886,6 @@ public class Lucene {
 
         public boolean hasSettings() {
             return this.settings != null;
-        }
-
-        public Map<Query, CachingWrapperQuery> getFilterCache() throws UninitializedException {
-            if (this.settings == null)
-                throw new UninitializedException();
-            return filterCache;
         }
 
         public Map<KeyNameQuery, ScoreSuperCollector> getScoreCollectorCache() throws UninitializedException {

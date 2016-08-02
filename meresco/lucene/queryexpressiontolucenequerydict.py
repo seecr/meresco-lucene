@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2015 Stichting Kennisnet http://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
@@ -32,7 +32,7 @@ from cqlparser.cqltoexpression import QueryExpression
 from weightless.core import Observable
 
 from java.io import StringReader
-from org.meresco.lucene.analysis import MerescoStandardAnalyzer
+from org.meresco.lucene.py_analysis import MerescoStandardAnalyzer
 from meresco.components.json import JsonDict
 
 

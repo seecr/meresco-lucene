@@ -50,6 +50,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.meresco.lucene.search.JoinSortField;
 
 public class QueryConverter {
 
@@ -69,11 +70,16 @@ public class QueryConverter {
             JsonObject sortKey = sortKeys.getJsonObject(i);
             String sortBy = sortKey.getString("sortBy");
             boolean sortDescending = sortKey.getBoolean("sortDescending", false);
+            String core = sortKey.getString("core", null);
             SortField field;
             if (sortBy.equals(SORT_ON_SCORE))
                 field = new SortField(null, SortField.Type.SCORE, sortDescending);
-            else
-                field = new SortField(sortBy, typeForSortField(sortKey.getString("type")), sortDescending);
+            else {
+                if (core == null)
+                    field = new SortField(sortBy, typeForSortField(sortKey.getString("type")), sortDescending);
+                else
+                    field = new JoinSortField(sortBy, typeForSortField(sortKey.getString("type")), sortDescending, core);
+            }
             Object missingValue = missingSortValue(sortKey.getString("missingValue", null));
             if (missingValue != null)
                 field.setMissingValue(missingValue);

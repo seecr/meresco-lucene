@@ -33,13 +33,22 @@ import org.apache.lucene.search.SortField;
 public class JoinSortField extends SortField {
 
     private JoinSortCollector joinSortCollector;
+    private String coreName;
 
-    public JoinSortField(String field, Type type, boolean reverse, JoinSortCollector joinSortCollector) {
+    public JoinSortField(String field, Type type, boolean reverse, String coreName) {
         super(field, type, reverse);
-        this.joinSortCollector = joinSortCollector;
+        this.coreName = coreName;
     }
-
+    
+    public void setCollector(JoinSortCollector collector) {
+        this.joinSortCollector = collector;
+    }
+    
     public FieldComparator<?> getComparator(final int numHits, final int sortPos) throws IOException {
         return this.joinSortCollector.getComparator(this.getField(), this.getType(), this.getReverse(), numHits, sortPos, this.missingValue);
+    }
+
+    public String getCoreName() {
+        return this.coreName;
     }
 }

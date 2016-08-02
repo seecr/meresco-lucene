@@ -72,6 +72,7 @@ import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ReferenceManager.RefreshListener;
@@ -649,6 +650,15 @@ public class Lucene {
         }
     }
 
+    public void search(Query query, Query filterQuery, Collector collector) throws Throwable {
+        SearcherAndTaxonomy reference = data.getManager().acquire();
+        try {
+            ((SuperIndexSearcher) reference.searcher).search(mergeQueryAndFilter(query, filterQuery), collector);
+        } finally {
+            data.getManager().release(reference);
+        }
+    }
+    
     public void search(Query query, Query filterQuery, SuperCollector<?> collector) throws Throwable {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {

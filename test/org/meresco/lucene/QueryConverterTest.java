@@ -53,6 +53,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.junit.Test;
 import org.meresco.lucene.QueryConverter.FacetRequest;
+import org.meresco.lucene.search.JoinSortField;
 
 public class QueryConverterTest {
 
@@ -413,12 +414,17 @@ public class QueryConverterTest {
                         .add(Json.createObjectBuilder()
                                 .add("sortBy", "doublefield")
                                 .add("type", "Double")
+                                .add("sortDescending", true))
+                        .add(Json.createObjectBuilder()
+                                .add("sortBy", "stringfield")
+                                .add("type", "String")
+                                .add("core", "A")
                                 .add("sortDescending", true)))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         assertEquals(new MatchAllDocsQuery(), q.query);
         SortField[] sortFields = q.sort.getSort();
-        assertEquals(7, sortFields.length);
+        assertEquals(8, sortFields.length);
         assertEquals("fieldname", sortFields[0].getField());
         assertEquals(SortField.Type.STRING, sortFields[0].getType());
         assertEquals(false, sortFields[0].getReverse());
@@ -453,6 +459,12 @@ public class QueryConverterTest {
         assertEquals(SortField.Type.DOUBLE, sortFields[6].getType());
         assertEquals(true, sortFields[6].getReverse());
         assertEquals(null, sortFields[6].getMissingValue());
+        
+        assertEquals("stringfield", sortFields[7].getField());
+        assertEquals(SortField.Type.STRING, sortFields[7].getType());
+        assertEquals(true, sortFields[7].getReverse());
+        assertEquals(null, sortFields[7].getMissingValue());
+        assertTrue(sortFields[7] instanceof JoinSortField);
     }
 
     @Test

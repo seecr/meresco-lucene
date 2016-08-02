@@ -58,7 +58,7 @@ import org.meresco.lucene.search.JoinSortField;
 public class QueryConverterTest {
 
 
-    private QueryConverter queryConverter = new QueryConverter(new FacetsConfig());
+    private QueryConverter queryConverter = new QueryConverter(new FacetsConfig(), "coreA");
 
     @Test
     public void testTermQuery() {
@@ -418,13 +418,18 @@ public class QueryConverterTest {
                         .add(Json.createObjectBuilder()
                                 .add("sortBy", "stringfield")
                                 .add("type", "String")
-                                .add("core", "A")
+                                .add("core", "coreA")
+                                .add("sortDescending", true))
+                        .add(Json.createObjectBuilder()
+                                .add("sortBy", "stringfield")
+                                .add("type", "String")
+                                .add("core", "coreB")
                                 .add("sortDescending", true)))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         assertEquals(new MatchAllDocsQuery(), q.query);
         SortField[] sortFields = q.sort.getSort();
-        assertEquals(8, sortFields.length);
+        assertEquals(9, sortFields.length);
         assertEquals("fieldname", sortFields[0].getField());
         assertEquals(SortField.Type.STRING, sortFields[0].getType());
         assertEquals(false, sortFields[0].getReverse());
@@ -464,7 +469,13 @@ public class QueryConverterTest {
         assertEquals(SortField.Type.STRING, sortFields[7].getType());
         assertEquals(true, sortFields[7].getReverse());
         assertEquals(null, sortFields[7].getMissingValue());
-        assertTrue(sortFields[7] instanceof JoinSortField);
+        assertFalse(sortFields[7] instanceof JoinSortField);
+        
+        assertEquals("stringfield", sortFields[8].getField());
+        assertEquals(SortField.Type.STRING, sortFields[8].getType());
+        assertEquals(true, sortFields[8].getReverse());
+        assertEquals(null, sortFields[8].getMissingValue());
+        assertTrue(sortFields[8] instanceof JoinSortField);
     }
 
     @Test

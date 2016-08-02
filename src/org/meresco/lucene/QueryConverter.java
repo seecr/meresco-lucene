@@ -58,8 +58,11 @@ public class QueryConverter {
 
     private FacetsConfig facetsConfig;
 
-    public QueryConverter(FacetsConfig facetsConfig) {
+    private String coreName;
+
+    public QueryConverter(FacetsConfig facetsConfig, String coreName) {
         this.facetsConfig = facetsConfig;
+        this.coreName = coreName;
     }
 
     Sort convertToSort(JsonArray sortKeys) {
@@ -75,7 +78,7 @@ public class QueryConverter {
             if (sortBy.equals(SORT_ON_SCORE))
                 field = new SortField(null, SortField.Type.SCORE, sortDescending);
             else {
-                if (core == null)
+                if (core == null || core.equals(coreName))
                     field = new SortField(sortBy, typeForSortField(sortKey.getString("type")), sortDescending);
                 else
                     field = new JoinSortField(sortBy, typeForSortField(sortKey.getString("type")), sortDescending, core);

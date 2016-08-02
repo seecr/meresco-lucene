@@ -32,10 +32,14 @@ import java.util.Map;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.ComposedQuery.Unite;
 import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.queries.KeyFilter;
+import org.meresco.lucene.search.JoinSortCollector;
+import org.meresco.lucene.search.JoinSortField;
+import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
@@ -98,6 +102,23 @@ public class MultiLucene {
             keyCollectors.put(exportKey, new KeySuperCollector(exportKey));
         }
 
+        if (query.queryData.sort != null) {
+            SortField[] sortFields = query.queryData.sort.getSort();
+            for (int i=0; i<sortFields.length; i++) {
+                if (!(sortFields[i] instanceof JoinSortField))
+                    continue;
+                JoinSortField sortField = (JoinSortField) sortFields[i];
+                String otherCoreName = sortField.getCoreName();
+                if (otherCoreName.equals(resultCoreName)) {
+                    sortFields[i] = new SortField(sortField.getField(), sortField.getType(), sortField.getReverse());
+                    continue;
+                } 
+                JoinSortCollector collector = new JoinSortCollector(query.keyName(resultCoreName, otherCoreName), query.keyName(otherCoreName, resultCoreName));
+                this.lucenes.get(otherCoreName).search(new MatchAllDocsQuery(), null, collector);
+                sortField.setCollector(collector);
+            }
+        }
+        
         query.queryData.query = resultCoreQuery;
         query.queryData.facets = query.facetsFor(resultCoreName);
         LuceneResponse response = this.lucenes.get(resultCoreName).executeQuery(

@@ -2,7 +2,7 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
  *
@@ -24,28 +24,22 @@
  *
  * end license */
 
-package org.meresco.lucene.analysis;
+package org.meresco.lucene.py_analysis;
+
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilter;
 import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.tartarus.snowball.ext.DutchStemmer;
-import org.apache.lucene.analysis.Analyzer;
-import java.util.Arrays;
-import java.util.List;
 
 public class MerescoDutchStemmingAnalyzer extends MerescoStandardAnalyzer {
 
-    private List<String> stemmingFields;
-
-    public MerescoDutchStemmingAnalyzer() {
-        super();
-        this.stemmingFields = null;
-    }
+    private List<String> stemmingFields = null;
 
     public MerescoDutchStemmingAnalyzer(String[] stemmingFields) {
-        super(Analyzer.PER_FIELD_REUSE_STRATEGY);
         this.stemmingFields = Arrays.asList(stemmingFields);
     }
 

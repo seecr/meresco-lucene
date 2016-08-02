@@ -109,11 +109,6 @@ public class MultiLucene {
                     continue;
                 JoinSortField sortField = (JoinSortField) sortFields[i];
                 String otherCoreName = sortField.getCoreName();
-                if (otherCoreName.equals(resultCoreName)) {
-                    sortFields[i] = new SortField(sortField.getField(), sortField.getType(), sortField.getReverse());
-                    sortFields[i].setMissingValue(sortField.getMissingValue());
-                    continue;
-                }
                 JoinSortCollector collector = new JoinSortCollector(query.keyName(resultCoreName, otherCoreName), query.keyName(otherCoreName, resultCoreName));
                 this.lucenes.get(otherCoreName).search(new MatchAllDocsQuery(), null, collector);
                 sortField.setCollector(collector);

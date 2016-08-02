@@ -136,8 +136,8 @@ public class ComposedQueryTest {
 			            					.add("weight", 0.3))))))
                 .build();
         Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
-            put("coreA", new QueryConverter(new FacetsConfig()));
-            put("coreB", new QueryConverter(new FacetsConfig()));
+            put("coreA", new QueryConverter(new FacetsConfig(), "coreA"));
+            put("coreB", new QueryConverter(new FacetsConfig(), "coreB"));
         }};
         ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         assertEquals("coreA", q.resultsFrom);
@@ -206,7 +206,7 @@ public class ComposedQueryTest {
                     .add("resultsFrom", "coreA")
                     .build();
         Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
-            put("coreA", new QueryConverter(new FacetsConfig()));
+            put("coreA", new QueryConverter(new FacetsConfig(), "coreA"));
         }};
         ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         assertEquals(0, q.queryData.start);
@@ -234,14 +234,14 @@ public class ComposedQueryTest {
                 .add("_unites", Json.createArrayBuilder()
                     .add(Json.createObjectBuilder()
                         .add("A", Json.createArrayBuilder()
-                            .add("summary")
+                            .add("coreA")
                             .add(Json.createObjectBuilder()
                                 .add("type", "TermQuery")
                                 .add("term", Json.createObjectBuilder()
                                     .add("field", "field")
                                     .add("value", "value0"))))
                         .add("B", Json.createArrayBuilder()
-                            .add("holding")
+                            .add("coreB")
                             .add(Json.createObjectBuilder()
                                 .add("type", "TermQuery")
                                 .add("term", Json.createObjectBuilder()
@@ -250,15 +250,15 @@ public class ComposedQueryTest {
                     ))
                 .build();
         Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>() {{
-            put("summary", new QueryConverter(new FacetsConfig()));
-            put("holding", new QueryConverter(new FacetsConfig()));
+            put("coreA", new QueryConverter(new FacetsConfig(), "coreA"));
+            put("coreB", new QueryConverter(new FacetsConfig(), "coreB"));
         }};
         ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         List<Unite> unites = q.getUnites();
         assertEquals(1, unites.size());
         Unite unite = unites.get(0);
-        assertEquals("summary", unite.coreA);
-        assertEquals("holding", unite.coreB);
+        assertEquals("coreA", unite.coreA);
+        assertEquals("coreB", unite.coreB);
         assertEquals(new TermQuery(new Term("field", "value0")), unite.queryA);
         assertEquals(new TermQuery(new Term("field2", "value1")), unite.queryB);
     }

@@ -706,7 +706,7 @@ public class Lucene {
     }
 
     public QueryConverter getQueryConverter() throws Exception {
-        return new QueryConverter(this.data.getFacetsConfig());
+        return new QueryConverter(this.data.getFacetsConfig(), this.name);
     }
 
     public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Throwable {

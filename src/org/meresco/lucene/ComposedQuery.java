@@ -76,7 +76,7 @@ public class ComposedQuery {
             cq.queryData.stop = json.getInt("_stop");
         if (json.containsKey("_suggestionRequest") && json.get("_suggestionRequest") != JsonValue.NULL)
             cq.queryData.suggestionRequest = converters.get(cq.resultsFrom).convertToSuggestionRequest(json.getJsonObject("_suggestionRequest"));
-        cq.queryData.sort = new QueryConverter(null).convertToSort(json.getJsonArray("_sortKeys"));
+        cq.queryData.sort = converters.get(cq.resultsFrom).convertToSort(json.getJsonArray("_sortKeys"));
         cq.queryData.dedupField = json.getString("_dedupField", null);
         cq.queryData.dedupSortField = json.getString("_dedupSortField", null);
         cq.queryData.groupingField = json.getString("_groupingField", null);

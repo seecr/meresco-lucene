@@ -27,7 +27,7 @@
 from os.path import dirname, abspath, join, realpath
 from sys import stdout
 
-from weightless.http import HttpRequest, HttpRequest1_1, SocketPool
+from weightless.http import HttpRequest1_1, SocketPool
 from weightless.io import Reactor
 from weightless.core import compose, be
 from meresco.core import Observable, TransactionScope
@@ -49,7 +49,7 @@ from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene.adaptertolucenequery import AdapterToLuceneQuery
 from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
 
-from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
+from org.meresco.lucene.py_analysis import MerescoDutchStemmingAnalyzer
 
 
 myPath = abspath(dirname(__file__))

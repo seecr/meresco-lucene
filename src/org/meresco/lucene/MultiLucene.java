@@ -111,14 +111,15 @@ public class MultiLucene {
                 String otherCoreName = sortField.getCoreName();
                 if (otherCoreName.equals(resultCoreName)) {
                     sortFields[i] = new SortField(sortField.getField(), sortField.getType(), sortField.getReverse());
+                    sortFields[i].setMissingValue(sortField.getMissingValue());
                     continue;
-                } 
+                }
                 JoinSortCollector collector = new JoinSortCollector(query.keyName(resultCoreName, otherCoreName), query.keyName(otherCoreName, resultCoreName));
                 this.lucenes.get(otherCoreName).search(new MatchAllDocsQuery(), null, collector);
                 sortField.setCollector(collector);
             }
         }
-        
+
         query.queryData.query = resultCoreQuery;
         query.queryData.facets = query.facetsFor(resultCoreName);
         LuceneResponse response = this.lucenes.get(resultCoreName).executeQuery(

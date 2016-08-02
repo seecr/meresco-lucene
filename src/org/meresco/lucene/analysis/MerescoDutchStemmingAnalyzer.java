@@ -26,14 +26,15 @@
 
 package org.meresco.lucene.analysis;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.KeywordRepeatFilter;
 import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.tartarus.snowball.ext.DutchStemmer;
-import org.apache.lucene.analysis.Analyzer;
-import java.util.Arrays;
-import java.util.List;
 
 public class MerescoDutchStemmingAnalyzer extends MerescoStandardAnalyzer {
 

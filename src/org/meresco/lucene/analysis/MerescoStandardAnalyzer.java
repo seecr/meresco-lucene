@@ -2,7 +2,7 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
  *
@@ -27,19 +27,15 @@
 package org.meresco.lucene.analysis;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Analyzer.TokenStreamComponents;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.standard.ClassicFilter;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class MerescoStandardAnalyzer extends Analyzer {
@@ -52,32 +48,13 @@ public class MerescoStandardAnalyzer extends Analyzer {
         super(reuseStrategy);
     }
 
-    public List<String> pre_analyse(String fieldName, String string) throws IOException {
-        Reader reader = new StringReader(string);
-        TokenStream tok = this.pre_analyzer().getTokenStream();
-        return this.readTokenStream(tok);
-    }
-
-    public List<String> post_analyse(String fieldName, String string) throws IOException {
-        ClassicTokenizer src = new ClassicTokenizer();
-        src.setReader(new StringReader(string));
-        TokenStream tok = this.post_analyzer(fieldName, src);
-        return this.readTokenStream(tok);
-    }
-
     public Analyzer.TokenStreamComponents createComponents(String fieldName) {
-        Analyzer.TokenStreamComponents tsc = this.pre_analyzer();
-        TokenStream tok = tsc.getTokenStream();
-        tok = this.post_analyzer(fieldName, tok);
-        return new Analyzer.TokenStreamComponents(tsc.getTokenizer(), tok);
-    }
-
-    protected Analyzer.TokenStreamComponents pre_analyzer() {
         final ClassicTokenizer src = new ClassicTokenizer();
         TokenStream tok = new ClassicFilter(src);
         tok = new ASCIIFoldingFilter(tok);
         tok = new LowerCaseFilter(tok);
-        return new Analyzer.TokenStreamComponents(src, tok);
+        Analyzer.TokenStreamComponents tsc = new Analyzer.TokenStreamComponents(src, tok);
+        return new Analyzer.TokenStreamComponents(tsc.getTokenizer(), post_analyzer(fieldName, tsc.getTokenStream()));
     }
 
     protected TokenStream post_analyzer(String fieldName, TokenStream tok) {

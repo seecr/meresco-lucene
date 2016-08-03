@@ -48,7 +48,7 @@ if [ -f /etc/debian_version ]; then
     javac=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64/bin/javac
 fi
 
-javaFiles=$(find src/org -name "*.java" | grep -v py_analysis)
+javaFiles=$(find src/org -name "*.java")
 ${javac} -d $BUILDDIR -cp $CP $javaFiles
 if [ "$?" != "0" ]; then
     echo "Build failed"

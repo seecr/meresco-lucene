@@ -83,7 +83,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         I.addDocument("id3", document("three", "noot boom mies"));
         I.close();
         I = new Lucene(this.tmpDir, new LuceneSettings());
-        TopScoreDocSuperCollector C = new TopScoreDocSuperCollector(2, true);
+        TopScoreDocSuperCollector C = new TopScoreDocSuperCollector(2);
         MatchAllDocsQuery Q = new MatchAllDocsQuery();
         I.search(Q, null, C);
         TopDocs td = C.topDocs(0);
@@ -100,7 +100,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         I.addDocument("id3", document("three", "noot boom mies"));
         I.close();
         I = new Lucene(this.tmpDir, new LuceneSettings());
-        TopScoreDocSuperCollector C = new TopScoreDocSuperCollector(2, true);
+        TopScoreDocSuperCollector C = new TopScoreDocSuperCollector(2);
         MatchAllDocsQuery Q = new MatchAllDocsQuery();
         I.search(Q, null, C);
         TopDocs td = C.topDocs(1);
@@ -160,7 +160,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         I = new Lucene(this.tmpDir, new LuceneSettings());
 
         FacetSuperCollector f = new FacetSuperCollector(I.data.getManager().acquire().taxonomyReader, I.data.getFacetsConfig(), new DocValuesOrdinalsReader());
-        TopScoreDocSuperCollector t = new TopScoreDocSuperCollector(10, true);
+        TopScoreDocSuperCollector t = new TopScoreDocSuperCollector(10);
         List<SuperCollector<?>> collectors = new ArrayList<SuperCollector<?>>();
         collectors.add(t);
         collectors.add(f);
@@ -199,7 +199,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         I.close();
         I = new Lucene(this.tmpDir, new LuceneSettings());
         Sort sort = new Sort(new SortField("name", SortField.Type.STRING, true));
-        TopFieldSuperCollector C = new TopFieldSuperCollector(sort, 2, true, false, true);
+        TopFieldSuperCollector C = new TopFieldSuperCollector(sort, 2, true, false);
         MatchAllDocsQuery Q = new MatchAllDocsQuery();
         I.search(Q, null, C);
         TopDocs td = C.topDocs(0);

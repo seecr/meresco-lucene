@@ -55,7 +55,7 @@ PYLUCENEVERSION=4.10.1
 
 classpath=${luceneJarDir}/lucene-core-$PYLUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$PYLUCENEVERSION.jar
 
-${javac} -cp ${classpath} -d ${buildDir} `find . -type f \( -path "*py_analysis*" \)`
+${javac} -cp ${classpath} -d ${buildDir} `find . -name "*.java"`
 (cd $buildDir; jar -c org > $buildDir/meresco-lucene.jar)
 
 python -m jcc.__main__ \

@@ -67,7 +67,7 @@ public class GroupCollectorTest extends SeecrTestCase {
         addDocument("id:1", 42L);
         addDocument("id:2", 42L);
         addDocument("id:3", 17L);
-        TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100, true);
+        TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
         GroupSuperCollector c = new GroupSuperCollector("__isformatof__", tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         assertEquals(4, tc.getTotalHits());

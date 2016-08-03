@@ -28,7 +28,6 @@ package org.meresco.lucene.search.join;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.search.SubCollector;
 
@@ -65,10 +64,6 @@ public class KeyCollector extends SubCollector {
     @Override
     public boolean needsScores() {
         return false;
-    }
-
-    @Override
-    public void setScorer(Scorer scorer) throws IOException {
     }
 
     public FixedBitSet getCollectedKeys() throws IOException {

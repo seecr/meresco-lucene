@@ -497,11 +497,11 @@ public class Lucene {
     private TopDocSuperCollector topCollector(int start, int stop, Sort sort) {
         if (stop <= start)
             //TODO: temp fix for start/stop = 0; You should use TotalHitCountSuperCollector
-            return new TopScoreDocSuperCollector(stop == 0 ? 1 : stop, true);
+            return new TopScoreDocSuperCollector(stop == 0 ? 1 : stop);
 //            return new TotalHitCountSuperCollector();
         if (sort == null)
-            return new TopScoreDocSuperCollector(stop, true);
-        return new TopFieldSuperCollector(sort, stop, true, false, true);
+            return new TopScoreDocSuperCollector(stop);
+        return new TopFieldSuperCollector(sort, stop, true, false);
     }
 
     private FacetSuperCollector facetCollector(List<FacetRequest> facets, TaxonomyReader taxonomyReader) throws Exception {

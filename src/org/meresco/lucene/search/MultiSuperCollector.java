@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorer;
 
 public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {

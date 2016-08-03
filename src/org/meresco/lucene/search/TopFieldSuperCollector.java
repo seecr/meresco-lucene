@@ -34,14 +34,11 @@ public class TopFieldSuperCollector extends TopDocSuperCollector {
 
     final boolean trackDocScores;
     final boolean trackMaxScore;
-    final boolean docsScoredInOrder;
 
-    public TopFieldSuperCollector(Sort sort, int numHits, boolean trackDocScores, boolean trackMaxScore,
-            boolean docsScoredInOrder) {
+    public TopFieldSuperCollector(Sort sort, int numHits, boolean trackDocScores, boolean trackMaxScore) {
         super(sort, numHits);
         this.trackDocScores = trackDocScores;
         this.trackMaxScore = trackMaxScore;
-        this.docsScoredInOrder = docsScoredInOrder;
     }
 
     @Override

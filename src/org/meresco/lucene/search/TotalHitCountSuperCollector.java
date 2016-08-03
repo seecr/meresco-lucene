@@ -55,10 +55,6 @@ class TotalHitCountSubCollector extends SubCollector {
     private int totalHits = 0;
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
-    }
-
-    @Override
     public void collect(int doc) throws IOException {
         this.totalHits++;
     }

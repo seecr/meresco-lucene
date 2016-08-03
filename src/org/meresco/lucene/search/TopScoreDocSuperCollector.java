@@ -31,11 +31,8 @@ import org.apache.lucene.search.TopScoreDocCollector;
 
 public class TopScoreDocSuperCollector extends TopDocSuperCollector {
 
-    private final boolean docsScoredInOrder;
-
-    public TopScoreDocSuperCollector(int numHits, boolean docsScoredInOrder) {
+    public TopScoreDocSuperCollector(int numHits) {
         super(null, numHits);
-        this.docsScoredInOrder = docsScoredInOrder;
     }
 
     @Override

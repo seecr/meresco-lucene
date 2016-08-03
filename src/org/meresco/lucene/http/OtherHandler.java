@@ -32,9 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.Lucene;
-import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.OutOfMemoryShutdown;
-import org.meresco.lucene.QueryData;
 
 public class OtherHandler extends AbstractMerescoLuceneHandler {
 

@@ -28,7 +28,6 @@ package org.meresco.lucene;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -355,6 +354,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         }
     }
 
+     @SuppressWarnings({ "rawtypes", "serial", "unchecked" })
      @Test
      public void testUniteResultFromTwoIndexesCachedAfterUpdate() throws Throwable {
          ComposedQuery q = new ComposedQuery("coreA");

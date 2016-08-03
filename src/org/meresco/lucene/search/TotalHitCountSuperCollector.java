@@ -27,9 +27,6 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.Scorer;
-
 public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSubCollector> {
 
     @Override

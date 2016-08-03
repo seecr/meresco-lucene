@@ -39,7 +39,6 @@ import org.meresco.lucene.QueryConverter.FacetRequest;
 import org.meresco.lucene.queries.KeyFilter;
 import org.meresco.lucene.search.JoinSortCollector;
 import org.meresco.lucene.search.JoinSortField;
-import org.meresco.lucene.search.SuperCollector;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;

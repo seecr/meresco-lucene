@@ -37,7 +37,6 @@ import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.facet.FacetsConfig.DimConfig;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.junit.Test;
-import org.meresco.lucene.ClusterConfig;
 import org.meresco.lucene.analysis.MerescoDutchStemmingAnalyzer;
 import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
 import org.meresco.lucene.search.TermFrequencySimilarity;

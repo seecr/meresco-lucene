@@ -28,8 +28,6 @@ package org.meresco.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.SimpleCollector;
 
 public abstract class SubCollector extends SimpleCollector {

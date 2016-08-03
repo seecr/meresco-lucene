@@ -25,8 +25,6 @@
 
 package org.meresco.lucene.http;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -47,9 +45,9 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.meresco.lucene.Lucene;
+import org.meresco.lucene.LuceneShutdown;
 import org.meresco.lucene.MultiLucene;
 import org.meresco.lucene.OutOfMemoryShutdown;
-import org.meresco.lucene.LuceneShutdown;
 import org.meresco.lucene.numerate.TermNumerator;
 
 import sun.misc.Signal;

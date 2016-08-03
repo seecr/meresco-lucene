@@ -27,7 +27,6 @@ package org.meresco.lucene;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,8 +37,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.meresco.lucene.Lucene;
-import org.meresco.lucene.LuceneSettings;
 import org.meresco.lucene.search.GroupSuperCollector;
 import org.meresco.lucene.search.TopScoreDocSuperCollector;
 

@@ -48,6 +48,7 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
@@ -1178,6 +1179,21 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(0, response.total);
     }
 
+    @Test
+    public void testLoadStoredFields() throws Throwable {
+        Document doc1 = new Document();
+        doc1.add(new StoredField("fieldA", "Dit is veld a"));
+        lucene.addDocument("id:0", doc1);
+        
+        QueryData data = new QueryData();
+        data.query = new MatchAllDocsQuery();
+        data.storedFields = Arrays.asList("fieldA");
+        LuceneResponse response = lucene.executeQuery(data);
+        assertEquals(1, response.hits.size());
+        assertEquals("id:0", response.hits.get(0).id);
+        assertEquals("Dit is veld a", response.hits.get(0).getField("fieldA"));
+    }
+    
     public static void compareHits(LuceneResponse response, String... hitIds) {
         Set<String> responseHitIds = new HashSet<String>();
         for (Hit hit : response.hits)

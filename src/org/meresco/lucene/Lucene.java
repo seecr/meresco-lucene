@@ -417,7 +417,7 @@ public class Lucene {
                 hit = new Hit(document.get(ID_FIELD), scoreDoc.score);
             }
             for (String storedField: q.storedFields) {
-                hit.fields.put(storedField, document.get(storedField));
+                hit.fields.add(document.getField(storedField));
             }
             hits.add(hit);
             count++;

@@ -37,7 +37,12 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.spell.SuggestWord;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
@@ -67,7 +72,7 @@ public class LuceneResponse {
     public static class Hit implements Comparable<Hit> {
         public String id;
         public float score;
-        public Map<String, String> fields = new HashMap<>();
+        public List<IndexableField> fields = new ArrayList<>();
         
         public Hit(String id, float score) {
             this.id = id;
@@ -83,8 +88,12 @@ public class LuceneResponse {
         	return "Hit(" + id + ", " + score + ")";
         }
 
-        public String getField(String fieldname) {
-            return fields.get(fieldname);
+        public IndexableField getField(String fieldname) {
+            for (IndexableField i: fields) {
+                if (i.name().equals(fieldname))
+                    return i;
+            }
+            return null;
         }
     }
     
@@ -168,9 +177,19 @@ public class LuceneResponse {
                 hitBuilder.add("id", JsonValue.NULL);
             else
                 hitBuilder.add("id", hit.id);
-                    
-            for (String key : hit.fields.keySet()) {
-                hitBuilder.add(key, hit.fields.get(key));
+                
+            for (IndexableField i: hit.fields) {
+                Number n = i.numericValue();
+                if (n == null) {
+                    hitBuilder.add(i.name(), i.stringValue());
+                } else {
+                    if (n instanceof Integer)
+                        hitBuilder.add(i.name(), n.intValue());
+                    else if (n instanceof Long)
+                        hitBuilder.add(i.name(), n.longValue());
+                    if (n instanceof Double)
+                        hitBuilder.add(i.name(), n.doubleValue());
+                }
             }
             
             if (hit instanceof DedupHit) {

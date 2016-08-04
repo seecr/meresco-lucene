@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -42,6 +42,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -80,13 +81,12 @@ public class DocumentStringToDocument {
         switch (jsonField.getString("type")) {
             case "StringField":
                 String stringValue = jsonField.getString("value");
-                if (jsonField.getBoolean("sort", false))
+                if (jsonField.getBoolean("sort", false)) {
                     field = new SortedDocValuesField(name, new BytesRef(stringValue));
-                else
-                    field = new Field(name, stringValue, maybeAddTermVectors(jsonField, StringField.TYPE_NOT_STORED));
-                break;
-            case "StringFieldStored":
-                field = new Field(name, jsonField.getString("value"), maybeAddTermVectors(jsonField, StringField.TYPE_STORED));
+                } else {
+                    boolean stored = jsonField.getBoolean("stored", false);
+                    field = new Field(name, stringValue, maybeAddTermVectors(jsonField, stored ? StringField.TYPE_STORED : StringField.TYPE_NOT_STORED));
+                }
                 break;
             case "TextField":
                 field = new Field(name, jsonField.getString("value"), maybeAddTermVectors(jsonField, TextField.TYPE_NOT_STORED));
@@ -96,24 +96,33 @@ public class DocumentStringToDocument {
                 break;
             case "IntField":
                 int intValue = jsonField.getInt("value");
-                if (jsonField.getBoolean("sort", false))
+                if (jsonField.getBoolean("sort", false)) {
                     field = new SortedNumericDocValuesField(name, intValue);
-                else
+                } else if (jsonField.getBoolean("stored", false)) {
+                    field = new StoredField(name, intValue);
+                } else {
                     field = new IntPoint(name, intValue);
+                }
                 break;
             case "DoubleField":
                 double doubleValue = jsonField.getJsonNumber("value").doubleValue();
-                if (jsonField.getBoolean("sort", false))
+                if (jsonField.getBoolean("sort", false)) {
                     field = new SortedNumericDocValuesField(name, NumericUtils.doubleToSortableLong(doubleValue));
-                else
+                } else if (jsonField.getBoolean("stored", false)) {
+                    field = new StoredField(name, doubleValue);
+                } else {
                     field = new DoublePoint(name, doubleValue);
+                }
                 break;
             case "LongField":
                 long longValue = jsonField.getJsonNumber("value").longValue();
-                if (jsonField.getBoolean("sort", false))
+                if (jsonField.getBoolean("sort", false)) {
                     field = new SortedNumericDocValuesField(name, longValue);
-                else
+                } else if (jsonField.getBoolean("stored", false)) {
+                    field = new StoredField(name, longValue);
+                } else {
                     field = new LongPoint(name, longValue);
+                }
                 break;
             case "NumericField":
                 field = new NumericDocValuesField(name, jsonField.getJsonNumber("value").longValue());
@@ -122,8 +131,7 @@ public class DocumentStringToDocument {
             	int value;
             	if (jsonField.get("value").getValueType().equals(ValueType.STRING)) {
             		value = termNumerator.numerateTerm(jsonField.getString("value"));
-            	}
-            	else {
+            	} else {
             		value = jsonField.getInt("value");
             	}
             	field = new NumericDocValuesField(name, value);

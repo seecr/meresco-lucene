@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -36,11 +36,13 @@ import java.io.StringReader;
 
 import javax.json.Json;
 import javax.json.JsonArray;
+import javax.json.JsonValue;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -56,7 +58,7 @@ import org.meresco.lucene.numerate.TermNumerator;
 
 public class DocumentStringToDocumentTest {
     TermNumerator mockTermNumerator = new MockTermNumerator();
-    
+
     @Test
     public void testStringField() {
         JsonArray json = Json.createArrayBuilder()
@@ -69,7 +71,7 @@ public class DocumentStringToDocumentTest {
         assertEquals(StringField.TYPE_NOT_STORED, result.getField("name").fieldType());
         assertEquals("value", result.getField("name").stringValue());
     }
-    
+
     @Test
     public void testSortedStringField() {
         JsonArray json = Json.createArrayBuilder()
@@ -77,7 +79,7 @@ public class DocumentStringToDocumentTest {
                     .add("type", "StringField")
                     .add("name", "name")
                     .add("value", "value")
-                    .add("sort", true))
+                    .add("sort", JsonValue.TRUE))
                 .build();
         Document result = convert(json.toString());
         assertEquals(DocValuesType.SORTED, result.getField("name").fieldType().docValuesType());
@@ -99,7 +101,7 @@ public class DocumentStringToDocumentTest {
         Document result = convert(json.toString());
         assertEquals(NumericDocValuesField.TYPE, result.getField("name").fieldType());
         assertEquals(43, result.getField("name").numericValue().intValue());
-       
+
         assertEquals(NumericDocValuesField.TYPE, result.getField("name2").fieldType());
         assertEquals(153, result.getField("name2").numericValue().intValue());
     }
@@ -108,9 +110,10 @@ public class DocumentStringToDocumentTest {
     public void testStringFieldStored() {
         JsonArray json = Json.createArrayBuilder()
                 .add(Json.createObjectBuilder()
-                    .add("type", "StringFieldStored")
+                    .add("type", "StringField")
                     .add("name", "name")
-                    .add("value", "value"))
+                    .add("value", "value")
+                    .add("stored", JsonValue.TRUE))
                 .build();
         Document result = convert(json.toString());
         assertEquals(StringField.TYPE_STORED, result.getField("name").fieldType());
@@ -137,7 +140,7 @@ public class DocumentStringToDocumentTest {
         JsonArray json = Json.createArrayBuilder()
                 .add(Json.createObjectBuilder()
                     .add("type", "TextField")
-                    .add("termVectors", true)
+                    .add("termVectors", JsonValue.TRUE)
                     .add("name", "name")
                     .add("value", "value"))
                 .build();
@@ -175,7 +178,7 @@ public class DocumentStringToDocumentTest {
         assertEquals(new IntPoint("name", 1).fieldType(), result.getField("name").fieldType());
         assertEquals(1, result.getField("name").numericValue().intValue());
     }
-    
+
     @Test
     public void testSortedIntField() {
         JsonArray json = Json.createArrayBuilder()
@@ -183,13 +186,27 @@ public class DocumentStringToDocumentTest {
                     .add("type", "IntField")
                     .add("name", "name")
                     .add("value", 1)
-                    .add("sort", true))
+                    .add("sort", JsonValue.TRUE))
                 .build();
         Document result = convert(json.toString());
         assertEquals(DocValuesType.SORTED_NUMERIC, result.getField("name").fieldType().docValuesType());
         assertEquals(1, result.getField("name").numericValue().intValue());
     }
-    
+
+    @Test
+    public void testStoredIntField() {
+        JsonArray json = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                    .add("type", "IntField")
+                    .add("name", "name")
+                    .add("value", 1)
+                    .add("stored", JsonValue.TRUE))
+                .build();
+        Document result = convert(json.toString());
+        assertEquals(new StoredField("name", 1).fieldType(), result.getField("name").fieldType());
+        assertEquals(1, result.getField("name").numericValue().intValue());
+    }
+
     @Test
     public void testLongField() {
         JsonArray json = Json.createArrayBuilder()
@@ -202,7 +219,7 @@ public class DocumentStringToDocumentTest {
         assertEquals(new LongPoint("name", 1).fieldType(), result.getField("name").fieldType());
         assertEquals(1L, result.getField("name").numericValue().longValue());
     }
-    
+
     @Test
     public void testSortedLongField() {
         JsonArray json = Json.createArrayBuilder()
@@ -210,10 +227,24 @@ public class DocumentStringToDocumentTest {
                     .add("type", "LongField")
                     .add("name", "name")
                     .add("value", 1L)
-                    .add("sort", true))
+                    .add("sort", JsonValue.TRUE))
                 .build();
         Document result = convert(json.toString());
         assertEquals(DocValuesType.SORTED_NUMERIC, result.getField("name").fieldType().docValuesType());
+        assertEquals(1L, result.getField("name").numericValue().longValue());
+    }
+
+    @Test
+    public void testStoredLongField() {
+        JsonArray json = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                    .add("type", "LongField")
+                    .add("name", "name")
+                    .add("value", 1)
+                    .add("stored", JsonValue.TRUE))
+                .build();
+        Document result = convert(json.toString());
+        assertEquals(new StoredField("name", 1L).fieldType(), result.getField("name").fieldType());
         assertEquals(1L, result.getField("name").numericValue().longValue());
     }
 
@@ -229,7 +260,7 @@ public class DocumentStringToDocumentTest {
         assertEquals(new DoublePoint("name", 1).fieldType(), result.getField("name").fieldType());
         assertEquals(1.5D, result.getField("name").numericValue().doubleValue(), 0);
     }
-    
+
     @Test
     public void testSortedDoubleField() {
         JsonArray json = Json.createArrayBuilder()
@@ -237,11 +268,25 @@ public class DocumentStringToDocumentTest {
                     .add("type", "DoubleField")
                     .add("name", "name")
                     .add("value", 1.5D)
-                    .add("sort", true))
+                    .add("sort", JsonValue.TRUE))
                 .build();
         Document result = convert(json.toString());
         assertEquals(DocValuesType.SORTED_NUMERIC, result.getField("name").fieldType().docValuesType());
         assertEquals(NumericUtils.doubleToSortableLong(1.5D), result.getField("name").numericValue().longValue());
+    }
+
+    @Test
+    public void testStoredDoubleField() {
+        JsonArray json = Json.createArrayBuilder()
+                .add(Json.createObjectBuilder()
+                    .add("type", "DoubleField")
+                    .add("name", "name")
+                    .add("value", 1.1D)
+                    .add("stored", JsonValue.TRUE))
+                .build();
+        Document result = convert(json.toString());
+        assertEquals(new StoredField("name", 1.1D).fieldType(), result.getField("name").fieldType());
+        assertEquals(1.1D, result.getField("name").numericValue().doubleValue(), 0);
     }
 
     @Test

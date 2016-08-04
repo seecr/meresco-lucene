@@ -35,9 +35,10 @@ class FieldRegistryTest(SeecrTestCase):
         registry = FieldRegistry()
         field = registry.createField('__id__', 'id:1')
         self.assertEquals({
-                "type": "StringFieldStored",
+                "type": "StringField",
                 "name": "__id__",
                 "value": "id:1",
+                "stored": True
             }, field)
 
     def testSpecificField(self):
@@ -51,9 +52,10 @@ class FieldRegistryTest(SeecrTestCase):
         registry.register('fieldname', STRINGFIELD_STORED)
         field = registry.createField('fieldname', 'value')
         self.assertEquals({
-                "type": "StringFieldStored",
+                "type": "StringField",
                 "name": "fieldname",
                 "value": "value",
+                "stored": True
             }, field)
 
     def testNoTermsFreqField(self):

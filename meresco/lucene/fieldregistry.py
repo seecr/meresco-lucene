@@ -150,11 +150,12 @@ class FieldRegistry(object):
 # These names should be the same in the meresco-lucene-server code.
 
 class _FieldDefinition(object):
-    def __init__(self, type, pythonType, isUntokenized, phraseQueryPossible):
+    def __init__(self, type, pythonType, isUntokenized, phraseQueryPossible, stored=False):
         self.type = type
         self.pythonType = pythonType
         self.phraseQueryPossible = phraseQueryPossible
         self.isUntokenized = isUntokenized
+        self.stored = stored
 
     def createField(self, name, value, termVectors=False):
         field = dict(
@@ -166,12 +167,15 @@ class _FieldDefinition(object):
             field['termVectors'] = True
         if name.startswith(SORTED_PREFIX):
             field["sort"] = True
+        if self.stored:
+            field["stored"] = True
         return field
 
-STRINGFIELD_STORED = _FieldDefinition("StringFieldStored",
+STRINGFIELD_STORED = _FieldDefinition("StringField",
     pythonType=str,
     isUntokenized=True,
-    phraseQueryPossible=True)
+    phraseQueryPossible=True,
+    stored=True)
 STRINGFIELD = _FieldDefinition("StringField",
     pythonType=str,
     isUntokenized=True,
@@ -188,14 +192,29 @@ INTFIELD = _FieldDefinition("IntField",
     pythonType=int,
     isUntokenized=False,
     phraseQueryPossible=False)
+INTFIELD_STORED = _FieldDefinition("IntField",
+    pythonType=int,
+    isUntokenized=False,
+    phraseQueryPossible=False,
+    stored=True)
 LONGFIELD = _FieldDefinition("LongField",
     pythonType=long,
     isUntokenized=False,
     phraseQueryPossible=False)
+LONGFIELD_STORED = _FieldDefinition("LongField",
+    pythonType=long,
+    isUntokenized=False,
+    phraseQueryPossible=False,
+    stored=True)
 DOUBLEFIELD = _FieldDefinition("DoubleField",
     pythonType=float,
     isUntokenized=False,
     phraseQueryPossible=False)
+DOUBLEFIELD_STORED = _FieldDefinition("DoubleField",
+    pythonType=float,
+    isUntokenized=False,
+    phraseQueryPossible=False,
+    stored=True)
 NUMERICFIELD = _FieldDefinition("NumericField",
     pythonType=long,
     isUntokenized=False,

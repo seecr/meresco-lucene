@@ -43,6 +43,8 @@ import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;
 
+import com.sun.corba.se.impl.encoding.OSFCodeSetRegistry.Entry;
+
 public class LuceneResponse {
     public int total;
     public Integer totalWithDuplicates;
@@ -65,6 +67,7 @@ public class LuceneResponse {
     public static class Hit implements Comparable<Hit> {
         public String id;
         public float score;
+        public Map<String, String> fields = new HashMap<>();
         
         public Hit(String id, float score) {
             this.id = id;
@@ -78,6 +81,10 @@ public class LuceneResponse {
         
         public String toString() {
         	return "Hit(" + id + ", " + score + ")";
+        }
+
+        public String getField(String fieldname) {
+            return fields.get(fieldname);
         }
     }
     
@@ -162,6 +169,10 @@ public class LuceneResponse {
             else
                 hitBuilder.add("id", hit.id);
                     
+            for (String key : hit.fields.keySet()) {
+                hitBuilder.add(key, hit.fields.get(key));
+            }
+            
             if (hit instanceof DedupHit) {
                 DedupHit dedupHit = (DedupHit) hit; 
                 hitBuilder.add("duplicateCount", Json.createObjectBuilder()

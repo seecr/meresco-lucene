@@ -377,41 +377,49 @@ public class Lucene {
         for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(q.stop == 0 ? 1 : q.start).scoreDocs) { //TODO: temp fix for start/stop = 0
             if (count >= q.stop)
                 break;
+            Document document;
+            Hit hit;
             if (dedupCollector != null) {
                 DeDupFilterSuperCollector.Key keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc);
                 int newDocId = keyForDocId == null ? scoreDoc.doc : keyForDocId.getDocId();
-                DedupHit hit = new DedupHit(getDocument(newDocId).get(ID_FIELD), scoreDoc.score);
-                hit.duplicateField = dedupCollector.getKeyName();
-                hit.duplicateCount = 1;
+                document = getDocument(newDocId);
+                DedupHit dedupHit = new DedupHit(document.get(ID_FIELD), scoreDoc.score);
+                dedupHit.duplicateField = dedupCollector.getKeyName();
+                dedupHit.duplicateCount = 1;
                 if (keyForDocId != null)
-                    hit.duplicateCount = keyForDocId.getCount();
-                hit.score = scoreDoc.score;
-                hits.add(hit);
+                    dedupHit.duplicateCount = keyForDocId.getCount();
+                dedupHit.score = scoreDoc.score;
+                hit = dedupHit;
             } else if (groupingCollector != null) {
-                GroupingHit hit = new GroupingHit(getDocument(scoreDoc.doc).get(ID_FIELD), scoreDoc.score);
-                if (seenIds.contains(hit.id))
+                document = getDocument(scoreDoc.doc);
+                GroupingHit groupHit = new GroupingHit(document.get(ID_FIELD), scoreDoc.score);
+                if (seenIds.contains(groupHit.id))
                     continue;
 
                 List<String> duplicateIds = new ArrayList<>();
-                duplicateIds.add(hit.id);
+                duplicateIds.add(groupHit.id);
                 if (totalHits > (q.stop - q.start)) {
                     List<Integer> groupedDocIds = groupingCollector.group(scoreDoc.doc);
                     if (groupedDocIds != null)
                         for (int docId : groupedDocIds) {
                             String id = getDocument(docId).get(ID_FIELD);
-                            if (!id.equals(hit.id))
+                            if (!id.equals(groupHit.id))
                                 duplicateIds.add(id);
                         }
                 }
                 seenIds.addAll(duplicateIds);
-                hit.groupingField = groupingCollector.getKeyName();
-                hit.duplicates = duplicateIds;
-                hit.score = scoreDoc.score;
-                hits.add(hit);
+                groupHit.groupingField = groupingCollector.getKeyName();
+                groupHit.duplicates = duplicateIds;
+                groupHit.score = scoreDoc.score;
+                hit = groupHit;
             } else {
-                Hit hit = new Hit(getDocument(scoreDoc.doc).get(ID_FIELD), scoreDoc.score);
-                hits.add(hit);
+                document = getDocument(scoreDoc.doc);
+                hit = new Hit(document.get(ID_FIELD), scoreDoc.score);
             }
+            for (String storedField: q.storedFields) {
+                hit.fields.put(storedField, document.get(storedField));
+            }
+            hits.add(hit);
             count++;
         }
         return hits;

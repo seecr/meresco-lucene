@@ -26,10 +26,13 @@
 package org.meresco.lucene;
 
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.Json;
+import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonString;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -41,6 +44,7 @@ import org.meresco.lucene.QueryConverter.SuggestionRequest;
 public class QueryData {
     public Query query = new MatchAllDocsQuery();
     public List<FacetRequest> facets;
+    public List<String> storedFields = new ArrayList<>();
     public int start = 0;
     public int stop = 10;
     public Sort sort;
@@ -55,6 +59,9 @@ public class QueryData {
         JsonObject object = Json.createReader(queryReader).readObject();
         this.query = converter.convertToQuery(object.getJsonObject("query"));
         this.facets = converter.convertToFacets(object.getJsonArray("facets"));
+        JsonArray fields = object.getJsonArray("storedFields");
+        if (fields != null)
+            fields.stream().forEach(s -> storedFields.add(((JsonString) s).getString()));
         this.start = object.getInt("start", 0);
         this.stop = object.getInt("stop", 10);
         this.sort = converter.convertToSort(object.getJsonArray("sortKeys"));

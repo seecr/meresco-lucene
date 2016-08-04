@@ -40,6 +40,7 @@ import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.LuceneResponse.GroupingHit;
+import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;
@@ -204,5 +205,17 @@ public class LuceneResponseToJsonTest {
 
         JsonObject json = response.toJson();
         assertEquals(JsonValue.NULL, json.getJsonArray("hits").getJsonObject(0).get("id"));
+    }
+    
+    @Test
+    public void testStoredFields() {
+        LuceneResponse response = new LuceneResponse(1);
+        Hit hit = new Hit("id:1", 1);
+        hit.fields.put("aField", "aValue");
+        response.addHit(hit);
+        
+        JsonObject json = response.toJson();
+        assertEquals("id:1", json.getJsonArray("hits").getJsonObject(0).getString("id"));
+        assertEquals("aValue", json.getJsonArray("hits").getJsonObject(0).getString("aField"));
     }
 }

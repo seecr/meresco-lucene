@@ -34,6 +34,9 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
 
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
@@ -211,11 +214,13 @@ public class LuceneResponseToJsonTest {
     public void testStoredFields() {
         LuceneResponse response = new LuceneResponse(1);
         Hit hit = new Hit("id:1", 1);
-        hit.fields.put("aField", "aValue");
+        hit.fields.add(new StringField("aField", "aValue", Store.YES));
+        hit.fields.add(new StoredField("intField", 10));
         response.addHit(hit);
         
         JsonObject json = response.toJson();
         assertEquals("id:1", json.getJsonArray("hits").getJsonObject(0).getString("id"));
         assertEquals("aValue", json.getJsonArray("hits").getJsonObject(0).getString("aField"));
+        assertEquals(10, json.getJsonArray("hits").getJsonObject(0).getInt("intField"));
     }
 }

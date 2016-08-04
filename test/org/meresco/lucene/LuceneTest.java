@@ -1183,15 +1183,17 @@ public class LuceneTest extends SeecrTestCase {
     public void testLoadStoredFields() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StoredField("fieldA", "Dit is veld a"));
+        doc1.add(new StoredField("intField", 10));
         lucene.addDocument("id:0", doc1);
         
         QueryData data = new QueryData();
         data.query = new MatchAllDocsQuery();
-        data.storedFields = Arrays.asList("fieldA");
+        data.storedFields = Arrays.asList("fieldA", "intField");
         LuceneResponse response = lucene.executeQuery(data);
         assertEquals(1, response.hits.size());
         assertEquals("id:0", response.hits.get(0).id);
-        assertEquals("Dit is veld a", response.hits.get(0).getField("fieldA"));
+        assertEquals("Dit is veld a", response.hits.get(0).getField("fieldA").stringValue());
+        assertEquals(10, response.hits.get(0).getField("intField").numericValue().intValue());
     }
     
     public static void compareHits(LuceneResponse response, String... hitIds) {

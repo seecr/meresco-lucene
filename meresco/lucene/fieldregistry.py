@@ -127,7 +127,7 @@ class FieldRegistry(object):
             return "Long"
 
     def defaultMissingValueForSort(self, fieldname, sortDescending):
-        if not self.isNumeric(fieldname):
+        if not self.isNumeric(fieldname) and fieldname != "score":
             return "STRING_FIRST" if sortDescending else "STRING_LAST"
         return None
 

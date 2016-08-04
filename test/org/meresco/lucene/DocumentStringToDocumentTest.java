@@ -189,7 +189,7 @@ public class DocumentStringToDocumentTest {
                     .add("sort", JsonValue.TRUE))
                 .build();
         Document result = convert(json.toString());
-        assertEquals(DocValuesType.SORTED_NUMERIC, result.getField("name").fieldType().docValuesType());
+        assertEquals(DocValuesType.NUMERIC, result.getField("name").fieldType().docValuesType());
         assertEquals(1, result.getField("name").numericValue().intValue());
     }
 
@@ -230,7 +230,7 @@ public class DocumentStringToDocumentTest {
                     .add("sort", JsonValue.TRUE))
                 .build();
         Document result = convert(json.toString());
-        assertEquals(DocValuesType.SORTED_NUMERIC, result.getField("name").fieldType().docValuesType());
+        assertEquals(DocValuesType.NUMERIC, result.getField("name").fieldType().docValuesType());
         assertEquals(1L, result.getField("name").numericValue().longValue());
     }
 
@@ -271,7 +271,7 @@ public class DocumentStringToDocumentTest {
                     .add("sort", JsonValue.TRUE))
                 .build();
         Document result = convert(json.toString());
-        assertEquals(DocValuesType.SORTED_NUMERIC, result.getField("name").fieldType().docValuesType());
+        assertEquals(DocValuesType.NUMERIC, result.getField("name").fieldType().docValuesType());
         assertEquals(NumericUtils.doubleToSortableLong(1.5D), result.getField("name").numericValue().longValue());
     }
 

@@ -76,13 +76,37 @@ class IntegrationState(SeecrIntegrationState):
             exit(1)
 
     def startSuggestionServer(self):
-        self._startServer('suggestion-server', self.binPath('start-suggestion-server'), 'http://localhost:{}/info'.format(self.suggestionServerPort), port=self.suggestionServerPort, stateDir=join(self.integrationTempdir, 'suggestion'))
+        self._startServer(
+                'suggestion-server',
+                self.binPath('start-suggestion-server'),
+                'http://localhost:{}/info'.format(self.suggestionServerPort),
+                port=self.suggestionServerPort,
+                stateDir=join(self.integrationTempdir, 'suggestion'),
+                env=dict(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
+            )
 
     def startLuceneServer(self):
-        self._startServer('lucene-server', self.binPath('start-lucene-server'), 'http://localhost:{}/info'.format(self.luceneServerPort), port=self.luceneServerPort, stateDir=join(self.integrationTempdir, 'lucene-server'), core=["main", "main2", "empty-core", "default"])
+        self._startServer(
+                'lucene-server',
+                self.binPath('start-lucene-server'),
+                'http://localhost:{}/info'.format(self.luceneServerPort),
+                port=self.luceneServerPort,
+                stateDir=join(self.integrationTempdir, 'lucene-server'),
+                core=["main", "main2", "empty-core", "default"],
+                env=dict(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
+            )
 
     def startExampleServer(self):
-        self._startServer('meresco-lucene', self.binPath('start-server'), 'http://localhost:%s/' % self.httpPort, port=self.httpPort, serverPort=self.luceneServerPort, autocompletePort=self.suggestionServerPort, stateDir=join(self.integrationTempdir, 'example-state'))
+        self._startServer(
+                'meresco-lucene',
+                self.binPath('start-server'),
+                'http://localhost:%s/' % self.httpPort,
+                port=self.httpPort,
+                serverPort=self.luceneServerPort,
+                autocompletePort=self.suggestionServerPort,
+                stateDir=join(self.integrationTempdir, 'example-state'),
+                env=dict(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
+            )
 
     def stopServer(self, serviceName):
         self._stopServer(serviceName)

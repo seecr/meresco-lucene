@@ -53,7 +53,13 @@ public class LuceneSettings {
     public int numberOfConcurrentTasks = 6;
     public int commitTimeout = 10;
     public int commitCount = 100000;
-    public FacetsConfig facetsConfig = new FacetsConfig();
+    public FacetsConfig facetsConfig = new FacetsConfig() {
+        @Override
+        protected DimConfig getDefaultDimConfig() {
+            DEFAULT_DIM_CONFIG.multiValued = true;
+            return DEFAULT_DIM_CONFIG;
+        }
+    };
     public ClusterConfig clusterConfig = new ClusterConfig(0.4, 1, 100);
     public InterpolateEpsilon interpolateEpsilon = new InterpolateEpsilon();
 

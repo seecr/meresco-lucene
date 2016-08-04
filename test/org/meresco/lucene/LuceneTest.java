@@ -736,30 +736,36 @@ public class LuceneTest extends SeecrTestCase {
         ClusterHit hit2 = (ClusterHit) result.hits.get(2);
         assertEquals(3, result.hits.size());
 
-        assertEquals(2, hit0.topDocs.length);
-        assertEquals(3, hit1.topDocs.length);
-        assertEquals(5, hit2.topDocs.length);
+        List<Integer> hits = Arrays.asList(hit0.topDocs.length, hit1.topDocs.length, hit2.topDocs.length);
+        Collections.sort(hits);
+        assertEquals(Arrays.asList(2, 3, 5), hits);
 
+        List<List<String>> hitIds = new ArrayList<>(hits.size());
         List<String> hit0ids = new ArrayList<>();
         for (DocScore scoreDoc : hit0.topDocs) {
         	hit0ids.add(scoreDoc.identifier);
         }
         Collections.sort(hit0ids);
-        assertEquals(Arrays.asList("id:8", "id:9"), hit0ids);
+        hitIds.add(hits.indexOf(hit0ids.size()), hit0ids);
 
         List<String> hit1ids = new ArrayList<>();
         for (DocScore scoreDoc : hit1.topDocs) {
         	hit1ids.add(scoreDoc.identifier);
         }
         Collections.sort(hit1ids);
-        assertEquals(Arrays.asList("id:5", "id:6", "id:7"), hit1ids);
+        hitIds.add(hits.indexOf(hit1ids.size()), hit1ids);
 
         List<String> hit2ids = new ArrayList<>();
         for (DocScore scoreDoc : hit2.topDocs) {
         	hit2ids.add(scoreDoc.identifier);
         }
         Collections.sort(hit2ids);
-        assertEquals(Arrays.asList("id:0", "id:1", "id:2", "id:3", "id:4"), hit2ids);
+        hitIds.add(hits.indexOf(hit2ids.size()), hit2ids);
+
+        assertEquals(Arrays.asList("id:8", "id:9"), hitIds.get(0));
+        assertEquals(Arrays.asList("id:5", "id:6", "id:7"), hitIds.get(1));
+        assertEquals(Arrays.asList("id:0", "id:1", "id:2", "id:3", "id:4"), hitIds.get(2));
+
     }
 
 

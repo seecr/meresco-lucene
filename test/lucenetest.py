@@ -115,11 +115,13 @@ class LuceneTest(SeecrTestCase):
                     dedupField="__key__",
                     groupingField="__grouping_key__",
                     clustering=True,
+                    storedFields=["field"]
                 ))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/query/', self.post[0]['path'])
         self.assertEqual({
                     "start": 1, "stop": 5,
+                    "storedFields": ["field"],
                     "query": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"},
                     "facets": [{"fieldname": "facet", "maxTerms": 10}],
                     "sortKeys": [{"sortBy": "field", "sortDescending": False, "type": "String", 'missingValue': 'STRING_LAST'}],

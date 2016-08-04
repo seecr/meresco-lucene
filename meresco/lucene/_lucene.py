@@ -77,7 +77,7 @@ class Lucene(Observable):
             sortKey["missingValue"] = missingValue
         sortKey["type"] = self._fieldRegistry.sortFieldType(sortKey["sortBy"])
 
-    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, sortKeys=None, suggestionRequest=None, dedupField=None, dedupSortField=None, groupingField=None, clustering=False, **kwargs):
+    def executeQuery(self, luceneQuery, start=None, stop=None, facets=None, sortKeys=None, suggestionRequest=None, dedupField=None, dedupSortField=None, groupingField=None, clustering=False, storedFields=None, **kwargs):
         stop = 10 if stop is None else stop
         start = 0 if start is None else start
 
@@ -93,6 +93,7 @@ class Lucene(Observable):
             dedupSortField=dedupSortField,
             groupingField=groupingField,
             clustering=clustering,
+            storedFields=storedFields or [],
         )
         if suggestionRequest:
             jsonDict["suggestionRequest"] = suggestionRequest

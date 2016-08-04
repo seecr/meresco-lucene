@@ -219,6 +219,7 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertEqual("String", registry.sortFieldType("sorted.stringfield"))
         self.assertEqual("STRING_FIRST", registry.defaultMissingValueForSort("sorted.stringfield", True))
         self.assertEqual("STRING_LAST", registry.defaultMissingValueForSort("sorted.stringfield", False))
+        self.assertEqual(None, registry.defaultMissingValueForSort("score", False))
 
         field = registry.createField('sorted.longfield', 'id:1')
         self.assertEqual({'name': 'sorted.longfield', 'type': 'LongField', 'value': 'id:1', 'sort': True}, field)

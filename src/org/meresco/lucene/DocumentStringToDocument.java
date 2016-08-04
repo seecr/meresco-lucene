@@ -45,7 +45,7 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.FacetField;
@@ -97,7 +97,7 @@ public class DocumentStringToDocument {
             case "IntField":
                 int intValue = jsonField.getInt("value");
                 if (jsonField.getBoolean("sort", false)) {
-                    field = new SortedNumericDocValuesField(name, intValue);
+                    field = new NumericDocValuesField(name, intValue);
                 } else if (jsonField.getBoolean("stored", false)) {
                     field = new StoredField(name, intValue);
                 } else {
@@ -107,7 +107,7 @@ public class DocumentStringToDocument {
             case "DoubleField":
                 double doubleValue = jsonField.getJsonNumber("value").doubleValue();
                 if (jsonField.getBoolean("sort", false)) {
-                    field = new SortedNumericDocValuesField(name, NumericUtils.doubleToSortableLong(doubleValue));
+                    field = new NumericDocValuesField(name, NumericUtils.doubleToSortableLong(doubleValue));
                 } else if (jsonField.getBoolean("stored", false)) {
                     field = new StoredField(name, doubleValue);
                 } else {
@@ -117,7 +117,7 @@ public class DocumentStringToDocument {
             case "LongField":
                 long longValue = jsonField.getJsonNumber("value").longValue();
                 if (jsonField.getBoolean("sort", false)) {
-                    field = new SortedNumericDocValuesField(name, longValue);
+                    field = new NumericDocValuesField(name, longValue);
                 } else if (jsonField.getBoolean("stored", false)) {
                     field = new StoredField(name, longValue);
                 } else {

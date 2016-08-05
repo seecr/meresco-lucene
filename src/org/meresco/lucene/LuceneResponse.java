@@ -62,12 +62,12 @@ public class LuceneResponse {
         hits.add(hit);
     }
 
-    
+
     public static class Hit implements Comparable<Hit> {
         public String id;
         public float score;
         public List<IndexableField[]> fields = new ArrayList<>();
-        
+
         public Hit(String id, float score) {
             this.id = id;
             this.score = score;
@@ -77,7 +77,7 @@ public class LuceneResponse {
         public int compareTo(Hit o) {
             return id.compareTo(o.id);
         }
-        
+
         public String toString() {
         	return "Hit(" + id + ", " + score + ")";
         }
@@ -90,8 +90,8 @@ public class LuceneResponse {
             return null;
         }
     }
-    
-    
+
+
     public static class DedupHit extends Hit {
         public DedupHit(String id, float score) {
             super(id, score);
@@ -99,8 +99,8 @@ public class LuceneResponse {
         public String duplicateField;
         public int duplicateCount;
     }
-    
-    
+
+
     public static class GroupingHit extends Hit {
         public List<String> duplicates;
         public String groupingField;
@@ -108,8 +108,8 @@ public class LuceneResponse {
             super(id, score);
         }
     }
-    
-    
+
+
     public static class ClusterHit extends Hit {
         public MerescoCluster.DocScore[] topDocs = {};
         public MerescoCluster.TermScore[] topTerms = {};
@@ -118,7 +118,7 @@ public class LuceneResponse {
         }
     }
 
-    
+
     public static class DrilldownData {
         public String fieldname;
         public String[] path = new String[0];
@@ -127,7 +127,7 @@ public class LuceneResponse {
         public DrilldownData(String fieldname) {
             this.fieldname = fieldname;
         }
-        
+
         public boolean equals(Object object) {
             if(object instanceof DrilldownData){
                 DrilldownData ddObject = (DrilldownData) object;
@@ -136,17 +136,17 @@ public class LuceneResponse {
                 return false;
             }
         }
-        
+
         public static class Term {
             public final String label;
             public final int count;
             public List<Term> subTerms;
-            
+
             public Term(String label, int count) {
                 this.label = label;
                 this.count = count;
             }
-        
+
             public boolean equals(Object object) {
                 if(object instanceof Term){
                     Term term = (Term) object;
@@ -171,8 +171,10 @@ public class LuceneResponse {
                 hitBuilder.add("id", JsonValue.NULL);
             else
                 hitBuilder.add("id", hit.id);
-                
+
             for (IndexableField[] fields: hit.fields) {
+                if (fields.length == 0)
+                    continue;
                 JsonArrayBuilder fieldsArray = Json.createArrayBuilder();
                 for (IndexableField i: fields) {
                     Number n = i.numericValue();
@@ -189,9 +191,9 @@ public class LuceneResponse {
                 }
                 hitBuilder.add(fields[0].name(), fieldsArray);
             }
-            
+
             if (hit instanceof DedupHit) {
-                DedupHit dedupHit = (DedupHit) hit; 
+                DedupHit dedupHit = (DedupHit) hit;
                 hitBuilder.add("duplicateCount", Json.createObjectBuilder()
                     .add(dedupHit.duplicateField, dedupHit.duplicateCount));
             } else if (hit instanceof GroupingHit) {
@@ -222,7 +224,7 @@ public class LuceneResponse {
             hitsArray.add(hitBuilder);
         }
         jsonBuilder.add("hits", hitsArray);
-        
+
         if (totalWithDuplicates != null) {
             jsonBuilder.add("totalWithDuplicates", totalWithDuplicates);
         }
@@ -240,7 +242,7 @@ public class LuceneResponse {
             }
             jsonBuilder.add("drilldownData", ddArray);
         }
-        
+
         if (times.size() > 0) {
             JsonObjectBuilder timesDict = Json.createObjectBuilder();
             for (String name : times.keySet())

@@ -31,11 +31,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.JsonArray;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
+import javax.json.JsonString;
 import javax.json.JsonValue;
 
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.junit.Test;
@@ -214,13 +217,13 @@ public class LuceneResponseToJsonTest {
     public void testStoredFields() {
         LuceneResponse response = new LuceneResponse(1);
         Hit hit = new Hit("id:1", 1);
-        hit.fields.add(new StringField("aField", "aValue", Store.YES));
-        hit.fields.add(new StoredField("intField", 10));
+        hit.fields.add(new IndexableField[] {new StringField("aField", "aValue", Store.YES)});
+        hit.fields.add(new IndexableField[] {new StoredField("intField", 10)});
         response.addHit(hit);
         
         JsonObject json = response.toJson();
         assertEquals("id:1", json.getJsonArray("hits").getJsonObject(0).getString("id"));
-        assertEquals("aValue", json.getJsonArray("hits").getJsonObject(0).getString("aField"));
-        assertEquals(10, json.getJsonArray("hits").getJsonObject(0).getInt("intField"));
+        assertEquals("aValue", ((JsonString) json.getJsonArray("hits").getJsonObject(0).getJsonArray("aField").get(0)).getString());
+        assertEquals(10, ((JsonNumber) json.getJsonArray("hits").getJsonObject(0).getJsonArray("intField").get(0)).intValue());
     }
 }

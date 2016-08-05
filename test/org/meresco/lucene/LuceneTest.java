@@ -1193,8 +1193,8 @@ public class LuceneTest extends SeecrTestCase {
         LuceneResponse response = lucene.executeQuery(data);
         assertEquals(1, response.hits.size());
         assertEquals("id:0", response.hits.get(0).id);
-        assertEquals("Dit is veld a", response.hits.get(0).getField("fieldA").stringValue());
-        assertEquals(10, response.hits.get(0).getField("intField").numericValue().intValue());
+        assertEquals("Dit is veld a", response.hits.get(0).getFields("fieldA")[0].stringValue());
+        assertEquals(10, response.hits.get(0).getFields("intField")[0].numericValue().intValue());
     }
     
     @Test

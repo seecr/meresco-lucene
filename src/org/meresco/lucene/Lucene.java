@@ -63,6 +63,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -417,7 +418,9 @@ public class Lucene {
                 hit = new Hit(document.get(ID_FIELD), scoreDoc.score);
             }
             for (String storedField: q.storedFields) {
-                hit.fields.add(document.getField(storedField));
+                IndexableField field = document.getField(storedField);
+                if (field != null)
+                    hit.fields.add(field);
             }
             hits.add(hit);
             count++;

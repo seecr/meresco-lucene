@@ -143,6 +143,21 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         facetsFields = [f for f in fields if "path" in f]
         self.assertEquals(1, len(facetsFields))
 
+    def testOnlyOneSortValueAllowed(self):
+        fields2LuceneDoc = Fields2LuceneDoc('tsname',
+            fieldRegistry=FieldRegistry()
+        )
+        observer = CallTrace()
+        fields2LuceneDoc.addObserver(observer)
+        fields2LuceneDoc.ctx.tx = Transaction('tsname')
+        fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
+        fields2LuceneDoc.addField('sorted.field', 'value1')
+        fields2LuceneDoc.addField('sorted.field', 'value2')
+        consume(fields2LuceneDoc.commit('unused'))
+        fields = observer.calledMethods[0].kwargs['fields']
+        self.assertEquals(1, len(fields))
+        self.assertEqual({'sort': True, 'type': 'StringField', 'name': 'sorted.field', 'value': 'value1'}, fields[0])
+
     def testAddDocument(self):
         fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry())
         observer = CallTrace()

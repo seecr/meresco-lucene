@@ -203,7 +203,9 @@ public class DocumentStringToDocumentTest {
                     .add("stored", JsonValue.TRUE))
                 .build();
         Document result = convert(json.toString());
-        assertEquals(new StoredField("name", 1).fieldType(), result.getField("name").fieldType());
+        IndexableField[] fields = result.getFields("name");
+        assertEquals(new StoredField("name", 1).fieldType(), fields[0].fieldType());
+        assertEquals(new IntPoint("name", 1).fieldType(), fields[1].fieldType());
         assertEquals(1, result.getField("name").numericValue().intValue());
     }
 

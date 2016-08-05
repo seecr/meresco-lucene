@@ -27,7 +27,9 @@ package org.meresco.lucene;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -69,62 +71,62 @@ public class DocumentStringToDocument {
         Iterator<JsonValue> iterator = object.iterator();
         while (iterator.hasNext()) {
             JsonObject jsonValue = (JsonObject) iterator.next();
-            doc.add(createField(jsonValue));
+            createFields(jsonValue).stream().forEach(f -> doc.add(f));
         }
         return doc;
     }
 
-    private IndexableField createField(JsonObject jsonField) throws IOException {
+    private List<IndexableField> createFields(JsonObject jsonField) throws IOException {
         String name = jsonField.getString("name");
-        Field field = null;
+        List<IndexableField> fields = new ArrayList<>();
         switch (jsonField.getString("type")) {
             case "StringField":
                 String stringValue = jsonField.getString("value");
                 if (jsonField.getBoolean("sort", false)) {
-                    field = new SortedDocValuesField(name, new BytesRef(stringValue));
+                    fields.add(new SortedDocValuesField(name, new BytesRef(stringValue)));
                 } else {
                     boolean stored = jsonField.getBoolean("stored", false);
-                    field = new Field(name, stringValue, maybeAddTermVectors(jsonField, stored ? StringField.TYPE_STORED : StringField.TYPE_NOT_STORED));
+                    fields.add(new Field(name, stringValue, maybeAddTermVectors(jsonField, stored ? StringField.TYPE_STORED : StringField.TYPE_NOT_STORED)));
                 }
                 break;
             case "TextField":
-                field = new Field(name, jsonField.getString("value"), maybeAddTermVectors(jsonField, TextField.TYPE_NOT_STORED));
+                fields.add(new Field(name, jsonField.getString("value"), maybeAddTermVectors(jsonField, TextField.TYPE_NOT_STORED)));
                 break;
             case "NoTermsFrequencyField":
-                field = new Field(name, jsonField.getString("value"), NO_TERMS_FREQUENCY_FIELD);
+                fields.add(new Field(name, jsonField.getString("value"), NO_TERMS_FREQUENCY_FIELD));
                 break;
             case "IntField":
                 int intValue = jsonField.getInt("value");
                 if (jsonField.getBoolean("sort", false)) {
-                    field = new NumericDocValuesField(name, intValue);
-                } else if (jsonField.getBoolean("stored", false)) {
-                    field = new StoredField(name, intValue);
+                    fields.add(new NumericDocValuesField(name, intValue));
                 } else {
-                    field = new IntPoint(name, intValue);
+                    if (jsonField.getBoolean("stored", false))
+                        fields.add(new StoredField(name, intValue));
+                    fields.add(new IntPoint(name, intValue));
                 }
                 break;
             case "DoubleField":
                 double doubleValue = jsonField.getJsonNumber("value").doubleValue();
                 if (jsonField.getBoolean("sort", false)) {
-                    field = new NumericDocValuesField(name, NumericUtils.doubleToSortableLong(doubleValue));
-                } else if (jsonField.getBoolean("stored", false)) {
-                    field = new StoredField(name, doubleValue);
+                    fields.add(new NumericDocValuesField(name, NumericUtils.doubleToSortableLong(doubleValue)));
                 } else {
-                    field = new DoublePoint(name, doubleValue);
+                    if (jsonField.getBoolean("stored", false))
+                        fields.add(new StoredField(name, doubleValue));
+                    fields.add(new DoublePoint(name, doubleValue));
                 }
                 break;
             case "LongField":
                 long longValue = jsonField.getJsonNumber("value").longValue();
                 if (jsonField.getBoolean("sort", false)) {
-                    field = new NumericDocValuesField(name, longValue);
-                } else if (jsonField.getBoolean("stored", false)) {
-                    field = new StoredField(name, longValue);
+                    fields.add(new NumericDocValuesField(name, longValue));
                 } else {
-                    field = new LongPoint(name, longValue);
+                    if (jsonField.getBoolean("stored", false))
+                        fields.add(new StoredField(name, longValue));
+                    fields.add(new LongPoint(name, longValue));
                 }
                 break;
             case "NumericField":
-                field = new NumericDocValuesField(name, jsonField.getJsonNumber("value").longValue());
+                fields.add(new NumericDocValuesField(name, jsonField.getJsonNumber("value").longValue()));
                 break;
             case "KeyField":
             	int value;
@@ -133,7 +135,7 @@ public class DocumentStringToDocument {
             	} else {
             		value = jsonField.getInt("value");
             	}
-            	field = new NumericDocValuesField(name, value);
+            	fields.add(new NumericDocValuesField(name, value));
                 break;
             case "FacetField":
                 JsonArray jsonArray = jsonField.getJsonArray("path");
@@ -141,9 +143,9 @@ public class DocumentStringToDocument {
                 for (int i = 0; i < jsonArray.size(); i++) {
                     path[i] = jsonArray.getString(i);
                 }
-                field = new FacetField(name, path);
+                fields.add(new FacetField(name, path));
         }
-        return field;
+        return fields;
     }
 
     private FieldType maybeAddTermVectors(JsonObject jsonValue, FieldType type) {

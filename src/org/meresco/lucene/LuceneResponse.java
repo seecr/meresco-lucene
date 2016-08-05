@@ -66,7 +66,7 @@ public class LuceneResponse {
     public static class Hit implements Comparable<Hit> {
         public String id;
         public float score;
-        public List<IndexableField> fields = new ArrayList<>();
+        public List<IndexableField[]> fields = new ArrayList<>();
         
         public Hit(String id, float score) {
             this.id = id;
@@ -82,9 +82,9 @@ public class LuceneResponse {
         	return "Hit(" + id + ", " + score + ")";
         }
 
-        public IndexableField getField(String fieldname) {
-            for (IndexableField i: fields) {
-                if (i.name().equals(fieldname))
+        public IndexableField[] getFields(String fieldname) {
+            for (IndexableField[] i: fields) {
+                if (i[0].name().equals(fieldname))
                     return i;
             }
             return null;
@@ -172,18 +172,22 @@ public class LuceneResponse {
             else
                 hitBuilder.add("id", hit.id);
                 
-            for (IndexableField i: hit.fields) {
-                Number n = i.numericValue();
-                if (n == null) {
-                    hitBuilder.add(i.name(), i.stringValue());
-                } else {
-                    if (n instanceof Integer)
-                        hitBuilder.add(i.name(), n.intValue());
-                    else if (n instanceof Long)
-                        hitBuilder.add(i.name(), n.longValue());
-                    if (n instanceof Double)
-                        hitBuilder.add(i.name(), n.doubleValue());
+            for (IndexableField[] fields: hit.fields) {
+                JsonArrayBuilder fieldsArray = Json.createArrayBuilder();
+                for (IndexableField i: fields) {
+                    Number n = i.numericValue();
+                    if (n == null) {
+                        fieldsArray.add(i.stringValue());
+                    } else {
+                        if (n instanceof Integer)
+                            fieldsArray.add(n.intValue());
+                        else if (n instanceof Long)
+                            fieldsArray.add(n.longValue());
+                        if (n instanceof Double)
+                            fieldsArray.add(n.doubleValue());
+                    }
                 }
+                hitBuilder.add(fields[0].name(), fieldsArray);
             }
             
             if (hit instanceof DedupHit) {

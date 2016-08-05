@@ -25,6 +25,7 @@
 ## end license ##
 
 from meresco.core import Observable
+from meresco.lucene import SORTED_PREFIX
 from org.apache.lucene.document import Document
 
 from fieldregistry import IDFIELD, KEY_PREFIX
@@ -47,6 +48,8 @@ class Fields2LuceneDoc(Observable):
     def addField(self, name, value):
         tx = self.ctx.tx
         valueList = tx.objectScope(self).setdefault('fields', {}).setdefault(name, [])
+        if name.startswith(SORTED_PREFIX) and valueList:
+            return
         valueList.append(value)
 
     def addFacetField(self, name, value):

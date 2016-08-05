@@ -56,6 +56,7 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -1194,6 +1195,36 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals("id:0", response.hits.get(0).id);
         assertEquals("Dit is veld a", response.hits.get(0).getField("fieldA").stringValue());
         assertEquals(10, response.hits.get(0).getField("intField").numericValue().intValue());
+    }
+    
+    @Test
+    public void testBoostQuery() throws Throwable {
+        Document doc1 = new Document();
+        doc1.add(new TextField("fieldA", "Dit is veld a", Store.NO));
+        doc1.add(new TextField("fieldB", "This is field b", Store.NO));
+        lucene.addDocument("id:1", doc1);
+        Document doc2 = new Document();
+        doc2.add(new TextField("fieldA", "This is field a", Store.NO));
+        doc2.add(new TextField("fieldB", "Dit is veld b", Store.NO));
+        lucene.addDocument("id:2", doc2);
+        
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.add(new BoostQuery(new TermQuery(new Term("fieldA", "field")), 200), Occur.SHOULD);
+        builder.add(new BoostQuery(new TermQuery(new Term("fieldB", "field")), 0.2f), Occur.SHOULD);
+        
+        LuceneResponse response = lucene.executeQuery(builder.build());
+        assertEquals(2, response.hits.size());
+        assertEquals("id:2", response.hits.get(0).id);
+        assertEquals("id:1", response.hits.get(1).id);
+        
+        builder = new BooleanQuery.Builder();
+        builder.add(new BoostQuery(new TermQuery(new Term("fieldA", "field")), 0.2f), Occur.SHOULD);
+        builder.add(new BoostQuery(new TermQuery(new Term("fieldB", "field")), 200), Occur.SHOULD);
+        
+        response = lucene.executeQuery(builder.build());
+        assertEquals(2, response.hits.size());
+        assertEquals("id:1", response.hits.get(0).id);
+        assertEquals("id:2", response.hits.get(1).id);
     }
     
     public static void compareHits(LuceneResponse response, String... hitIds) {

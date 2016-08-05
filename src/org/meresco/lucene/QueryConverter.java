@@ -76,7 +76,7 @@ public class QueryConverter {
             String core = sortKey.getString("core", null);
             SortField field;
             if (sortBy.equals(SORT_ON_SCORE))
-                field = new SortField(null, SortField.Type.SCORE, sortDescending);
+                field = new SortField(null, SortField.Type.SCORE, !sortDescending);
             else {
                 if (core == null || core.equals(coreName))
                     field = new SortField(sortBy, typeForSortField(sortKey.getString("type")), sortDescending);

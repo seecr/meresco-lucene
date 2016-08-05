@@ -47,11 +47,11 @@ public class KeyCollector extends SubCollector {
         if (this.keyValuesArray != null) {
         	int value = this.keyValuesArray[docId];
         	if (value > 0) {
-        	    this.currentKeySet = FixedBitSet.ensureCapacity(this.currentKeySet, value + 1);
-                this.currentKeySet.set(value);
                 if (value > this.biggestKeyFound) {
                     this.biggestKeyFound = value;
+                    this.currentKeySet = FixedBitSet.ensureCapacity(this.currentKeySet, value + 1);
                 }
+                this.currentKeySet.set(value);
             }
         }
     }

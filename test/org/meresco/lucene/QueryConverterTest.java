@@ -257,7 +257,7 @@ public class QueryConverterTest {
         Query query = IntPoint.newRangeQuery("field", 2, 5);
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testIntRangeQueryWithNoBounds() {
         JsonObject json = Json.createObjectBuilder()
@@ -290,7 +290,7 @@ public class QueryConverterTest {
         Query query = LongPoint.newRangeQuery("field", 2L, 5L);
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testLongRangeQueryWithNoBounds() {
         JsonObject json = Json.createObjectBuilder()
@@ -324,7 +324,7 @@ public class QueryConverterTest {
         Query query = DoublePoint.newRangeQuery("field", Math.nextUp(1.0), 5.0);
         assertEquals(query, q.query);
     }
-    
+
     @Test
     public void testDoubleRangeQueryWithNoBounds() {
         JsonObject json = Json.createObjectBuilder()
@@ -357,7 +357,7 @@ public class QueryConverterTest {
         TermQuery query = new TermQuery(DrillDownQuery.term("$facets", "dd-field", "value"));
         assertEquals(query, q.query);
     }
-   
+
     @Test
     public void testFacets() {
         JsonObject json = Json.createObjectBuilder()
@@ -437,7 +437,7 @@ public class QueryConverterTest {
 
         assertEquals(null, sortFields[1].getField());
         assertEquals(SortField.Type.SCORE, sortFields[1].getType());
-        assertEquals(true, sortFields[1].getReverse());
+        assertEquals(false, sortFields[1].getReverse());
         assertEquals(null, sortFields[1].getMissingValue());
 
         assertEquals("intfield", sortFields[2].getField());
@@ -464,13 +464,13 @@ public class QueryConverterTest {
         assertEquals(SortField.Type.DOUBLE, sortFields[6].getType());
         assertEquals(true, sortFields[6].getReverse());
         assertEquals(null, sortFields[6].getMissingValue());
-        
+
         assertEquals("stringfield", sortFields[7].getField());
         assertEquals(SortField.Type.STRING, sortFields[7].getType());
         assertEquals(true, sortFields[7].getReverse());
         assertEquals(null, sortFields[7].getMissingValue());
         assertFalse(sortFields[7] instanceof JoinSortField);
-        
+
         assertEquals("stringfield", sortFields[8].getField());
         assertEquals(SortField.Type.STRING, sortFields[8].getType());
         assertEquals(true, sortFields[8].getReverse());

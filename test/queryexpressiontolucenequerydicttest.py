@@ -4,7 +4,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -339,35 +339,35 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
 
     def testTextRangeQuery(self):
         # (field, lowerTerm, upperTerm, includeLower, includeUpper)
-        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm='value', upperTerm=None, includeLower=False, includeUpper=False)
+        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm='value', upperTerm=None, includeLower=False, includeUpper=True)
         self.assertConversion(q, cql='field > value')
-        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm='value', upperTerm=None, includeLower=True, includeUpper=False)
+        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm='value', upperTerm=None, includeLower=True, includeUpper=True)
         self.assertConversion(q, cql='field >= value')
-        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm=None, upperTerm='value', includeLower=False, includeUpper=False)
+        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm=None, upperTerm='value', includeLower=True, includeUpper=False)
         self.assertConversion(q, cql='field < value')
-        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm=None, upperTerm='value', includeLower=False, includeUpper=True)
+        q = dict(type="RangeQuery", rangeType="String", field='field', lowerTerm=None, upperTerm='value', includeLower=True, includeUpper=True)
         self.assertConversion(q, cql='field <= value')
 
     def testIntRangeQuery(self):
         # (field, lowerTerm, upperTerm, includeLower, includeUpper)
-        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=1, upperTerm=None, includeLower=False, includeUpper=False)
+        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=1, upperTerm=None, includeLower=False, includeUpper=True)
         self.assertConversion(q, cql='intField > 1')
-        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=1, upperTerm=None, includeLower=True, includeUpper=False)
+        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=1, upperTerm=None, includeLower=True, includeUpper=True)
         self.assertConversion(q, cql='intField >= 1')
-        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=None, upperTerm=3, includeLower=False, includeUpper=False)
+        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=None, upperTerm=3, includeLower=True, includeUpper=False)
         self.assertConversion(q, cql='intField < 3')
-        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=None, upperTerm=3, includeLower=False, includeUpper=True)
+        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=None, upperTerm=3, includeLower=True, includeUpper=True)
         self.assertConversion(q, cql='intField <= 3')
 
     def testLongRangeQuery(self):
         # (field, lowerTerm, upperTerm, includeLower, includeUpper)
-        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=1, upperTerm=None, includeLower=False, includeUpper=False)
+        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=1, upperTerm=None, includeLower=False, includeUpper=True)
         self.assertConversion(q, cql='longField > 1')
-        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=1, upperTerm=None, includeLower=True, includeUpper=False)
+        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=1, upperTerm=None, includeLower=True, includeUpper=True)
         self.assertConversion(q, cql='longField >= 1')
-        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=None, upperTerm=3, includeLower=False, includeUpper=False)
+        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=None, upperTerm=3, includeLower=True, includeUpper=False)
         self.assertConversion(q, cql='longField < 3')
-        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=None, upperTerm=3, includeLower=False, includeUpper=True)
+        q = dict(type="RangeQuery", rangeType="Long", field='longField', lowerTerm=None, upperTerm=3, includeLower=True, includeUpper=True)
         self.assertConversion(q, cql='longField <= 3')
 
     def testDrilldownFieldQuery(self):

@@ -140,10 +140,10 @@ class QueryExpressionToLuceneQueryDict(Observable):
             lowerTerm, upperTerm = None, termString
         else:
             lowerTerm, upperTerm = termString, None
-        includeLower, includeUpper = relation == '>=', relation == '<='
         rangeQueryType, pythonType = self._fieldRegistry.rangeQueryAndType(field)
         lowerTerm = pythonType(lowerTerm) if lowerTerm else None
         upperTerm = pythonType(upperTerm) if upperTerm else None
+        includeLower, includeUpper = relation == '>=' or lowerTerm is None, relation == '<=' or upperTerm is None
         return rangeQuery(rangeQueryType, field, lowerTerm, upperTerm, includeLower, includeUpper)
 
     def _pre_analyzeToken(self, index, token):

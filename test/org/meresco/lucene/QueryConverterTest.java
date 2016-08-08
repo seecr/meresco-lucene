@@ -338,7 +338,7 @@ public class QueryConverterTest {
                     .add("includeUpper", JsonValue.TRUE))
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
-        Query query = DoublePoint.newRangeQuery("field", Math.nextUp(Double.MIN_VALUE), Double.MAX_VALUE);
+        Query query = DoublePoint.newRangeQuery("field", Math.nextUp(Double.NEGATIVE_INFINITY), Double.POSITIVE_INFINITY);
         assertEquals(query, q.query);
     }
 

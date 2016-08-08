@@ -226,8 +226,8 @@ public class QueryConverter {
                     lUpperValue -= 1;
                 return LongPoint.newRangeQuery(field, lLowerValue, lUpperValue);
             case "Double":
-                Double dLowerValue = lower ? query.getJsonNumber("lowerTerm").doubleValue() : Double.MIN_VALUE;
-                Double dUpperValue = upper ? query.getJsonNumber("upperTerm").doubleValue() : Double.MAX_VALUE;
+                Double dLowerValue = lower ? query.getJsonNumber("lowerTerm").doubleValue() : Double.NEGATIVE_INFINITY;
+                Double dUpperValue = upper ? query.getJsonNumber("upperTerm").doubleValue() : Double.POSITIVE_INFINITY;
                 if (!includeLower && dLowerValue != null)
                     dLowerValue = Math.nextUp(dLowerValue);
                 if (!includeUpper && dUpperValue != null)

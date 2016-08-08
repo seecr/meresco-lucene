@@ -215,7 +215,7 @@ public class QueryConverter {
                 if (!includeLower && iLowerValue != null)
                     iLowerValue += 1;
                 if (!includeUpper && iUpperValue != null)
-                    iLowerValue -= 1;
+                    iUpperValue -= 1;
                 return IntPoint.newRangeQuery(field, iLowerValue, iUpperValue);
             case "Long":
                 Long lLowerValue = lower ? query.getJsonNumber("lowerTerm").longValue() : Long.MIN_VALUE;

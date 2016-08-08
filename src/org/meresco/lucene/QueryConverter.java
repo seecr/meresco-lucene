@@ -29,8 +29,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.json.JsonArray;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
+import javax.json.JsonString;
 import javax.json.JsonValue;
+import javax.json.JsonValue.ValueType;
 
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.IntPoint;
@@ -47,6 +50,7 @@ import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
@@ -78,26 +82,41 @@ public class QueryConverter {
             if (sortBy.equals(SORT_ON_SCORE))
                 field = new SortField(null, SortField.Type.SCORE, !sortDescending);
             else {
+                Type type = typeForSortField(sortKey.getString("type"));
                 if (core == null || core.equals(coreName))
-                    field = new SortField(sortBy, typeForSortField(sortKey.getString("type")), sortDescending);
+                    field = new SortField(sortBy, type, sortDescending);
                 else
-                    field = new JoinSortField(sortBy, typeForSortField(sortKey.getString("type")), sortDescending, core);
+                    field = new JoinSortField(sortBy, type, sortDescending, core);
+                Object missingValue = missingSortValue(sortKey, type);
+                if (missingValue != null)
+                    field.setMissingValue(missingValue);
             }
-            Object missingValue = missingSortValue(sortKey.getString("missingValue", null));
-            if (missingValue != null)
-                field.setMissingValue(missingValue);
             sortFields[i] = field;
         }
         return new Sort(sortFields);
     }
 
-    private Object missingSortValue(String missingValue) {
+    private Object missingSortValue(JsonObject sortKey, Type type) {
+        JsonValue missingValue = sortKey.getOrDefault("missingValue", null);
         if (missingValue == null)
             return null;
-        if (missingValue.equals("STRING_FIRST"))
-            return SortField.STRING_FIRST;
-        else if (missingValue.equals("STRING_LAST"))
-            return SortField.STRING_LAST;
+        if (missingValue instanceof JsonString) {
+            if (((JsonString) missingValue).getString().equals("STRING_FIRST"))
+                return SortField.STRING_FIRST;
+            else if (((JsonString) missingValue).getString().equals("STRING_LAST"))
+                return SortField.STRING_LAST;
+        } else {
+            switch (type) {
+                case INT:
+                    return ((JsonNumber) missingValue).intValue();
+                case LONG:
+                    return ((JsonNumber) missingValue).longValue();
+                case DOUBLE:
+                    return ((JsonNumber) missingValue).doubleValue();
+                default:
+                    break;
+            }
+        }
         return null;
     }
 
@@ -215,7 +234,7 @@ public class QueryConverter {
                 if (!includeLower && iLowerValue != null)
                     iLowerValue += 1;
                 if (!includeUpper && iUpperValue != null)
-                    iUpperValue -= 1;
+                    iLowerValue -= 1;
                 return IntPoint.newRangeQuery(field, iLowerValue, iUpperValue);
             case "Long":
                 Long lLowerValue = lower ? query.getJsonNumber("lowerTerm").longValue() : Long.MIN_VALUE;

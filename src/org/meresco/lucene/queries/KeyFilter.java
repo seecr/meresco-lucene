@@ -71,7 +71,7 @@ public class KeyFilter extends Query {
                             try {
                                 while (this.docId < this.maxDoc) {
                                     int key = this.keyValuesArray[this.docId];
-                                    if (keySet.get(key)) {
+                                    if (keySet.length() > key && keySet.get(key)) {
                                         return this.docId;
                                     }
                                     this.docId++;

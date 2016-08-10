@@ -128,7 +128,7 @@ class AggregateSuperScorer extends Scorer {
     public float score() throws IOException {
         float score = this.scorer.score();
         int docId = this.docID();
-        int key = this.keyValues[docId];
+        int key = this.keyValues != null ? this.keyValues[docId] : 0;
         for (ScoreSuperCollector sc : this.otherScoreCollectors) {
             float otherScore = sc.score(key);
             score *= (float) (1 + otherScore);

@@ -1,3 +1,27 @@
+/* begin license *
+ *
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ *
+ * Copyright (C) 2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ *
+ * This file is part of "Meresco Lucene"
+ *
+ * "Meresco Lucene" is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * "Meresco Lucene" is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with "Meresco Lucene"; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * end license */
+
 package org.meresco.lucene.search;
 
 import static org.junit.Assert.assertEquals;
@@ -27,7 +51,7 @@ public class JoinSortCollectorTest extends SeecrTestCase {
     private Lucene luceneA;
     private Lucene luceneB;
     private MultiLucene multiLucene;
-    
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -41,17 +65,23 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         Document doc1 = new Document();
         doc1.add(new SortedDocValuesField("sortfieldB", new BytesRef("a")));
         doc1.add(new NumericDocValuesField("intSortfieldB", 1));
-        doc1.add(new NumericDocValuesField("doubleSortfieldA", NumericUtils.doubleToSortableLong(1.0)));
+        doc1.add(new NumericDocValuesField("doubleSortfieldB", NumericUtils.doubleToSortableLong(1.0)));
         doc1.add(new NumericDocValuesField("keyB", 1));
         luceneB.addDocument(doc1);
-        
+
         Document doc2 = new Document();
         doc2.add(new SortedDocValuesField("sortfieldB", new BytesRef("b")));
         doc2.add(new NumericDocValuesField("intSortfieldB", 2));
         doc2.add(new NumericDocValuesField("doubleSortfieldB", NumericUtils.doubleToSortableLong(2.0)));
         doc2.add(new NumericDocValuesField("keyB", 2));
         luceneB.addDocument(doc2);
-        
+
+        Document doc5 = new Document();
+        doc5.add(new SortedDocValuesField("sortfieldB", new BytesRef("c")));
+        doc5.add(new NumericDocValuesField("intSortfieldB", 3));
+        doc5.add(new NumericDocValuesField("doubleSortfieldB", NumericUtils.doubleToSortableLong(3.0)));
+        luceneB.addDocument(doc5);
+
         Document doc3 = new Document();
         doc3.add(new NumericDocValuesField("keyA", 1));
         doc3.add(new SortedDocValuesField("sortfieldA", new BytesRef("a")));
@@ -64,6 +94,12 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         doc4.add(new NumericDocValuesField("intSortfieldA", 2));
         doc4.add(new NumericDocValuesField("doubleSortfieldA", NumericUtils.doubleToSortableLong(2.0)));
         luceneA.addDocument("id4", doc4);
+        
+        Document doc6 = new Document();
+        doc6.add(new SortedDocValuesField("sortfieldA", new BytesRef("c")));
+        doc6.add(new NumericDocValuesField("intSortfieldA", 3));
+        doc6.add(new NumericDocValuesField("doubleSortfieldA", NumericUtils.doubleToSortableLong(3.0)));
+        luceneA.addDocument("id6", doc6);
     }
 
     @After
@@ -80,15 +116,17 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         q.setCoreQuery("A", new MatchAllDocsQuery());
         q.queryData.sort = new Sort(new JoinSortField("sortfieldA", SortField.Type.STRING, false, "A"));
         LuceneResponse response = multiLucene.executeComposedQuery(q);
-        assertEquals(2, response.total);
-        assertEquals("id3", response.hits.get(0).id);
-        assertEquals("id4", response.hits.get(1).id);
-        
+        assertEquals(3, response.total);
+        assertEquals("id6", response.hits.get(0).id);
+        assertEquals("id3", response.hits.get(1).id);
+        assertEquals("id4", response.hits.get(2).id);
+
         q.queryData.sort = new Sort(new JoinSortField("sortfieldA", SortField.Type.STRING, true, "A"));
         response = multiLucene.executeComposedQuery(q);
-        assertEquals(2, response.total);
+        assertEquals(3, response.total);
         assertEquals("id4", response.hits.get(0).id);
         assertEquals("id3", response.hits.get(1).id);
+        assertEquals("id6", response.hits.get(2).id);
     }
 
     @Test
@@ -98,17 +136,19 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         q.setCoreQuery("A", new MatchAllDocsQuery());
         q.queryData.sort = new Sort(new JoinSortField("sortfieldB", SortField.Type.STRING, false, "B"));
         LuceneResponse response = multiLucene.executeComposedQuery(q);
-        assertEquals(2, response.total);
-        assertEquals("id3", response.hits.get(0).id);
-        assertEquals("id4", response.hits.get(1).id);
-        
+        assertEquals(3, response.total);
+        assertEquals("id6", response.hits.get(0).id);
+        assertEquals("id3", response.hits.get(1).id);
+        assertEquals("id4", response.hits.get(2).id);
+
         q.queryData.sort = new Sort(new JoinSortField("sortfieldB", SortField.Type.STRING, true, "B"));
         response = multiLucene.executeComposedQuery(q);
-        assertEquals(2, response.total);
+        assertEquals(3, response.total);
         assertEquals("id4", response.hits.get(0).id);
         assertEquals("id3", response.hits.get(1).id);
+        assertEquals("id6", response.hits.get(2).id);
     }
-    
+
     @Test
     public void testJoinSortIntField() throws Throwable {
         ComposedQuery q = new ComposedQuery("A");
@@ -116,17 +156,19 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         q.setCoreQuery("A", new MatchAllDocsQuery());
         q.queryData.sort = new Sort(new JoinSortField("intSortfieldB", SortField.Type.INT, false, "B"));
         LuceneResponse response = multiLucene.executeComposedQuery(q);
-        assertEquals(2, response.total);
-        assertEquals("id3", response.hits.get(0).id);
-        assertEquals("id4", response.hits.get(1).id);
-        
+        assertEquals(3, response.total);
+        assertEquals("id6", response.hits.get(0).id);
+        assertEquals("id3", response.hits.get(1).id);
+        assertEquals("id4", response.hits.get(2).id);
+
         q.queryData.sort = new Sort(new JoinSortField("intSortfieldB", SortField.Type.INT, true, "B"));
         response = multiLucene.executeComposedQuery(q);
-        assertEquals(2, response.total);
+        assertEquals(3, response.total);
         assertEquals("id4", response.hits.get(0).id);
         assertEquals("id3", response.hits.get(1).id);
+        assertEquals("id6", response.hits.get(2).id);
     }
-    
+
     @Test
     public void testJoinSortDoubleField() throws Throwable {
         ComposedQuery q = new ComposedQuery("A");
@@ -134,14 +176,16 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         q.setCoreQuery("A", new MatchAllDocsQuery());
         q.queryData.sort = new Sort(new JoinSortField("doubleSortfieldB", SortField.Type.DOUBLE, false, "B"));
         LuceneResponse response = multiLucene.executeComposedQuery(q);
-        assertEquals(2, response.total);
-        assertEquals("id3", response.hits.get(0).id);
-        assertEquals("id4", response.hits.get(1).id);
-        
+        assertEquals(3, response.total);
+        assertEquals("id6", response.hits.get(0).id);
+        assertEquals("id3", response.hits.get(1).id);
+        assertEquals("id4", response.hits.get(2).id);
+
         q.queryData.sort = new Sort(new JoinSortField("doubleSortfieldB", SortField.Type.DOUBLE, true, "B"));
         response = multiLucene.executeComposedQuery(q);
-        assertEquals(2, response.total);
+        assertEquals(3, response.total);
         assertEquals("id4", response.hits.get(0).id);
         assertEquals("id3", response.hits.get(1).id);
+        assertEquals("id6", response.hits.get(2).id);
     }
 }

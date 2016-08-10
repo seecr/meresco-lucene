@@ -79,7 +79,11 @@ public class JoinSortCollector extends SimpleCollector {
 
     @Override
     public void collect(int doc) throws IOException {
+        if (this.keys == null)
+            return;
         int key = this.keys[doc];
+        if (key == 0)
+            return;
         if (key >= this.docIdsByKey.length)
             resizeDocIdsByKey((int) ((key + 1) * 1.25));
         this.docIdsByKey[key] = doc + docBase + 1;  // increment to distinguish docId==0 from key not present
@@ -175,17 +179,17 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator impl
 
     @Override
     public int compareBottom(int doc) {
-        return super.compareBottom(this.collector.otherDocIdForKey(resultKeys[doc], this));
+        return super.compareBottom(this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this));
     }
 
     @Override
     public int compareTop(int doc) {
-        return super.compareTop(this.collector.otherDocIdForKey(resultKeys[doc], this));
+        return super.compareTop(this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this));
     }
 
     @Override
     public void copy(int slot, int doc) {
-        super.copy(slot, this.collector.otherDocIdForKey(resultKeys[doc], this));
+        super.copy(slot, this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this));
     }
 
     public void setOtherCoreContext(LeafReaderContext context) {
@@ -239,7 +243,7 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
 
     @Override
     public int compareBottom(int doc) {
-        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this);
         if (otherDoc == -1)
             return Integer.compare(this.bottomValue, this.missingValue);
         return super.compareBottom(otherDoc);
@@ -247,7 +251,7 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
 
     @Override
     public int compareTop(int doc) {
-        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this);
         if (otherDoc == -1)
             return Integer.compare(this.topValue, this.missingValue);
         return super.compareTop(otherDoc);
@@ -255,7 +259,7 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
 
     @Override
     public void copy(int slot, int doc) {
-        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this);
         if (otherDoc == -1) {
             values[slot] = this.missingValue;
         }
@@ -318,7 +322,7 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
 
     @Override
     public int compareBottom(int doc) {
-        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this);
         if (otherDoc == -1)
             return Double.compare(this.bottomValue, this.missingValue);
         return super.compareBottom(otherDoc);
@@ -326,7 +330,7 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
 
     @Override
     public int compareTop(int doc) {
-        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this);
         if (otherDoc == -1)
             return Double.compare(this.topValue, this.missingValue);
         return super.compareTop(otherDoc);
@@ -334,7 +338,7 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
 
     @Override
     public void copy(int slot, int doc) {
-        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys[doc], this);
+        int otherDoc = this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this);
         if (otherDoc == -1) {
             values[slot] = this.missingValue;
         }

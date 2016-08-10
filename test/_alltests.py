@@ -41,7 +41,6 @@ from extractfilterqueriestest import ExtractFilterQueriesTest
 from fieldregistrytest import FieldRegistryTest
 from fields2lucenedoctest import Fields2LuceneDocTest
 from fieldslisttolucenedocumenttest import FieldsListToLuceneDocumentTest
-from lucenekeyvaluestoretest import LuceneKeyValueStoreTest
 from lucenequerycomposertest import LuceneQueryComposerTest
 from luceneremotetest import LuceneRemoteTest
 from luceneresponsetest import LuceneResponseTest
@@ -51,6 +50,8 @@ from adaptertolucenequerytest import AdapterToLuceneQueryTest
 from multilucenetest import MultiLuceneTest
 from queryexpressiontolucenequerydicttest import QueryExpressionToLuceneQueryDictTest
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
+
+from pylucene.lucenekeyvaluestoretest import LuceneKeyValueStoreTest
 
 if __name__ == '__main__':
     unittest.main()

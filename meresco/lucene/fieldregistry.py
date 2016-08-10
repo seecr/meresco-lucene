@@ -34,6 +34,7 @@ UNTOKENIZED_PREFIX = "untokenized."
 KEY_PREFIX = "__key__."
 NUMERIC_PREFIX = "__numeric__."
 RANGE_DOUBLE_PREFIX = 'range.double.'
+RANGE_INT_PREFIX = 'range.int.'
 
 class FieldRegistry(object):
     def __init__(self, drilldownFields=None, defaultDefinition=None, termVectorFields=None, isDrilldownFieldFunction=None):
@@ -144,6 +145,8 @@ class FieldRegistry(object):
             fieldDefinition = NUMERICFIELD
         elif fieldname.startswith(RANGE_DOUBLE_PREFIX):
             fieldDefinition = DOUBLEFIELD
+        elif fieldname.startswith(RANGE_INT_PREFIX):
+            fieldDefinition = INTFIELD
         self._fieldDefinitions[fieldname] = fieldDefinition
         return fieldDefinition
 

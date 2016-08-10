@@ -26,7 +26,7 @@
 ## end license ##
 
 from os.path import join, abspath, dirname
-from os import system
+from os import system, environ
 from traceback import print_exc
 from time import time
 
@@ -83,7 +83,7 @@ class IntegrationState(SeecrIntegrationState):
                 'http://localhost:{}/info'.format(self.suggestionServerPort),
                 port=self.suggestionServerPort,
                 stateDir=join(self.integrationTempdir, 'suggestion'),
-                env=dict(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
+                env=environment(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
             )
 
     def startLuceneServer(self):
@@ -94,7 +94,7 @@ class IntegrationState(SeecrIntegrationState):
                 port=self.luceneServerPort,
                 stateDir=join(self.integrationTempdir, 'lucene-server'),
                 core=["main", "main2", "empty-core", "default"],
-                env=dict(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
+                env=environment(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
             )
 
     def startExampleServer(self):
@@ -107,8 +107,13 @@ class IntegrationState(SeecrIntegrationState):
                 serverPort=self.luceneServerPort,
                 autocompletePort=self.suggestionServerPort,
                 stateDir=join(self.integrationTempdir, 'example-state'),
-                env=dict(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
+                env=environment(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
             )
 
     def stopServer(self, serviceName):
         self._stopServer(serviceName)
+
+def environment(**kwargs):
+    result = dict(environ)
+    result.update(**kwargs)
+    return result

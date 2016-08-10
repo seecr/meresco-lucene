@@ -99,8 +99,9 @@ class IntegrationState(SeecrIntegrationState):
     def startExampleServer(self):
         self._startServer(
                 'meresco-lucene',
-                self.binPath('start-server'),
+                [self.binPath('python2.7'), 'server.py'],
                 'http://localhost:%s/' % self.httpPort,
+                cwd=join(mydir, 'helper'),
                 port=self.httpPort,
                 serverPort=self.luceneServerPort,
                 autocompletePort=self.suggestionServerPort,

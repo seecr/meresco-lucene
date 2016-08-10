@@ -3,7 +3,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2012-2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2012-2013, 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -41,7 +41,7 @@ VERSION="x.y.z"
 for pyversion in $pyversions; do
     definePythonVars $pyversion
     echo "###### $pyversion, $PYTHON"
-    (cd $mydir/src; ./build.sh ${SITEPACKAGES}/meresco/lucene)
+    (cd $mydir/src_pylucene; ./build.sh ${SITEPACKAGES}/meresco/lucene)
     (
         cd $mydir
         mkdir --parents tmp/usr/share/java/meresco-lucene

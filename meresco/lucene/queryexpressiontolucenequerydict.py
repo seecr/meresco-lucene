@@ -54,25 +54,25 @@ class QueryExpressionToLuceneQueryDict(Observable):
         response = yield self.any.executeQuery(luceneQuery=self.convert(query), **kwargs)
         raise StopIteration(response)
 
-    def convert(self, expression):
+    def convert(self, expression, unqualifiedTermFields=None):
         if expression.must_not:
             r = QueryExpression.nested('AND')
             r.operands.append(QueryExpression.searchterm(term='*'))
             r.operands.append(expression)
             expression = r
-        return JsonDict(self._expression(expression))
+        return JsonDict(self._expression(expression, unqualifiedTermFields=unqualifiedTermFields or self._unqualifiedTermFields))
 
-    def __call__(self, expression):
-        return self.convert(expression)
+    def __call__(self, expression, **kwargs):
+        return self.convert(expression, **kwargs)
 
-    def _expression(self, expr):
+    def _expression(self, expr, unqualifiedTermFields=None):
         if expr.operator:
             return self._nestedExpression(expr)
         if expr.index is None:
             if expr.term == '*':
                 return dict(type="MatchAllDocsQuery")
             queries = []
-            for index, boost in self._unqualifiedTermFields:
+            for index, boost in (unqualifiedTermFields or []):
                 query = self._determineQuery(index, expr.term)
                 if query["type"] == "PhraseQuery" and not self._fieldRegistry.phraseQueryPossible(index):
                     continue
@@ -109,7 +109,6 @@ class QueryExpressionToLuceneQueryDict(Observable):
             query['occur'] = occur
             q['clauses'].append(query)
         return q
-
 
     def _determineQuery(self, index, termString):
         terms = self._pre_analyzeToken(index, termString)
@@ -174,6 +173,7 @@ class QueryExpressionToLuceneQueryDict(Observable):
                 path = [value]
             return dict(field=field, path=path, type="DrillDown")
         return dict(field=field, value=value)
+
 
 def rangeQuery(rangeQueryType, field, lowerTerm, upperTerm, includeLower, includeUpper):
     return dict(type="RangeQuery", rangeType=rangeQueryType, field=field, lowerTerm=lowerTerm, upperTerm=upperTerm, includeLower=includeLower, includeUpper=includeUpper)

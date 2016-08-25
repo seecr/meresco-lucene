@@ -46,6 +46,7 @@ class ComposedQuery(object):
         else:
             self.cores.add(resultsFromCore)
 
+
     def _makeProperty(name, defaultValue=None):
         return property(
             fget=lambda self: getattr(self, name, defaultValue),
@@ -62,8 +63,10 @@ class ComposedQuery(object):
     storedFields = _makeProperty('_storedFields')
     clustering = _makeProperty('_clustering')
     clusteringConfig = _makeProperty('_clusteringConfig')
+    unqualifiedTermFields = _makeProperty('_unqualifiedTermFields')
 
-    _makeProperty = None
+    del _makeProperty
+
 
     def setCoreQuery(self, core, query, filterQueries=None, facets=None):
         self.cores.add(core)
@@ -198,16 +201,19 @@ class ComposedQuery(object):
                 raise ValueError("No match set for cores %s" % str((self.resultsFrom, core)))
 
     def convertWith(self, **converts):
-        convertQuery = lambda core, query: converts[core](query) if query is not None else None
+        def convertQuery(core, query):
+            if query is None:
+                return None
+            convertFunction = converts[core]
+            if core == self.resultsFrom and self.unqualifiedTermFields:
+                return convertFunction(query, unqualifiedTermFields=self.unqualifiedTermFields)
+            return convertFunction(query)
         self._queries = dict((core, convertQuery(core, v)) for core, v in self._queries.items())
         self._filterQueries = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._filterQueries.items())
         self._rankQueries = dict((core, convertQuery(core, v)) for core, v in self._rankQueries.items())
         for unite in self._unites:
             unite.convertQuery(convertQuery)
         self._otherCoreFacetFilters = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._otherCoreFacetFilters.items())
-
-    def otherKwargs(self):
-        return dict(start=self.start, stop=self.stop, sortKeys=self.sortKeys, suggestionRequest=self.suggestionRequest, dedupField=self.dedupField, dedupSortField=self.dedupSortField, groupingField=self.groupingField, clustering=self.clustering, storedFields=self.storedFields, clusteringConfig=self.clusteringConfig)
 
     def asDict(self):
         result = dict(vars(self))
@@ -267,6 +273,3 @@ class Unite(object):
     @classmethod
     def fromDict(cls, parent, dct):
         return cls(parent, dict(core=dct['A'][0], query=dct['A'][1]), dict(core=dct['B'][0], query=dct['B'][1]))
-
-
-del ComposedQuery._makeProperty

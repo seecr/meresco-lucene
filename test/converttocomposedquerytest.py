@@ -138,24 +138,24 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals("__key__", cq.otherKwargs().get("dedupField"))
-        self.assertEquals("__key__.date", cq.otherKwargs().get("dedupSortField", "not there"))
+        self.assertEquals("__key__", cq.dedupField)
+        self.assertEquals("__key__.date", cq.dedupSortField)
 
     def testNoDedupWhenDedupByDefaultSetToFalse(self):
         self.setupDna(dedupByDefault=False)
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals(None, cq.otherKwargs().get("dedupField"))
-        self.assertEquals(None, cq.otherKwargs().get("dedupSortField", "not there"))
+        self.assertEquals(None, cq.dedupField)
+        self.assertEquals(None, cq.dedupSortField)
 
     def testDedupExplicitlyOn(self):
         self.setupDna(dedupByDefault=False)
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-filter-common-keys': ['true']}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals("__key__", cq.otherKwargs().get("dedupField"))
-        self.assertEquals("__key__.date", cq.otherKwargs().get("dedupSortField", "not there"))
+        self.assertEquals("__key__", cq.dedupField)
+        self.assertEquals("__key__.date", cq.dedupSortField)
 
     def testXFilterCommonKeysIgnoredWhenNoDedupFieldSpecified(self):
         self.setupDna(dedupFieldName=None)
@@ -163,27 +163,27 @@ class ConvertToComposedQueryTest(SeecrTestCase):
                 extraArguments={'x-filter-common-keys': []}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals(None, cq.otherKwargs().get("dedupField"))
-        self.assertEquals(None, cq.otherKwargs().get("dedupSortField"))
+        self.assertEquals(None, cq.dedupField)
+        self.assertEquals(None, cq.dedupSortField)
 
     def testDedupTurnedOff(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-filter-common-keys': ['false']}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals(None, cq.otherKwargs().get("dedupField", "not there"))
-        self.assertEquals(None, cq.otherKwargs().get("dedupSortField", "not there"))
+        self.assertEquals(None, cq.dedupField)
+        self.assertEquals(None, cq.dedupSortField)
 
     def testGroupingDefaultTurnedOff(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals(None, cq.otherKwargs().get("groupingField"))
+        self.assertEquals(None, cq.groupingField)
 
     def testGroupingTurnedOn(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('fiets'), extraArguments={'x-grouping': ['true']}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals("__key__", cq.otherKwargs().get("groupingField"))
+        self.assertEquals("__key__", cq.groupingField)
 
     def testNoGroupingForMatchAllQuery(self):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-grouping': ['true']}))
@@ -195,14 +195,14 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('fiets'), extraArguments={'x-grouping': ['true']}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals(None, cq.otherKwargs().get("groupingField"))
+        self.assertEquals(None, cq.groupingField)
 
     def testClusteringNotEnabledIfTurnedOffInConfig(self):
         consume(self.tree.any.updateConfig(config=dict(features_disabled=['clustering']), indexConfig={}))
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('fiets'), extraArguments={'x-clustering': ['true']}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals(None, cq.otherKwargs().get("clusterFields"))
+        self.assertEquals(None, cq.clusteringConfig)
 
     def testNormalQueryWithPossibleJoin(self):
         ast = parseCQL("prefix.field=value")

@@ -34,9 +34,7 @@ class AdapterToLuceneQuery(Transparent):
     def __init__(self, defaultCore, coreConverters, **kwargs):
         Transparent.__init__(self, **kwargs)
         self._defaultCore = defaultCore
-        self._converts = {}
-        for core, convert in coreConverters.items():
-            self._converts[core] = convert
+        self._converts = dict(coreConverters)
 
     def executeQuery(self, query=None, core=None, filterQueries=None, **kwargs):
         if 'cqlAbstractSyntaxTree' in kwargs:

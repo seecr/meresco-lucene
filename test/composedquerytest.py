@@ -203,6 +203,30 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals('Converted_A_Q5', queries[0][0]['query'])
         self.assertEquals('Converted_B_Q6', queries[1][0]['query'])
 
+    def testConvertAllQueriesWithUnqualifiedTermFields(self):
+        cq = ComposedQuery('coreA')
+        cq.setCoreQuery(core='coreA', query='Q0')
+        cq.addFilterQuery('coreA', 'Q1')
+        cq.addFilterQuery('coreA', 'Q2')
+        cq.setCoreQuery(core='coreB', query='Q3')
+        cq.addFilterQuery('coreB', 'Q4')
+        cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
+        cq.addUnite(dict(core='coreA', query='Q5'), dict(core='coreB', query='Q6'))
+        cq.unqualifiedTermFields = [('field0', 2.0), ('field1', 3.0)]
+
+        convertCoreA = lambda query, unqualifiedTermFields=None: "Converted_A_{0}_{1}".format(query, not unqualifiedTermFields is None)
+        convertCoreB = lambda query: "Converted_B_{0}".format(query)
+        cq.convertWith(coreA=convertCoreA, coreB=convertCoreB)
+
+        self.assertEquals("Converted_A_Q0_True", cq.queryFor('coreA'))
+        self.assertEquals(["Converted_A_Q1_True", "Converted_A_Q2_True"], cq.filterQueriesFor('coreA'))
+        self.assertEquals("Converted_B_Q3", cq.queryFor('coreB'))
+        self.assertEquals(["Converted_B_Q4"], cq.filterQueriesFor('coreB'))
+        self.assertEqual(1, len(cq.unites))
+        uniteQueries = list(cq.unites[0].queries())
+        self.assertEquals('Converted_A_Q5_True', uniteQueries[0][0]['query'])
+        self.assertEquals('Converted_B_Q6', uniteQueries[1][0]['query'])
+
     def testSingleCoreQuery(self):
         cq = ComposedQuery('coreA')
         cq.setCoreQuery(core='coreA', query='Q0')

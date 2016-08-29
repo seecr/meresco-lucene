@@ -32,7 +32,7 @@ import org.apache.commons.math3.util.OpenIntToDoubleHashMap.Iterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
-class MerescoVector implements Clusterable {
+public class MerescoVector implements Clusterable {
     private OpenIntToDoubleHashMap entries;
     int docId;
     private int maxIndex;

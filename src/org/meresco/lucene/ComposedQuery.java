@@ -53,6 +53,7 @@ public class ComposedQuery {
     private Map<String, List<String[]>> drilldownQueries = new HashMap<String, List<String[]>>();
     private Map<String, List<Query>> otherCoreFacetsFilter = new HashMap<String, List<Query>>();
     private Map<String, Query> rankQueries = new HashMap<String, Query>();
+    public Float rankQueryScoreRatio;
     private List<Unite> unites = new ArrayList<Unite>();
     public List<Match> matches = new ArrayList<Match>();
     public QueryData queryData = new QueryData();
@@ -162,6 +163,9 @@ public class ComposedQuery {
             for (String coreName : rankQueries.keySet()) {
                 cq.setRankQuery(coreName, converters.get(coreName).convertToQuery(rankQueries.getJsonObject(coreName)));
             }
+        }
+        if (json.containsKey("_rankQueryScoreRatio")) {
+            cq.rankQueryScoreRatio = (float) json.getJsonNumber("_rankQueryScoreRatio").doubleValue();
         }
         if (json.containsKey("_unites")) {
             JsonArray unites = json.getJsonArray("_unites");

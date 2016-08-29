@@ -37,15 +37,22 @@ import org.apache.lucene.search.Weight;
 import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
 
-public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreSubCollector> {
 
+public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreSubCollector> {
     private final String keyName;
     private final ScoreSuperCollector[] otherScoreCollectors;
     private SuperCollector<?> delegate;
+    private float otherScoreRatio = 0.5f;
 
-    public AggregateScoreSuperCollector(String keyName, List<ScoreSuperCollector> otherScoreCollectors) {
+    public AggregateScoreSuperCollector(String keyName, List<ScoreSuperCollector> otherScoreCollectors, Float otherScoreRatio) {
         this.keyName = keyName;
         this.otherScoreCollectors = otherScoreCollectors.toArray(new ScoreSuperCollector[0]);
+        if (otherScoreRatio != null) {
+            float f = otherScoreRatio.floatValue();
+            if (0.0f <= f && f <= 1.0f) {
+                this.otherScoreRatio = f;
+            }
+        }
     }
 
     public void setDelegate(SuperCollector<?> delegate) {
@@ -54,7 +61,7 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
 
     @Override
     protected AggregateScoreSubCollector createSubCollector() throws IOException {
-        return new AggregateScoreSubCollector(this.keyName, this.otherScoreCollectors, this.delegate.subCollector());
+        return new AggregateScoreSubCollector(this.keyName, this.otherScoreCollectors, this.delegate.subCollector(), this.otherScoreRatio);
     }
 
     @Override
@@ -64,25 +71,27 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
 
 }
 
-class AggregateScoreSubCollector extends SubCollector {
 
+class AggregateScoreSubCollector extends SubCollector {
     private final SubCollector delegate;
     private final ScoreSuperCollector[] otherScoreCollectors;
     private String keyName;
     private int[] keyValues;
     private AggregateSuperScorer scorer;
+    private float otherScoreRatio;
 
-    public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate)
+    public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate, float otherScoreRatio)
             throws IOException {
         super();
         this.keyName = keyName;
         this.delegate = delegate;
         this.otherScoreCollectors = otherScoreCollectors;
+        this.otherScoreRatio = otherScoreRatio;
     }
 
     @Override
     public void setScorer(Scorer scorer) throws IOException {
-        this.scorer = new AggregateSuperScorer(scorer, this.otherScoreCollectors, this.keyValues);
+        this.scorer = new AggregateSuperScorer(scorer, this.otherScoreCollectors, this.keyValues, this.otherScoreRatio);
         this.delegate.setScorer(this.scorer);
     }
 
@@ -110,16 +119,19 @@ class AggregateScoreSubCollector extends SubCollector {
     }
 }
 
+
 class AggregateSuperScorer extends Scorer {
     private final Scorer scorer;
     private int[] keyValues;
     private final ScoreSuperCollector[] otherScoreCollectors;
+    private float otherScoreRatio;  // a value between 0.0f and 1.0f
 
-    AggregateSuperScorer(Scorer scorer, ScoreSuperCollector[] otherScoreCollectors, int[] keyValues) {
+    AggregateSuperScorer(Scorer scorer, ScoreSuperCollector[] otherScoreCollectors, int[] keyValues, float otherScoreRatio) {
         super(weightFromScorer(scorer));
         this.scorer = scorer;
         this.otherScoreCollectors = otherScoreCollectors;
         this.keyValues = keyValues;
+        this.otherScoreRatio = otherScoreRatio;
     }
 
     public void setKeyValues(int[] keyValues) {
@@ -127,14 +139,20 @@ class AggregateSuperScorer extends Scorer {
     }
 
     public float score() throws IOException {
-        float score = this.scorer.score();
+        float score = 1.0f;
         int docId = this.docID();
         int key = this.keyValues != null ? this.keyValues[docId] : 0;
         for (ScoreSuperCollector sc : this.otherScoreCollectors) {
             float otherScore = sc.score(key);
             score *= (float) (1 + otherScore);
         }
-        return score;
+
+        /*
+         * Note: the following score weighing applies to one AggregateScoreSuperCollector at a time.
+         * In other words: behaviour will (probably) not be as expected when multiple AggregateScoreSuperCollector instances play a part
+         * (which is currently the case when multiple 'key' fields on the 'result core' come into play for one query).
+         */
+        return (1.0f - this.otherScoreRatio) * this.scorer.score() + this.otherScoreRatio * score;
     }
 
     public int freq() throws IOException {

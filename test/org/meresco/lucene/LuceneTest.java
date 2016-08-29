@@ -463,12 +463,16 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1.0, scoreCollector.score(1), 0);
         assertEquals(1.0, scoreCollector.score(2), 0);
 
-        final AggregateScoreSuperCollector aggregator = new AggregateScoreSuperCollector("field1", new ArrayList<ScoreSuperCollector>() {{add(scoreCollector);}});
-        ArrayList<AggregateScoreSuperCollector> aggregators = new ArrayList<AggregateScoreSuperCollector>() {{add(aggregator);}};
+        ArrayList<AggregateScoreSuperCollector> aggregators = new ArrayList<AggregateScoreSuperCollector>() {{
+            add(new AggregateScoreSuperCollector("field1", new ArrayList<ScoreSuperCollector>() {{
+                    add(scoreCollector);
+                }}, 0.4f)
+            );
+        }};
         LuceneResponse result = this.lucene.executeQuery(new QueryData(), null, null, null, aggregators, null);
         assertEquals(2, result.total);
-        assertEquals(2, result.hits.get(0).score, 0);
-        assertEquals(2, result.hits.get(1).score, 0);
+        assertEquals(1.4f, result.hits.get(0).score, 0.01);
+        assertEquals(1.4f, result.hits.get(1).score, 0.01);
     }
 
     @Test
@@ -1187,7 +1191,7 @@ public class LuceneTest extends SeecrTestCase {
         doc1.add(new StoredField("fieldA", "Dit is veld a"));
         doc1.add(new StoredField("intField", 10));
         lucene.addDocument("id:0", doc1);
-        
+
         QueryData data = new QueryData();
         data.query = new MatchAllDocsQuery();
         data.storedFields = Arrays.asList("fieldA", "intField");
@@ -1197,7 +1201,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals("Dit is veld a", response.hits.get(0).getFields("fieldA")[0].stringValue());
         assertEquals(10, response.hits.get(0).getFields("intField")[0].numericValue().intValue());
     }
-    
+
     @Test
     public void testBoostQuery() throws Throwable {
         Document doc1 = new Document();
@@ -1208,26 +1212,26 @@ public class LuceneTest extends SeecrTestCase {
         doc2.add(new TextField("fieldA", "This is field a", Store.NO));
         doc2.add(new TextField("fieldB", "Dit is veld b", Store.NO));
         lucene.addDocument("id:2", doc2);
-        
+
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         builder.add(new BoostQuery(new TermQuery(new Term("fieldA", "field")), 200), Occur.SHOULD);
         builder.add(new BoostQuery(new TermQuery(new Term("fieldB", "field")), 0.2f), Occur.SHOULD);
-        
+
         LuceneResponse response = lucene.executeQuery(builder.build());
         assertEquals(2, response.hits.size());
         assertEquals("id:2", response.hits.get(0).id);
         assertEquals("id:1", response.hits.get(1).id);
-        
+
         builder = new BooleanQuery.Builder();
         builder.add(new BoostQuery(new TermQuery(new Term("fieldA", "field")), 0.2f), Occur.SHOULD);
         builder.add(new BoostQuery(new TermQuery(new Term("fieldB", "field")), 200), Occur.SHOULD);
-        
+
         response = lucene.executeQuery(builder.build());
         assertEquals(2, response.hits.size());
         assertEquals("id:1", response.hits.get(0).id);
         assertEquals("id:2", response.hits.get(1).id);
     }
-    
+
     public static void compareHits(LuceneResponse response, String... hitIds) {
         Set<String> responseHitIds = new HashSet<String>();
         for (Hit hit : response.hits)

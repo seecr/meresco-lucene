@@ -50,8 +50,8 @@ import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 
-public class MultiLuceneTest extends SeecrTestCase {
 
+public class MultiLuceneTest extends SeecrTestCase {
     private Lucene luceneA;
     private Lucene luceneB;
     private Lucene luceneC;

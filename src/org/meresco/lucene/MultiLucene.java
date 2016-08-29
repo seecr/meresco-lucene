@@ -230,7 +230,7 @@ public class MultiLucene {
         for (String keyName : scoreCollectors.keySet()) {
             List<ScoreSuperCollector> scoreCollectorsForKey = scoreCollectors.get(keyName);
             if (scoreCollectorsForKey.size() > 0)
-                aggregateScoreCollectors.add(new AggregateScoreSuperCollector(keyName, scoreCollectorsForKey));
+                aggregateScoreCollectors.add(new AggregateScoreSuperCollector(keyName, scoreCollectorsForKey, query.rankQueryScoreRatio));
         }
         return aggregateScoreCollectors;
     }

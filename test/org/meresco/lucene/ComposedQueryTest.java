@@ -115,6 +115,7 @@ public class ComposedQueryTest {
                         .add("term", Json.createObjectBuilder()
                             .add("field", "field")
                             .add("value", "value0"))))
+                .add("_rankQueryScoreRatio", 0.6)
                 .add("_facets", Json.createObjectBuilder()
                     .add("coreA", Json.createArrayBuilder()
                         .add(Json.createObjectBuilder()
@@ -183,6 +184,7 @@ public class ComposedQueryTest {
 
         Query rankQuery = q.rankQueryFor("coreA");
         assertEquals(new TermQuery(new Term("field", "value0")), rankQuery);
+        assertEquals(new Float(0.6f), q.rankQueryScoreRatio);
 
         assertEquals("field1", q.queryData.suggestionRequest.field);
         assertEquals(2, q.queryData.suggestionRequest.count);

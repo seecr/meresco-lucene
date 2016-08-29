@@ -151,6 +151,7 @@ class ComposedQueryTest(SeecrTestCase):
         cq.sortKeys = [dict(sortBy='field', sortDescending=True)]
         cq.clustering = True
         cq.clusteringConfig = {'clusteringEps': 0.2}
+        cq.rankQueryScoreRatio = 0.75
 
         d = cq.asDict()
         cq2 = ComposedQuery.fromDict(d)
@@ -166,6 +167,7 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(({'core': 'coreA', 'keyName': 'keyA', 'query': 'AQuery'}, 'keyA'), queries[0])
         self.assertEquals(({'core': 'coreB', 'keyName': 'keyB', 'query': 'anotherQuery'}, 'keyA'), queries[1])
         self.assertEquals({'clusteringEps': 0.2}, cq2.clusteringConfig)
+        self.assertEquals(0.75, cq2.rankQueryScoreRatio)
 
     def testAddFilterQueriesIncremental(self):
         cq = ComposedQuery('coreA')

@@ -31,7 +31,7 @@ import org.junit.Test;
 
 public class Meresco3DVectorTest {
 
-        @Test
+        //@Test
         public void testSimpleTextEntries() {
                 Meresco3DVector v1 = new Meresco3DVector();
                 v1.setEntry(0, 3.0);
@@ -51,7 +51,7 @@ public class Meresco3DVectorTest {
                 assertEquals(0.0, v1.distance(v4), 0.001);
         }
 
-        @Test
+        //@Test
         public void testOntologyEntries() {
                 Meresco3DVector v1 = new Meresco3DVector();
                 v1.setEntry(0, 3.0);

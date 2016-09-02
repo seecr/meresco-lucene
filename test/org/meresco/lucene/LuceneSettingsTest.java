@@ -98,6 +98,17 @@ public class LuceneSettingsTest {
         assertEquals(3.0, doubleValue, 0.01);
     }
 
+    @Test
+    public void testConfigureUnknownMergePolicy() throws Exception {
+        LuceneSettings settings = new LuceneSettings();
+        try {
+            settings.updateSettings(new StringReader("{\"mergePolicy\": {\"type\": \"NotExistingMergePolicy\"}}"));
+            assertTrue(false);
+        } catch (RuntimeException e) {
+            assertEquals("Unsupported mergePolicy: NotExistingMergePolicy", e.getMessage());
+        }
+    }
+
     @SuppressWarnings("serial")
     @Test
     public void testMerescoDutchStemmingAnalyzer() throws Exception {

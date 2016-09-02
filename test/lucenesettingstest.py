@@ -91,4 +91,13 @@ class LuceneSettingsTest(SeecrTestCase):
         self.assertTrue(settings.verbose)
         self.assertEquals({'type':'MerescoStandardAnalyzer'}, settings.analyzer)
 
+    def testCreateDefaultAnalyzers(self):
+        settings = LuceneSettings()
+        analyzer = settings.createAnalyzer()
+        self.assertEquals("MerescoStandardAnalyzer", analyzer.class_.getSimpleName())
 
+    def testCreateNonDefaultAnalyzer(self):
+        settings = LuceneSettings(analyzer=dict(type="MerescoDutchStemmingAnalyzer", stemmingFields=["field_a", "field_b"]))
+        analyzer = settings.createAnalyzer()
+        self.assertEquals("MerescoDutchStemmingAnalyzer", analyzer.class_.getSimpleName())
+        self.assertEquals(["field_a", "field_b"], analyzer.getStemmingFields())

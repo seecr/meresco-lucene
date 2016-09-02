@@ -60,4 +60,8 @@ public class MerescoDutchStemmingAnalyzer extends MerescoStandardAnalyzer {
         tok = new RemoveDuplicatesTokenFilter(tok); // removes one if keyword and term are still the same
         return tok;
     }
+    
+    public String[] getStemmingFields() {
+        return this.stemmingFields.toArray(new String[0]);
+    }
 }

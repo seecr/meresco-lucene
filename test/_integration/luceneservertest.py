@@ -117,9 +117,11 @@ class LuceneServerTest(IntegrationTestCase):
                 'commitCount': 1,
                 'commitTimeout': 10,
                 'lruTaxonomyWriterCacheSize': 4000,
-                'maxMergeAtOnce': 2,
-                'numberOfConcurrentTasks': 6,
-                'segmentsPerTier': 8.0
+                'mergePolicy': {
+                    'maxMergeAtOnce': 2,
+                    'segmentsPerTier': 8.0,
+                    'type': 'TieredMergePolicy'},
+                'numberOfConcurrentTasks': 6
             }, loads(body))
 
     def testNumerate(self):

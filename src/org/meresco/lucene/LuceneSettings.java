@@ -182,7 +182,7 @@ public class LuceneSettings {
         private static Analyzer getAnalyzer(JsonObject analyzer) {
                 switch (analyzer.getString("type")) {
                 case "MerescoDutchStemmingAnalyzer":
-                        JsonArray jsonFields = analyzer.getJsonArray("fields");
+                        JsonArray jsonFields = analyzer.getJsonArray("stemmingFields");
                         String[] fields = new String[jsonFields.size()];
                         for (int i = 0; i < jsonFields.size(); i++) {
                                 fields[i] = jsonFields.getString(i);

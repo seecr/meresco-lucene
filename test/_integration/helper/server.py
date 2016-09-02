@@ -129,8 +129,8 @@ def main(reactor, port, serverPort, autocompletePort, databasePath, **kwargs):
                 fieldRegistry=fieldRegistry,
                 commitCount=30,
                 commitTimeout=1,
-                analyzer=MerescoDutchStemmingAnalyzer(["field4", "field5"]),
-                _analyzer=dict(type="MerescoDutchStemmingAnalyzer", fields=['field4', 'field5'])
+                #analyzer=MerescoDutchStemmingAnalyzer(["field4", "field5"]),
+                analyzer=dict(type="MerescoDutchStemmingAnalyzer", stemmingFields=['field4', 'field5'])
             )
 
     http11_request = be((HttpRequest1_1(),

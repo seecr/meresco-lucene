@@ -30,33 +30,27 @@ from org.meresco.lucene.py_analysis import MerescoStandardAnalyzer
 from meresco.components.json import JsonDict
 from meresco.lucene.fieldregistry import FieldRegistry
 
+SETTING_NAMES = ["commitTimeout", "commitCount", "readonly", "lruTaxonomyWriterCacheSize", "analyzer", "similarity", "mergePolicy", "numberOfConcurrentTasks", "cacheFacetOrdinals", "verbose"]
+
 class LuceneSettings(object):
     def __init__(self,
                 commitTimeout=10,
                 commitCount=100000,
                 readonly=False,
                 lruTaxonomyWriterCacheSize=4000,
-                analyzer=MerescoStandardAnalyzer(),
-                _analyzer=dict(type="MerescoStandardAnalyzer"),
+                #analyzer=MerescoStandardAnalyzer(),
+                analyzer=dict(type="MerescoStandardAnalyzer"),
                 similarity=dict(type="BM25Similarity"),
+                mergePolicy=dict(type="TieredMergePolicy", maxMergeAtOnce=2, segmentsPerTier=8.0),
                 fieldRegistry=FieldRegistry(),
-                maxMergeAtOnce=2,
-                segmentsPerTier=8.0,
                 numberOfConcurrentTasks=6,
+                cacheFacetOrdinals=True,
                 verbose=True,
             ):
-        self.commitTimeout = commitTimeout
-        self.commitCount = commitCount
-        self.readonly = readonly
-        self.lruTaxonomyWriterCacheSize = lruTaxonomyWriterCacheSize
-        self.analyzer = analyzer
-        self._analyzer = _analyzer
-        self.similarity = similarity
+        local = locals()
+        for name in SETTING_NAMES:
+            self.__dict__[name] = local[name]
         self.fieldRegistry = fieldRegistry
-        self.maxMergeAtOnce = maxMergeAtOnce
-        self.segmentsPerTier = segmentsPerTier
-        self.numberOfConcurrentTasks = numberOfConcurrentTasks
-        self.verbose = verbose
 
     def clone(self, **kwargs):
         arguments = copy(self.__dict__)
@@ -73,14 +67,6 @@ class LuceneSettings(object):
                     "multiValued": options["multiValued"],
                     "fieldname": options["indexFieldName"]
                 })
-        return JsonDict(
-                commitTimeout=self.commitTimeout,
-                commitCount=self.commitCount,
-                lruTaxonomyWriterCacheSize=self.lruTaxonomyWriterCacheSize,
-                analyzer=self._analyzer,
-                similarity=self.similarity,
-                maxMergeAtOnce=self.maxMergeAtOnce,
-                segmentsPerTier=self.segmentsPerTier,
-                numberOfConcurrentTasks=self.numberOfConcurrentTasks,
-                drilldownFields=drilldownFields
-            )
+        result = JsonDict(drilldownFields = drilldownFields)
+        result.update((k,v) for k,v in self.__dict__.iteritems() if k in SETTING_NAMES)
+        return result

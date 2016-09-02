@@ -864,10 +864,7 @@ public class Lucene {
 
             IndexWriterConfig config = new IndexWriterConfig(settings.analyzer);
             config.setSimilarity(settings.similarity);
-            TieredMergePolicy mergePolicy = new TieredMergePolicy();
-            mergePolicy.setMaxMergeAtOnce(settings.maxMergeAtOnce);
-            mergePolicy.setSegmentsPerTier(settings.segmentsPerTier);
-            config.setMergePolicy(mergePolicy);
+            config.setMergePolicy(settings.getMergePolicy());
 
             this.indexWriter = new IndexWriter(indexDirectory, config);
             this.indexWriter.commit();

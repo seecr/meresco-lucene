@@ -27,6 +27,8 @@
 
 from copy import copy
 from org.meresco.lucene.py_analysis import MerescoStandardAnalyzer, MerescoDutchStemmingAnalyzer
+from org.apache.lucene.analysis.core import WhitespaceAnalyzer
+
 from java.lang import Class
 from meresco.components.json import JsonDict
 from meresco.lucene.fieldregistry import FieldRegistry
@@ -63,6 +65,8 @@ class LuceneSettings(object):
             return MerescoStandardAnalyzer()
         elif config['type'] == "MerescoDutchStemmingAnalyzer":
             return MerescoDutchStemmingAnalyzer(config['stemmingFields'])
+        elif config['type'] == "WhitespaceAnalyzer":
+            return WhitespaceAnalyzer()
         raise Exception("No support for type " + str(self._analyzer))
 
     def similarity(self):

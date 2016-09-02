@@ -101,3 +101,8 @@ class LuceneSettingsTest(SeecrTestCase):
         analyzer = settings.createAnalyzer()
         self.assertEquals("MerescoDutchStemmingAnalyzer", analyzer.class_.getSimpleName())
         self.assertEquals(["field_a", "field_b"], analyzer.getStemmingFields())
+
+    def testCreateWhiteSpaceAnalyzer(self):
+        settings = LuceneSettings(analyzer=dict(type="WhitespaceAnalyzer"))
+        analyzer = settings.createAnalyzer()
+        self.assertEquals("WhitespaceAnalyzer", analyzer.class_.getSimpleName())

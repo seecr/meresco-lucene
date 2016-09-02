@@ -27,6 +27,7 @@
 
 from copy import copy
 from org.meresco.lucene.py_analysis import MerescoStandardAnalyzer
+from java.lang import Class
 from meresco.components.json import JsonDict
 from meresco.lucene.fieldregistry import FieldRegistry
 
@@ -38,7 +39,6 @@ class LuceneSettings(object):
                 commitCount=100000,
                 readonly=False,
                 lruTaxonomyWriterCacheSize=4000,
-                #analyzer=MerescoStandardAnalyzer(),
                 analyzer=dict(type="MerescoStandardAnalyzer"),
                 similarity=dict(type="BM25Similarity"),
                 mergePolicy=dict(type="TieredMergePolicy", maxMergeAtOnce=2, segmentsPerTier=8.0),
@@ -49,11 +49,28 @@ class LuceneSettings(object):
             ):
         local = locals()
         for name in SETTING_NAMES:
-            self.__dict__[name] = local[name]
+            self.__dict__['_' + name] = local[name]
         self.fieldRegistry = fieldRegistry
+   
+    @property
+    def analyzer(self):
+        return self._analyzer
+
+    '''Is this the right place for this method?'''
+    def createAnalyzer(self):
+        if self._analyzer['type'] == "MerescoStandardAnalyzer":
+            return MerescoStandardAnalyzer()
+        raise Exception("No support for type " + str(self._analyzer))
+
+    def similarity(self):
+        return self._similarity
+
+    @property
+    def verbose(self):
+        return self._verbose
 
     def clone(self, **kwargs):
-        arguments = copy(self.__dict__)
+        arguments = dict((k[1:],v) for k,v in self.__dict__.iteritems() if k[1:] in SETTING_NAMES)
         arguments.update(kwargs)
         return LuceneSettings(**arguments)
 
@@ -68,5 +85,5 @@ class LuceneSettings(object):
                     "fieldname": options["indexFieldName"]
                 })
         result = JsonDict(drilldownFields = drilldownFields)
-        result.update((k,v) for k,v in self.__dict__.iteritems() if k in SETTING_NAMES)
+        result.update((k[1:],v) for k,v in self.__dict__.iteritems() if k[1:] in SETTING_NAMES)
         return result

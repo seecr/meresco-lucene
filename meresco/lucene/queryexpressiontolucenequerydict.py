@@ -40,7 +40,7 @@ class QueryExpressionToLuceneQueryDict(Observable):
     def __init__(self, unqualifiedTermFields, luceneSettings, ignoreStemmingForWords=None):
         Observable.__init__(self)
         self._unqualifiedTermFields = unqualifiedTermFields
-        self._analyzer = luceneSettings.analyzer
+        self._analyzer = luceneSettings.createAnalyzer()
         self._fieldRegistry = luceneSettings.fieldRegistry
         self._ignoreStemmingForWords = set(ignoreStemmingForWords or [])
 

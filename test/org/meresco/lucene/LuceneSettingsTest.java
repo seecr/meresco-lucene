@@ -50,8 +50,8 @@ public class LuceneSettingsTest {
                         .add("similarity", "BM25(k1=1.2,b=0.75)")
                         .add("mergePolicy", Json.createObjectBuilder()
                                         .add("type", "TieredMergePolicy")
-                                        .add("segmentsPerTier", 2.0)
-                                        .add("maxMergeAtOnce", 8))
+                                        .add("segmentsPerTier", 8.0)
+                                        .add("maxMergeAtOnce", 2))
                         .add("lruTaxonomyWriterCacheSize", 4000)
                         .add("numberOfConcurrentTasks", 6)
                         .add("commitCount", 100000)
@@ -67,6 +67,7 @@ public class LuceneSettingsTest {
         @Test
         public void testSettingsAsJson() {
                 LuceneSettings settings = new LuceneSettings();
+                assertEquals(DEFAULT_SETTINGS.keySet(), settings.asJson().keySet());
                 assertEquals(DEFAULT_SETTINGS, settings.asJson());
         }
 

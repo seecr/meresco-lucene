@@ -86,3 +86,9 @@ class LuceneSettingsTest(SeecrTestCase):
         self.assertEquals(soll.keys(), ist.keys())
         self.assertEquals(soll, ist)
 
+    def testGetters(self):
+        settings = LuceneSettings(cacheFacetOrdinals=False)
+        self.assertTrue(settings.verbose)
+        self.assertEquals({'type':'MerescoStandardAnalyzer'}, settings.analyzer)
+
+

@@ -107,6 +107,7 @@ class LuceneServerTest(IntegrationTestCase):
         self.assertTrue("200 OK" in header.upper(), header)
         self.assertEqual({
                 'similarity': 'BM25(k1=1.2,b=0.75)',
+                'cacheFacetOrdinals': True,
                 'clustering': {
                     'clusterMoreRecords': 100,
                     'strategies': [{

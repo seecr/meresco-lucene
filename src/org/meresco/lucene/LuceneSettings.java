@@ -65,6 +65,7 @@ public class LuceneSettings {
     };
     public ClusterConfig clusterConfig = new ClusterConfig(0.4, 1, 100);
     public InterpolateEpsilon interpolateEpsilon = new InterpolateEpsilon();
+    public boolean cacheFacetOrdinals = true;
 
     public JsonObject asJson() {
         JsonArrayBuilder strategiesJsonBuilder = Json.createArrayBuilder();
@@ -89,6 +90,7 @@ public class LuceneSettings {
                 .add("numberOfConcurrentTasks", numberOfConcurrentTasks)
                 .add("commitCount", commitCount)
                 .add("commitTimeout", commitTimeout)
+                .add("cacheFacetOrdinals", this.cacheFacetOrdinals)
                 .add("clustering", Json.createObjectBuilder()
                         .add("clusterMoreRecords", clusterConfig.clusterMoreRecords)
                         .add("strategies", strategiesJsonBuilder))
@@ -128,6 +130,9 @@ public class LuceneSettings {
                 break;
             case "numberOfConcurrentTasks":
                 numberOfConcurrentTasks = object.getInt(key);
+                break;
+            case "cacheFacetOrdinals":
+                this.cacheFacetOrdinals = object.getBoolean("cacheFacetOrdinals");
                 break;
             case "analyzer":
                 analyzer = getAnalyzer(object.getJsonObject(key));

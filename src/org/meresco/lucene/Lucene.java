@@ -68,7 +68,6 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -86,12 +85,12 @@ import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.LuceneResponse.GroupingHit;
 import org.meresco.lucene.LuceneResponse.Hit;
-import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.search.DeDupFilterSuperCollector;
 import org.meresco.lucene.search.FacetSuperCollector;
 import org.meresco.lucene.search.GroupSuperCollector;
@@ -108,17 +107,17 @@ import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
 
-
 public class Lucene {
     @SuppressWarnings("serial")
-	public static class UninitializedException extends Exception {}
+    public static class UninitializedException extends Exception {
+    }
 
     public static final String ID_FIELD = "__id__";
     private int commitCount = 0;
     private Timer commitTimer;
     public String name;
     private Path stateDir;
-    private Map<String, CachedOrdinalsReader> cachedOrdinalsReader = new HashMap<String, CachedOrdinalsReader>();
+    private Map<String, OrdinalsReader> ordinalsReaders = new HashMap<String, OrdinalsReader>();
     private DirectSpellChecker spellChecker = new DirectSpellChecker();
     LuceneData data = new LuceneData();
 
@@ -183,7 +182,7 @@ public class Lucene {
         if (commitTimer == null) {
             TimerTask timerTask = new TimerTask() {
                 @Override
-				public void run() {
+                public void run() {
                     try {
                         commit();
                     } catch (Exception e) {
@@ -231,7 +230,8 @@ public class Lucene {
         return executeQuery(q, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Query> filters, List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws Throwable {
+    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Query> filters, List<AggregateScoreSuperCollector> scoreCollectors,
+            Collection<KeySuperCollector> keyCollectors) throws Throwable {
         int totalHits;
         List<LuceneResponse.Hit> hits;
         Collectors collectors = null;
@@ -241,11 +241,11 @@ public class Lucene {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             while (true) {
-            	ClusterConfig clusterConfig = null;
+                ClusterConfig clusterConfig = null;
                 if (q.clustering) {
                     clusterConfig = q.clusterConfig;
                     if (clusterConfig == null) {
-                    	clusterConfig = data.getSettings().clusterConfig;
+                        clusterConfig = data.getSettings().clusterConfig;
                     }
                 }
                 collectors = createCollectors(q, topCollectorStop + (q.clustering ? clusterConfig.clusterMoreRecords : 0), keyCollectors, scoreCollectors, reference);
@@ -310,16 +310,16 @@ public class Lucene {
             return query;
         }
         return new BooleanQuery.Builder()
-        	.add(query, BooleanClause.Occur.MUST)
-        	.add(filter, BooleanClause.Occur.FILTER)
-        	.build();
+                .add(query, BooleanClause.Occur.MUST)
+                .add(filter, BooleanClause.Occur.FILTER)
+                .build();
     }
 
     private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader, ClusterConfig clusterConfig) throws Exception {
-    	int totalHits = collectors.topCollector.getTotalHits();
+        int totalHits = collectors.topCollector.getTotalHits();
         TopDocs topDocs = collectors.topCollector.topDocs(q.start);
 
-    	MerescoClusterer clusterer = new MerescoClusterer(indexReader, clusterConfig, this.getSettings().interpolateEpsilon, totalHits, q.stop - q.start);
+        MerescoClusterer clusterer = new MerescoClusterer(indexReader, clusterConfig, this.getSettings().interpolateEpsilon, totalHits, q.stop - q.start);
         long t0 = System.currentTimeMillis();
         clusterer.processTopDocs(topDocs);
         times.put("processTopDocsForClustering", System.currentTimeMillis() - t0);
@@ -340,25 +340,24 @@ public class Lucene {
             Integer representative = null;
             MerescoCluster cluster = clusterer.cluster(scoreDoc.doc);
             if (cluster == null) {
-            	representative = scoreDoc.doc;
-            	seenDocIds.add(representative);
-            }
-            else {
+                representative = scoreDoc.doc;
+                seenDocIds.add(representative);
+            } else {
                 for (DocScore ds : cluster.topDocs) {
-                	if (representative == null) {
-                		representative = ds.docId;
-                	}
-                	seenDocIds.add(ds.docId);
+                    if (representative == null) {
+                        representative = ds.docId;
+                    }
+                    seenDocIds.add(ds.docId);
                 }
             }
 
             ClusterHit hit = new ClusterHit(getDocument(representative).get(ID_FIELD), scoreDoc.score);
             if (cluster != null) {
-            	hit.topTerms = cluster.topTerms;
-	            hit.topDocs = cluster.topDocs;
-	            for (DocScore docScore : cluster.topDocs) {
-	                docScore.identifier = getDocument(docScore.docId).get(ID_FIELD);
-	            }
+                hit.topTerms = cluster.topTerms;
+                hit.topDocs = cluster.topDocs;
+                for (DocScore docScore : cluster.topDocs) {
+                    docScore.identifier = getDocument(docScore.docId).get(ID_FIELD);
+                }
             }
             hits.add(hit);
             count += 1;
@@ -376,7 +375,8 @@ public class Lucene {
         HashSet<String> seenIds = new HashSet<>();
         int count = q.start;
         List<LuceneResponse.Hit> hits = new ArrayList<>();
-        for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(q.stop == 0 ? 1 : q.start).scoreDocs) { //TODO: temp fix for start/stop = 0
+        for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(q.stop == 0 ? 1 : q.start).scoreDocs) { // TODO: temp fix for
+                                                                                                         // start/stop = 0
             if (count >= q.stop)
                 break;
             Document document;
@@ -418,7 +418,7 @@ public class Lucene {
                 document = getDocument(scoreDoc.doc);
                 hit = new Hit(document.get(ID_FIELD), scoreDoc.score);
             }
-            for (String storedField: q.storedFields) {
+            for (String storedField : q.storedFields) {
                 hit.fields.add(document.getFields(storedField));
             }
             hits.add(hit);
@@ -469,7 +469,8 @@ public class Lucene {
         }
     }
 
-    private Collectors createCollectors(QueryData q, int stop, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors, SearcherAndTaxonomy reference) throws Exception {
+    private Collectors createCollectors(QueryData q, int stop, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors, SearcherAndTaxonomy reference)
+            throws Exception {
         Collectors allCollectors = new Collectors();
         SuperCollector<?> resultsCollector;
         if (q.groupingField != null) {
@@ -506,9 +507,9 @@ public class Lucene {
 
     private TopDocSuperCollector topCollector(int start, int stop, Sort sort) {
         if (stop <= start)
-            //TODO: temp fix for start/stop = 0; You should use TotalHitCountSuperCollector
+            // TODO: temp fix for start/stop = 0; You should use TotalHitCountSuperCollector
             return new TopScoreDocSuperCollector(stop == 0 ? 1 : stop);
-//            return new TotalHitCountSuperCollector();
+        // return new TotalHitCountSuperCollector();
         if (sort == null)
             return new TopScoreDocSuperCollector(stop);
         return new TopFieldSuperCollector(sort, stop, true, false);
@@ -532,12 +533,13 @@ public class Lucene {
         return indexFieldnames.toArray(new String[0]);
     }
 
-    private OrdinalsReader getOrdinalsReader(String indexFieldname) {
-        CachedOrdinalsReader reader = cachedOrdinalsReader.get(indexFieldname);
+    private OrdinalsReader getOrdinalsReader(String indexFieldname) throws Exception {
+        OrdinalsReader reader = ordinalsReaders.get(indexFieldname);
         if (reader == null) {
-            DocValuesOrdinalsReader docValuesReader = indexFieldname == null ? new DocValuesOrdinalsReader() : new DocValuesOrdinalsReader(indexFieldname);
-            reader = new CachedOrdinalsReader(docValuesReader);
-            cachedOrdinalsReader.put(indexFieldname, reader);
+            reader = indexFieldname == null ? new DocValuesOrdinalsReader() : new DocValuesOrdinalsReader(indexFieldname);
+            if (this.getSettings().cacheFacetOrdinals)
+                reader = new CachedOrdinalsReader(reader);
+            ordinalsReaders.put(indexFieldname, reader);
         }
         return reader;
     }
@@ -576,14 +578,14 @@ public class Lucene {
 
     public List<TermCount> termsForField(String field, String prefix, int limit) throws Exception {
 
-//        if t == str:
-//            convert = lambda term: term.utf8ToString()
-//        elif t == int:
-//            convert = lambda term: NumericUtils.prefixCodedToInt(term)
-//        elif t == long:
-//            convert = lambda term: NumericUtils.prefixCodedToLong(term)
-//        elif t == float:
-//            convert = lambda term: NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term))
+        // if t == str:
+        // convert = lambda term: term.utf8ToString()
+        // elif t == int:
+        // convert = lambda term: NumericUtils.prefixCodedToInt(term)
+        // elif t == long:
+        // convert = lambda term: NumericUtils.prefixCodedToLong(term)
+        // elif t == float:
+        // convert = lambda term: NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term))
 
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
@@ -633,7 +635,7 @@ public class Lucene {
             }
             Collections.sort(fieldnames);
             return fieldnames;
-        }  finally {
+        } finally {
             data.getManager().release(reference);
         }
     }
@@ -650,12 +652,12 @@ public class Lucene {
                 if (ordinal == TaxonomyReader.INVALID_ORDINAL)
                     break;
                 String[] components = taxoReader.getPath(ordinal).components;
-                fieldnames.add(components[components.length - 1 ]);
+                fieldnames.add(components[components.length - 1]);
                 if (fieldnames.size() >= limit)
                     break;
             }
             return fieldnames;
-        }  finally {
+        } finally {
             data.getManager().release(reference);
         }
     }
@@ -704,13 +706,13 @@ public class Lucene {
     }
 
     public Query createDrilldownQuery(Query luceneQuery, List<String[]> drilldownQueries) throws Exception {
-        BooleanQuery.Builder q = new BooleanQuery.Builder(); //TODO: disableCoord ??
+        BooleanQuery.Builder q = new BooleanQuery.Builder(); // TODO: disableCoord ??
         if (luceneQuery != null)
             q.add(luceneQuery, Occur.MUST);
-        for (int i = 0; i<drilldownQueries.size(); i+=2) {
+        for (int i = 0; i < drilldownQueries.size(); i += 2) {
             String field = drilldownQueries.get(i)[0];
             String indexFieldName = data.getFacetsConfig().getDimConfig(field).indexFieldName;
-            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(i+1))), Occur.MUST);
+            q.add(new TermQuery(DrillDownQuery.term(indexFieldName, field, drilldownQueries.get(i + 1))), Occur.MUST);
         }
         return q.build();
     }
@@ -779,7 +781,6 @@ public class Lucene {
         }
     }
 
-
     public static class Collectors {
         public GroupSuperCollector groupingCollector;
         public DeDupFilterSuperCollector dedupCollector;
@@ -791,6 +792,7 @@ public class Lucene {
     public class TermCount {
         public String term;
         public int count;
+
         public TermCount(String term, int count) {
             this.term = term;
             this.count = count;
@@ -813,8 +815,8 @@ public class Lucene {
 
         @Override
         public boolean equals(Object obj) {
-            if (obj instanceof KeyNameQuery){
-                KeyNameQuery other = (KeyNameQuery)obj;
+            if (obj instanceof KeyNameQuery) {
+                KeyNameQuery other = (KeyNameQuery) obj;
                 return other.keyName.equals(keyName) && other.query.equals(query);
             }
             return false;
@@ -934,7 +936,8 @@ public class Lucene {
             }
 
             @Override
-            public void beforeRefresh() throws IOException {}
+            public void beforeRefresh() throws IOException {
+            }
 
             public boolean isRefreshed() {
                 if (refreshed) {

@@ -56,6 +56,7 @@ public class LuceneSettingsTest {
             .add("numberOfConcurrentTasks", 6)
             .add("commitCount", 100000)
             .add("commitTimeout", 10)
+            .add("cacheFacetOrdinals", true)
             .add("clustering", Json.createObjectBuilder()
                     .add("clusterMoreRecords", 100)
                     .add("strategies", Json.createArrayBuilder()
@@ -229,4 +230,14 @@ public class LuceneSettingsTest {
         assertEquals("a", field.filterValue);
         assertEquals(0.3, field.weight, 0.02);
     }
+
+    @Test
+    public void testCacheFacetOrdinals() throws Exception {
+        LuceneSettings settings = new LuceneSettings();
+        String json = "{\"cacheFacetOrdinals\": false}";
+        settings.updateSettings(new StringReader(json));
+        assertFalse(settings.cacheFacetOrdinals);
+
+    }
+
 }

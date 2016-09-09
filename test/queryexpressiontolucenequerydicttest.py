@@ -68,6 +68,22 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
             {"type": "TermQuery", "term": {"field": "aField", "value": "value"}, 'boost': 1.0},
             self._convert(QueryExpression.searchterm(term="value")))
 
+    def testUnqualifiedTermFieldsWithNestedExpression(self):
+        self.unqualifiedFields = [('aField', 1.0)]
+        expr = QueryExpression.nested(operator='AND')
+        expr.operands = [
+            QueryExpression.searchterm(term="value1"),
+            QueryExpression.searchterm(term="value2")
+        ]
+        self.assertEquals({
+                'type': 'BooleanQuery',
+                'clauses': [
+                    {'type': 'TermQuery', 'occur': 'MUST', 'term': {'field': 'aField', 'value': u'value1'}, 'boost': 1.0},
+                    {'type': 'TermQuery', 'occur': 'MUST', 'term': {'field': 'aField', 'value': u'value2'}, 'boost': 1.0}
+                ],
+            },
+            self._convert(expr))
+
     def testMultipleUnqualifiedTermFields(self):
         self.unqualifiedFields = [('aField', 1.0), ('oField', 2.0)]
         self.assertEquals(

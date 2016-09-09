@@ -67,7 +67,7 @@ class QueryExpressionToLuceneQueryDict(Observable):
 
     def _expression(self, expr, unqualifiedTermFields=None):
         if expr.operator:
-            return self._nestedExpression(expr)
+            return self._nestedExpression(expr, unqualifiedTermFields=unqualifiedTermFields)
         if expr.index is None:
             if expr.term == '*':
                 return dict(type="MatchAllDocsQuery")
@@ -99,13 +99,13 @@ class QueryExpressionToLuceneQueryDict(Observable):
                 query['boost'] = expr.relation_boost
             return query
 
-    def _nestedExpression(self, expr):
+    def _nestedExpression(self, expr, unqualifiedTermFields):
         q = dict(type="BooleanQuery", clauses=[])
         for operand in expr.operands:
             occur = OCCUR[expr.operator]
             if operand.must_not:
                 occur = OCCUR['NOT']
-            query = self._expression(operand)
+            query = self._expression(operand, unqualifiedTermFields=unqualifiedTermFields)
             query['occur'] = occur
             q['clauses'].append(query)
         return q

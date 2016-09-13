@@ -680,6 +680,10 @@ public class Lucene {
         }
     }
 
+    public void search(Query q, KeySuperCollector keyCollector) throws Throwable {
+        this.search(q, null, keyCollector);
+    }
+
     public FixedBitSet collectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
         return collectKeys(filterQuery, keyName, query, true);
     }

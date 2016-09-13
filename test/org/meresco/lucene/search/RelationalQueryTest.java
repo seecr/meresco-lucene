@@ -1,26 +1,35 @@
 package org.meresco.lucene.search;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.Arrays;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.Lucene;
+import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.LuceneSettings;
+import org.meresco.lucene.LuceneTest;
 import org.meresco.lucene.MultiLuceneTest;
+import org.meresco.lucene.QueryData;
 import org.meresco.lucene.SeecrTestCase;
+import org.meresco.lucene.queries.KeyFilter;
 import org.meresco.lucene.search.join.JoinANDQuery;
 import org.meresco.lucene.search.join.LuceneQuery;
-import org.meresco.lucene.search.join.NoOp;
 import org.meresco.lucene.search.join.RelationalQuery;
 import org.meresco.lucene.search.join.Result;
+
 
 public class RelationalQueryTest extends SeecrTestCase {
     private Lucene luceneA;
     private Lucene luceneB;
     private Lucene luceneC;
 
-    @Before
+    @Override
+	@Before
     public void setUp() throws Exception {
         super.setUp();
         LuceneSettings settingsA = new LuceneSettings();
@@ -33,7 +42,8 @@ public class RelationalQueryTest extends SeecrTestCase {
         MultiLuceneTest.prepareFixture(luceneA, luceneB, luceneC);
     }
 
-    @After
+    @Override
+	@After
     public void tearDown() throws Exception {
         luceneA.close();
         luceneB.close();
@@ -53,11 +63,27 @@ public class RelationalQueryTest extends SeecrTestCase {
     }
 
     @Test
-    public void testSimpleQuery() {
+    public void testSimpleAndJoinQuery() {
         RelationalQuery root = new JoinANDQuery(
-                new LuceneQuery(luceneC, "C", new TermQuery(new Term("O", "true"))/* here all those args*/),
-                new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true"))));
-        Result result = root.execute(new NoOp());
-                
+        	new LuceneQuery(luceneB, "B", new TermQuery(new Term("N", "true"))  /* here all those args*/ ),
+	        new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true"))));
+        Result result = root.execute();
+        assertEquals(4, result.getBitSet().cardinality());
+
+
+        LuceneResponse response;
+        try {
+			 response = luceneA.executeQuery(
+					new QueryData(),
+					null,
+					null,
+					Arrays.asList(new KeyFilter(result.getBitSet(), "A")),
+					null,
+					null);
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
+        LuceneTest.compareHits(response, "A-M", "A-MU", "A-MQ", "A-MQU");
     }
+
 }

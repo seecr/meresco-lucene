@@ -3,12 +3,12 @@ package org.meresco.lucene.search.join;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.FixedBitSet;
 
+
 public class Result {
+    private BitSet bitset;
 
-    private RelationalQuery query;
-
-    public Result(FixedBitSet collectedKeys) {
-        // TODO Auto-generated constructor stub
+	public Result(FixedBitSet collectedKeys) {
+        this.bitset = collectedKeys;
     }
 
     public Result intersect(Result resultRhs) {
@@ -17,8 +17,6 @@ public class Result {
     }
 
     public BitSet getBitSet() {
-        // TODO Auto-generated method stub
-        return null;
+        return bitset;
     }
-
 }

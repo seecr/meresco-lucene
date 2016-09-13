@@ -26,18 +26,20 @@ public class LuceneQuery implements RelationalQuery {
         this.rank = rank;
     }
 
-    public Result execute(Operation op) {
+    @Override
+	public Result execute() {
         KeySuperCollector keyCollector = new KeySuperCollector(this.keyName);
-        op.rewrite(this);
         try {
             this.lucene.search(this.q, keyCollector);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
+        System.out.println("collected keys: " + keyCollector.getCollectedKeys());
         return new Result(keyCollector.getCollectedKeys());
     }
 
-    public void addFilter(BitSet bitset) {
+    @Override
+	public void addFilter(BitSet bitset) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         builder.add(q, BooleanClause.Occur.MUST);
         try {

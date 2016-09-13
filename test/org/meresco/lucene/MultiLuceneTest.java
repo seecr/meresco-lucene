@@ -46,8 +46,8 @@ import org.apache.lucene.util.FixedBitSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
+import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 
 
@@ -65,13 +65,16 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneSettings settingsB = new LuceneSettings();
         LuceneSettings settingsC = new LuceneSettings();
         settingsC.similarity = new TermFrequencySimilarity();
-
         luceneA = new Lucene("coreA", this.tmpDir.resolve("a"), settingsA);
         luceneB = new Lucene("coreB", this.tmpDir.resolve("b"), settingsB);
         luceneC = new Lucene("coreC", this.tmpDir.resolve("c"), settingsC);
-
         multiLucene = new MultiLucene(new ArrayList<Lucene>() {{ add(luceneA); add(luceneB); add(luceneC);}});
+        prepareFixture(luceneA, luceneB, luceneC);
+    }
 
+    @SuppressWarnings({ "unchecked", "serial", "rawtypes" })
+    public
+    static void prepareFixture(Lucene luceneA, Lucene luceneB, Lucene luceneC) throws Exception {
         LuceneTest.addDocument(luceneA, "A",      new HashMap() {{put("A", 1);}}, new HashMap() {{put("M", "false"); put("Q", "false"); put("U", "false"); put("S", "1");}});
         LuceneTest.addDocument(luceneA, "A-U",    new HashMap() {{put("A", 2 );}}, new HashMap() {{put("M", "false"); put("Q", "false"); put("U", "true" ); put("S", "2");}});
         LuceneTest.addDocument(luceneA, "A-Q",    new HashMap() {{put("A", 3 );}}, new HashMap() {{put("M", "false"); put("Q", "true" ); put("U", "false"); put("S", "3");}});
@@ -97,13 +100,12 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneTest.addDocument(luceneC, "C-S", new HashMap() {{put("C", 8);}}, new HashMap() {{put("S", "true");}});
         LuceneTest.addDocument(luceneC, "C-S2", new HashMap() {{put("C", 7);}}, new HashMap() {{put("S", "false");}});
 
+        luceneA.getSettings().commitCount = 1;
+        luceneB.getSettings().commitCount = 1;
+        luceneC.getSettings().commitCount = 1;
         luceneA.commit();
         luceneB.commit();
         luceneC.commit();
-
-        settingsA.commitCount = 1;
-        settingsB.commitCount = 1;
-        settingsC.commitCount = 1;
     }
 
     @After

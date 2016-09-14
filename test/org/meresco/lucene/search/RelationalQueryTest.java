@@ -20,6 +20,7 @@ import org.meresco.lucene.SeecrTestCase;
 import org.meresco.lucene.queries.KeyFilter;
 import org.meresco.lucene.search.join.JoinANDQuery;
 import org.meresco.lucene.search.join.LuceneQuery;
+import org.meresco.lucene.search.join.NotQuery;
 import org.meresco.lucene.search.join.RelationalQuery;
 import org.meresco.lucene.search.join.Result;
 
@@ -82,7 +83,6 @@ public class RelationalQueryTest extends SeecrTestCase {
                 new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))),
             new LuceneQuery(luceneC, "C", new TermQuery(new Term("R", "true"))));
         Result result = root.execute();
-        assertEquals(1, result.getBitSet().cardinality());
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-M");
     }
@@ -96,7 +96,6 @@ public class RelationalQueryTest extends SeecrTestCase {
                 new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
             ));
         Result result = root.execute();
-        assertEquals(1, result.getBitSet().cardinality());
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-M");
     }
@@ -111,7 +110,6 @@ public class RelationalQueryTest extends SeecrTestCase {
             new LuceneQuery(luceneB, "B", new TermQuery(new Term("N", "true")))
         );
         Result result = root.execute();
-        assertEquals(1, result.getBitSet().cardinality());
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-MU");
     }
@@ -129,9 +127,33 @@ public class RelationalQueryTest extends SeecrTestCase {
     		new LuceneQuery(luceneA, "A", "C", new MatchAllDocsQuery())
         );
         Result result = root.execute();
-        assertEquals(1, result.getBitSet().cardinality());
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-MU");
+    }
+
+    @Test
+    public void testSimpleNotQuery() {
+    	RelationalQuery root;
+    	Result result;
+    	LuceneResponse response;
+
+        root = new JoinANDQuery(
+    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true"))),
+			new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true")))  /* first without the NOT for reference only */
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-M", "A-MQ");
+
+        root = new JoinANDQuery(
+    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true"))),
+    		new NotQuery(
+    			new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true")))
+    		)
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-MU", "A-MQU", "A-MQ");  // A-MQ unexpected, but here because of both O=true and O=false for key 7, still undesirable
     }
 
 

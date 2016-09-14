@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BitSet;
 import org.meresco.lucene.Lucene;
@@ -33,7 +34,6 @@ public class LuceneQuery implements RelationalQuery {
     }
 
 
-
 	@Override
 	public Result execute() {
         KeySuperCollector keyCollector = new KeySuperCollector(this.collectKeyName);
@@ -45,10 +45,18 @@ public class LuceneQuery implements RelationalQuery {
         return new Result(keyCollector.getCollectedKeys());
     }
 
+	@Override
+	public void invert() {
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
+        builder.add(this.q, BooleanClause.Occur.MUST_NOT);
+        this.q = builder.build();
+	}
+
     @Override
 	public void addFilter(BitSet bitset) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(q, BooleanClause.Occur.MUST);
+        builder.add(this.q, BooleanClause.Occur.MUST);
         try {
             builder.add(new KeyFilter(bitset, this.filterKeyName), BooleanClause.Occur.MUST);
         } catch (IOException e) {

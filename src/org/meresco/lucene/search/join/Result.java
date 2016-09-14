@@ -11,11 +11,6 @@ public class Result {
         this.bitset = collectedKeys;
     }
 
-    public Result intersect(Result resultRhs) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
     public BitSet getBitSet() {
         return bitset;
     }

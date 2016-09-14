@@ -7,4 +7,6 @@ public interface RelationalQuery {
     public Result execute();
 
     public void addFilter(BitSet keyFilter);
+
+	public void invert();
 }

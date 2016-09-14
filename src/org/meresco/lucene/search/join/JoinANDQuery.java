@@ -7,6 +7,7 @@ public class JoinANDQuery implements RelationalQuery {
     private RelationalQuery second;
     private RelationalQuery first;
 	private BitSet keyFilter;
+	private boolean inverted;
 
     public JoinANDQuery(RelationalQuery first, RelationalQuery second) {
         this.first = first;
@@ -21,11 +22,22 @@ public class JoinANDQuery implements RelationalQuery {
         Result result = this.first.execute();
         BitSet bits = result.getBitSet();
         this.second.addFilter(bits);
-        return this.second.execute();
+        result = this.second.execute();
+        if (this.inverted) {
+        	System.out.println("invert on JoinANDQuery not yet supported");
+        	// TODO:
+        	// invert result somehow, while respecting filter...
+        }
+        return result;
     }
 
     @Override
     public void addFilter(BitSet keyFilter) {
     	this.keyFilter = keyFilter;
     }
+
+	@Override
+	public void invert() {
+		this.inverted = !this.inverted;
+	}
 }

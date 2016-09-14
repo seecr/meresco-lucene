@@ -6,6 +6,7 @@ import org.apache.lucene.util.BitSet;
 public class JoinANDQuery implements RelationalQuery {
     private RelationalQuery second;
     private RelationalQuery first;
+	private BitSet keyFilter;
 
     public JoinANDQuery(RelationalQuery first, RelationalQuery second) {
         this.first = first;
@@ -14,15 +15,17 @@ public class JoinANDQuery implements RelationalQuery {
 
     @Override
     public Result execute() {
+    	if (this.keyFilter != null) {
+    		this.first.addFilter(this.keyFilter);
+    	}
         Result result = this.first.execute();
         BitSet bits = result.getBitSet();
-        System.out.println("bits: " + bits);
         this.second.addFilter(bits);
         return this.second.execute();
     }
 
     @Override
     public void addFilter(BitSet keyFilter) {
-        // TODO Auto-generated method stub
+    	this.keyFilter = keyFilter;
     }
 }

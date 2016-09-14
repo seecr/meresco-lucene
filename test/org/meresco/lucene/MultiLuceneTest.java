@@ -57,7 +57,8 @@ public class MultiLuceneTest extends SeecrTestCase {
     private Lucene luceneC;
     private MultiLucene multiLucene;
 
-    @SuppressWarnings({ "unchecked", "serial", "rawtypes" })
+    @Override
+	@SuppressWarnings({ "unchecked", "serial", "rawtypes" })
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -108,7 +109,8 @@ public class MultiLuceneTest extends SeecrTestCase {
         luceneC.commit();
     }
 
-    @After
+    @Override
+	@After
     public void tearDown() throws Exception {
         luceneA.close();
         luceneB.close();

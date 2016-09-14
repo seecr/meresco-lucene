@@ -15,17 +15,16 @@ public class JoinANDQuery implements RelationalQuery {
 
     @Override
     public IntermediateResult execute() {
-    	if (this.keyFilter != null && !this.inverted) {
+    	if (this.keyFilter != null) {
     		this.first.addFilter(this.keyFilter);
     	}
         IntermediateResult result = this.first.execute();
         this.second.addFilter(result);
         result = this.second.execute();
         result.inverted = this.inverted;
-
     	if (this.keyFilter != null && result.inverted) {
-    		System.out.println("about to intersect explicitly");
-    		this.keyFilter.intersect(result);  // useless for ranking...
+    		this.keyFilter.intersect(result);  // note: no ranking, but shouldn't be an issue
+    		return this.keyFilter;
     	}
         return result;
     }

@@ -1,4 +1,4 @@
-package org.meresco.lucene.search;
+package org.meresco.lucene.search.join;
 
 import static org.junit.Assert.assertEquals;
 
@@ -21,12 +21,7 @@ import org.meresco.lucene.MultiLuceneTest;
 import org.meresco.lucene.QueryData;
 import org.meresco.lucene.SeecrTestCase;
 import org.meresco.lucene.queries.KeyFilter;
-import org.meresco.lucene.search.join.IntermediateResult;
-import org.meresco.lucene.search.join.JoinANDQuery;
-import org.meresco.lucene.search.join.JoinORQuery;
-import org.meresco.lucene.search.join.LuceneQuery;
-import org.meresco.lucene.search.join.NotQuery;
-import org.meresco.lucene.search.join.RelationalQuery;
+import org.meresco.lucene.search.TermFrequencySimilarity;
 
 
 public class RelationalQueryTest extends SeecrTestCase {
@@ -211,7 +206,7 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testJoinANDOverNotQueryOverJoinAND() {
-    	// requires explicit BitSet intersect!
+    	// requires explicit BitSet intersect... :-( !
     	RelationalQuery root;
     	IntermediateResult result;
     	LuceneResponse response;

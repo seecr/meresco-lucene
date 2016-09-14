@@ -1,11 +1,9 @@
 package org.meresco.lucene.search.join;
 
-import org.apache.lucene.util.BitSet;
-
 
 public class NotQuery implements RelationalQuery {
 	private RelationalQuery q;
-	private BitSet keyFilter;
+	private IntermediateResult keyFilter;
 	private boolean inverted = false;
 
 	public NotQuery(RelationalQuery q) {
@@ -13,7 +11,7 @@ public class NotQuery implements RelationalQuery {
 	}
 
 	@Override
-	public Result execute() {
+	public IntermediateResult execute() {
 		if (!this.inverted) {
 			this.q.invert();
 		}
@@ -24,7 +22,7 @@ public class NotQuery implements RelationalQuery {
 	}
 
 	@Override
-	public void addFilter(BitSet keyFilter) {
+	public void addFilter(IntermediateResult keyFilter) {
     	this.keyFilter = keyFilter;
 	}
 

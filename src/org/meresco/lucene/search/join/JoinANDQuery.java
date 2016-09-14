@@ -1,13 +1,12 @@
 package org.meresco.lucene.search.join;
 
-import org.apache.lucene.util.BitSet;
-
 
 public class JoinANDQuery implements RelationalQuery {
     private RelationalQuery second;
     private RelationalQuery first;
-	private BitSet keyFilter;
+	private IntermediateResult keyFilter;
 	private boolean inverted;
+
 
     public JoinANDQuery(RelationalQuery first, RelationalQuery second) {
         this.first = first;
@@ -15,24 +14,24 @@ public class JoinANDQuery implements RelationalQuery {
     }
 
     @Override
-    public Result execute() {
-    	if (this.keyFilter != null) {
+    public IntermediateResult execute() {
+    	if (this.keyFilter != null && !this.inverted) {
     		this.first.addFilter(this.keyFilter);
     	}
-        Result result = this.first.execute();
-        BitSet bits = result.getBitSet();
-        this.second.addFilter(bits);
+        IntermediateResult result = this.first.execute();
+        this.second.addFilter(result);
         result = this.second.execute();
-        if (this.inverted) {
-        	System.out.println("invert on JoinANDQuery not yet supported");
-        	// TODO:
-        	// invert result somehow, while respecting filter...
-        }
+        result.inverted = this.inverted;
+
+    	if (this.keyFilter != null && result.inverted) {
+    		System.out.println("about to intersect explicitly");
+    		this.keyFilter.intersect(result);  // useless for ranking...
+    	}
         return result;
     }
 
     @Override
-    public void addFilter(BitSet keyFilter) {
+    public void addFilter(IntermediateResult keyFilter) {
     	this.keyFilter = keyFilter;
     }
 

@@ -6,9 +6,9 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.BitSet;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.queries.KeyFilter;
+
 
 public class LuceneQuery implements RelationalQuery {
     private Lucene lucene;
@@ -35,14 +35,14 @@ public class LuceneQuery implements RelationalQuery {
 
 
 	@Override
-	public Result execute() {
+	public IntermediateResult execute() {
         KeySuperCollector keyCollector = new KeySuperCollector(this.collectKeyName);
         try {
             this.lucene.search(this.q, keyCollector);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
-        return new Result(keyCollector.getCollectedKeys());
+        return new IntermediateResult(keyCollector.getCollectedKeys());
     }
 
 	@Override
@@ -54,11 +54,12 @@ public class LuceneQuery implements RelationalQuery {
 	}
 
     @Override
-	public void addFilter(BitSet bitset) {
+	public void addFilter(IntermediateResult keyFilter) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         builder.add(this.q, BooleanClause.Occur.MUST);
         try {
-            builder.add(new KeyFilter(bitset, this.filterKeyName), BooleanClause.Occur.MUST);
+        	BooleanClause.Occur occur = keyFilter.inverted ? BooleanClause.Occur.MUST_NOT : BooleanClause.Occur.MUST;
+            builder.add(new KeyFilter(keyFilter.getBitSet(), this.filterKeyName), occur);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

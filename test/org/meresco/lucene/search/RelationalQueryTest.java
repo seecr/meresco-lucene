@@ -64,9 +64,9 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testSimpleAndJoinQuery() {
-        RelationalQuery root = new JoinANDQuery(
-        	new LuceneQuery(luceneB, "B", new TermQuery(new Term("N", "true"))  /* here all those args*/ ),
-	        new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true"))));
+        RelationalQuery root = new JoinANDQuery("B", "A",
+        	new LuceneQuery(luceneB, new TermQuery(new Term("N", "true"))  /* here all those args*/ ),
+	        new LuceneQuery(luceneA, new TermQuery(new Term("M", "true"))));
         Result result = root.execute();
         assertEquals(4, result.getBitSet().cardinality());
 

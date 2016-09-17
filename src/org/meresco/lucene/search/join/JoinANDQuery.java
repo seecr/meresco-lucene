@@ -2,11 +2,11 @@ package org.meresco.lucene.search.join;
 
 
 public class JoinANDQuery implements RelationalQuery {
-    private RelationalQuery second;
     private RelationalQuery first;
-	private IntermediateResult keyFilter;
+    private RelationalQuery second;
+	private IntermediateResult filter;  // TODO: only one 'intermediate result' at a time, combined with operation: 'filter' or 'union'/ occurrence MUST OR SHOULD
+	private IntermediateResult union;
 	private boolean inverted;
-
 
     public JoinANDQuery(RelationalQuery first, RelationalQuery second) {
         this.first = first;
@@ -14,28 +14,54 @@ public class JoinANDQuery implements RelationalQuery {
     }
 
     @Override
-    public IntermediateResult execute() {
-    	if (this.keyFilter != null) {
-    		this.first.addFilter(this.keyFilter);
-    	}
-        IntermediateResult result = this.first.execute();
-        this.second.addFilter(result);
-        result = this.second.execute();
-        result.inverted = this.inverted;
-    	if (this.keyFilter != null && result.inverted) {
-    		this.keyFilter.intersect(result);  // note: no ranking, but shouldn't be an issue
-    		return this.keyFilter;
-    	}
-        return result;
+	public String toString() {
+    	return "JoinANDQuery(" + first + ", " + second + ")";
     }
 
     @Override
-    public void addFilter(IntermediateResult keyFilter) {
-    	this.keyFilter = keyFilter;
+    public IntermediateResult execute() {
+    	System.out.println("execute " + this);
+    	if (this.filter != null) {
+			System.out.println("apply filter " + this.filter + " to ANDQuery.first " + this.first);
+    		this.first.filter(this.filter);
+    	}
+        IntermediateResult result = this.first.execute();
+		System.out.println("apply filter " + result + " to ANDQuery.second " + this.second);
+        this.second.filter(result);
+    	if (this.union != null && !this.inverted) {
+			System.out.println("apply union " + this.union + " to ANDQuery.second " + this.second);
+    		this.second.union(this.union);
+    	}
+        result = this.second.execute();
+
+        if (this.inverted) {
+        	result.inverted = true;
+        	if (this.filter != null) {
+        		System.out.println("[JoinANDQuery] applying bitset filter " + result + " to filter " + this.filter);
+        		this.filter.intersect(result);  // note: no ranking (but shouldn't be an issue)
+        		return this.filter;  // TODO: !! what if there's both a filter and a union (from higher up?)
+        	}
+        	else if (this.union != null) {
+        		System.out.println("[JoinANQuery] applying bitset union " + result + " to union " + this.union);
+        		this.union.union(result);  // note: no ranking (but shouldn't be an issue)
+        		return this.union;
+        	}
+        }
+        return result;
     }
 
 	@Override
 	public void invert() {
-		this.inverted = !this.inverted;
+		this.inverted = true;
+	}
+
+    @Override
+    public void filter(IntermediateResult keyFilter) {
+    	this.filter = keyFilter;
+    }
+
+	@Override
+	public void union(IntermediateResult intermediateResult) {
+		this.union = intermediateResult;
 	}
 }

@@ -225,8 +225,6 @@ public class RelationalQueryTest extends SeecrTestCase {
         LuceneTest.compareHits(response, "A-Q", "A-QU", "A-MQU");
     }
 
-
-
     @Test
     public void testSimpleJoinORQuery() {
         RelationalQuery root = new JoinORQuery(
@@ -236,6 +234,273 @@ public class RelationalQueryTest extends SeecrTestCase {
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-Q", "A-QU", "A-M", "A-MQ", "A-MQU");
     }
+
+    @Test
+    public void testJoinORQueryFromNot() {
+        RelationalQuery root = new JoinORQuery(
+        	new NotQuery(
+        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true")))
+        	),
+	        new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))));
+        IntermediateResult result = root.execute();
+        LuceneResponse response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-Q", "A-QU", "A-MQ", "A-MQU", "A-MU");
+    }
+
+    @Test
+    public void testJoinORQueryOverNotQuery() {
+        RelationalQuery root = new JoinORQuery(
+	        new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+        	new NotQuery(
+            	new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true")))
+            )
+        );
+        IntermediateResult result = root.execute();
+        LuceneResponse response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A", "A-U", "A-M", "A-MU", "A-MQ");
+    }
+
+    @Test
+    public void testJoinANDQueryOverJoinORQuery() {
+        RelationalQuery root = new JoinANDQuery(
+        	new LuceneQuery(luceneB, "B", new TermQuery(new Term("N", "true"))),
+        	new JoinORQuery(
+        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))),
+				new LuceneQuery(luceneB, "B", new TermQuery(new Term("T", "B")))
+        	)
+    	);
+        IntermediateResult result = root.execute();
+        LuceneResponse response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-MQ", "A-MQU", "A-MU");
+    }
+
+    @Test
+    public void testJoinORQueryOverJoinORQuery() {
+        RelationalQuery root = new JoinORQuery(
+        	new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+        	new JoinORQuery(
+        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "false"))),
+        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true")))));
+        IntermediateResult result = root.execute();
+        LuceneResponse response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-Q", "A-QU", "A-MQ", "A-MQU", "A-M", "A-MU");
+    }
+
+    @Test
+    public void testJoinORQueryOverJoinANDQuery() {
+        RelationalQuery root = new JoinORQuery(
+        	new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+        	new JoinANDQuery(
+        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "false"))),
+        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true")))));
+        IntermediateResult result = root.execute();
+        LuceneResponse response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-MQ", "A-MQU", "A-M");
+    }
+
+    @Test
+    public void testJoinOROverNotQueryOverJoinORQuery() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
+
+        root = new JoinORQuery(
+    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))),
+    		new NotQuery(
+	        	new JoinORQuery(
+	        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+	        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+	        	)
+	        )
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A", "A-U", "A-Q", "A-QU", "A-MQ", "A-MQU");
+    }
+
+    @Test
+    public void testJoinOROverNotQueryOverJoinANDQuery() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
+
+        root = new JoinORQuery(
+    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))),
+    		new NotQuery(
+	        	new JoinANDQuery(
+	        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+	        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+	        	)
+	        )
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A", "A-U", "A-Q", "A-QU", "A-MU", "A-MQ", "A-MQU");
+    }
+
+    @Test
+    public void testJoinANDOverNotQueryOverJoinORQuery() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
+
+        root = new JoinANDQuery(
+    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))),
+    		new NotQuery(
+	        	new JoinORQuery(
+	        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+	        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+	        	)
+	        )
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-Q", "A-QU");
+    }
+
+    @Test
+    public void testJoinOROverJoinANDOverJoinORQuery() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
+
+        root = new JoinORQuery(
+        	new LuceneQuery(luceneA, "A", new TermQuery(new Term("U", "true"))),
+        	new JoinANDQuery(
+	    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))),
+	        	new JoinORQuery(
+	        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+	        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+	        	)
+	    	)
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-U", "A-QU", "A-MU", "A-MQ", "A-MQU");
+    }
+
+    @Test
+    public void testJoinOROverJoinANDOverNotQueryOverJoinORQuery() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
+
+        root = new JoinORQuery(
+        	new LuceneQuery(luceneA, "A", new TermQuery(new Term("U", "true"))),
+        	new JoinANDQuery(
+	    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))),
+	    		new NotQuery(
+		        	new JoinORQuery(
+		        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+		        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+		        	)
+		        )
+	    	)
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-U", "A-Q", "A-QU", "A-MU", "A-MQU");
+    }
+
+    @Test
+    public void testJoinANDOverJoinOROverJoinANDOverJoinORQuery() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
+
+        root = new JoinANDQuery(
+        	new JoinORQuery(
+    			new LuceneQuery(luceneA, "A", new TermQuery(new Term("S", "4"))),
+    			new LuceneQuery(luceneA, "A", new TermQuery(new Term("S", "7")))
+        	),
+        	new JoinORQuery(
+	        	new LuceneQuery(luceneA, "A", new TermQuery(new Term("U", "true"))),
+	        	new JoinANDQuery(
+		    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))),
+		        	new JoinORQuery(
+		        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+		        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+		        	)
+		    	)
+	        )
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-QU", "A-MQ");
+    }
+
+    @Test
+    public void testJoinOROverJoinOROverJoinANDOverJoinORQuery() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
+
+        root = new JoinORQuery(
+        	new LuceneQuery(luceneA, "A", new TermQuery(new Term("S", "1"))),
+        	new JoinORQuery(
+	        	new LuceneQuery(luceneA, "A", new TermQuery(new Term("U", "true"))),
+	        	new JoinANDQuery(
+		    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))),
+		        	new JoinORQuery(
+		        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+		        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+		        	)
+		    	)
+	        )
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A", "A-U", "A-QU", "A-MU", "A-MQ", "A-MQU");
+    }
+
+    @Test
+    public void testJoinOROverJoinANDOverNotQueryOverJoinANDQuery() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
+
+        root = new JoinORQuery(
+        	new LuceneQuery(luceneA, "A", new TermQuery(new Term("U", "true"))),
+        	new JoinANDQuery(
+	    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))),
+	    		new NotQuery(
+		        	new JoinANDQuery(
+		        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+		        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+		        	)
+		        )
+	    	)
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-U", "A-Q", "A-QU", "A-MU", "A-MQU");
+    }
+
+    @Test
+    public void testJoiANDOverJoinOROverNotQueryOverJoinORQuery() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
+
+        root = new JoinANDQuery(
+        	new LuceneQuery(luceneA, "A", new TermQuery(new Term("U", "true"))),
+        	new JoinORQuery(
+	    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true"))),
+	    		new NotQuery(
+		        	new JoinORQuery(
+		        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+		        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+		        	)
+		        )
+	    	)
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-U", "A-QU", "A-MQU");
+    }
+
+    // TODO: multiple NOTs nested with OR in between
+    // etc.
 
 
     private LuceneResponse responseForResult(IntermediateResult result, Lucene lucene, String keyName) {

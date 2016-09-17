@@ -28,10 +28,10 @@
 package org.meresco.lucene.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.List;
-import java.util.ArrayList;
 
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetsCollector;
@@ -39,8 +39,8 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.OrdinalsReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
-public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
+public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
     final TaxonomyReader taxoReader;
     final FacetsConfig facetConfig;
     final List<OrdinalsReader> ordinalsReaders;
@@ -54,6 +54,7 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
         this.ordinalsReaders = new ArrayList<OrdinalsReader>();
         this.ordinalsReaders.add(ordinalsReader);
     }
+
     public void addOrdinalsReader(OrdinalsReader ordinalsReader) {
         this.ordinalsReaders.add(ordinalsReader);
     }
@@ -92,12 +93,11 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
     }
 
     public int[] getFirstArray() {
-        return (int[]) this.arrayPool.peek();
+        return this.arrayPool.peek();
     }
 }
 
 class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSuperCollector> {
-
     public FacetSubCollector(FacetsCollector delegate, FacetSuperCollector parent) throws IOException {
         super(delegate, parent);
     }
@@ -114,5 +114,4 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
     public boolean needsScores() {
         return false;
     }
-
 }

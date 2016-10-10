@@ -480,15 +480,43 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
                 unqualifiedTermFields=[('aField', 2.0), ('anotherField', 3.0)]))
 
     def testReallyIgnoreAnalyzedAwayTerms(self):
-        expr = cqlToExpression('.')
-        self.assertEquals({'boost': 1.0, 'terms': [], 'type': 'PhraseQuery'}, self._convert(expr))  # will not yield any results, but that's what's desired
+        self.assertEquals({'boost': 1.0, 'terms': [], 'type': 'PhraseQuery'}, self._convert('.'))  # will not yield any results, but that's what's desired
+        self.assertDictEquals({'terms': [], 'type': 'PhraseQuery'}, self._convert("abc=:;+"))
 
-        expr = cqlToExpression("abc AND :;+ AND def")
-        self.assertDictEquals({'type': 'BooleanQuery', 'clauses': [{'boost': 1.0, 'term': {'field': 'unqualified', 'value': u'abc'}, 'type': 'TermQuery', 'occur': 'MUST'}, {'boost': 1.0, 'term': {'field': 'unqualified', 'value': u'def'}, 'type': 'TermQuery', 'occur': 'MUST'}]}, self._convert(expr))
+        self.assertDictEquals({'type': 'BooleanQuery', 'clauses': [{'boost': 1.0, 'term': {'field': 'unqualified', 'value': u'abc'}, 'type': 'TermQuery', 'occur': 'MUST'}, {'boost': 1.0, 'term': {'field': 'unqualified', 'value': u'def'}, 'type': 'TermQuery', 'occur': 'MUST'}]}, self._convert("abc AND :;+ AND def"))
 
-        expr = cqlToExpression("abc=:;+")
-        self.assertDictEquals({'terms': [], 'type': 'PhraseQuery'}, self._convert(expr))
-
+        self.unqualifiedFields = [("unqualified", 1.0), ("moreUnqualified", 1.0)]
+        self.assertDictEquals({
+            'clauses': [{
+                'clauses': [{
+                    'boost': 1.0,
+                    'occur': 'SHOULD',
+                    'term': {'field': 'unqualified', 'value': u'abc'},
+                    'type': 'TermQuery'
+                }, {
+                    'boost': 1.0,
+                    'occur': 'SHOULD',
+                    'term': {'field': 'moreUnqualified', 'value': u'abc'},
+                    'type': 'TermQuery'
+                }],
+                'occur': 'MUST',
+                'type': 'BooleanQuery'
+            }, {
+                'clauses': [{
+                    'boost': 1.0,
+                    'occur': 'SHOULD',
+                    'term': {'field': 'unqualified', 'value': u'def'},
+                    'type': 'TermQuery'
+                 }, {
+                    'boost': 1.0,
+                    'occur': 'SHOULD',
+                    'term': {'field': 'moreUnqualified', 'value': u'def'},
+                    'type': 'TermQuery'
+                }],
+                'occur': 'MUST',
+                'type': 'BooleanQuery'
+            }],
+            'type': 'BooleanQuery'}, self._convert("abc AND :;+ AND def"))
 
     def _convert(self, input):
         return self._prepareConverter().convert(self._makeExpression(input))

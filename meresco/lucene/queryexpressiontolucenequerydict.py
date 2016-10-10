@@ -82,6 +82,10 @@ class QueryExpressionToLuceneQueryDict(Observable):
                 return queries[0]
             q = dict(type="BooleanQuery", clauses=[])
             for query in queries:
+                if query['type'] == 'BooleanQuery' and not query['clauses']:
+                    continue
+                if query['type'] == "PhraseQuery" and not query['terms']:
+                    continue
                 query['occur'] = OCCUR['OR']
                 q['clauses'].append(query)
             return q

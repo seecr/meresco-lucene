@@ -106,6 +106,10 @@ class QueryExpressionToLuceneQueryDict(Observable):
             if operand.must_not:
                 occur = OCCUR['NOT']
             query = self._expression(operand, unqualifiedTermFields=unqualifiedTermFields)
+            if query['type'] == 'BooleanQuery' and not query['clauses']:
+                continue
+            if query['type'] == 'PhraseQuery' and not query['terms']:
+                continue
             query['occur'] = occur
             q['clauses'].append(query)
         return q

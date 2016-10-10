@@ -479,6 +479,17 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
                 QueryExpression.searchterm(term="value"),
                 unqualifiedTermFields=[('aField', 2.0), ('anotherField', 3.0)]))
 
+    def testReallyIgnoreAnalyzedAwayTerms(self):
+        expr = cqlToExpression('.')
+        self.assertEquals({'boost': 1.0, 'terms': [], 'type': 'PhraseQuery'}, self._convert(expr))  # will not yield any results, but that's what's desired
+
+        expr = cqlToExpression("abc AND :;+ AND def")
+        self.assertDictEquals({'type': 'BooleanQuery', 'clauses': [{'boost': 1.0, 'term': {'field': 'unqualified', 'value': u'abc'}, 'type': 'TermQuery', 'occur': 'MUST'}, {'boost': 1.0, 'term': {'field': 'unqualified', 'value': u'def'}, 'type': 'TermQuery', 'occur': 'MUST'}]}, self._convert(expr))
+
+        expr = cqlToExpression("abc=:;+")
+        self.assertDictEquals({'terms': [], 'type': 'PhraseQuery'}, self._convert(expr))
+
+
     def _convert(self, input):
         return self._prepareConverter().convert(self._makeExpression(input))
 

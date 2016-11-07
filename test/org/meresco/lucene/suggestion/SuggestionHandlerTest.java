@@ -26,23 +26,18 @@
 
 package org.meresco.lucene.suggestion;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
+import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonValue;
-import javax.json.Json;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.meresco.lucene.suggestion.SuggestionNGramIndex.Suggestion;
 
+
 public class SuggestionHandlerTest {
-
-    @Before
-    public void setUp() throws Exception {
-    }
-
     @Test
     public void testJsonSuggestions() {
         Suggestion[] suggestions = new Suggestion[2];

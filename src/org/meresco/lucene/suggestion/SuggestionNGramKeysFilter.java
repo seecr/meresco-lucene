@@ -39,7 +39,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
-import org.meresco.lucene.queries.KeyFilter;
 
 
 public class SuggestionNGramKeysFilter extends Query {
@@ -104,7 +103,7 @@ public class SuggestionNGramKeysFilter extends Query {
 
     @Override
     public boolean equals(Object o) {
-       return sameClassAs(o) && ((SuggestionNGramKeysFilter) o).keyName == keyName && ((KeyFilter) o).keySet.equals(keySet);
+       return sameClassAs(o) && ((SuggestionNGramKeysFilter) o).keyName == keyName && ((SuggestionNGramKeysFilter) o).keySet.equals(keySet);
     }
 
     @Override

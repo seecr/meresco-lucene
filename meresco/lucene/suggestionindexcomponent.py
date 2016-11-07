@@ -26,20 +26,19 @@
 
 from math import log
 from time import time
+from urllib import urlencode
 
 from Levenshtein import distance
 
+from weightless.io.utils import asProcess
 from meresco.core import Observable
 from meresco.components.http.utils import CRLF, ContentTypeHeader, Ok, serverErrorPlainText
 from meresco.components.json import JsonList, JsonDict
 
 from _connect import _Connect
-from urllib import urlencode
-from weightless.io.utils import asProcess
 
 
 class SuggestionIndexComponent(Observable):
-
     def __init__(self, host, port, **kwargs):
         super(SuggestionIndexComponent, self).__init__(**kwargs)
         self._connect = _Connect(host, port, observable=self)
@@ -59,8 +58,8 @@ class SuggestionIndexComponent(Observable):
     def createSuggestionNGramIndex(self):
         yield self._connect.send("/createSuggestionNGramIndex")
 
-    def suggest(self, value, trigram=False, filters=None, keySetName=None):
-        suggestions = yield self._connect.send("/suggest", JsonDict(value=value, trigram=trigram, filters=filters or [], keySetName=keySetName))
+    def suggest(self, value, trigram=False, filters=None, keySetName=None, limit=None):
+        suggestions = yield self._connect.send("/suggest", JsonDict(value=value, trigram=trigram, filters=filters or [], keySetName=keySetName, limit=limit))
         raise StopIteration([Suggestion(s) for s in suggestions])
 
     def indexingState(self):

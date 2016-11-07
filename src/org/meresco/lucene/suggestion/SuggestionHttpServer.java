@@ -46,8 +46,8 @@ import org.meresco.lucene.Shutdown;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
-public class SuggestionHttpServer {
 
+public class SuggestionHttpServer {
     private static final int COMMIT_COUNT = 10000;
     private static final int MIN_SHINGLE_SIZE = 2;
     private static final int MAX_SHINGLE_SIZE = 6;

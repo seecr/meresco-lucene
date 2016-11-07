@@ -213,10 +213,13 @@ public class SuggestionNGramIndex {
         }
 
         public Suggestion[] suggest(String value, Boolean trigram, String[] filters) throws Exception {
-            return suggest(value, trigram, filters, null);
+            return suggest(value, trigram, filters, null, 0);
         }
 
-    	public Suggestion[] suggest(String value, Boolean trigram, String[] filters, String keySetName) throws Exception {
+    	public Suggestion[] suggest(String value, Boolean trigram, String[] filters, String keySetName, int limit) throws Exception {
+            if (limit == 0) {
+                limit = 25;
+            }
             String ngramFieldName = trigram ? TRIGRAM_FIELDNAME : BIGRAM_FIELDNAME;
             BooleanQuery.Builder builder = new BooleanQuery.Builder();
             List<String> ngrams = ngrams(value, trigram);
@@ -234,12 +237,14 @@ public class SuggestionNGramIndex {
                 }
             }
             Query filter = createFilter(filters);
-            if (filter != null)
+            if (filter != null) {
                 builder.add(filter, Occur.FILTER);
-            if (keySetFilter != null)
+            }
+            if (keySetFilter != null) {
                 builder.add(keySetFilter, Occur.FILTER);
-            TopDocs t = searcher.search(builder.build(), 25);
-            Suggestion[] suggestions = new Suggestion[t.totalHits < 25 ? t.totalHits : 25];
+            }
+            TopDocs t = searcher.search(builder.build(), limit);
+            Suggestion[] suggestions = new Suggestion[t.totalHits < limit ? t.totalHits : limit];
             int i = 0;
             for (ScoreDoc d : t.scoreDocs) {
                 Document doc = searcher.doc(d.doc);

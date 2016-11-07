@@ -46,6 +46,7 @@ import org.meresco.lucene.suggestion.SuggestionNGramIndex.Suggestion;
 
 public class SuggestionHandler extends AbstractMerescoLuceneHandler implements Handler {
     private SuggestionIndex suggestionIndex;
+    private int DEFAULT_LIMIT = 10;
 
     public SuggestionHandler(SuggestionIndex suggestionIndex, OutOfMemoryShutdown shutdown) {
         super(shutdown);
@@ -68,9 +69,13 @@ public class SuggestionHandler extends AbstractMerescoLuceneHandler implements H
     	        suggestionIndex.createSuggestionNGramIndex(wait, true);
                 break;
         	case "/suggest":
-        	    JsonObject suggest = Json.createReader(request.getReader()).readObject();
-        	    String keySetName = suggest.get("keySetName") == JsonValue.NULL ? null : suggest.getString("keySetName");
-        	    Suggestion[] suggestions = suggestionIndex.getSuggestionsReader().suggest(suggest.getString("value"), suggest.getBoolean("trigram"), jsonArrayToStringArray(suggest.getJsonArray("filters")), keySetName);
+        	    JsonObject suggestRequest = Json.createReader(request.getReader()).readObject();
+        	    String keySetName = suggestRequest.get("keySetName") == JsonValue.NULL ? null : suggestRequest.getString("keySetName");
+                int limit = DEFAULT_LIMIT;
+                if (suggestRequest.containsKey("limit") && suggestRequest.get("limit") != JsonValue.NULL) {
+                    limit = suggestRequest.getInt("limit");
+                }
+        	    Suggestion[] suggestions = suggestionIndex.getSuggestionsReader().suggest(suggestRequest.getString("value"), suggestRequest.getBoolean("trigram"), jsonArrayToStringArray(suggestRequest.getJsonArray("filters")), keySetName, limit);
                 response.setContentType("application/json");
         	    response.getWriter().write(suggestionsToJson(suggestions).toString());
         	    break;

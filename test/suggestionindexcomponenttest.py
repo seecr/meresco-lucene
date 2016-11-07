@@ -24,16 +24,16 @@
 #
 ## end license ##
 
+from simplejson import loads, dumps
+
 from seecr.test import SeecrTestCase
-from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
+
 from weightless.core import asString, consume, retval
 from meresco.components.http.utils import CRLF
-from simplejson import loads, dumps
-from time import time
+from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
 
 
 class SuggestionIndexComponentTest(SeecrTestCase):
-
     def setUp(self):
         SeecrTestCase.setUp(self)
         self.sic = SuggestionIndexComponent(host="localhost", port=12345)
@@ -81,7 +81,7 @@ class SuggestionIndexComponentTest(SeecrTestCase):
         suggestions = retval(self.sic.suggest("ha"))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/suggest', self.post[0]['path'])
-        self.assertEqual({"value": "ha", "trigram": False, "filters": [], "keySetName": None}, loads(self.post[0]['data']))
+        self.assertEqual({"value": "ha", "trigram": False, "filters": [], "keySetName": None, "limit": None}, loads(self.post[0]['data']))
 
         self.assertEquals([u"hallo", u"harry"], [s.suggestion for s in suggestions])
         self.assertEquals([u"uri:book", None], [s.type for s in suggestions])
@@ -185,7 +185,7 @@ Access-Control-Max-Age: 86400""", header)
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"], "filter": ["type=uri:track"]})).split(CRLF*2)
         self.assertEqual('["ha", ["harry"], [["harry", "uri:track", null]]]', body)
         self.assertEqual(1, len(self.post))
-        self.assertEqual({'data': '{"keySetName": null, "trigram": false, "filters": ["type=uri:track"], "value": "ha"}', 'path': '/suggest'}, self.post[0])
+        self.assertEqual({'data': '{"keySetName": null, "trigram": false, "limit": null, "filters": ["type=uri:track"], "value": "ha"}', 'path': '/suggest'}, self.post[0])
 
     def testRegisterFilter(self):
         consume(self.sic.registerFilterKeySet("apikey-abc", 'an-open-bit-set'))
@@ -202,7 +202,7 @@ Access-Control-Max-Age: 86400""", header)
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={"value": ["fi"], "apikey": ["apikey-abc"]})).split(CRLF*2)
         self.assertEqual('["fi", ["fietsbel"]]', body)
         self.assertEqual(1, len(self.post))
-        self.assertEqual({'data': '{"keySetName": "apikey-abc", "trigram": false, "filters": [], "value": "fi"}', 'path': '/suggest'}, self.post[0])
+        self.assertEqual({'data': '{"keySetName": "apikey-abc", "trigram": false, "limit": null, "filters": [], "value": "fi"}', 'path': '/suggest'}, self.post[0])
 
     def testIndexingState(self):
         self.response = dumps(dict(started=12345, count=12))

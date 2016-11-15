@@ -38,16 +38,23 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.search.join.KeyValuesCache;
 
 
 public class KeyFilter extends Query {
-	private String keyName;
-	public Bits keySet;
+	final private String keyName;
+	final private Bits keySet;
+	final private boolean inverted;
 
-	public KeyFilter(Bits keySet, String keyName) throws IOException {
+	public KeyFilter(Bits keySet, String keyName, boolean inverted) throws IOException {
 		this.keySet = keySet;
 		this.keyName = keyName;
+		this.inverted = inverted;
+	}
+
+	public KeyFilter(Bits keySet, String keyName) throws IOException {
+		this(keySet, keyName, false);
 	}
 
 	@Override
@@ -70,13 +77,24 @@ public class KeyFilter extends Query {
                         this.docId++;
                         if (keyValuesArray != null) {
                             try {
-                                while (this.docId < this.maxDoc) {
-                                    int key = this.keyValuesArray[this.docId];
-                                    if (keySet.length() > key && keySet.get(key)) {
-                                        return this.docId;
-                                    }
-                                    this.docId++;
-                                }
+                            	if (!inverted) {
+	                                while (this.docId < this.maxDoc) {
+	                                    int key = this.keyValuesArray[this.docId];
+	                                    if (keySet.length() > key && keySet.get(key)) {
+	                                    	return this.docId;
+	                                    }
+	                                    this.docId++;
+	                                }
+                            	}
+                            	else {
+	                                while (this.docId < this.maxDoc) {
+	                                    int key = this.keyValuesArray[this.docId];
+	                                    if (keySet.length() <= key || !keySet.get(key)) {
+                                    		return this.docId;
+	                                    }
+	                                    this.docId++;
+	                                }
+                            	}
                             } catch (IndexOutOfBoundsException e) {
                             }
                         }
@@ -101,12 +119,34 @@ public class KeyFilter extends Query {
 
     @Override
     public String toString(String field) {
-       return "KeyFilter(" + keyName + ")";
+		StringBuilder sb = new StringBuilder();
+		sb.append("KeyFilter(");
+		if (this.keySet instanceof FixedBitSet) {
+			FixedBitSet bitSet = (FixedBitSet) keySet;
+			sb.append("keySet=[");
+			boolean listStart = true;
+			if (bitSet.cardinality() > 0) {
+				for (int i = bitSet.nextSetBit(0); i != DocIdSetIterator.NO_MORE_DOCS; i = bitSet.nextSetBit(i+1)) {
+					if (!listStart) {
+						sb.append(", ");
+					}
+					sb.append("" + i);
+					listStart = false;
+				}
+			}
+			sb.append("], ");
+		}
+        sb.append("\"" + keyName + "\")");
+        return sb.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-       return sameClassAs(o) && ((KeyFilter) o).keyName == keyName && ((KeyFilter) o).keySet.equals(keySet);
+    	if (!sameClassAs(o)) {
+    		return false;
+    	}
+    	KeyFilter other = (KeyFilter) o;
+        return other.keyName == this.keyName && other.keySet.equals(this.keySet) && other.inverted == this.inverted;
     }
 
     @Override

@@ -25,7 +25,7 @@ public class JoinORQuery implements RelationalQuery {
 			System.out.println("apply filter " + this.filter + " to ORQuery.first " + this.first);
     		this.first.filter(this.filter);
     	}
-    	else if (this.union != null && !this.inverted) {
+    	else if (!this.inverted && this.union != null) {
 			System.out.println("apply union " + this.union + " to ORQuery.first " + this.first);
     		this.first.union(this.union);
     	}
@@ -71,12 +71,14 @@ public class JoinORQuery implements RelationalQuery {
 	}
 
     @Override
-    public void filter(IntermediateResult keyFilter) {
-    	this.filter = keyFilter;
+    public void filter(IntermediateResult intermediateResult) {
+    	assert this.filter == null;
+    	this.filter = intermediateResult;
     }
 
 	@Override
 	public void union(IntermediateResult intermediateResult) {
+		assert this.union == null;
 		this.union = intermediateResult;
 	}
 }

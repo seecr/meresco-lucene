@@ -205,7 +205,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinANDOverNotQueryOverJoinAND() {
+    public void testJoinANDOverNotOverJoinANDQuery() {
     	// requires explicit BitSet intersect... :-( !
     	RelationalQuery root;
     	IntermediateResult result;
@@ -275,7 +275,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinORQueryOverJoinORQuery() {
+    public void testJoinOROverJoinORQuery() {
         RelationalQuery root = new JoinORQuery(
         	new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
         	new JoinORQuery(
@@ -287,7 +287,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinORQueryOverJoinANDQuery() {
+    public void testJoinOROverJoinANDQuery() {
         RelationalQuery root = new JoinORQuery(
         	new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
         	new JoinANDQuery(
@@ -299,7 +299,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinOROverNotQueryOverJoinORQuery() {
+    public void testJoinOROverNotOverJoinORQuery() {
     	RelationalQuery root;
     	IntermediateResult result;
     	LuceneResponse response;
@@ -319,7 +319,28 @@ public class RelationalQueryTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinOROverNotQueryOverJoinANDQuery() {
+    public void testJoinOROverNotOverJoinORQueryLhs() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
+
+        root =
+        	new JoinORQuery(
+        		new NotQuery(
+        			new JoinORQuery(
+    					new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+    					new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true")))
+        			)  // A-Q, A-QU, A-M, A-MQ, A-MQU
+        		),  // A, A-U, A-MU
+        	    new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+        	); // A, A-U, A-M, A-MU, A-MQ, A-MQU
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A", "A-U", "A-M", "A-MU", "A-MQ", "A-MQU");
+    }
+
+    @Test
+    public void testJoinOROverNotOverJoinANDQuery() {
     	RelationalQuery root;
     	IntermediateResult result;
     	LuceneResponse response;
@@ -336,6 +357,20 @@ public class RelationalQueryTest extends SeecrTestCase {
         result = root.execute();
         response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A", "A-U", "A-Q", "A-QU", "A-MU", "A-MQ", "A-MQU");
+
+        root = new JoinORQuery(
+    		new NotQuery(
+	        	new JoinANDQuery(
+	        		new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+	        		new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+	        	)
+	        ),
+    		new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true")))
+    	);
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A", "A-U", "A-Q", "A-QU", "A-MU", "A-MQ", "A-MQU");
+
     }
 
     @Test
@@ -380,7 +415,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinOROverJoinANDOverNotQueryOverJoinORQuery() {
+    public void testJoinOROverJoinANDOverNotOverJoinORQuery() {
     	RelationalQuery root;
     	IntermediateResult result;
     	LuceneResponse response;
@@ -454,7 +489,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoinOROverJoinANDOverNotQueryOverJoinANDQuery() {
+    public void testJoinOROverJoinANDOverNotOverJoinANDQuery() {
     	RelationalQuery root;
     	IntermediateResult result;
     	LuceneResponse response;
@@ -477,7 +512,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     }
 
     @Test
-    public void testJoiANDOverJoinOROverNotQueryOverJoinORQuery() {
+    public void testJoinANDOverJoinOROverNotOverJoinORQuery() {
     	RelationalQuery root;
     	IntermediateResult result;
     	LuceneResponse response;
@@ -499,9 +534,27 @@ public class RelationalQueryTest extends SeecrTestCase {
         LuceneTest.compareHits(response, "A-U", "A-QU", "A-MQU");
     }
 
-    // TODO: multiple NOTs nested with OR in between
-    // etc.
+    @Test
+    public void testNotOverJoinOrOverNotOverJoinOrQuery() {
+    	RelationalQuery root;
+    	IntermediateResult result;
+    	LuceneResponse response;
 
+        root = new NotQuery(
+        	new JoinORQuery(
+        		new NotQuery(
+        			new JoinORQuery(
+    					new LuceneQuery(luceneB, "B", new TermQuery(new Term("O", "true"))),
+    					new LuceneQuery(luceneA, "A", new TermQuery(new Term("Q", "true")))
+        			)  // A-Q, A-QU, A-M, A-MQ, A-MQU
+        		),  // A, A-U, A-MU
+        	    new LuceneQuery(luceneA, "A", new TermQuery(new Term("M", "true")))
+        	) // A, A-U, A-M, A-MU, A-MQ, A-MQU
+        ); // A-Q, A-QU
+        result = root.execute();
+        response = responseForResult(result, luceneA, "A");
+        LuceneTest.compareHits(response, "A-Q", "A-QU");
+    }
 
     private LuceneResponse responseForResult(IntermediateResult result, Lucene lucene, String keyName) {
         try {

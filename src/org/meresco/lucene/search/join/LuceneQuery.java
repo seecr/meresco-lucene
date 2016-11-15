@@ -64,12 +64,11 @@ public class LuceneQuery implements RelationalQuery {
 	}
 
     @Override
-	public void filter(IntermediateResult keyFilter) {
+	public void filter(IntermediateResult intermediateResult) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         builder.add(this.q, BooleanClause.Occur.MUST);
         try {
-        	BooleanClause.Occur occur = keyFilter.inverted ? BooleanClause.Occur.MUST_NOT : BooleanClause.Occur.MUST;
-            builder.add(new KeyFilter(keyFilter.getBitSet(), this.filterKeyName), occur);
+            builder.add(new KeyFilter(intermediateResult.getBitSet(), this.filterKeyName, intermediateResult.inverted), BooleanClause.Occur.MUST);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -80,8 +79,7 @@ public class LuceneQuery implements RelationalQuery {
 	public void union(IntermediateResult intermediateResult) {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         try {
-        	BooleanClause.Occur occur = intermediateResult.inverted ? BooleanClause.Occur.MUST_NOT : BooleanClause.Occur.SHOULD;
-            builder.add(new KeyFilter(intermediateResult.getBitSet(), this.filterKeyName), occur);
+        	builder.add(new KeyFilter(intermediateResult.getBitSet(), this.filterKeyName, intermediateResult.inverted), BooleanClause.Occur.SHOULD);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

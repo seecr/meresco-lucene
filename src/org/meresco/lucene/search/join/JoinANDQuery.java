@@ -4,7 +4,7 @@ package org.meresco.lucene.search.join;
 public class JoinANDQuery implements RelationalQuery {
     private RelationalQuery first;
     private RelationalQuery second;
-	private IntermediateResult filter;  // TODO: only one 'intermediate result' at a time, combined with operation: 'filter' or 'union'/ occurrence MUST OR SHOULD
+	private IntermediateResult filter;
 	private IntermediateResult union;
 	private boolean inverted;
 
@@ -28,7 +28,7 @@ public class JoinANDQuery implements RelationalQuery {
         IntermediateResult result = this.first.execute();
 		System.out.println("apply filter " + result + " to ANDQuery.second " + this.second);
         this.second.filter(result);
-    	if (this.union != null && !this.inverted) {
+    	if (!this.inverted && this.union != null) {
 			System.out.println("apply union " + this.union + " to ANDQuery.second " + this.second);
     		this.second.union(this.union);
     	}
@@ -56,12 +56,14 @@ public class JoinANDQuery implements RelationalQuery {
 	}
 
     @Override
-    public void filter(IntermediateResult keyFilter) {
-    	this.filter = keyFilter;
+    public void filter(IntermediateResult intermediateResult) {
+    	assert this.filter == null;
+    	this.filter = intermediateResult;
     }
 
 	@Override
 	public void union(IntermediateResult intermediateResult) {
+		assert this.union == null;
 		this.union = intermediateResult;
 	}
 }

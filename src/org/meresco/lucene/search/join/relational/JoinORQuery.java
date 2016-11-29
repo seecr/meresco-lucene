@@ -1,5 +1,8 @@
-package org.meresco.lucene.search.join;
+package org.meresco.lucene.search.join.relational;
 
+import java.util.Map;
+
+import org.meresco.lucene.Lucene;
 
 public class JoinORQuery implements RelationalQuery {
     private RelationalQuery first;
@@ -19,54 +22,56 @@ public class JoinORQuery implements RelationalQuery {
     }
 
     @Override
-    public IntermediateResult execute() {
-    	System.out.println("execute " + this);
+    public IntermediateResult execute(Map<String, Lucene> lucenes) {
+//    	System.out.println("execute " + this);
     	if (this.filter != null) {
-			System.out.println("apply filter " + this.filter + " to ORQuery.first " + this.first);
+//			System.out.println("apply filter " + this.filter + " to ORQuery.first " + this.first);
     		this.first.filter(this.filter);
     	}
     	else if (!this.inverted && this.union != null) {
-			System.out.println("apply union " + this.union + " to ORQuery.first " + this.first);
+//			System.out.println("apply union " + this.union + " to ORQuery.first " + this.first);
     		this.first.union(this.union);
     	}
-        IntermediateResult resultFirst = this.first.execute();
+        IntermediateResult resultFirst = this.first.execute(lucenes);
 
     	if (this.filter != null) {
-			System.out.println("apply filter " + filter + " to ORQuery.second " + this.second);
+//			System.out.println("apply filter " + filter + " to ORQuery.second " + this.second);
     		this.second.filter(this.filter);
     	}
-		System.out.println("apply union " + resultFirst + " to ORQuery.second " + this.second);
+//		System.out.println("apply union " + resultFirst + " to ORQuery.second " + this.second);
     	this.second.union(resultFirst);
-        IntermediateResult result = this.second.execute();
+        IntermediateResult result = this.second.execute(lucenes);
 
         if (this.inverted) {
         	result.inverted = true;
         	if (this.filter != null) {
-        		System.out.println("[JoinORQuery] applying bitset filter " + result + " to filter " + this.filter);
+//        		System.out.println("[JoinORQuery] applying bitset filter " + result + " to filter " + this.filter);
         		this.filter.intersect(result);
-        		System.out.println("result: " + this.filter);
-        		return this.filter;  // TODO: !! what if there's both a filter and a union (from higher up?)
+//        		System.out.println("result: " + this.filter);
+        		assert this.union == null;  // TODO: can we prove somehow that this is guaranteed to be the case?
+        		return this.filter;
         	}
         	else if (this.union != null) {
-        		System.out.println("[JoinORQuery] applying bitset union " + result + " to union " + this.union);
+//        		System.out.println("[JoinORQuery] applying bitset union " + result + " to union " + this.union);
 	        	this.union.union(result);
-        		System.out.println("result: " + this.union);
+//        		System.out.println("result: " + this.union);
 	        	return this.union;
         	}
         }
         else {
         	if (this.union != null) {
-        		System.out.println("applying bitset union " + this.union + " to result " + result);
+//        		System.out.println("applying bitset union " + this.union + " to result " + result);
         		result.union(this.union);
         	}
         }
 
-		System.out.println("result: " + result);
+//		System.out.println("result: " + result);
         return result;
     }
 
 	@Override
 	public void invert() {
+		assert !this.inverted;
 		this.inverted = true;
 	}
 

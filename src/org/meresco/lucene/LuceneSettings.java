@@ -48,6 +48,7 @@ import org.meresco.lucene.analysis.MerescoStandardAnalyzer;
 import org.meresco.lucene.search.InterpolateEpsilon;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 
+
 public class LuceneSettings {
     public Similarity similarity = new BM25Similarity();
     public Analyzer analyzer = new MerescoStandardAnalyzer();

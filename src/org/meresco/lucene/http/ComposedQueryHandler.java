@@ -35,6 +35,7 @@ import org.meresco.lucene.LuceneResponse;
 import org.meresco.lucene.MultiLucene;
 import org.meresco.lucene.OutOfMemoryShutdown;
 
+
 public class ComposedQueryHandler extends AbstractMerescoLuceneHandler {
     private MultiLucene multiLucene;
 

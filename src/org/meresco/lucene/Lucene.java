@@ -105,6 +105,7 @@ import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
 
+
 public class Lucene {
     @SuppressWarnings("serial")
     public static class UninitializedException extends Exception {
@@ -118,6 +119,8 @@ public class Lucene {
     private Map<String, OrdinalsReader> ordinalsReaders = new HashMap<String, OrdinalsReader>();
     private DirectSpellChecker spellChecker = new DirectSpellChecker();
     LuceneData data = new LuceneData();
+	private JsonQueryConverter queryConverter;
+
 
     public Lucene(String name, Path stateDir) {
         this.name = name;
@@ -682,8 +685,9 @@ public class Lucene {
 
     public Query createDrilldownQuery(Query luceneQuery, List<String[]> drilldownQueries) throws Exception {
         BooleanQuery.Builder q = new BooleanQuery.Builder(); // TODO: disableCoord ??
-        if (luceneQuery != null)
+        if (luceneQuery != null) {
             q.add(luceneQuery, Occur.MUST);
+        }
         for (int i = 0; i < drilldownQueries.size(); i += 2) {
             String field = drilldownQueries.get(i)[0];
             String indexFieldName = data.getFacetsConfig().getDimConfig(field).indexFieldName;
@@ -693,7 +697,10 @@ public class Lucene {
     }
 
     public JsonQueryConverter getQueryConverter() throws Exception {
-        return new JsonQueryConverter(this.data.getFacetsConfig(), this.name);
+    	if (this.queryConverter == null) {
+    		this.queryConverter = new JsonQueryConverter(this.data.getFacetsConfig(), this.name);
+    	}
+    	return this.queryConverter;
     }
 
     public ScoreSuperCollector scoreCollector(String keyName, Query query) throws Throwable {
@@ -797,6 +804,7 @@ public class Lucene {
         }
     }
 
+
     static class LuceneData {
         private IndexWriter indexWriter;
         private DirectoryTaxonomyWriter taxoWriter;
@@ -816,7 +824,7 @@ public class Lucene {
             }
         }
 
-        public void close() throws IOException {
+		public void close() throws IOException {
             if (this.settings == null)
                 return;
             if (this.manager != null)

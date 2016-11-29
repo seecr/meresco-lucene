@@ -1,5 +1,8 @@
-package org.meresco.lucene.search.join;
+package org.meresco.lucene.search.join.relational;
 
+import java.util.Map;
+
+import org.meresco.lucene.Lucene;
 
 public class JoinANDQuery implements RelationalQuery {
     private RelationalQuery first;
@@ -19,30 +22,31 @@ public class JoinANDQuery implements RelationalQuery {
     }
 
     @Override
-    public IntermediateResult execute() {
-    	System.out.println("execute " + this);
+    public IntermediateResult execute(Map<String, Lucene> lucenes) {
+//    	System.out.println("execute " + this);
     	if (this.filter != null) {
-			System.out.println("apply filter " + this.filter + " to ANDQuery.first " + this.first);
+//			System.out.println("apply filter " + this.filter + " to ANDQuery.first " + this.first);
     		this.first.filter(this.filter);
     	}
-        IntermediateResult result = this.first.execute();
-		System.out.println("apply filter " + result + " to ANDQuery.second " + this.second);
+        IntermediateResult result = this.first.execute(lucenes);
+//		System.out.println("apply filter " + result + " to ANDQuery.second " + this.second);
         this.second.filter(result);
     	if (!this.inverted && this.union != null) {
-			System.out.println("apply union " + this.union + " to ANDQuery.second " + this.second);
+//			System.out.println("apply union " + this.union + " to ANDQuery.second " + this.second);
     		this.second.union(this.union);
     	}
-        result = this.second.execute();
+        result = this.second.execute(lucenes);
 
         if (this.inverted) {
         	result.inverted = true;
         	if (this.filter != null) {
-        		System.out.println("[JoinANDQuery] applying bitset filter " + result + " to filter " + this.filter);
+//        		System.out.println("[JoinANDQuery] applying bitset filter " + result + " to filter " + this.filter);
         		this.filter.intersect(result);  // note: no ranking (but shouldn't be an issue)
-        		return this.filter;  // TODO: !! what if there's both a filter and a union (from higher up?)
+        		assert this.union == null;  // TODO: can we prove somehow that this is guaranteed to be the case?
+        		return this.filter;
         	}
         	else if (this.union != null) {
-        		System.out.println("[JoinANQuery] applying bitset union " + result + " to union " + this.union);
+//        		System.out.println("[JoinANQuery] applying bitset union " + result + " to union " + this.union);
         		this.union.union(result);  // note: no ranking (but shouldn't be an issue)
         		return this.union;
         	}
@@ -52,6 +56,7 @@ public class JoinANDQuery implements RelationalQuery {
 
 	@Override
 	public void invert() {
+		assert !this.inverted;
 		this.inverted = true;
 	}
 

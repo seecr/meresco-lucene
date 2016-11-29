@@ -28,13 +28,13 @@ package org.meresco.lucene;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonString;
 import javax.json.JsonValue;
-import javax.json.JsonValue.ValueType;
 
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.IntPoint;
@@ -56,13 +56,17 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.meresco.lucene.search.JoinSortField;
+import org.meresco.lucene.search.join.relational.JoinANDQuery;
+import org.meresco.lucene.search.join.relational.JoinORQuery;
+import org.meresco.lucene.search.join.relational.LuceneQuery;
+import org.meresco.lucene.search.join.relational.NotQuery;
+import org.meresco.lucene.search.join.relational.RelationalQuery;
+import org.meresco.lucene.search.join.relational.RelationalQueryWrapperQuery;
+
 
 public class JsonQueryConverter {
-
     private static final String SORT_ON_SCORE = "score";
-
     private FacetsConfig facetsConfig;
-
     private String coreName;
 
     public JsonQueryConverter(FacetsConfig facetsConfig, String coreName) {
@@ -168,10 +172,14 @@ public class JsonQueryConverter {
     }
 
     Query convertToQuery(JsonObject query) {
+    	return this.convertToQuery(query, null);
+    }
+
+    Query convertToQuery(JsonObject query, Map<String, Lucene> lucenes) {
         if (query == null)
             return null;
         Query q;
-        switch(query.getString("type")) {
+        switch (query.getString("type")) {
             case "MatchAllDocsQuery":
                 q = new MatchAllDocsQuery();
                 break;
@@ -193,15 +201,63 @@ public class JsonQueryConverter {
             case "RangeQuery":
                 q = createRangeQuery(query);
                 break;
+
+            case "LuceneQuery":
+            case "JoinANDQuery":
+            case "JoinORQuery":
+            case "NotQuery":
+            	RelationalQuery rq = this.convertToRelationalQuery(query, lucenes);
+            	q = new RelationalQueryWrapperQuery(rq);
+            	break;
+
             default:
                 return null;
         }
-        if (query.get("boost") != null)
+        if (query.get("boost") != null) {
             q = new BoostQuery(q, (float) query.getJsonNumber("boost").doubleValue());
+        }
         return q;
     }
 
-    private Query createPhraseQuery(JsonObject query) {
+    private RelationalQuery convertToRelationalQuery(JsonObject query, Map<String, Lucene> lucenes) {
+        if (query == null)
+            return null;
+        RelationalQuery rq;
+        switch (query.getString("type")) {
+        	case "LuceneQuery":
+	        	String core = query.getString("core");
+	        	String collectKeyName = query.getString("collectKeyName");
+	        	String filterKeyName = query.getString("filterKeyName");
+	        	Query nestedQ = this.convertToQuery(query.getJsonObject("query"));
+	        	rq = new LuceneQuery(core, collectKeyName, filterKeyName, nestedQ);  // TODO: fails as 'lucenes' is null
+	        	break;
+
+        	case "JoinANDQuery":
+        		rq = new JoinANDQuery(
+    				this.convertToRelationalQuery(query.getJsonObject("first"), lucenes),
+    				this.convertToRelationalQuery(query.getJsonObject("second"), lucenes)
+        		);
+        		break;
+
+        	case "JoinORQuery":
+        		rq = new JoinORQuery(
+    				this.convertToRelationalQuery(query.getJsonObject("first"), lucenes),
+    				this.convertToRelationalQuery(query.getJsonObject("second"), lucenes)
+        		);
+        		break;
+
+        	case "NotQuery":
+        		rq = new NotQuery(this.convertToRelationalQuery(query.getJsonObject("q"), lucenes));
+        		break;
+
+        	default:
+        		return null;
+
+        }
+		return rq;
+	}
+
+	private Query createPhraseQuery(JsonObject query) {
         PhraseQuery.Builder b = new PhraseQuery.Builder();
         JsonArray terms = query.getJsonArray("terms");
         for (int i = 0; i < terms.size(); i++) {

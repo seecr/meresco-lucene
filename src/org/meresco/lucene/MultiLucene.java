@@ -43,6 +43,9 @@ import org.meresco.lucene.search.JoinSortField;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
+import org.meresco.lucene.search.join.relational.IntermediateResult;
+import org.meresco.lucene.search.join.relational.RelationalQuery;
+import org.meresco.lucene.search.join.relational.RelationalQueryWrapperQuery;
 
 
 public class MultiLucene {
@@ -54,13 +57,19 @@ public class MultiLucene {
         }
     }
 
+	public Map<String, Lucene> getLucenes() {
+		return new HashMap<String, Lucene>(this.lucenes);
+	}
+
     public LuceneResponse executeComposedQuery(ComposedQuery q) throws Throwable {
         return executeComposedQuery(q, null);
     }
 
     public LuceneResponse executeComposedQuery(ComposedQuery q, String exportKey) throws Throwable {
-        if (q.cores.size() <= 1 && exportKey == null)
+        if (q.cores.size() <= 1 && exportKey == null) {
+        	// TODO: make sure q.cores is extended for cores specified in RelationalQueries
             return singleCoreQuery(q);
+        }
         return multipleCoreQuery(q, exportKey);
     }
 
@@ -78,22 +87,34 @@ public class MultiLucene {
         long t0 = System.currentTimeMillis();
         String resultCoreName = query.resultsFrom;
         List<String> otherCoreNames = new ArrayList<>();
-        for (String core : query.cores)
-            if (!core.equals(resultCoreName))
+        for (String core : query.cores) {
+            if (!core.equals(resultCoreName)) {
                 otherCoreNames.add(core);
+            }
+        }
 
         Map<String, FixedBitSet> finalKeys = uniteFilter(query);
-        for (String otherCoreName : otherCoreNames)
+        for (String otherCoreName : otherCoreNames) {
             finalKeys = coreQueries(otherCoreName, resultCoreName, query, finalKeys);
-
+        }
         List<Query> resultFilters = new ArrayList<>();
-        for (String keyName : finalKeys.keySet())
+        for (String keyName : finalKeys.keySet()) {
             resultFilters.add(new KeyFilter(finalKeys.get(keyName), keyName));
+        }
 
         Query resultCoreQuery = luceneQueryForCore(resultCoreName, query);
-        if (resultCoreQuery == null)
-                resultCoreQuery = new MatchAllDocsQuery();
-        List<AggregateScoreSuperCollector> aggregateScoreCollectors = createAggregateScoreCollectors(query);
+        // TODO: take different approach in case resultCoreQuery is RelationalQuery...
+        if (resultCoreQuery != null && resultCoreQuery instanceof RelationalQueryWrapperQuery) {
+        	RelationalQuery rq = ((RelationalQueryWrapperQuery) resultCoreQuery).relationalQuery;
+        	// TODO: apply filter to rq! ????
+        	IntermediateResult intermediateResult = rq.execute(this.lucenes);
+        	resultFilters.add(new KeyFilter(intermediateResult.getBitSet(), exportKey, intermediateResult.inverted));  // NOTE: ignores relevance etc. :-(
+        	resultCoreQuery = null;  // NOTE: ignores relevance etc. :-(
+        }
+        if (resultCoreQuery == null) {
+            resultCoreQuery = new MatchAllDocsQuery();
+        }
+
         Map<String, KeySuperCollector> keyCollectors = new HashMap<>();
         for (String keyName : query.keyNames(resultCoreName)) {
             keyCollectors.put(keyName, new KeySuperCollector(keyName));
@@ -117,14 +138,15 @@ public class MultiLucene {
 
         query.queryData.query = resultCoreQuery;
         query.queryData.facets = query.facetsFor(resultCoreName);
+        List<AggregateScoreSuperCollector> aggregateScoreCollectors = createAggregateScoreCollectors(query);
         LuceneResponse response = this.lucenes.get(resultCoreName).executeQuery(
-                query.queryData,
-                null, // TODO: filterQueries??
-                query.drilldownQueriesFor(resultCoreName),
-                resultFilters,
-                aggregateScoreCollectors,
-                keyCollectors.values()
-            );
+            query.queryData,
+            null,  // TODO: filterQueries??
+            query.drilldownQueriesFor(resultCoreName),
+            resultFilters,
+            aggregateScoreCollectors,
+            keyCollectors.values()
+        );
 
         for (String otherCoreName : otherCoreNames) {
             List<FacetRequest> facets = query.facetsFor(otherCoreName);
@@ -135,11 +157,11 @@ public class MultiLucene {
                 queries.addAll(query.queriesFor(otherCoreName));
                 queries.addAll(query.otherCoreFacetFiltersFor(otherCoreName));
                 response.drilldownData.addAll(lucenes.get(otherCoreName).facets(
-                        facets,
-                        queries,
-                        query.drilldownQueriesFor(otherCoreName),
-                        keyFilter
-                    ));
+                    facets,
+                    queries,
+                    query.drilldownQueriesFor(otherCoreName),
+                    keyFilter
+                ));
             }
         }
 
@@ -209,8 +231,9 @@ public class MultiLucene {
 
     public Map<String, JsonQueryConverter> getQueryConverters() throws Exception {
         Map<String, JsonQueryConverter> queryConverters = new HashMap<String, JsonQueryConverter>();
-        for (Lucene lucene : this.lucenes.values())
+        for (Lucene lucene : this.lucenes.values()) {
             queryConverters.put(lucene.name, lucene.getQueryConverter());
+        }
         return queryConverters;
     }
 
@@ -221,16 +244,18 @@ public class MultiLucene {
             Query rankQuery = query.rankQueryFor(coreName);
             if (rankQuery != null) {
                 ScoreSuperCollector scoreCollector = this.lucenes.get(coreName).scoreCollector(query.keyName(coreName, query.resultsFrom), rankQuery);
-                if (!scoreCollectors.containsKey(resultsKeyName))
+                if (!scoreCollectors.containsKey(resultsKeyName)) {
                     scoreCollectors.put(resultsKeyName, new ArrayList<ScoreSuperCollector>());
+                }
                 scoreCollectors.get(resultsKeyName).add(scoreCollector);
             }
         }
         List<AggregateScoreSuperCollector> aggregateScoreCollectors = new ArrayList<AggregateScoreSuperCollector>();
         for (String keyName : scoreCollectors.keySet()) {
             List<ScoreSuperCollector> scoreCollectorsForKey = scoreCollectors.get(keyName);
-            if (scoreCollectorsForKey.size() > 0)
+            if (scoreCollectorsForKey.size() > 0) {
                 aggregateScoreCollectors.add(new AggregateScoreSuperCollector(keyName, scoreCollectorsForKey, query.rankQueryScoreRatio));
+            }
         }
         return aggregateScoreCollectors;
     }

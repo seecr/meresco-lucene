@@ -1,10 +1,11 @@
-package org.meresco.lucene.search.join;
+package org.meresco.lucene.search.join.relational;
 
 import static org.junit.Assert.assertEquals;
 
 import org.apache.lucene.util.FixedBitSet;
 import org.junit.Test;
 import org.meresco.lucene.SeecrTestCase;
+import org.meresco.lucene.search.join.relational.IntermediateResult;
 
 
 public class IntermediateResultTest extends SeecrTestCase {

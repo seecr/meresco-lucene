@@ -218,7 +218,7 @@ public class ComposedQueryTest {
 
     @SuppressWarnings("serial")
     @Test
-    public void testUnite() {
+    public void testUnite() throws Exception {
         JsonObject json = Json.createObjectBuilder()
                 .add("resultsFrom", "coreA")
                 .add("cores", Json.createArrayBuilder()

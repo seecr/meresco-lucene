@@ -1,4 +1,4 @@
-package org.meresco.lucene.search.join;
+package org.meresco.lucene.search.join.relational;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.FixedBitSet;

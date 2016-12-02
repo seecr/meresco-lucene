@@ -192,8 +192,8 @@ class ComposedQueryTest(SeecrTestCase):
         cq.addFilterQuery('coreB', 'Q4')
         cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         cq.addUnite(dict(core='coreA', query='Q5'), dict(core='coreB', query='Q6'))
-        convertCoreA = lambda query: "Converted_A_{0}".format(query)
-        convertCoreB = lambda query: "Converted_B_{0}".format(query)
+        convertCoreA = lambda query, **kwargs: "Converted_A_{0}".format(query)
+        convertCoreB = lambda query, **kwargs: "Converted_B_{0}".format(query)
         cq.convertWith(coreA=convertCoreA, coreB=convertCoreB)
 
         self.assertEquals("Converted_A_Q0", cq.queryFor('coreA'))
@@ -216,8 +216,8 @@ class ComposedQueryTest(SeecrTestCase):
         cq.addUnite(dict(core='coreA', query='Q5'), dict(core='coreB', query='Q6'))
         cq.unqualifiedTermFields = [('field0', 2.0), ('field1', 3.0)]
 
-        convertCoreA = lambda query, unqualifiedTermFields=None: "Converted_A_{0}_{1}".format(query, not unqualifiedTermFields is None)
-        convertCoreB = lambda query: "Converted_B_{0}".format(query)
+        convertCoreA = lambda query, unqualifiedTermFields=None, **kwargs: "Converted_A_{0}_{1}".format(query, not unqualifiedTermFields is None)
+        convertCoreB = lambda query, **kwargs: "Converted_B_{0}".format(query)
         cq.convertWith(coreA=convertCoreA, coreB=convertCoreB)
 
         self.assertEquals("Converted_A_Q0_True", cq.queryFor('coreA'))
@@ -281,7 +281,7 @@ class ComposedQueryTest(SeecrTestCase):
     def testAddFilterQueryAfterConversion(self):
         cq = ComposedQuery('coreA')
         cq.setCoreQuery('coreA', query='A')
-        cq.convertWith(coreA=lambda q: "converted_" + q)
+        cq.convertWith(coreA=lambda q, **kwargs: "converted_" + q)
         self.assertEquals('converted_A', cq.queryFor('coreA'))
         # Assert the following does not raise KeyError
         cq.addFilterQuery('coreA', 'field=value')

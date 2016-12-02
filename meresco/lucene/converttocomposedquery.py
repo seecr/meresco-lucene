@@ -141,15 +141,15 @@ class ConvertToComposedQuery(Observable):
     def _coreDrilldownQuery(self, drilldownQueryField, cores):
         return self._parseCorePrefix(drilldownQueryField, cores)
 
-    def _parseCorePrefix(self, value, cores):
-        if value.startswith(self._resultsFrom):
-            return self._resultsFrom, value
+    def _parseCorePrefix(self, field, cores):
+        if field.startswith(self._resultsFrom):
+            return self._resultsFrom, field
         core = self._resultsFrom
         try:
-            tmpcore, tail = value.split('.', 1)
+            tmpcore, tail = field.split('.', 1)
             if tmpcore in cores:
                 core = tmpcore
-                value = tail
+                field = tail
         except ValueError:
             pass
-        return core, value
+        return core, field

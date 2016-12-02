@@ -677,8 +677,9 @@ public class Lucene {
 
     private FixedBitSet doCollectKeys(Query filterQuery, String keyName, Query query) throws Throwable {
         KeySuperCollector keyCollector = new KeySuperCollector(keyName);
-        if (query == null)
+        if (query == null) {
             query = new MatchAllDocsQuery();
+        }
         search(query, filterQuery, keyCollector);
         return keyCollector.getCollectedKeys();
     }

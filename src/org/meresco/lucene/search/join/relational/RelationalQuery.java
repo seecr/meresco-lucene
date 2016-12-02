@@ -6,7 +6,7 @@ import org.meresco.lucene.Lucene;
 
 
 public interface RelationalQuery {
-    public IntermediateResult execute(Map<String, Lucene> lucenes);
+    public IntermediateResult collectKeys(Map<String, Lucene> lucenes);
 
     public void filter(IntermediateResult keyFilter);
 

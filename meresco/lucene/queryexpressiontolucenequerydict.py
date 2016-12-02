@@ -54,69 +54,91 @@ class QueryExpressionToLuceneQueryDict(Observable):
         response = yield self.any.executeQuery(luceneQuery=self.convert(query), **kwargs)
         raise StopIteration(response)
 
-    def convert(self, expression, unqualifiedTermFields=None):
+    def convert(self, expression, unqualifiedTermFields=None, composedQuery=None):
         if expression.must_not:
             r = QueryExpression.nested('AND')
             r.operands.append(QueryExpression.searchterm(term='*'))
             r.operands.append(expression)
             expression = r
-        return JsonDict(self._expression(expression, unqualifiedTermFields=unqualifiedTermFields or self._unqualifiedTermFields))
+        return JsonDict(_Converter(
+            analyzer=self._analyzer,
+            fieldRegistry=self._fieldRegistry,
+            ignoreStemmingForWords=self._ignoreStemmingForWords,
+            unqualifiedTermFields=unqualifiedTermFields or self._unqualifiedTermFields,
+            composedQuery=composedQuery).convert(expression))
 
     def __call__(self, expression, **kwargs):
         return self.convert(expression, **kwargs)
 
-    def _expression(self, expr, unqualifiedTermFields=None):
-        if expr.operator:
-            return self._nestedExpression(expr, unqualifiedTermFields=unqualifiedTermFields)
-        if expr.index is None:
-            if expr.term == '*':
-                return dict(type="MatchAllDocsQuery")
-            queries = []
-            for index, boost in (unqualifiedTermFields or []):
-                query = self._determineQuery(index, expr.term)
-                if query["type"] == "PhraseQuery" and not self._fieldRegistry.phraseQueryPossible(index):
-                    continue
-                query['boost'] = boost
-                queries.append(query)
-            if len(queries) == 1:
-                return queries[0]
-            q = dict(type="BooleanQuery", clauses=[])
-            for query in queries:
-                if query['type'] == 'BooleanQuery' and not query['clauses']:
-                    continue
-                if query['type'] == "PhraseQuery" and not query['terms']:
-                    continue
-                query['occur'] = OCCUR['OR']
-                q['clauses'].append(query)
-            return q
-        else:
-            if expr.relation in ['==', 'exact'] or \
-                    (expr.relation == '=' and self._fieldRegistry.isUntokenized(expr.index)):
-                query = self._createQuery(expr.index, expr.term)
-            elif expr.relation in ['<','<=','>=','>']:
-                query = self._termRangeQuery(expr.index, expr.relation, expr.term)
-            elif expr.relation == '=':
-                query = self._determineQuery(expr.index, expr.term)
-            else:
-                raise UnsupportedCQL("'%s' not supported for the field '%s'" % (expr.relation, expr.index))
-            if expr.relation_boost:
-                query['boost'] = expr.relation_boost
-            return query
 
-    def _nestedExpression(self, expr, unqualifiedTermFields):
+class _Converter(object):
+    def __init__(self, analyzer, fieldRegistry, ignoreStemmingForWords, unqualifiedTermFields, composedQuery):
+        self._analyzer = analyzer
+        self._fieldRegistry = fieldRegistry
+        self._ignoreStemmingForWords = ignoreStemmingForWords
+        self._unqualifiedTermFields = unqualifiedTermFields or []
+        self._composedQuery = composedQuery
+        self._resultsFrom = composedQuery.resultsFrom if composedQuery else None
+        self._cores = composedQuery.cores if composedQuery else set([])
+
+    def convert(self, expr):
+        if expr.operator:
+            return self._nestedExpression(expr)
+        if expr.index is None:
+            return self._unqualifiedQuery(expr)
+        return self._fieldQuery(expr)
+
+    def _nestedExpression(self, expr):
         q = dict(type="BooleanQuery", clauses=[])
         for operand in expr.operands:
             occur = OCCUR[expr.operator]
             if operand.must_not:
                 occur = OCCUR['NOT']
-            query = self._expression(operand, unqualifiedTermFields=unqualifiedTermFields)
-            if query['type'] == 'BooleanQuery' and not query['clauses']:
-                continue
-            if query['type'] == 'PhraseQuery' and not query['terms']:
+            query = self.convert(operand)
+            if self._isEmptyQuery(query):
                 continue
             query['occur'] = occur
             q['clauses'].append(query)
         return q
+
+    def _unqualifiedQuery(self, expr):
+        if expr.term == '*':
+            return dict(type="MatchAllDocsQuery")
+        queries = []
+        for index, boost in self._unqualifiedTermFields:
+            query = self._determineQuery(index, expr.term)
+            if query["type"] == "PhraseQuery" and not self._fieldRegistry.phraseQueryPossible(index):
+                continue
+            query['boost'] = boost
+            queries.append(query)
+        if len(queries) == 1:
+            return queries[0]
+        q = dict(type="BooleanQuery", clauses=[])
+        for query in queries:
+            if self._isEmptyQuery(query):
+                continue
+            query['occur'] = OCCUR['OR']
+            q['clauses'].append(query)
+        return q
+
+    def _fieldQuery(self, expr):
+        core, field = self._parseCorePrefix(expr.index)
+        if expr.relation in ['==', 'exact'] or \
+                (expr.relation == '=' and self._fieldRegistry.isUntokenized(field)):  # TODO: use fieldRegistry for specific core...
+            query = self._createQuery(field, expr.term)
+        elif expr.relation in ['<','<=','>=','>']:
+            query = self._termRangeQuery(field, expr.relation, expr.term)
+        elif expr.relation == '=':
+            query = self._determineQuery(field, expr.term)
+        else:
+            raise UnsupportedCQL("'%s' not supported for the field '%s'" % (expr.relation, field))
+        if expr.relation_boost:
+            query['boost'] = expr.relation_boost
+
+        if core and not core == self._resultsFrom:
+            keyName = self._composedQuery.keyName(core, self._resultsFrom)
+            query = dict(type='LuceneQuery', core=core, collectKeyName=keyName, filterKeyName=keyName, query=query)
+        return query
 
     def _determineQuery(self, index, termString):
         terms = self._pre_analyzeToken(index, termString)
@@ -181,6 +203,26 @@ class QueryExpressionToLuceneQueryDict(Observable):
                 path = [value]
             return dict(field=field, path=path, type="DrillDown")
         return dict(field=field, value=value)
+
+    def _isEmptyQuery(self, query):
+        return \
+            (query['type'] == 'BooleanQuery' and not query['clauses']) or \
+            (query['type'] == "PhraseQuery" and not query['terms'])
+
+    def _parseCorePrefix(self, field):
+        if not self._composedQuery:
+            return None, field
+        if field.startswith(self._resultsFrom):
+            return self._resultsFrom, field
+        core = self._resultsFrom
+        try:
+            tmpcore, tail = field.split('.', 1)
+            if tmpcore in self._cores:
+                core = tmpcore
+                field = tail
+        except ValueError:
+            pass
+        return core, field
 
 
 def rangeQuery(rangeQueryType, field, lowerTerm, upperTerm, includeLower, includeUpper):

@@ -31,6 +31,7 @@ from cqlparser import cqlToExpression, parseString as parseCql, UnsupportedCQL
 from cqlparser.cqltoexpression import QueryExpression
 
 from meresco.lucene import LuceneSettings, DrilldownField
+from meresco.lucene.composedquery import ComposedQuery
 from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELD, FieldRegistry, LONGFIELD, INTFIELD, STRINGFIELD
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 
@@ -518,8 +519,66 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
             }],
             'type': 'BooleanQuery'}, self._convert("abc AND :;+ AND def"))
 
-    def _convert(self, input):
-        return self._prepareConverter().convert(self._makeExpression(input))
+    def testOtherCoreTermQuery(self):
+        query = ComposedQuery('thisCore')
+        query.cores.add('otherCore')
+        query.addMatch(
+            dict(core='thisCore', uniqueKey='A'),
+            dict(core='otherCore', uniqueKey='B')
+        )
+        self.assertEquals({
+            "type": "LuceneQuery",  # should this not be 'joined' to own core somehow? (with MatchAllDocs)
+            "core": "otherCore",
+            "collectKeyName": "B",
+            "filterKeyName": "B",
+            "query": {
+                "type": "TermQuery",
+                "term": {
+                    "field": "field",
+                    "value": "value",
+                }
+            }}, self._convert(QueryExpression.searchterm("otherCore.field", "=", "value"), composedQuery=query))
+
+    def testOtherCoreAndQuery(self):
+        self.assertEquals({
+            'type': 'JoinANDQuery',
+            'first': {
+                "type": "LuceneQuery",  # should this not be 'joined' to own core somehow?
+                "core": "thisCore",
+                "collectKeyName": "A",  # where does this keyName come from?
+                "filterKeyName": "A",
+                "query": {
+                    "type": "TermQuery",
+                    "term": {
+                        "field":"field0",
+                        "value": "value",
+                    }
+                }
+            },
+            'second': {
+                "type": "LuceneQuery",  # should this not be 'joined' to own core somehow?
+                "core": "otherCore",
+                "collectKeyName": "A",  # where does this keyName come from?
+                "filterKeyName": "A",
+                "query": {
+                    "type": "TermQuery",
+                    "term": {
+                        "field":"field",
+                        "value": "value",
+                    }
+                }
+            }
+        }, self._convert(
+                QueryExpression(operator='AND', operands=[
+                    QueryExpression.searchterm('field0', '=', 'value'),
+                    QueryExpression.searchterm("otherCore.field", "=", "value")
+                ])
+            )
+        )
+
+
+    def _convert(self, input, **kwargs):
+        return self._prepareConverter().convert(self._makeExpression(input), **kwargs)
 
     def _prepareConverter(self):
         unqualifiedFields = getattr(self, 'unqualifiedFields', [("unqualified", 1.0)])

@@ -172,7 +172,7 @@ public class JsonQueryConverter {
     }
 
     Query convertToQuery(JsonObject query) {
-    	return this.convertToQuery(query, null);
+        return this.convertToQuery(query, null);
     }
 
     Query convertToQuery(JsonObject query, Map<String, Lucene> lucenes) {
@@ -206,9 +206,9 @@ public class JsonQueryConverter {
             case "JoinANDQuery":
             case "JoinORQuery":
             case "NotQuery":
-            	RelationalQuery rq = this.convertToRelationalQuery(query, lucenes);
-            	q = new RelationalQueryWrapperQuery(rq);
-            	break;
+                RelationalQuery rq = this.convertToRelationalQuery(query, lucenes);
+                q = new RelationalQueryWrapperQuery(rq);
+                break;
 
             default:
                 return null;
@@ -224,40 +224,40 @@ public class JsonQueryConverter {
             return null;
         RelationalQuery rq;
         switch (query.getString("type")) {
-        	case "LuceneQuery":
-	        	String core = query.getString("core");
-	        	String collectKeyName = query.getString("collectKeyName");
-	        	String filterKeyName = query.getString("filterKeyName");
-	        	Query nestedQ = this.convertToQuery(query.getJsonObject("query"));
-	        	rq = new LuceneQuery(core, collectKeyName, filterKeyName, nestedQ);  // TODO: fails as 'lucenes' is null
-	        	break;
+            case "LuceneQuery":
+                String core = query.getString("core");
+                String collectKeyName = query.getString("collectKeyName");
+                String filterKeyName = query.getString("filterKeyName");
+                Query nestedQ = this.convertToQuery(query.getJsonObject("query"));
+                rq = new LuceneQuery(core, collectKeyName, filterKeyName, nestedQ);  // TODO: fails as 'lucenes' is null
+                break;
 
-        	case "JoinANDQuery":
-        		rq = new JoinANDQuery(
-    				this.convertToRelationalQuery(query.getJsonObject("first"), lucenes),
-    				this.convertToRelationalQuery(query.getJsonObject("second"), lucenes)
-        		);
-        		break;
+            case "JoinANDQuery":
+                rq = new JoinANDQuery(
+                    this.convertToRelationalQuery(query.getJsonObject("first"), lucenes),
+                    this.convertToRelationalQuery(query.getJsonObject("second"), lucenes)
+                );
+                break;
 
-        	case "JoinORQuery":
-        		rq = new JoinORQuery(
-    				this.convertToRelationalQuery(query.getJsonObject("first"), lucenes),
-    				this.convertToRelationalQuery(query.getJsonObject("second"), lucenes)
-        		);
-        		break;
+            case "JoinORQuery":
+                rq = new JoinORQuery(
+                    this.convertToRelationalQuery(query.getJsonObject("first"), lucenes),
+                    this.convertToRelationalQuery(query.getJsonObject("second"), lucenes)
+                );
+                break;
 
-        	case "NotQuery":
-        		rq = new NotQuery(this.convertToRelationalQuery(query.getJsonObject("q"), lucenes));
-        		break;
+            case "NotQuery":
+                rq = new NotQuery(this.convertToRelationalQuery(query.getJsonObject("q"), lucenes));
+                break;
 
-        	default:
-        		return null;
+            default:
+                return null;
 
         }
-		return rq;
-	}
+        return rq;
+    }
 
-	private Query createPhraseQuery(JsonObject query) {
+    private Query createPhraseQuery(JsonObject query) {
         PhraseQuery.Builder b = new PhraseQuery.Builder();
         JsonArray terms = query.getJsonArray("terms");
         for (int i = 0; i < terms.size(); i++) {

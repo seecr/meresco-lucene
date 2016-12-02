@@ -205,8 +205,11 @@ class ComposedQuery(object):
             if query is None:
                 return None
             convertFunction = converts[core]
-            if core == self.resultsFrom and self.unqualifiedTermFields:
-                return convertFunction(query, unqualifiedTermFields=self.unqualifiedTermFields)
+            if core == self.resultsFrom:
+                kwargs = {'composedQuery': self}
+                if self.unqualifiedTermFields:
+                    kwargs['unqualifiedTermFields'] = self.unqualifiedTermFields
+                return convertFunction(query, **kwargs)
             return convertFunction(query)
         self._queries = dict((core, convertQuery(core, v)) for core, v in self._queries.items())
         self._filterQueries = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._filterQueries.items())

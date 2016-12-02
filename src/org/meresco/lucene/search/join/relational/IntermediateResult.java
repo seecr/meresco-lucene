@@ -58,11 +58,12 @@ public class IntermediateResult {
 		return sb.toString();
 	}
 
-	public void normalizeBitSet(int size) {
+	public IntermediateResult normalizeBitSet(int size) {
 		this.bitset = FixedBitSet.ensureCapacity(this.bitset, size);
 		if (this.inverted) {
 			this.bitset.flip(0, this.bitset.length());  // seems expensive
 			this.inverted = false;
 		}
+		return this;
 	}
 }

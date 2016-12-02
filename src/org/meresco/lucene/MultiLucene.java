@@ -57,25 +57,25 @@ public class MultiLucene {
         }
     }
 
-	public Map<String, Lucene> getLucenes() {
-		return new HashMap<String, Lucene>(this.lucenes);
-	}
+    public Map<String, Lucene> getLucenes() {
+        return new HashMap<String, Lucene>(this.lucenes);
+    }
 
     public LuceneResponse executeComposedQuery(ComposedQuery q) throws Throwable {
-        return executeComposedQuery(q, null);
+        return this.executeComposedQuery(q, null);
     }
 
     public LuceneResponse executeComposedQuery(ComposedQuery q, String exportKey) throws Throwable {
+        // TODO: make sure q.cores is extended for cores specified in RelationalQueries
         if (q.cores.size() <= 1 && exportKey == null) {
-        	// TODO: make sure q.cores is extended for cores specified in RelationalQueries
-            return singleCoreQuery(q);
+            return this.singleCoreQuery(q);
         }
-        return multipleCoreQuery(q, exportKey);
+        return this.multipleCoreQuery(q, exportKey);
     }
 
-    private LuceneResponse singleCoreQuery(ComposedQuery query) throws Throwable {
+    public LuceneResponse singleCoreQuery(ComposedQuery query) throws Throwable {
         String resultCoreName = query.resultsFrom;
-        Query resultCoreQuery = luceneQueryForCore(resultCoreName, query);
+        Query resultCoreQuery = this.luceneQueryForCore(resultCoreName, query);
         if (resultCoreQuery == null)
             resultCoreQuery = new MatchAllDocsQuery();
         query.queryData.query = resultCoreQuery;
@@ -83,7 +83,7 @@ public class MultiLucene {
         return this.lucenes.get(resultCoreName).executeQuery(query.queryData, query.filterQueries.get(resultCoreName), query.drilldownQueriesFor(resultCoreName), null, null, null);
     }
 
-    private LuceneResponse multipleCoreQuery(ComposedQuery query, String exportKey) throws Throwable {
+    public LuceneResponse multipleCoreQuery(ComposedQuery query, String exportKey) throws Throwable {
         long t0 = System.currentTimeMillis();
         String resultCoreName = query.resultsFrom;
         List<String> otherCoreNames = new ArrayList<>();
@@ -93,23 +93,23 @@ public class MultiLucene {
             }
         }
 
-        Map<String, FixedBitSet> finalKeys = uniteFilter(query);
+        Map<String, FixedBitSet> finalKeys = this.filterKeys(query);
         for (String otherCoreName : otherCoreNames) {
-            finalKeys = coreQueries(otherCoreName, resultCoreName, query, finalKeys);
+            finalKeys = this.coreQueries(otherCoreName, resultCoreName, query, finalKeys);
         }
         List<Query> resultFilters = new ArrayList<>();
         for (String keyName : finalKeys.keySet()) {
             resultFilters.add(new KeyFilter(finalKeys.get(keyName), keyName));
         }
 
-        Query resultCoreQuery = luceneQueryForCore(resultCoreName, query);
-        // TODO: take different approach in case resultCoreQuery is RelationalQuery...
+        Query resultCoreQuery = this.luceneQueryForCore(resultCoreName, query);
+
         if (resultCoreQuery != null && resultCoreQuery instanceof RelationalQueryWrapperQuery) {
-        	RelationalQuery rq = ((RelationalQueryWrapperQuery) resultCoreQuery).relationalQuery;
-        	// TODO: apply filter to rq! ????
-        	IntermediateResult intermediateResult = rq.execute(this.lucenes);
-        	resultFilters.add(new KeyFilter(intermediateResult.getBitSet(), exportKey, intermediateResult.inverted));  // NOTE: ignores relevance etc. :-(
-        	resultCoreQuery = null;  // NOTE: ignores relevance etc. :-(
+            // Note: RelationalQuery not yet supported for queries (only for filters)
+            resultCoreQuery = null;
+//                    RelationalQuery rq = ((RelationalQueryWrapperQuery) resultCoreQuery).relationalQuery;
+//                    IntermediateResult intermediateResult = rq.collectKeys(this.lucenes);
+//                    resultFilters.add(new KeyFilter(intermediateResult.getBitSet(), exportKey, intermediateResult.inverted));  // NOTE: loses relevance etc.!! :-(
         }
         if (resultCoreQuery == null) {
             resultCoreQuery = new MatchAllDocsQuery();
@@ -138,15 +138,15 @@ public class MultiLucene {
 
         query.queryData.query = resultCoreQuery;
         query.queryData.facets = query.facetsFor(resultCoreName);
-        List<AggregateScoreSuperCollector> aggregateScoreCollectors = createAggregateScoreCollectors(query);
+        List<AggregateScoreSuperCollector> aggregateScoreCollectors = this.createAggregateScoreCollectors(query);
         LuceneResponse response = this.lucenes.get(resultCoreName).executeQuery(
-            query.queryData,
-            null,  // TODO: filterQueries??
-            query.drilldownQueriesFor(resultCoreName),
-            resultFilters,
-            aggregateScoreCollectors,
-            keyCollectors.values()
-        );
+                query.queryData,
+                null,  // TODO: filterQueries??
+                query.drilldownQueriesFor(resultCoreName),
+                resultFilters,
+                aggregateScoreCollectors,
+                keyCollectors.values()
+                );
 
         for (String otherCoreName : otherCoreNames) {
             List<FacetRequest> facets = query.facetsFor(otherCoreName);
@@ -156,12 +156,12 @@ public class MultiLucene {
                 List<Query> queries = new ArrayList<Query>();
                 queries.addAll(query.queriesFor(otherCoreName));
                 queries.addAll(query.otherCoreFacetFiltersFor(otherCoreName));
-                response.drilldownData.addAll(lucenes.get(otherCoreName).facets(
-                    facets,
-                    queries,
-                    query.drilldownQueriesFor(otherCoreName),
-                    keyFilter
-                ));
+                response.drilldownData.addAll(this.lucenes.get(otherCoreName).facets(
+                        facets,
+                        queries,
+                        query.drilldownQueriesFor(otherCoreName),
+                        keyFilter
+                        ));
             }
         }
 
@@ -172,31 +172,43 @@ public class MultiLucene {
         return response;
     }
 
-    private Map<String, FixedBitSet> uniteFilter(ComposedQuery query) throws Throwable {
+    private Map<String, FixedBitSet> filterKeys(ComposedQuery query) throws Throwable {
         Map<String, FixedBitSet> keys = new HashMap<String, FixedBitSet>();
         for (Unite unite : query.getUnites()) {
             String keyNameA = query.keyName(unite.coreA, unite.coreB);
             String keyNameB = query.keyName(unite.coreB, unite.coreA);
             String resultKeyName = query.resultsFrom.equals(unite.coreA) ? keyNameA : keyNameB;
-            FixedBitSet collectedKeys = lucenes.get(unite.coreA).collectKeys(unite.queryA, query.keyName(unite.coreA, unite.coreB), null);
-            unionCollectedKeys(keys, collectedKeys, resultKeyName);
 
-            collectedKeys = lucenes.get(unite.coreB).collectKeys(unite.queryB, query.keyName(unite.coreB, unite.coreA), null);
-            unionCollectedKeys(keys, collectedKeys, resultKeyName);
+            FixedBitSet collectedKeys = this.collectKeys(unite.coreA, unite.queryA, query.keyName(unite.coreA, unite.coreB));
+            this.unionCollectedKeys(keys, collectedKeys, resultKeyName);
+
+            collectedKeys = this.collectKeys(unite.coreB, unite.queryB, query.keyName(unite.coreB, unite.coreA));
+            this.unionCollectedKeys(keys, collectedKeys, resultKeyName);
         }
 
         for (String core : query.filterQueries.keySet()) {
             for (Query q : query.filterQueries.get(core)) {
                 String keyNameResult = query.keyName(query.resultsFrom, core);
                 String keyNameOther = query.keyName(core, query.resultsFrom);
-                FixedBitSet collectedKeys = lucenes.get(core).collectKeys(q, keyNameOther, null);
-                if (keys.containsKey(keyNameResult))
+                FixedBitSet collectedKeys = this.collectKeys(core, q, keyNameOther);
+                if (keys.containsKey(keyNameResult)) {
                     keys.get(keyNameResult).and(collectedKeys);
-                else
+                }
+                else {
                     keys.put(keyNameResult, collectedKeys.clone());
+                }
             }
         }
         return keys;
+    }
+
+    private FixedBitSet collectKeys(String coreName, Query query, String keyName) throws Throwable {
+        if (query != null && query instanceof RelationalQueryWrapperQuery) {
+            RelationalQuery rq = ((RelationalQueryWrapperQuery) query).relationalQuery;
+            IntermediateResult intermediateResult = rq.collectKeys(this.lucenes);
+            query = new KeyFilter(intermediateResult.getBitSet(), keyName, intermediateResult.inverted);
+        }
+        return this.lucenes.get(coreName).collectKeys(query, keyName, null);
     }
 
     private void unionCollectedKeys(Map<String, FixedBitSet> keys, FixedBitSet collectedKeys, String keyName) {
@@ -212,12 +224,12 @@ public class MultiLucene {
         Query luceneQuery = query.queryFor(coreName);
         List<String[]> ddQueries = query.drilldownQueriesFor(coreName);
         if (ddQueries != null && ddQueries.size() > 0)
-            luceneQuery = lucenes.get(coreName).createDrilldownQuery(luceneQuery, ddQueries);
+            luceneQuery = this.lucenes.get(coreName).createDrilldownQuery(luceneQuery, ddQueries);
         return luceneQuery;
     }
 
     private Map<String, FixedBitSet> coreQueries(String coreName, String otherCoreName, ComposedQuery query, Map<String, FixedBitSet> keysForKeyName) throws Throwable {
-        Query luceneQuery = luceneQueryForCore(coreName, query);
+        Query luceneQuery = this.luceneQueryForCore(coreName, query);
         if (luceneQuery != null) {
             FixedBitSet collectedKeys = this.lucenes.get(coreName).collectKeys(null, query.keyName(coreName, otherCoreName), luceneQuery, false);
             String otherKeyName = query.keyName(otherCoreName, coreName);

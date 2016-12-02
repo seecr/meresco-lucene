@@ -21,7 +21,7 @@ public class NotQuery implements RelationalQuery {
 	}
 
 	@Override
-	public IntermediateResult execute(Map<String, Lucene> lucenes) {
+	public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
 //    	System.out.println("execute " + this);
 		if (!this.inverted) {
 			this.q.invert();
@@ -34,7 +34,7 @@ public class NotQuery implements RelationalQuery {
 //			System.out.println("apply union " + this.union + " to NotQuery.q" + this.q);
 			this.q.union(this.union);
 		}
-		IntermediateResult result = this.q.execute(lucenes);
+		IntermediateResult result = this.q.collectKeys(lucenes);
     	if (this.union != null) {
 //    		System.out.println("[NotQuery] applying bitset union " + this.union + " to result " + result);
     		result.union(this.union);

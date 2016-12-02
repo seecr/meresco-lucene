@@ -18,23 +18,23 @@ public class LuceneQuery implements RelationalQuery {
     private String filterKeyName;
     private Query originalQ;
     private Query q;
-    private String boost;
+    private float boost;
 
     public LuceneQuery(String core, String keyName, Query q) {
         this(core, keyName, keyName, q);
     }
 
     public LuceneQuery(String core, String collectKeyName, String filterKeyName, Query q) {
-		this(core, collectKeyName, filterKeyName, q, null);
+		this(core, collectKeyName, filterKeyName, q, 1.0f);
 	}
 
-    public LuceneQuery(String core, String collectKeyName, String filterKeyName, Query q, String boost) {
+    public LuceneQuery(String core, String collectKeyName, String filterKeyName, Query q, float boost) {
         this.core = core;
         this.collectKeyName = collectKeyName;
         this.filterKeyName = filterKeyName;
         this.originalQ = q;
         this.q = q;
-        this.boost = boost;
+        this.boost = boost;  // ignored so far
     }
 
     @Override
@@ -43,7 +43,7 @@ public class LuceneQuery implements RelationalQuery {
     }
 
 	@Override
-	public IntermediateResult execute(Map<String, Lucene> lucenes) {
+	public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
 //		System.out.println("execute " + this);
         KeySuperCollector keyCollector = new KeySuperCollector(this.collectKeyName);
         try {

@@ -46,14 +46,13 @@ import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
-import org.meresco.lucene.LuceneResponse.GroupingHit;
 import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;
 
-public class LuceneResponseToJsonTest {
 
+public class LuceneResponseToJsonTest {
     @Test
     public void test() {
         LuceneResponse response = new LuceneResponse(2);
@@ -154,29 +153,6 @@ public class LuceneResponseToJsonTest {
         assertEquals(5, duplicateCount.getInt("__key__"));
     }
 
-    @SuppressWarnings("serial")
-    @Test
-    public void testGrouping() {
-        LuceneResponse response = new LuceneResponse(2);
-        GroupingHit hit1 = new GroupingHit("id1", 0.1f);
-        hit1.groupingField = "__key__";
-        hit1.duplicates = new ArrayList<String>() {{ add("id1"); add("id3"); }};
-        response.addHit(hit1);
-        GroupingHit hit2 = new GroupingHit("id2", 0.2f);
-        hit2.groupingField = "__key__";
-        hit2.duplicates = new ArrayList<String>() {{ add("id2"); }};
-        response.addHit(hit2);
-
-        JsonArray hits = response.toJson().getJsonArray("hits");
-        assertEquals(2, hits.size());
-        JsonObject duplicates = hits.getJsonObject(0).getJsonObject("duplicates");
-        assertEquals(2, duplicates.getJsonArray("__key__").size());
-        assertEquals("id1", duplicates.getJsonArray("__key__").getJsonObject(0).getString("id"));
-        assertEquals("id3", duplicates.getJsonArray("__key__").getJsonObject(1).getString("id"));
-        duplicates = hits.getJsonObject(1).getJsonObject("duplicates");
-        assertEquals(1, duplicates.getJsonArray("__key__").size());
-    }
-
     @Test
     public void testClustering() {
         LuceneResponse response = new LuceneResponse(2);
@@ -213,7 +189,7 @@ public class LuceneResponseToJsonTest {
         JsonObject json = response.toJson();
         assertEquals(JsonValue.NULL, json.getJsonArray("hits").getJsonObject(0).get("id"));
     }
-    
+
     @Test
     public void testStoredFields() {
         LuceneResponse response = new LuceneResponse(1);
@@ -221,7 +197,7 @@ public class LuceneResponseToJsonTest {
         hit.fields.add(new IndexableField[] {new StringField("aField", "aValue", Store.YES)});
         hit.fields.add(new IndexableField[] {new StoredField("intField", 10)});
         response.addHit(hit);
-        
+
         JsonObject json = response.toJson();
         assertEquals("id:1", json.getJsonArray("hits").getJsonObject(0).getString("id"));
         assertEquals("aValue", ((JsonString) json.getJsonArray("hits").getJsonObject(0).getJsonArray("aField").get(0)).getString());

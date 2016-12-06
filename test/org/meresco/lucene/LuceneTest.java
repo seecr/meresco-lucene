@@ -72,7 +72,6 @@ import org.junit.Test;
 import org.meresco.lucene.Lucene.TermCount;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
-import org.meresco.lucene.LuceneResponse.GroupingHit;
 import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.search.InterpolateEpsilon;
@@ -587,83 +586,6 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(4, result.drilldownData.get(0).terms.get(0).count);
     }
 
-    @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
-    @Test
-    public void testGroupingCollector() throws Throwable {
-        addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
-        addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
-        addDocument(lucene, "urn:3", new HashMap() {{put("__key__", 43);}}, new HashMap() {{put("field0", "v2");}});
-        addDocument(lucene, "urn:4", null, new HashMap() {{put("field0", "v3");}});
-
-        QueryData q = new QueryData();
-        q.stop = 3;
-        q.groupingField = "__key__";
-        q.sort = new Sort(new SortField("field0", SortField.Type.STRING));
-        LuceneResponse result = lucene.executeQuery(q);
-        // expected two hits: "urn:2" (3x) and "urn:4" in no particular order
-        assertEquals(4, result.total);
-        compareHits(result, "urn:1", "urn:3", "urn:4");
-        GroupingHit hit0 = (GroupingHit) result.hits.get(0);
-        GroupingHit hit1 = (GroupingHit) result.hits.get(1);
-        GroupingHit hit2 = (GroupingHit) result.hits.get(2);
-        assertEquals("__key__", hit0.groupingField);
-        assertEquals(new ArrayList<String>() {{ add("urn:1"); add("urn:2"); }}, hit0.duplicates);
-        assertEquals(new ArrayList<String>() {{ add("urn:3"); }}, hit1.duplicates);
-        assertEquals(new ArrayList<String>() {{ add("urn:4"); }}, hit2.duplicates);
-    }
-
-    @SuppressWarnings({ "serial", "unchecked", "rawtypes" })
-    @Test
-    public void testGroupingOnNonExistingField() throws Throwable {
-        addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
-        addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
-        addDocument(lucene, "urn:3", new HashMap() {{put("__key__", 43);}}, new HashMap() {{put("field0", "v2");}});
-        addDocument(lucene, "urn:4", null, new HashMap() {{put("field0", "v3");}});
-
-        QueryData q = new QueryData();
-        q.groupingField = "__other_key__";
-        q.stop = 3;
-        LuceneResponse result = lucene.executeQuery(q);
-        assertEquals(4, result.total);
-        assertEquals(3, result.hits.size());
-    }
-
-    @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
-    @Test
-    public void testDontGroupIfMaxResultsAreLessThanTotalRecords() throws Throwable {
-        addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
-        addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
-
-        QueryData q = new QueryData();
-        q.groupingField = "__key__";
-        LuceneResponse result = lucene.executeQuery(q);
-
-        assertEquals(2, result.total);
-        compareHits(result, "urn:1", "urn:2");
-
-        Collections.sort(result.hits);
-        GroupingHit hit0 = (GroupingHit) result.hits.get(0);
-        GroupingHit hit1 = (GroupingHit) result.hits.get(1);
-        assertEquals(new ArrayList<String>() {{ add("urn:1"); }}, hit0.duplicates);
-        assertEquals(new ArrayList<String>() {{ add("urn:2"); }}, hit1.duplicates);
-    }
-
-    @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
-    @Test
-    public void testGroupingCollectorReturnsMaxHitAfterGrouping() throws Throwable {
-        addDocument(lucene, "urn:1", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v0");}});
-        addDocument(lucene, "urn:2", new HashMap() {{put("__key__", 42);}}, new HashMap() {{put("field0", "v1");}});
-        for (int i=3; i<11; i++)
-            addDocument(lucene, "urn:" + i, null, new HashMap() {{put("field0", "v0");}});
-
-        QueryData q = new QueryData();
-        q.groupingField = "__key__";
-        q.stop = 5;
-        LuceneResponse result = lucene.executeQuery(q);
-        assertEquals(10, result.total);
-        assertEquals(5, result.hits.size());
-    }
-
     @Test
     public void testClusteringOnVectors() throws Throwable {
         LuceneSettings settings = lucene.getSettings();
@@ -971,49 +893,6 @@ public class LuceneTest extends SeecrTestCase {
             if (id0)
                 assertFalse(id100);
         }
-    }
-
-    @Test
-    public void testCollectUntilStopWithForGrouping() throws Throwable {
-        for (int i=0; i<20; i++) {
-            Document doc = new Document();
-            doc.add(new NumericDocValuesField("__key__", 42L));
-            doc.add(new NumericDocValuesField("sort", i));
-            lucene.addDocument("id:" + i, doc);
-        }
-        Document doc = new Document();
-        doc.add(new NumericDocValuesField("sort", 100));
-        lucene.addDocument("id:100", doc);
-
-        QueryData q = new QueryData();
-        q.groupingField = "__key__";
-        q.start = 0;
-        q.stop = 2;
-        q.sort = new Sort(new SortField("sort", SortField.Type.INT));
-        LuceneResponse result = lucene.executeQuery(q);
-        assertEquals(21, result.total);
-        assertEquals(2, result.hits.size());
-
-        q.stop = 5;
-        result = lucene.executeQuery(q);
-        assertEquals(21, result.total);
-        assertEquals(2, result.hits.size());
-    }
-
-    @Test
-    public void testReturnNoMoreThanStopForGrouping() throws Throwable {
-        for (int i=0; i<50; i++)
-            lucene.addDocument("id:" + i, new Document());
-        lucene.addDocument("id:100", new Document());
-
-        QueryData q = new QueryData();
-        q.groupingField = "__key__";
-        q.start = 5;
-        q.stop = 7;
-        q.sort = new Sort(new SortField("sort", SortField.Type.STRING));
-        LuceneResponse result = lucene.executeQuery(q);
-        assertEquals(51, result.total);
-        assertEquals(2, result.hits.size());
     }
 
     @Test

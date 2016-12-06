@@ -82,7 +82,6 @@ public class ComposedQuery {
         cq.queryData.sort = converters.get(cq.resultsFrom).convertToSort(json.getJsonArray("_sortKeys"));
         cq.queryData.dedupField = json.getString("_dedupField", null);
         cq.queryData.dedupSortField = json.getString("_dedupSortField", null);
-        cq.queryData.groupingField = json.getString("_groupingField", null);
         cq.queryData.clustering = json.getBoolean("_clustering", false);
         JsonArray fields = json.getJsonArray("_storedFields");
         if (fields != null)

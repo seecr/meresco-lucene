@@ -37,7 +37,7 @@ from meresco.lucene.extractfilterqueries import ExtractFilterQueries
 
 
 class ConvertToComposedQuery(Observable):
-    def __init__(self, resultsFrom, matches=None, dedupFieldName=None, dedupSortFieldName=None, dedupByDefault=True, groupingFieldName=None, drilldownFieldnamesTranslate=lambda s: s):
+    def __init__(self, resultsFrom, matches=None, dedupFieldName=None, dedupSortFieldName=None, dedupByDefault=True, drilldownFieldnamesTranslate=lambda s: s):
         Observable.__init__(self)
         self._resultsFrom = resultsFrom
         self._matches = matches or []
@@ -45,15 +45,12 @@ class ConvertToComposedQuery(Observable):
         self._dedupFieldName = dedupFieldName
         self._dedupSortFieldName = dedupSortFieldName
         self._dedupByDefault = dedupByDefault
-        self._groupingFieldName = groupingFieldName
         self._drilldownFieldnamesTranslate = drilldownFieldnamesTranslate
-        self._groupingEnabled = bool(self._groupingFieldName)
         self._clusteringEnabled = True
         self._extraFilterQueries = ExtractFilterQueries(self._cores)
 
     @asyncnoreturnvalue
     def updateConfig(self, config, indexConfig=None, **kwargs):
-        self._groupingEnabled = bool(self._groupingFieldName) and 'grouping' not in config.get('features_disabled', [])
         self._clusteringEnabled = 'clustering' not in config.get('features_disabled', [])
 
     def executeQuery(self, query=None, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, sortKeys=None, **kwargs):
@@ -100,10 +97,6 @@ class ConvertToComposedQuery(Observable):
             if 'true' == extraArguments.get('x-filter-common-keys', ['true' if self._dedupByDefault else 'false'])[0]:
                 setattr(cq, "dedupField", self._dedupFieldName)
                 setattr(cq, "dedupSortField", self._dedupSortFieldName)
-
-        if self._groupingEnabled and 'true' == extraArguments.get('x-grouping', [None])[0]:
-            if coreQuery != QueryExpression.searchterm(term='*'):
-                setattr(cq, "groupingField", self._groupingFieldName)
 
         if self._clusteringEnabled and 'true' == extraArguments.get('x-clustering', [None])[0]:
             setattr(cq, "clustering", True)

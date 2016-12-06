@@ -89,11 +89,9 @@ import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
-import org.meresco.lucene.LuceneResponse.GroupingHit;
 import org.meresco.lucene.LuceneResponse.Hit;
 import org.meresco.lucene.search.DeDupFilterSuperCollector;
 import org.meresco.lucene.search.FacetSuperCollector;
-import org.meresco.lucene.search.GroupSuperCollector;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoClusterer;
@@ -370,7 +368,6 @@ public class Lucene {
         int totalHits = collectors.topCollector.getTotalHits();
 
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;
-        GroupSuperCollector groupingCollector = collectors.groupingCollector;
 
         HashSet<String> seenIds = new HashSet<>();
         int count = q.start;
@@ -392,28 +389,6 @@ public class Lucene {
                     dedupHit.duplicateCount = keyForDocId.getCount();
                 dedupHit.score = scoreDoc.score;
                 hit = dedupHit;
-            } else if (groupingCollector != null) {
-                document = getDocument(scoreDoc.doc);
-                GroupingHit groupHit = new GroupingHit(document.get(ID_FIELD), scoreDoc.score);
-                if (seenIds.contains(groupHit.id))
-                    continue;
-
-                List<String> duplicateIds = new ArrayList<>();
-                duplicateIds.add(groupHit.id);
-                if (totalHits > (q.stop - q.start)) {
-                    List<Integer> groupedDocIds = groupingCollector.group(scoreDoc.doc);
-                    if (groupedDocIds != null)
-                        for (int docId : groupedDocIds) {
-                            String id = getDocument(docId).get(ID_FIELD);
-                            if (!id.equals(groupHit.id))
-                                duplicateIds.add(id);
-                        }
-                }
-                seenIds.addAll(duplicateIds);
-                groupHit.groupingField = groupingCollector.getKeyName();
-                groupHit.duplicates = duplicateIds;
-                groupHit.score = scoreDoc.score;
-                hit = groupHit;
             } else {
                 document = getDocument(scoreDoc.doc);
                 hit = new Hit(document.get(ID_FIELD), scoreDoc.score);
@@ -473,11 +448,7 @@ public class Lucene {
             throws Exception {
         Collectors allCollectors = new Collectors();
         SuperCollector<?> resultsCollector;
-        if (q.groupingField != null) {
-            allCollectors.topCollector = topCollector(q.start, stop * 10, q.sort);
-            allCollectors.groupingCollector = new GroupSuperCollector(q.groupingField, allCollectors.topCollector);
-            resultsCollector = allCollectors.groupingCollector;
-        } else if (q.dedupField != null) {
+        if (q.dedupField != null) {
             allCollectors.topCollector = topCollector(q.start, stop, q.sort);
             allCollectors.dedupCollector = new DeDupFilterSuperCollector(q.dedupField, q.dedupSortField, allCollectors.topCollector);
             resultsCollector = allCollectors.dedupCollector;
@@ -782,7 +753,6 @@ public class Lucene {
     }
 
     public static class Collectors {
-        public GroupSuperCollector groupingCollector;
         public DeDupFilterSuperCollector dedupCollector;
         public TopDocSuperCollector topCollector;
         public FacetSuperCollector facetCollector;

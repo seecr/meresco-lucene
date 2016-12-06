@@ -45,6 +45,7 @@ import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;
 
+
 public class LuceneResponse {
     public int total;
     public Integer totalWithDuplicates;
@@ -99,15 +100,6 @@ public class LuceneResponse {
         }
         public String duplicateField;
         public int duplicateCount;
-    }
-
-
-    public static class GroupingHit extends Hit {
-        public List<String> duplicates;
-        public String groupingField;
-        public GroupingHit(String id, float score) {
-            super(id, score);
-        }
     }
 
 
@@ -197,13 +189,6 @@ public class LuceneResponse {
                 DedupHit dedupHit = (DedupHit) hit;
                 hitBuilder.add("duplicateCount", Json.createObjectBuilder()
                     .add(dedupHit.duplicateField, dedupHit.duplicateCount));
-            } else if (hit instanceof GroupingHit) {
-                GroupingHit groupingHit = (GroupingHit) hit;
-                JsonArrayBuilder duplicatesBuilder = Json.createArrayBuilder();
-                for (String id : groupingHit.duplicates)
-                    duplicatesBuilder.add(Json.createObjectBuilder().add("id", id));
-                hitBuilder.add("duplicates", Json.createObjectBuilder()
-                    .add(groupingHit.groupingField, duplicatesBuilder));
             } else if (hit instanceof ClusterHit) {
                 ClusterHit clusterHit = (ClusterHit) hit;
                 JsonArrayBuilder topDocsBuilder = Json.createArrayBuilder();

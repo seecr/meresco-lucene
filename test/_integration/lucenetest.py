@@ -197,15 +197,6 @@ class LuceneTest(IntegrationTestCase):
         response = self.doSruQuery('untokenized.fieldHier exact "parent0>child1>grandchild2"', facet='untokenized.fieldHier', drilldownFormat='json')
         self.assertEquals('3', xpathFirst(response, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))
 
-    def testGrouping(self):
-        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), groupingField="__key__.groupfield", core="main2", stop=3, sortKeys=[{'sortBy': 'sorted.field4', 'sortDescending': False}])
-        self.assertEqual(3, len(response.hits))
-        self.assertEquals(
-            [100, 100, 100],
-            [len(hit.duplicates['__key__.groupfield']) for hit in response.hits]
-        )
-
     def testQueryAfterRestartDoesReInitSettings(self):
         self.assertEquals(10, self.numberOfRecords(query='field2=value2'))
         self.stopServer("lucene-server")

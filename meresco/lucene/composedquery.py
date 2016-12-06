@@ -59,7 +59,6 @@ class ComposedQuery(object):
     suggestionRequest = _makeProperty('_suggestionRequest')
     dedupField = _makeProperty('_dedupField')
     dedupSortField = _makeProperty('_dedupSortField')
-    groupingField = _makeProperty('_groupingField')
     storedFields = _makeProperty('_storedFields')
     clustering = _makeProperty('_clustering')
     clusteringConfig = _makeProperty('_clusteringConfig')

@@ -35,6 +35,7 @@ from simplejson import loads
 
 from lucenesettingstest import DEFAULTS
 
+
 class LuceneTest(SeecrTestCase):
     def setUp(self):
         SeecrTestCase.setUp(self)
@@ -115,7 +116,6 @@ class LuceneTest(SeecrTestCase):
                     sortKeys=[dict(sortBy='field', sortDescending=False)],
                     suggestionRequest=dict(suggests=['valeu'], count=2, field='field1'),
                     dedupField="__key__",
-                    groupingField="__grouping_key__",
                     clustering=True,
                     storedFields=["field"]
                 ))
@@ -130,7 +130,6 @@ class LuceneTest(SeecrTestCase):
                     "suggestionRequest": dict(suggests=['valeu'], count=2, field='field1'),
                     "dedupField": "__key__",
                     "dedupSortField": None,
-                    "groupingField": "__grouping_key__",
                     "clustering": True,
                 }, loads(self.post[0]['data']))
         self.assertEqual(887, response.total)

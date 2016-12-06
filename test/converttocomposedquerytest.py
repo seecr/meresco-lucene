@@ -42,7 +42,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         SeecrTestCase.setUp(self)
         self.setupDna()
 
-    def setupDna(self, dedupFieldName="__key__", dedupSortFieldName="__key__.date", groupingFieldName="__key__", dedupByDefault=True):
+    def setupDna(self, dedupFieldName="__key__", dedupSortFieldName="__key__.date", dedupByDefault=True):
         self.observer = CallTrace('observer', emptyGeneratorMethods=['executeComposedQuery'])
         self.response = LuceneResponse()
         def executeComposedQuery(*args, **kwargs):
@@ -65,7 +65,6 @@ class ConvertToComposedQueryTest(SeecrTestCase):
                         dedupFieldName=dedupFieldName,
                         dedupSortFieldName=dedupSortFieldName,
                         dedupByDefault=dedupByDefault,
-                        groupingFieldName=groupingFieldName,
                         drilldownFieldnamesTranslate=lambda name: 'prefix.' + name if name == 'toBePrefixed' else name,
                     ),
                     (self.observer,)
@@ -172,30 +171,6 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         cq = self.observer.calledMethods[0].kwargs['query']
         self.assertEquals(None, cq.dedupField)
         self.assertEquals(None, cq.dedupSortField)
-
-    def testGroupingDefaultTurnedOff(self):
-        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={}, facets=[]))
-        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
-        cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals(None, cq.groupingField)
-
-    def testGroupingTurnedOn(self):
-        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('fiets'), extraArguments={'x-grouping': ['true']}, facets=[]))
-        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
-        cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals("__key__", cq.groupingField)
-
-    def testNoGroupingForMatchAllQuery(self):
-        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-grouping': ['true']}))
-        cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEqual(None, cq.groupingField)
-
-    def testGroupingNotEnabledIfTurnedOffInConfig(self):
-        consume(self.tree.any.updateConfig(config=dict(features_disabled=['grouping']), indexConfig={}))
-        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('fiets'), extraArguments={'x-grouping': ['true']}, facets=[]))
-        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
-        cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals(None, cq.groupingField)
 
     def testClusteringNotEnabledIfTurnedOffInConfig(self):
         consume(self.tree.any.updateConfig(config=dict(features_disabled=['clustering']), indexConfig={}))

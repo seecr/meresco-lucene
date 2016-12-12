@@ -229,7 +229,7 @@ public class JsonQueryConverter {
                 String collectKeyName = query.getString("collectKeyName");
                 String filterKeyName = query.getString("filterKeyName");
                 Query nestedQ = this.convertToQuery(query.getJsonObject("query"));
-                rq = new LuceneQuery(core, collectKeyName, filterKeyName, nestedQ);  // TODO: fails as 'lucenes' is null
+                rq = new LuceneQuery(core, collectKeyName, filterKeyName, nestedQ);
                 break;
 
             case "JoinANDQuery":
@@ -247,7 +247,7 @@ public class JsonQueryConverter {
                 break;
 
             case "NotQuery":
-                rq = new NotQuery(this.convertToRelationalQuery(query.getJsonObject("q"), lucenes));
+                rq = new NotQuery(this.convertToRelationalQuery(query.getJsonObject("query"), lucenes));
                 break;
 
             default:

@@ -64,6 +64,7 @@ class ComposedQuery(object):
     clusteringConfig = _makeProperty('_clusteringConfig')
     unqualifiedTermFields = _makeProperty('_unqualifiedTermFields')
     rankQueryScoreRatio = _makeProperty('_rankQueryScoreRatio')
+    relationalFilterJson = _makeProperty('_relationalFilterJson')
 
     del _makeProperty
 

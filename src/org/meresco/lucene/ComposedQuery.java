@@ -27,6 +27,7 @@
 package org.meresco.lucene;
 
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,6 +49,7 @@ public class ComposedQuery {
     public String resultsFrom;
     public Set<String> cores = new HashSet<String>();
     private Map<String, Query> queries = new HashMap<String, Query>();
+    public Query relationalFilter;
     public Map<String, List<Query>> filterQueries = new HashMap<String, List<Query>>();
     private Map<String, List<FacetRequest>> facets = new HashMap<String, List<FacetRequest>>();
     private Map<String, List<String[]>> drilldownQueries = new HashMap<String, List<String[]>>();
@@ -108,6 +110,13 @@ public class ComposedQuery {
                 cq.setCoreQuery(core, queryConverters.get(core).convertToQuery(queries.getJsonObject(core)));
             }
         }
+        if (json.containsKey("_relationalFilterJson")) {
+            String relationalFilterJson = json.getString("_relationalFilterJson");
+            StringReader reader = new StringReader(relationalFilterJson);
+            JsonObject relationalFilterJsonObject = Json.createReader(reader).readObject();
+            reader.close();
+            cq.relationalFilter = queryConverters.get(resultsFrom).convertToQuery(relationalFilterJsonObject);
+        }
         if (json.containsKey("_filterQueries")) {
             JsonObject filterQueries = json.getJsonObject("_filterQueries");
             for (String coreName : filterQueries.keySet()) {
@@ -163,7 +172,6 @@ public class ComposedQuery {
                 } else {
                     cq.addMatch(coreNames[0], coreNames[1], keyName2, keyName1);
                 }
-
             }
         }
         if (json.containsKey("_rankQueries")) {

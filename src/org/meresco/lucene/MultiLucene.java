@@ -174,6 +174,19 @@ public class MultiLucene {
 
     private Map<String, FixedBitSet> filterKeys(ComposedQuery query) throws Throwable {
         Map<String, FixedBitSet> keys = new HashMap<String, FixedBitSet>();
+
+        if (query.relationalFilter != null) {
+            RelationalQuery rq = ((RelationalQueryWrapperQuery) query.relationalFilter).relationalQuery;
+            IntermediateResult intermediateResult = rq.collectKeys(this.lucenes);
+            String keyName = query.keyName(query.resultsFrom, query.resultsFrom);  // Note: this relies heavily on the RelationalQuery to return the right keys (semantically)
+            FixedBitSet collectedKeys = this.collectKeys(
+                query.resultsFrom,
+                new KeyFilter(intermediateResult.getBitSet(), keyName, intermediateResult.inverted),
+                keyName);
+            keys.put(keyName, collectedKeys.clone());
+            return keys;
+        }
+
         for (Unite unite : query.getUnites()) {
             String keyNameA = query.keyName(unite.coreA, unite.coreB);
             String keyNameB = query.keyName(unite.coreB, unite.coreA);

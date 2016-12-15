@@ -49,10 +49,12 @@ class FieldsListToLuceneDocumentTest(SeecrTestCase):
         index = FieldsListToLuceneDocument(fieldRegistry, untokenizedFieldnames=[], indexFieldFactory=fieldFactory)
         observer = CallTrace(emptyGeneratorMethods=['addDocument'])
         index.addObserver(observer)
+        longSpecialCharacterValue = u'\u041c\u0438\u043d\u0438\u0441\u0442\u0435\u0440\u0441\u0442\u0432\u043e \u0420\u044b\u0431\u043d\u043e\u0439 \u041f\u0440\u043e\u043c\u044b\u0448\u043b\u0435\u043d\u043d\u043e\u0441\u0438 \u0421\u043e\u044e\u0437\u0430 \u0421\u0421\u0420, \u0422\u0438\u0445\u043e\u043e\u043a\u0435\u0430\u043d\u0438\u0441\u043a\u0438\u0439 \u041d\u0430\u0443\u0447\u043d\u043e-\u0418\u0441\u0441\u043b\u0435\u0434\u043e\u0432\u0430\u0442\u0435\u043b\u044c\u0441\u043a\u0438\u0439 \u0418\u043d\u0441\u0442\u0438\u0442\u0443\u0442 \u0420\u044b\u0431\u043d\u043e\u0433\u043e \u0425\u043e\u0437\u044f\u0439\u0441\u0442\u0432\u0430 \u0438 \u041e\u043a\u0435\u0430\u043d\u043e\u0433\u0440\u0430\u0444\u0438\u0438, \u0412\u043b\u0430\u0434\u0438\u0432\u043e\u0441\u0442\u043e\u043a'
         fields = [
             ("field1", "value1"),
             ("field2", "value2"),
             ("drilldown.field", "a drilldown value"),
+            ("drilldown.field", longSpecialCharacterValue),
             ("__key__.field", "a key value"),
             ("__key__.field1", 2),
         ]
@@ -63,6 +65,7 @@ class FieldsListToLuceneDocumentTest(SeecrTestCase):
                 {'name': 'field1', 'type': 'TextField', 'value': 'value1'},
                 {'name': 'field2', 'type': 'TextField', 'value': 'value2'},
                 {'name': 'drilldown.field', 'type': 'FacetField', 'path': ['a drilldown value']},
+                {'name': 'drilldown.field', 'type': 'FacetField', 'path': [longSpecialCharacterValue]},
                 {'name': '__key__.field', 'type': 'KeyField', 'value': 'a key value'},
                 {'name': '__key__.field1', 'type': 'KeyField', 'value': 2},
             ], fields)

@@ -56,6 +56,8 @@ class FieldsListToLuceneDocumentTest(SeecrTestCase):
             ("field2", "value2"),
             ("drilldown.field", "a drilldown value"),
             ("drilldown.field", longSpecialCharacterValue),
+            ("drilldown.field", ['a', 'b']),
+            ("drilldown.field", []),
             ("__key__.field", "a key value"),
             ("__key__.field1", 2),
         ]
@@ -67,6 +69,7 @@ class FieldsListToLuceneDocumentTest(SeecrTestCase):
                 {'name': 'field2', 'type': 'TextField', 'value': 'value2'},
                 {'name': 'drilldown.field', 'type': 'FacetField', 'path': ['a drilldown value']},
                 {'name': 'drilldown.field', 'type': 'FacetField', 'path': [longSpecialCharacterValue]},
+                {'name': 'drilldown.field', 'type': 'FacetField', 'path': ['a', 'b']},
                 {'name': '__key__.field', 'type': 'KeyField', 'value': 'a key value'},
                 {'name': '__key__.field1', 'type': 'KeyField', 'value': 2},
             ], fields)

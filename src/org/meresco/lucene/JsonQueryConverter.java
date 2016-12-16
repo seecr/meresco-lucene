@@ -203,9 +203,9 @@ public class JsonQueryConverter {
                 break;
 
             case "LuceneQuery":
-            case "JoinANDQuery":
-            case "JoinORQuery":
-            case "NotQuery":
+            case "JoinAnd":
+            case "JoinOr":
+            case "Not":
                 RelationalQuery rq = this.convertToRelationalQuery(query, lucenes);
                 q = new RelationalQueryWrapperQuery(rq);
                 break;
@@ -232,21 +232,21 @@ public class JsonQueryConverter {
                 rq = new LuceneQuery(core, collectKeyName, filterKeyName, nestedQ);
                 break;
 
-            case "JoinANDQuery":
+            case "JoinAnd":
                 rq = new JoinANDQuery(
                     this.convertToRelationalQuery(query.getJsonObject("first"), lucenes),
                     this.convertToRelationalQuery(query.getJsonObject("second"), lucenes)
                 );
                 break;
 
-            case "JoinORQuery":
+            case "JoinOr":
                 rq = new JoinORQuery(
                     this.convertToRelationalQuery(query.getJsonObject("first"), lucenes),
                     this.convertToRelationalQuery(query.getJsonObject("second"), lucenes)
                 );
                 break;
 
-            case "NotQuery":
+            case "Not":
                 rq = new NotQuery(this.convertToRelationalQuery(query.getJsonObject("query"), lucenes));
                 break;
 

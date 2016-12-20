@@ -13,7 +13,7 @@ public class RelationalQueryWrapperQuery extends Query {
 
 	@Override
 	public String toString(String field) {
-		return null;
+		return "RelationalQueryWrapperQuery(" + this.relationalQuery + ")";
 	}
 
 	@Override

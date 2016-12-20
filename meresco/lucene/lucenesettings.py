@@ -53,7 +53,7 @@ class LuceneSettings(object):
         for name in SETTING_NAMES:
             self.__dict__['_' + name] = local[name]
         self.fieldRegistry = fieldRegistry
-   
+
     @property
     def analyzer(self):
         return self._analyzer
@@ -83,14 +83,13 @@ class LuceneSettings(object):
 
     def asPostDict(self):
         drilldownFields = []
-        fieldRegistry = self.fieldRegistry
-        for fieldname, options in fieldRegistry.drilldownFieldNames.items():
+        for fieldname, options in self.fieldRegistry.drilldownFieldNames.items():
             drilldownFields.append({
-                    "dim": fieldname,
-                    "hierarchical": options["hierarchical"],
-                    "multiValued": options["multiValued"],
-                    "fieldname": options["indexFieldName"]
-                })
-        result = JsonDict(drilldownFields = drilldownFields)
-        result.update((k[1:],v) for k,v in self.__dict__.iteritems() if k[1:] in SETTING_NAMES)
+                "dim": fieldname,
+                "hierarchical": options["hierarchical"],
+                "multiValued": options["multiValued"],
+                "fieldname": options["indexFieldName"]
+            })
+        result = JsonDict(drilldownFields=drilldownFields)
+        result.update((k[1:], v) for k, v in self.__dict__.iteritems() if k[1:] in SETTING_NAMES)
         return result

@@ -67,7 +67,7 @@ public class MultiLucene {
 
     public LuceneResponse executeComposedQuery(ComposedQuery q, String exportKey) throws Throwable {
         // TODO: make sure q.cores is extended for cores specified in RelationalQueries
-        if (q.cores.size() <= 1 && exportKey == null) {
+        if (q.cores.size() <= 1 && exportKey == null && q.relationalFilter == null) {
             return this.singleCoreQuery(q);
         }
         return this.multipleCoreQuery(q, exportKey);
@@ -76,8 +76,9 @@ public class MultiLucene {
     public LuceneResponse singleCoreQuery(ComposedQuery query) throws Throwable {
         String resultCoreName = query.resultsFrom;
         Query resultCoreQuery = this.luceneQueryForCore(resultCoreName, query);
-        if (resultCoreQuery == null)
+        if (resultCoreQuery == null) {
             resultCoreQuery = new MatchAllDocsQuery();
+        }
         query.queryData.query = resultCoreQuery;
         query.queryData.facets = query.facetsFor(resultCoreName);
         return this.lucenes.get(resultCoreName).executeQuery(query.queryData, query.filterQueries.get(resultCoreName), query.drilldownQueriesFor(resultCoreName), null, null, null);
@@ -178,11 +179,14 @@ public class MultiLucene {
         if (query.relationalFilter != null) {
             RelationalQuery rq = ((RelationalQueryWrapperQuery) query.relationalFilter).relationalQuery;
             IntermediateResult intermediateResult = rq.collectKeys(this.lucenes);
+            FixedBitSet collectedKeys = intermediateResult.getBitSet();
             String keyName = query.keyName(query.resultsFrom, query.resultsFrom);  // Note: this relies heavily on the RelationalQuery to return the right keys (semantically)
-            FixedBitSet collectedKeys = this.collectKeys(
-                query.resultsFrom,
-                new KeyFilter(intermediateResult.getBitSet(), keyName, intermediateResult.inverted),
-                keyName);
+            if (intermediateResult.inverted) {
+                collectedKeys = this.collectKeys(
+                    query.resultsFrom,
+                    new KeyFilter(intermediateResult.getBitSet(), keyName, intermediateResult.inverted),
+                    keyName);
+            }
             keys.put(keyName, collectedKeys.clone());
             return keys;
         }

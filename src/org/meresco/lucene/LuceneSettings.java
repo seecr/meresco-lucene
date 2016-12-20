@@ -142,7 +142,7 @@ public class LuceneSettings {
                 similarity = getSimilarity(object.getJsonObject(key));
                 break;
             case "drilldownFields":
-                updateDrilldownFields(facetsConfig, object.getJsonArray(key));
+                this.updateDrilldownFields(object.getJsonArray(key));
                 break;
             case "clustering":
                 ClusterConfig clusterConfig = ClusterConfig.parseFromJsonObject(object.getJsonObject(key));
@@ -159,17 +159,20 @@ public class LuceneSettings {
         return mp.setMaxMergeAtOnce(maxMergeAtOnce).setSegmentsPerTier(segmentsPerTier);
     }
 
-    private static void updateDrilldownFields(FacetsConfig facetsConfig, JsonArray drilldownFields) {
+    private void updateDrilldownFields(JsonArray drilldownFields) {
         for (int i = 0; i < drilldownFields.size(); i++) {
             JsonObject drilldownField = drilldownFields.getJsonObject(i);
             String dim = drilldownField.getString("dim");
-            if (drilldownField.get("hierarchical") != null)
-                facetsConfig.setHierarchical(dim, drilldownField.getBoolean("hierarchical"));
-            if (drilldownField.get("multiValued") != null)
-                facetsConfig.setMultiValued(dim, drilldownField.getBoolean("multiValued"));
+            if (drilldownField.get("hierarchical") != null) {
+                this.facetsConfig.setHierarchical(dim, drilldownField.getBoolean("hierarchical"));
+            }
+            if (drilldownField.get("multiValued") != null) {
+                this.facetsConfig.setMultiValued(dim, drilldownField.getBoolean("multiValued"));
+            }
             String fieldname = drilldownField.getString("fieldname", null);
-            if (fieldname != null && fieldname != null)
-                facetsConfig.setIndexFieldName(dim, fieldname);
+            if (fieldname != null && fieldname != null) {
+                this.facetsConfig.setIndexFieldName(dim, fieldname);
+            }
         }
     }
 

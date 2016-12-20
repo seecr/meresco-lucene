@@ -28,7 +28,6 @@ package org.meresco.lucene;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
@@ -171,13 +170,10 @@ public class JsonQueryConverter {
         return sugRequest;
     }
 
-    Query convertToQuery(JsonObject query) {
-        return this.convertToQuery(query, null);
-    }
-
-    Query convertToQuery(JsonObject query, Map<String, Lucene> lucenes) {
-        if (query == null)
+    public Query convertToQuery(JsonObject query) {
+        if (query == null) {
             return null;
+        }
         Query q;
         switch (query.getString("type")) {
             case "MatchAllDocsQuery":
@@ -206,20 +202,24 @@ public class JsonQueryConverter {
             case "JoinAnd":
             case "JoinOr":
             case "Not":
-                RelationalQuery rq = this.convertToRelationalQuery(query, lucenes);
+                RelationalQuery rq = this.convertToRelationalQuery(query);
+                System.out.println("switch rq=" + rq);
                 q = new RelationalQueryWrapperQuery(rq);
+                System.out.println("q:" + q);
                 break;
 
             default:
+                System.out.println("unexpected type: " + query.getString("type"));
                 return null;
         }
         if (query.get("boost") != null) {
             q = new BoostQuery(q, (float) query.getJsonNumber("boost").doubleValue());
         }
+        System.out.println("q:" + q);
         return q;
     }
 
-    private RelationalQuery convertToRelationalQuery(JsonObject query, Map<String, Lucene> lucenes) {
+    private RelationalQuery convertToRelationalQuery(JsonObject query) {
         if (query == null)
             return null;
         RelationalQuery rq;
@@ -234,26 +234,27 @@ public class JsonQueryConverter {
 
             case "JoinAnd":
                 rq = new JoinANDQuery(
-                    this.convertToRelationalQuery(query.getJsonObject("first"), lucenes),
-                    this.convertToRelationalQuery(query.getJsonObject("second"), lucenes)
+                    this.convertToRelationalQuery(query.getJsonObject("first")),
+                    this.convertToRelationalQuery(query.getJsonObject("second"))
                 );
                 break;
 
             case "JoinOr":
                 rq = new JoinORQuery(
-                    this.convertToRelationalQuery(query.getJsonObject("first"), lucenes),
-                    this.convertToRelationalQuery(query.getJsonObject("second"), lucenes)
+                    this.convertToRelationalQuery(query.getJsonObject("first")),
+                    this.convertToRelationalQuery(query.getJsonObject("second"))
                 );
                 break;
 
             case "Not":
-                rq = new NotQuery(this.convertToRelationalQuery(query.getJsonObject("query"), lucenes));
+                rq = new NotQuery(this.convertToRelationalQuery(query.getJsonObject("query")));
                 break;
 
             default:
                 return null;
 
         }
+        System.out.println("rq: " + rq);
         return rq;
     }
 

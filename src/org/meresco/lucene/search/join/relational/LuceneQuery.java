@@ -63,7 +63,7 @@ public class LuceneQuery implements RelationalQuery {
 
     @Override
 	public String toString() {
-    	return "LuceneQuery(" + this.core + ", " + this.collectKeyName + ", " + this.filterKeyName + ", " + this.originalQ + ")";
+    	return "LuceneQuery(\"" + this.core + "\", \"" + this.collectKeyName + "\", \"" + this.filterKeyName + "\", " + this.originalQ + ")";
     }
 
 	@Override

@@ -60,7 +60,7 @@ import org.meresco.lucene.search.join.relational.JoinORQuery;
 import org.meresco.lucene.search.join.relational.LuceneQuery;
 import org.meresco.lucene.search.join.relational.NotQuery;
 import org.meresco.lucene.search.join.relational.RelationalQuery;
-import org.meresco.lucene.search.join.relational.RelationalQueryWrapperQuery;
+import org.meresco.lucene.search.join.relational.WrappedRelationalQuery;
 
 
 public class JsonQueryConverter {
@@ -203,9 +203,7 @@ public class JsonQueryConverter {
             case "JoinOr":
             case "Not":
                 RelationalQuery rq = this.convertToRelationalQuery(query);
-                System.out.println("switch rq=" + rq);
-                q = new RelationalQueryWrapperQuery(rq);
-                System.out.println("q:" + q);
+                q = new WrappedRelationalQuery(rq);
                 break;
 
             default:
@@ -215,7 +213,6 @@ public class JsonQueryConverter {
         if (query.get("boost") != null) {
             q = new BoostQuery(q, (float) query.getJsonNumber("boost").doubleValue());
         }
-        System.out.println("q:" + q);
         return q;
     }
 
@@ -254,7 +251,6 @@ public class JsonQueryConverter {
                 return null;
 
         }
-        System.out.println("rq: " + rq);
         return rq;
     }
 

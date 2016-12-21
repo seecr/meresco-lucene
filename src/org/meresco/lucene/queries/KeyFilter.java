@@ -43,22 +43,22 @@ import org.meresco.lucene.search.join.KeyValuesCache;
 
 
 public class KeyFilter extends Query {
-	final private String keyName;
-	final private Bits keySet;
-	final private boolean inverted;
+    final private String keyName;
+    final private Bits keySet;
+    final private boolean inverted;
 
-	public KeyFilter(Bits keySet, String keyName, boolean inverted) throws IOException {
-		this.keySet = keySet;
-		this.keyName = keyName;
-		this.inverted = inverted;
-	}
+    public KeyFilter(Bits keySet, String keyName, boolean inverted) throws IOException {
+        this.keySet = keySet;
+        this.keyName = keyName;
+        this.inverted = inverted;
+    }
 
-	public KeyFilter(Bits keySet, String keyName) throws IOException {
-		this(keySet, keyName, false);
-	}
+    public KeyFilter(Bits keySet, String keyName) throws IOException {
+        this(keySet, keyName, false);
+    }
 
-	@Override
-	public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
+    @Override
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
         return new ConstantScoreWeight(this) {
             @Override
             public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -77,24 +77,24 @@ public class KeyFilter extends Query {
                         this.docId++;
                         if (keyValuesArray != null) {
                             try {
-                            	if (!inverted) {
-	                                while (this.docId < this.maxDoc) {
-	                                    int key = this.keyValuesArray[this.docId];
-	                                    if (keySet.length() > key && keySet.get(key)) {
-	                                    	return this.docId;
-	                                    }
-	                                    this.docId++;
-	                                }
-                            	}
-                            	else {
-	                                while (this.docId < this.maxDoc) {
-	                                    int key = this.keyValuesArray[this.docId];
-	                                    if (keySet.length() <= key || !keySet.get(key)) {
-                                    		return this.docId;
-	                                    }
-	                                    this.docId++;
-	                                }
-                            	}
+                                if (!inverted) {
+                                    while (this.docId < this.maxDoc) {
+                                        int key = this.keyValuesArray[this.docId];
+                                        if (keySet.length() > key && keySet.get(key)) {
+                                            return this.docId;
+                                        }
+                                        this.docId++;
+                                    }
+                                }
+                                else {
+                                    while (this.docId < this.maxDoc) {
+                                        int key = this.keyValuesArray[this.docId];
+                                        if (keySet.length() <= key || !keySet.get(key)) {
+                                            return this.docId;
+                                        }
+                                        this.docId++;
+                                    }
+                                }
                             } catch (IndexOutOfBoundsException e) {
                             }
                         }
@@ -119,33 +119,33 @@ public class KeyFilter extends Query {
 
     @Override
     public String toString(String field) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("KeyFilter(");
-		if (this.keySet instanceof FixedBitSet) {
-			FixedBitSet bitSet = (FixedBitSet) keySet;
-			sb.append("keySet=[");
-			boolean listStart = true;
-			if (bitSet.cardinality() > 0) {
-				for (int i = bitSet.nextSetBit(0); i != DocIdSetIterator.NO_MORE_DOCS; i = bitSet.nextSetBit(i+1)) {
-					if (!listStart) {
-						sb.append(", ");
-					}
-					sb.append("" + i);
-					listStart = false;
-				}
-			}
-			sb.append("], ");
-		}
+        StringBuilder sb = new StringBuilder();
+        sb.append("KeyFilter(");
+        if (this.keySet instanceof FixedBitSet) {
+            FixedBitSet bitSet = (FixedBitSet) keySet;
+            sb.append("keySet=[");
+            boolean listStart = true;
+            if (bitSet.cardinality() > 0) {
+                for (int i = bitSet.nextSetBit(0); i != DocIdSetIterator.NO_MORE_DOCS; i = bitSet.nextSetBit(i+1)) {
+                    if (!listStart) {
+                        sb.append(", ");
+                    }
+                    sb.append("" + i);
+                    listStart = false;
+                }
+            }
+            sb.append("], ");
+        }
         sb.append("\"" + keyName + "\")");
         return sb.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-    	if (!sameClassAs(o)) {
-    		return false;
-    	}
-    	KeyFilter other = (KeyFilter) o;
+        if (!sameClassAs(o)) {
+            return false;
+        }
+        KeyFilter other = (KeyFilter) o;
         return other.keyName == this.keyName && other.keySet.equals(this.keySet) && other.inverted == this.inverted;
     }
 

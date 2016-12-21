@@ -51,7 +51,8 @@ import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.search.TermFrequencySimilarity;
 import org.meresco.lucene.search.join.relational.JoinANDQuery;
 import org.meresco.lucene.search.join.relational.LuceneQuery;
-import org.meresco.lucene.search.join.relational.RelationalQueryWrapperQuery;
+import org.meresco.lucene.search.join.relational.NotQuery;
+import org.meresco.lucene.search.join.relational.WrappedRelationalQuery;
 
 
 public class MultiLuceneTest extends SeecrTestCase {
@@ -785,7 +786,7 @@ public class MultiLuceneTest extends SeecrTestCase {
     public void testRelationalFilterQuery() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
-        q.addFilterQuery("coreA", new RelationalQueryWrapperQuery(
+        q.addFilterQuery("coreA", new WrappedRelationalQuery(
             new JoinANDQuery(
                 new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
                 new LuceneQuery("coreB", "B", new TermQuery(new Term("P", "true")))
@@ -859,5 +860,22 @@ public class MultiLuceneTest extends SeecrTestCase {
         expected.set(7);
         expected.set(8);
         assertEquals(expected, result.keys);
+    }
+
+    @Test
+    public void testRelationalFilter() throws Throwable {
+        ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("M", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        q.relationalFilter = new WrappedRelationalQuery(
+            new NotQuery(
+                new JoinANDQuery(
+                    new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
+                    new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
+                )
+            )
+        );  // "A", "A-U", "A-Q", "A-QU", "A-MU", "A-MQU"
+        LuceneResponse result = this.multiLucene.executeComposedQuery(q);
+        assertEquals(2, result.total);
+        LuceneTest.compareHits(result, "A-MU", "A-MQU");
     }
 }

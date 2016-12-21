@@ -37,79 +37,151 @@ import org.meresco.lucene.search.join.KeySuperCollector;
 
 
 public class LuceneQuery implements RelationalQuery {
-    private String core;
-    private String collectKeyName;
-    private String filterKeyName;
-    private Query originalQ;
-    private Query q;
-    private float boost;
+    String core;
+    String collectKeyName;
+    String filterKeyName;
+    Query q;
+    float boost;
 
     public LuceneQuery(String core, String keyName, Query q) {
         this(core, keyName, keyName, q);
     }
 
     public LuceneQuery(String core, String collectKeyName, String filterKeyName, Query q) {
-		this(core, collectKeyName, filterKeyName, q, 1.0f);
-	}
+        this(core, collectKeyName, filterKeyName, q, 1.0f);
+    }
 
     public LuceneQuery(String core, String collectKeyName, String filterKeyName, Query q, float boost) {
         this.core = core;
         this.collectKeyName = collectKeyName;
         this.filterKeyName = filterKeyName;
-        this.originalQ = q;
         this.q = q;
         this.boost = boost;  // ignored so far
     }
 
     @Override
-	public String toString() {
-    	return "LuceneQuery(\"" + this.core + "\", \"" + this.collectKeyName + "\", \"" + this.filterKeyName + "\", " + this.originalQ + ")";
+    public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
+        return this.asExecutable().collectKeys(lucenes);
     }
 
-	@Override
-	public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
-//        System.out.println("execute " + this);
-        KeySuperCollector keyCollector = new KeySuperCollector(this.collectKeyName);
-        try {
-//            System.out.println("search " + this.q);
-            lucenes.get(this.core).search(this.q, keyCollector);
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
-        }
-        IntermediateResult result = new IntermediateResult(keyCollector.getCollectedKeys());
-//        System.out.println("result: " + result);
+    @Override
+    public ExecutableRelationalQuery asExecutable() {
+        return new ExecutableLuceneQuery(this);
+    }
+
+
+    @Override
+    public String toString() {
+        return "LuceneQuery(\"" + this.core + "\", \"" + this.collectKeyName + "\", \"" + this.filterKeyName + "\", " + this.q + ")";
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + Float.floatToIntBits(boost);
+        result = prime * result + ((collectKeyName == null) ? 0 : collectKeyName.hashCode());
+        result = prime * result + ((core == null) ? 0 : core.hashCode());
+        result = prime * result + ((filterKeyName == null) ? 0 : filterKeyName.hashCode());
+        result = prime * result + ((q == null) ? 0 : q.hashCode());
         return result;
     }
 
-	@Override
-	public void invert() {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-        builder.add(this.q, BooleanClause.Occur.MUST_NOT);
-        this.q = builder.build();
-	}
-
     @Override
-	public void filter(IntermediateResult intermediateResult) {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        builder.add(this.q, BooleanClause.Occur.MUST);
-        try {
-            builder.add(new KeyFilter(intermediateResult.getBitSet(), this.filterKeyName, intermediateResult.inverted), BooleanClause.Occur.MUST);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
-        this.q = builder.build();
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        LuceneQuery other = (LuceneQuery) obj;
+        if (!collectKeyName.equals(other.collectKeyName)) {
+            return false;
+        }
+        if (!core.equals(other.core)) {
+            return false;
+        }
+        if (!filterKeyName.equals(other.filterKeyName)) {
+            return false;
+        }
+        if (!q.equals(other.q)) {
+            return false;
+        }
+        if (Float.floatToIntBits(boost) != Float.floatToIntBits(other.boost)) {
+            return false;
+        }
+        return true;
     }
 
-	@Override
-	public void union(IntermediateResult intermediateResult) {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        try {
-        	builder.add(new KeyFilter(intermediateResult.getBitSet(), this.filterKeyName, intermediateResult.inverted), BooleanClause.Occur.SHOULD);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+
+    static class ExecutableLuceneQuery implements ExecutableRelationalQuery {
+        LuceneQuery luceneQuery;
+        Query q;
+
+        public ExecutableLuceneQuery(LuceneQuery luceneQuery) {
+            this.luceneQuery = luceneQuery;
+            this.q = luceneQuery.q;
         }
-        builder.add(this.q, BooleanClause.Occur.SHOULD);
-        this.q = builder.build();
-	}
+
+        @Override
+        public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
+    //        System.out.println("collectKeys " + this);
+            KeySuperCollector keyCollector = new KeySuperCollector(this.luceneQuery.collectKeyName);
+            try {
+    //            System.out.println("search " + this.q);
+                lucenes.get(this.luceneQuery.core).search(this.q, keyCollector);
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+            IntermediateResult result = new IntermediateResult(keyCollector.getCollectedKeys());
+    //        System.out.println("result: " + result);
+            return result;
+        }
+
+        @Override
+        public void invert() {
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            builder.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
+            builder.add(this.q, BooleanClause.Occur.MUST_NOT);
+            this.q = builder.build();
+        }
+
+        @Override
+        public void filter(IntermediateResult intermediateResult) {
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            builder.add(this.q, BooleanClause.Occur.MUST);
+            try {
+                builder.add(new KeyFilter(intermediateResult.getBitSet(), this.luceneQuery.filterKeyName, intermediateResult.inverted), BooleanClause.Occur.MUST);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            this.q = builder.build();
+        }
+
+        @Override
+        public void union(IntermediateResult intermediateResult) {
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
+            try {
+                builder.add(new KeyFilter(intermediateResult.getBitSet(), this.luceneQuery.filterKeyName, intermediateResult.inverted), BooleanClause.Occur.SHOULD);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            builder.add(this.q, BooleanClause.Occur.SHOULD);
+            this.q = builder.build();
+        }
+
+        @Override
+        public ExecutableRelationalQuery asExecutable() {
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + this.luceneQuery + ")";
+        }
+    }
 }

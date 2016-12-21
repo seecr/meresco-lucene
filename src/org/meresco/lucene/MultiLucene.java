@@ -45,7 +45,7 @@ import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
 import org.meresco.lucene.search.join.relational.IntermediateResult;
 import org.meresco.lucene.search.join.relational.RelationalQuery;
-import org.meresco.lucene.search.join.relational.RelationalQueryWrapperQuery;
+import org.meresco.lucene.search.join.relational.WrappedRelationalQuery;
 
 
 public class MultiLucene {
@@ -105,7 +105,7 @@ public class MultiLucene {
 
         Query resultCoreQuery = this.luceneQueryForCore(resultCoreName, query);
 
-        if (resultCoreQuery != null && resultCoreQuery instanceof RelationalQueryWrapperQuery) {
+        if (resultCoreQuery != null && resultCoreQuery instanceof WrappedRelationalQuery) {
             // Note: RelationalQuery not yet supported for queries (only for filters)
             resultCoreQuery = null;
 //                    RelationalQuery rq = ((RelationalQueryWrapperQuery) resultCoreQuery).relationalQuery;
@@ -177,7 +177,7 @@ public class MultiLucene {
         Map<String, FixedBitSet> keys = new HashMap<String, FixedBitSet>();
 
         if (query.relationalFilter != null) {
-            RelationalQuery rq = ((RelationalQueryWrapperQuery) query.relationalFilter).relationalQuery;
+            RelationalQuery rq = ((WrappedRelationalQuery) query.relationalFilter).relationalQuery;
             IntermediateResult intermediateResult = rq.collectKeys(this.lucenes);
             FixedBitSet collectedKeys = intermediateResult.getBitSet();
             String keyName = query.keyName(query.resultsFrom, query.resultsFrom);  // Note: this relies heavily on the RelationalQuery to return the right keys (semantically)
@@ -220,8 +220,8 @@ public class MultiLucene {
     }
 
     private FixedBitSet collectKeys(String coreName, Query query, String keyName) throws Throwable {
-        if (query != null && query instanceof RelationalQueryWrapperQuery) {
-            RelationalQuery rq = ((RelationalQueryWrapperQuery) query).relationalQuery;
+        if (query != null && query instanceof WrappedRelationalQuery) {
+            RelationalQuery rq = ((WrappedRelationalQuery) query).relationalQuery;
             IntermediateResult intermediateResult = rq.collectKeys(this.lucenes);
             query = new KeyFilter(intermediateResult.getBitSet(), keyName, intermediateResult.inverted);
         }

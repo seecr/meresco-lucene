@@ -50,7 +50,7 @@ public class RealIndexTest extends SeecrTestCase {
     //@Ignore("requires live index")
     @Test
     public void testQuery() throws Throwable {
-        Query warmupFilter = new RelationalQueryWrapperQuery(
+        Query warmupFilter = new WrappedRelationalQuery(
             new JoinANDQuery(
                 new LuceneQuery("summary", "__key__.lh:item.uri",
                     new TermQuery(new Term("__all__", "vliegtuig"))),
@@ -58,19 +58,15 @@ public class RealIndexTest extends SeecrTestCase {
                     new TermQuery(new Term("untokenized.lh:holder.uri", "info:isil:NL-0800070000")))));
         ComposedQuery composedQuery = new ComposedQuery("summary", new MatchAllDocsQuery());
         composedQuery.addMatch("summary", "holding", "__key__.lh:item.uri", "__key__.lh:item.uri");
-        // TODO: also ask some facets in both cores!!
 
-
-        System.out.println("\n");
         Date t0 = new Date();
         LuceneResponse response = this.multiLucene.executeComposedQuery(composedQuery);
         Date t1 = new Date();
-        System.out.println("MatchAllDocs:" + response.total + " results: " + response.hits);
+        System.out.println("MatchAllDocs: " + response.total + " results: " + response.hits);
         System.out.println("MatchAllDocs query took: " + (t1.getTime() - t0.getTime()));
         System.out.println("\n");
 
         composedQuery.relationalFilter = warmupFilter;
-        System.out.println("\n");
         t0 = new Date();
         response = this.multiLucene.executeComposedQuery(composedQuery);
         t1 = new Date();
@@ -78,7 +74,7 @@ public class RealIndexTest extends SeecrTestCase {
         System.out.println("warmup query took: " + (t1.getTime() - t0.getTime()));
         System.out.println("\n");
 
-        RelationalQueryWrapperQuery fietsBnlFilterQuery = new RelationalQueryWrapperQuery(
+        WrappedRelationalQuery fietsBnlFilterQuery = new WrappedRelationalQuery(
             new JoinANDQuery(
                 new LuceneQuery("summary", "__key__.lh:item.uri",
                     new TermQuery(new Term("__all__", "fiets"))),
@@ -102,7 +98,7 @@ public class RealIndexTest extends SeecrTestCase {
         unwantedPar103Query.add(new TermQuery(onvolledigInKaderNbcDrilldownTerm), Occur.SHOULD);
         unwantedPar103Query.add(new TermQuery(acquisitieDrilldownTerm), Occur.SHOULD);
 
-        composedQuery.relationalFilter = new RelationalQueryWrapperQuery(
+        composedQuery.relationalFilter = new WrappedRelationalQuery(
             new NotQuery(
                 new JoinANDQuery(
                     new LuceneQuery("summary", "__key__.lh:item.uri", unwantedPar103Query.build()),
@@ -116,19 +112,21 @@ public class RealIndexTest extends SeecrTestCase {
         System.out.println("" + response.total + " results: " + response.hits);
         System.out.println("new filter took: " + (t1.getTime() - t0.getTime()));
 
-        for (int i = 0; i < 10; i++) {
+        int N = 10;
+        long t = 0;
+        for (int i = 0; i < N; i++) {
             t0 = new Date();
             response = this.multiLucene.executeComposedQuery(composedQuery);
-            t1 = new Date();
-            System.out.println("" + response.total + " results: " + response.hits);
-            System.out.println("same query+filter once again took: " + (t1.getTime() - t0.getTime()));
+            t += (new Date().getTime() - t0.getTime());
         }
+        System.out.println("same query+filter once again took on average: " + (t / N));
 
         composedQuery.setCoreQuery("summary", new TermQuery(new Term("__all__", "foetsie")));
         t0 = new Date();
         response = this.multiLucene.executeComposedQuery(composedQuery);
         t1 = new Date();
+        System.out.println("\nsame filter + new query took: " + (t1.getTime() - t0.getTime()));
         System.out.println("" + response.total + " results: " + response.hits);
-        System.out.println("same filter + new query took: " + (t1.getTime() - t0.getTime()));
+
     }
 }

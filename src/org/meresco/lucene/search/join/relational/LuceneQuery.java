@@ -111,8 +111,8 @@ public class LuceneQuery implements RelationalQuery {
     }
 
     @Override
-    public RelationalQueryRunner runner() {
-        return new RelationalQueryRunner() {
+    public Runner runner() {
+        return new Runner() {
             Query q = LuceneQuery.this.q;
 
             @Override

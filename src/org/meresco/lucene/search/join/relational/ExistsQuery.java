@@ -5,10 +5,10 @@ import java.util.Map;
 import org.meresco.lucene.Lucene;
 
 
-public class NotQuery implements RelationalQuery {
+public class ExistsQuery implements RelationalQuery {
     RelationalQuery q;
 
-    public NotQuery(RelationalQuery q) {
+    public ExistsQuery(RelationalQuery q) {
         assert q != null;
         this.q = q;
     }
@@ -42,7 +42,7 @@ public class NotQuery implements RelationalQuery {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        NotQuery other = (NotQuery) obj;
+        ExistsQuery other = (ExistsQuery) obj;
         if (!q.equals(other.q)) {
             return false;
         }
@@ -52,27 +52,15 @@ public class NotQuery implements RelationalQuery {
     @Override
     public Runner runner() {
         return new Runner() {
-            private Runner q = NotQuery.this.q.runner();
+            private Runner q = ExistsQuery.this.q.runner();
             private KeyBits filter;
             private KeyBits union;
             private boolean inverted = false;
 
             @Override
             public KeyBits collectKeys(Map<String, Lucene> lucenes) {
-                if (!this.inverted) {
-                    this.q.invert();
-                }
-                if (this.filter != null) {
-                    this.q.filter(this.filter);
-                }
-                else if (this.union != null) {
-                    this.q.union(this.union);
-                }
-                KeyBits result = this.q.collectKeys(lucenes);
-                if (this.union != null) {
-                    result.union(this.union);
-                }
-                return result;
+                // TODO: should this even follow the same protocol?
+                throw new UnsupportedOperationException();
             }
 
             @Override
@@ -92,7 +80,7 @@ public class NotQuery implements RelationalQuery {
 
             @Override
             public String toString() {
-                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + NotQuery.this + ")";
+                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + ExistsQuery.this + ")";
             }
         };
     }

@@ -56,10 +56,10 @@ public class JoinORQuery implements RelationalQuery {
     }
 
     @Override
-    public RelationalQueryRunner runner() {
-        return new RelationalQueryRunner() {
-            RelationalQueryRunner first = JoinORQuery.this.first.runner();
-            RelationalQueryRunner second = JoinORQuery.this.second.runner();
+    public Runner runner() {
+        return new Runner() {
+            Runner first = JoinORQuery.this.first.runner();
+            Runner second = JoinORQuery.this.second.runner();
             KeyBits filter;
             KeyBits union;
             boolean inverted;

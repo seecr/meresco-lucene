@@ -56,10 +56,10 @@ public class JoinANDQuery implements RelationalQuery {
     }
 
     @Override
-    public RelationalQueryRunner runner() {
-        return new RelationalQueryRunner() {
-            RelationalQueryRunner first = JoinANDQuery.this.first.runner();
-            RelationalQueryRunner second = JoinANDQuery.this.second.runner();
+    public Runner runner() {
+        return new Runner() {
+            Runner first = JoinANDQuery.this.first.runner();
+            Runner second = JoinANDQuery.this.second.runner();
             KeyBits filter;
             KeyBits union;
             boolean inverted;

@@ -10,6 +10,7 @@ public class WrappedRelationalQuery extends Query {
 
 
     public WrappedRelationalQuery(RelationalQuery rq) {
+        assert rq != null;
         this.relationalQuery = rq;
     }
 
@@ -24,12 +25,25 @@ public class WrappedRelationalQuery extends Query {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return (obj.getClass() == this.getClass() && ((WrappedRelationalQuery) obj).relationalQuery == this.relationalQuery);
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((relationalQuery == null) ? 0 : relationalQuery.hashCode());
+        return result;
     }
 
     @Override
-    public int hashCode() {
-        return 1 + 37 * this.relationalQuery.hashCode();
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        WrappedRelationalQuery other = (WrappedRelationalQuery) obj;
+        return (relationalQuery.equals(other.relationalQuery));
     }
 }

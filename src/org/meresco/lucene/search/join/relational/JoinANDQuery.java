@@ -10,24 +10,19 @@ public class JoinANDQuery implements RelationalQuery {
     RelationalQuery second;
 
     public JoinANDQuery(RelationalQuery first, RelationalQuery second) {
+        assert first != null && second != null;
         this.first = first;
         this.second = second;
     }
 
-
     @Override
-    public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
-        return this.asExecutable().collectKeys(lucenes);
-    }
-
-    @Override
-    public ExecutableRelationalQuery asExecutable() {
-        return new ExecutableJoinANDQuery(this);
+    public KeyBits collectKeys(Map<String, Lucene> lucenes) {
+        return this.runner().collectKeys(lucenes);
     }
 
     @Override
     public String toString() {
-        return "JoinANDQuery(" + first + ", " + second + ")";
+        return getClass().getSimpleName() + "(" + first + ", " + second + ")";
     }
 
     @Override
@@ -60,80 +55,61 @@ public class JoinANDQuery implements RelationalQuery {
         return true;
     }
 
+    @Override
+    public RelationalQueryRunner runner() {
+        return new RelationalQueryRunner() {
+            RelationalQueryRunner first = JoinANDQuery.this.first.runner();
+            RelationalQueryRunner second = JoinANDQuery.this.second.runner();
+            KeyBits filter;
+            KeyBits union;
+            boolean inverted;
 
-    static class ExecutableJoinANDQuery implements ExecutableRelationalQuery {
-        RelationalQuery relationalQuery;
-        ExecutableRelationalQuery first;
-        ExecutableRelationalQuery second;
-        IntermediateResult filter;
-        IntermediateResult union;
-        boolean inverted;
-
-        ExecutableJoinANDQuery(JoinANDQuery q) {
-            this.relationalQuery = q;
-            this.first = q.first.asExecutable();
-            this.second = q.second.asExecutable();
-        }
-
-        @Override
-        public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
-    //        System.out.println("collectKeys " + this);
-            if (this.filter != null) {
-    //            System.out.println("apply filter " + this.filter + " to ANDQuery.first " + this.first);
-                this.first.filter(this.filter);
-            }
-            IntermediateResult result = this.first.collectKeys(lucenes);
-    //        System.out.println("apply filter " + result + " to ANDQuery.second " + this.second);
-            this.second.filter(result);
-            if (!this.inverted && this.union != null) {
-    //            System.out.println("apply union " + this.union + " to ANDQuery.second " + this.second);
-                this.second.union(this.union);
-            }
-            result = this.second.collectKeys(lucenes);
-
-            if (this.inverted) {
-                result.inverted = true;
+            @Override
+            public KeyBits collectKeys(Map<String, Lucene> lucenes) {
                 if (this.filter != null) {
-    //                System.out.println("[JoinANDQuery] applying bitset filter " + result + " to filter " + this.filter);
-                    this.filter.intersect(result);  // note: no ranking (but shouldn't be an issue)
-//                    Utils.assertTrue(this.union == null, "union not expected (because of filter) for " + this); // TODO: can we prove somehow that this is guaranteed to be the case?
-                    return this.filter;
+                    this.first.filter(this.filter);
                 }
-                else if (this.union != null) {
-    //                System.out.println("[JoinANQuery] applying bitset union " + result + " to union " + this.union);
-                    this.union.union(result);  // note: no ranking (but shouldn't be an issue)
-                    return this.union;
+                KeyBits result = this.first.collectKeys(lucenes);
+                this.second.filter(result);
+                if (!this.inverted && this.union != null) {
+                    this.second.union(this.union);
                 }
+                result = this.second.collectKeys(lucenes);
+
+                if (this.inverted) {
+                    result.inverted = true;
+                    if (this.filter != null) {
+                        this.filter.intersect(result);  // note: no ranking (but shouldn't be an issue)
+//                        Utils.assertTrue(this.union == null, "union not expected (because of filter) for " + this);  // TODO: can we prove somehow that this is guaranteed to be the case?
+                        return this.filter;
+                    }
+                    else if (this.union != null) {
+                        this.union.union(result);  // note: no ranking (but shouldn't be an issue)
+                        return this.union;
+                    }
+                }
+                return result;
             }
-            return result;
-        }
 
-        @Override
-        public void invert() {
-//            Utils.assertTrue(!this.inverted, "invert already called for " + this);
-            this.inverted = true;
-        }
+            @Override
+            public void invert() {
+                this.inverted = true;
+            }
 
-        @Override
-        public void filter(IntermediateResult intermediateResult) {
-//            Utils.assertTrue(this.filter == null, "filter already set for " + this);
-            this.filter = intermediateResult;
-        }
+            @Override
+            public void filter(KeyBits keys) {
+                this.filter = keys;
+            }
 
-        @Override
-        public void union(IntermediateResult intermediateResult) {
-//            Utils.assertTrue(this.union == null, "union already set for " + this);
-            this.union = intermediateResult;
-        }
+            @Override
+            public void union(KeyBits keys) {
+                this.union = keys;
+            }
 
-        @Override
-        public ExecutableRelationalQuery asExecutable() {
-            return this;
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + this.relationalQuery + ")";
-        }
+            @Override
+            public String toString() {
+                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + JoinANDQuery.this + ")";
+            }
+        };
     }
 }

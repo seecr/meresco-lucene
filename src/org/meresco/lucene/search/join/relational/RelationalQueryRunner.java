@@ -5,8 +5,12 @@ import java.util.Map;
 import org.meresco.lucene.Lucene;
 
 
-public interface RelationalQuery {
+public interface RelationalQueryRunner {
     public KeyBits collectKeys(Map<String, Lucene> lucenes);
 
-    public RelationalQueryRunner runner();
+    public void filter(KeyBits keyFilter);
+
+    public void union(KeyBits intermediateResult);
+
+    public void invert();
 }

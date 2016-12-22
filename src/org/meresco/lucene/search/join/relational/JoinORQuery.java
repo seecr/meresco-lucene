@@ -10,23 +10,19 @@ public class JoinORQuery implements RelationalQuery {
     private RelationalQuery second;
 
     public JoinORQuery(RelationalQuery first, RelationalQuery second) {
+        assert first != null && second != null;
         this.first = first;
         this.second = second;
     }
 
     @Override
-    public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
-        return this.asExecutable().collectKeys(lucenes);
-    }
-
-    @Override
-    public ExecutableRelationalQuery asExecutable() {
-        return new ExecutableJoinORQuery(this);
+    public KeyBits collectKeys(Map<String, Lucene> lucenes) {
+        return this.runner().collectKeys(lucenes);
     }
 
     @Override
     public String toString() {
-        return "JoinORQuery(" + first + ", " + second + ")";
+        return getClass().getSimpleName() + "(" + first + ", " + second + ")";
     }
 
     @Override
@@ -59,95 +55,70 @@ public class JoinORQuery implements RelationalQuery {
         return true;
     }
 
+    @Override
+    public RelationalQueryRunner runner() {
+        return new RelationalQueryRunner() {
+            RelationalQueryRunner first = JoinORQuery.this.first.runner();
+            RelationalQueryRunner second = JoinORQuery.this.second.runner();
+            KeyBits filter;
+            KeyBits union;
+            boolean inverted;
 
-    static class ExecutableJoinORQuery implements ExecutableRelationalQuery {
-        RelationalQuery relationalQuery;
-        ExecutableRelationalQuery first;
-        ExecutableRelationalQuery second;
-        IntermediateResult filter;
-        IntermediateResult union;
-        boolean inverted;
-
-        public ExecutableJoinORQuery(JoinORQuery q) {
-            this.relationalQuery = q;
-            this.first = q.first.asExecutable();
-            this.second = q.second.asExecutable();
-        }
-
-        @Override
-        public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
-    //        System.out.println("collectKeys " + this);
-            if (this.filter != null) {
-    //            System.out.println("apply filter " + this.filter + " to ORQuery.first " + this.first);
-                this.first.filter(this.filter);
-            }
-            else if (!this.inverted && this.union != null) {
-    //            System.out.println("apply union " + this.union + " to ORQuery.first " + this.first);
-                this.first.union(this.union);
-            }
-            IntermediateResult resultFirst = this.first.collectKeys(lucenes);
-
-            if (this.filter != null) {
-    //            System.out.println("apply filter " + filter + " to ORQuery.second " + this.second);
-                this.second.filter(this.filter);
-            }
-    //        System.out.println("apply union " + resultFirst + " to ORQuery.second " + this.second);
-            this.second.union(resultFirst);
-            IntermediateResult result = this.second.collectKeys(lucenes);
-
-            if (this.inverted) {
-                result.inverted = true;
+            @Override
+            public KeyBits collectKeys(Map<String, Lucene> lucenes) {
                 if (this.filter != null) {
-    //                System.out.println("[JoinORQuery] applying bitset filter " + result + " to filter " + this.filter);
-                    this.filter.intersect(result);
-    //                System.out.println("result: " + this.filter);
-//                    Utils.assertTrue(this.union == null, "union not expected (because of filter) for " + this); // TODO: can we prove somehow that this is guaranteed to be the case?
-                    return this.filter;
+                    this.first.filter(this.filter);
                 }
-                else if (this.union != null) {
-    //                System.out.println("[JoinORQuery] applying bitset union " + result + " to union " + this.union);
-                    this.union.union(result);
-    //                System.out.println("result: " + this.union);
-                    return this.union;
+                else if (!this.inverted && this.union != null) {
+                    this.first.union(this.union);
                 }
+                KeyBits resultFirst = this.first.collectKeys(lucenes);
+
+                if (this.filter != null) {
+                    this.second.filter(this.filter);
+                }
+                this.second.union(resultFirst);
+                KeyBits result = this.second.collectKeys(lucenes);
+
+                if (this.inverted) {
+                    result.inverted = true;
+                    if (this.filter != null) {
+                        this.filter.intersect(result);
+//                        Utils.assertTrue(this.union == null, "union not expected (because of filter) for " + this);  // TODO: can we prove somehow that this is guaranteed to be the case?
+                        return this.filter;
+                    }
+                    else if (this.union != null) {
+                        this.union.union(result);
+                        return this.union;
+                    }
+                }
+                else {
+                    if (this.union != null) {
+                        result.union(this.union);
+                    }
+                }
+                return result;
             }
-            else {
-                if (this.union != null) {
-    //                System.out.println("applying bitset union " + this.union + " to result " + result);
-                    result.union(this.union);
-                }
+
+            @Override
+            public void invert() {
+                this.inverted = true;
             }
 
-    //        System.out.println("result: " + result);
-            return result;
-        }
+            @Override
+            public void filter(KeyBits keys) {
+                this.filter = keys;
+            }
 
-        @Override
-        public void invert() {
-//            Utils.assertTrue(!this.inverted, "invert already called for " + this);
-            this.inverted = true;
-        }
+            @Override
+            public void union(KeyBits keys) {
+                this.union = keys;
+            }
 
-        @Override
-        public void filter(IntermediateResult intermediateResult) {
-//            Utils.assertTrue(this.filter == null, "filter already set for " + this);
-            this.filter = intermediateResult;
-        }
-
-        @Override
-        public void union(IntermediateResult intermediateResult) {
-//            Utils.assertTrue(this.union == null, "union already set for " + this);
-            this.union = intermediateResult;
-        }
-
-        @Override
-        public ExecutableRelationalQuery asExecutable() {
-            return this;
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + this.relationalQuery + ")";
-        }
+            @Override
+            public String toString() {
+                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + JoinORQuery.this + ")";
+            }
+        };
     }
 }

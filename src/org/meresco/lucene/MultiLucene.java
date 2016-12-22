@@ -43,7 +43,7 @@ import org.meresco.lucene.search.JoinSortField;
 import org.meresco.lucene.search.join.AggregateScoreSuperCollector;
 import org.meresco.lucene.search.join.KeySuperCollector;
 import org.meresco.lucene.search.join.ScoreSuperCollector;
-import org.meresco.lucene.search.join.relational.IntermediateResult;
+import org.meresco.lucene.search.join.relational.KeyBits;
 import org.meresco.lucene.search.join.relational.RelationalQuery;
 import org.meresco.lucene.search.join.relational.WrappedRelationalQuery;
 
@@ -66,7 +66,6 @@ public class MultiLucene {
     }
 
     public LuceneResponse executeComposedQuery(ComposedQuery q, String exportKey) throws Throwable {
-        // TODO: make sure q.cores is extended for cores specified in RelationalQueries
         if (q.cores.size() <= 1 && exportKey == null && q.relationalFilter == null) {
             return this.singleCoreQuery(q);
         }
@@ -177,16 +176,10 @@ public class MultiLucene {
         Map<String, FixedBitSet> keys = new HashMap<String, FixedBitSet>();
 
         if (query.relationalFilter != null) {
-            RelationalQuery rq = ((WrappedRelationalQuery) query.relationalFilter).relationalQuery;
-            IntermediateResult intermediateResult = rq.collectKeys(this.lucenes);
-            FixedBitSet collectedKeys = intermediateResult.getBitSet();
             String keyName = query.keyName(query.resultsFrom, query.resultsFrom);  // Note: this relies heavily on the RelationalQuery to return the right keys (semantically)
-            if (intermediateResult.inverted) {
-                collectedKeys = this.collectKeys(
-                    query.resultsFrom,
-                    new KeyFilter(intermediateResult.getBitSet(), keyName, intermediateResult.inverted),
-                    keyName);
-            }
+            RelationalQuery rq = ((WrappedRelationalQuery) query.relationalFilter).relationalQuery;
+            KeyBits relationalFilterKeys = rq.collectKeys(this.lucenes);
+            FixedBitSet collectedKeys = relationalFilterKeys.getBitSet(this.lucenes.get(query.resultsFrom), keyName);
             keys.put(keyName, collectedKeys.clone());
             return keys;
         }
@@ -222,8 +215,7 @@ public class MultiLucene {
     private FixedBitSet collectKeys(String coreName, Query query, String keyName) throws Throwable {
         if (query != null && query instanceof WrappedRelationalQuery) {
             RelationalQuery rq = ((WrappedRelationalQuery) query).relationalQuery;
-            IntermediateResult intermediateResult = rq.collectKeys(this.lucenes);
-            query = new KeyFilter(intermediateResult.getBitSet(), keyName, intermediateResult.inverted);
+            query = rq.collectKeys(this.lucenes).keyFilterFor(keyName);
         }
         return this.lucenes.get(coreName).collectKeys(query, keyName, null);
     }

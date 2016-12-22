@@ -66,8 +66,8 @@ public class RelationalQueryTest extends SeecrTestCase {
         RelationalQuery root = new JoinANDQuery(
             new LuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))  /* here all those args*/ ),
             new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))));
-        IntermediateResult result = root.collectKeys(this.lucenes);
-        assertEquals(4, result.getBitSet().cardinality());
+        KeyBits result = root.collectKeys(this.lucenes);
+        assertEquals(4, result.bitset.cardinality());
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-M", "A-MU", "A-MQ", "A-MQU");
     }
@@ -79,7 +79,7 @@ public class RelationalQueryTest extends SeecrTestCase {
                 new LuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))),
                 new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))),
             new LuceneQuery("coreC", "C", new TermQuery(new Term("R", "true"))));
-        IntermediateResult result = root.collectKeys(this.lucenes);
+        KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-M");
     }
@@ -92,7 +92,7 @@ public class RelationalQueryTest extends SeecrTestCase {
                 new LuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))),
                 new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
             ));
-        IntermediateResult result = root.collectKeys(this.lucenes);
+        KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-M");
     }
@@ -106,7 +106,7 @@ public class RelationalQueryTest extends SeecrTestCase {
             ),
             new LuceneQuery("coreB", "B", new TermQuery(new Term("N", "true")))
         );
-        IntermediateResult result = root.collectKeys(this.lucenes);
+        KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-MU");
     }
@@ -123,7 +123,7 @@ public class RelationalQueryTest extends SeecrTestCase {
             ),
             new LuceneQuery("coreA", "A", "C", new MatchAllDocsQuery())
         );
-        IntermediateResult result = root.collectKeys(this.lucenes);
+        KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-MU");
     }
@@ -131,7 +131,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testSimpleNotQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinANDQuery(
@@ -156,7 +156,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testNotQueryOverNotQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinANDQuery(
@@ -175,7 +175,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testNotQueryOverJoinAND() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinANDQuery(
@@ -206,7 +206,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     public void testJoinANDOverNotOverJoinANDQuery() {
         // requires explicit BitSet intersect... :-( !
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinANDQuery(
@@ -228,7 +228,7 @@ public class RelationalQueryTest extends SeecrTestCase {
         RelationalQuery root = new JoinORQuery(
             new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
             new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))));
-        IntermediateResult result = root.collectKeys(this.lucenes);
+        KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-Q", "A-QU", "A-M", "A-MQ", "A-MQU");
     }
@@ -240,7 +240,7 @@ public class RelationalQueryTest extends SeecrTestCase {
                 new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
             ),
             new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))));
-        IntermediateResult result = root.collectKeys(this.lucenes);
+        KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-Q", "A-QU", "A-MQ", "A-MQU", "A-MU");
     }
@@ -253,7 +253,7 @@ public class RelationalQueryTest extends SeecrTestCase {
                 new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))
             )
         );
-        IntermediateResult result = root.collectKeys(this.lucenes);
+        KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A", "A-U", "A-M", "A-MU", "A-MQ");
     }
@@ -267,7 +267,7 @@ public class RelationalQueryTest extends SeecrTestCase {
                 new LuceneQuery("coreB", "B", new TermQuery(new Term("T", "B")))
             )
         );
-        IntermediateResult result = root.collectKeys(this.lucenes);
+        KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-MQ", "A-MQU", "A-MU");
     }
@@ -279,7 +279,7 @@ public class RelationalQueryTest extends SeecrTestCase {
             new JoinORQuery(
                 new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "false"))),
                 new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))));
-        IntermediateResult result = root.collectKeys(this.lucenes);
+        KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-Q", "A-QU", "A-MQ", "A-MQU", "A-M", "A-MU");
     }
@@ -291,7 +291,7 @@ public class RelationalQueryTest extends SeecrTestCase {
             new JoinANDQuery(
                 new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "false"))),
                 new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))));
-        IntermediateResult result = root.collectKeys(this.lucenes);
+        KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-MQ", "A-MQU", "A-M");
     }
@@ -299,7 +299,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testJoinOROverNotOverJoinORQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinORQuery(
@@ -319,7 +319,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testJoinOROverNotOverJoinORQueryLhs() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root =
@@ -340,7 +340,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testJoinOROverNotOverJoinANDQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinORQuery(
@@ -374,7 +374,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testJoinANDOverNotQueryOverJoinORQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinANDQuery(
@@ -394,7 +394,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testJoinOROverJoinANDOverJoinORQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinORQuery(
@@ -415,7 +415,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testJoinOROverJoinANDOverNotOverJoinORQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinORQuery(
@@ -438,7 +438,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testJoinANDOverJoinOROverJoinANDOverJoinORQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinANDQuery(
@@ -465,7 +465,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testJoinOROverJoinOROverJoinANDOverJoinORQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinORQuery(
@@ -489,7 +489,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testJoinOROverJoinANDOverNotOverJoinANDQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinORQuery(
@@ -512,7 +512,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testJoinANDOverJoinOROverNotOverJoinORQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new JoinANDQuery(
@@ -535,7 +535,7 @@ public class RelationalQueryTest extends SeecrTestCase {
     @Test
     public void testNotOverJoinOrOverNotOverJoinOrQuery() {
         RelationalQuery root;
-        IntermediateResult result;
+        KeyBits result;
         LuceneResponse response;
 
         root = new NotQuery(
@@ -554,9 +554,9 @@ public class RelationalQueryTest extends SeecrTestCase {
         LuceneTest.compareHits(response, "A-Q", "A-QU");
     }
 
-    private LuceneResponse responseForResult(IntermediateResult result, Lucene lucene, String keyName) {
+    private LuceneResponse responseForResult(KeyBits result, Lucene lucene, String keyName) {
         try {
-            Query keyFilter = new KeyFilter(result.getBitSet(), keyName);
+            Query keyFilter = new KeyFilter(result.bitset, keyName);
             if (result.inverted) {
                 BooleanQuery.Builder builder = new BooleanQuery.Builder();
                 builder.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);

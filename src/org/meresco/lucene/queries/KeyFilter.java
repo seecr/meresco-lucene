@@ -47,13 +47,13 @@ public class KeyFilter extends Query {
     final private Bits keySet;
     final private boolean inverted;
 
-    public KeyFilter(Bits keySet, String keyName, boolean inverted) throws IOException {
+    public KeyFilter(Bits keySet, String keyName, boolean inverted) {
         this.keySet = keySet;
         this.keyName = keyName;
         this.inverted = inverted;
     }
 
-    public KeyFilter(Bits keySet, String keyName) throws IOException {
+    public KeyFilter(Bits keySet, String keyName) {
         this(keySet, keyName, false);
     }
 

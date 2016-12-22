@@ -248,6 +248,7 @@ public class JsonQueryConverter {
                 break;
 
             default:
+                System.out.println("unexpected type: " + query.getString("type"));
                 return null;
 
         }

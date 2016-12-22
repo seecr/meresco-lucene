@@ -24,7 +24,6 @@
 
 package org.meresco.lucene.search.join.relational;
 
-import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.search.BooleanClause;
@@ -32,7 +31,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.meresco.lucene.Lucene;
-import org.meresco.lucene.queries.KeyFilter;
 import org.meresco.lucene.search.join.KeySuperCollector;
 
 
@@ -52,6 +50,7 @@ public class LuceneQuery implements RelationalQuery {
     }
 
     public LuceneQuery(String core, String collectKeyName, String filterKeyName, Query q, float boost) {
+        assert core != null && collectKeyName != null && filterKeyName != null && q != null;
         this.core = core;
         this.collectKeyName = collectKeyName;
         this.filterKeyName = filterKeyName;
@@ -60,19 +59,13 @@ public class LuceneQuery implements RelationalQuery {
     }
 
     @Override
-    public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
-        return this.asExecutable().collectKeys(lucenes);
+    public KeyBits collectKeys(Map<String, Lucene> lucenes) {
+        return this.runner().collectKeys(lucenes);
     }
-
-    @Override
-    public ExecutableRelationalQuery asExecutable() {
-        return new ExecutableLuceneQuery(this);
-    }
-
 
     @Override
     public String toString() {
-        return "LuceneQuery(\"" + this.core + "\", \"" + this.collectKeyName + "\", \"" + this.filterKeyName + "\", " + this.q + ")";
+        return getClass().getSimpleName() + "(\"" + this.core + "\", \"" + this.collectKeyName + "\", \"" + this.filterKeyName + "\", " + this.q + ")";
     }
 
     @Override
@@ -117,71 +110,55 @@ public class LuceneQuery implements RelationalQuery {
         return true;
     }
 
+    @Override
+    public RelationalQueryRunner runner() {
+        return new RelationalQueryRunner() {
+            Query q = LuceneQuery.this.q;
 
-    static class ExecutableLuceneQuery implements ExecutableRelationalQuery {
-        LuceneQuery luceneQuery;
-        Query q;
-
-        public ExecutableLuceneQuery(LuceneQuery luceneQuery) {
-            this.luceneQuery = luceneQuery;
-            this.q = luceneQuery.q;
-        }
-
-        @Override
-        public IntermediateResult collectKeys(Map<String, Lucene> lucenes) {
-    //        System.out.println("collectKeys " + this);
-            KeySuperCollector keyCollector = new KeySuperCollector(this.luceneQuery.collectKeyName);
-            try {
-    //            System.out.println("search " + this.q);
-                lucenes.get(this.luceneQuery.core).search(this.q, keyCollector);
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
+            @Override
+            public KeyBits collectKeys(Map<String, Lucene> lucenes) {
+                KeySuperCollector keyCollector = new KeySuperCollector(LuceneQuery.this.collectKeyName);
+                try {
+                    lucenes.get(LuceneQuery.this.core).search(this.q, keyCollector);
+                } catch (Error|RuntimeException e) {
+                    throw e;
+                } catch (Throwable e) {
+                    // Only expecting 'checked exceptions' here.
+                    // Using this strange 'catch all' only because 'search' 'throws Throwable' instead of throwing specific 'checked exceptions' at the moment :-(
+                    throw new RuntimeException(e);
+                }
+                KeyBits result = new KeyBits(keyCollector.getCollectedKeys());
+                return result;
             }
-            IntermediateResult result = new IntermediateResult(keyCollector.getCollectedKeys());
-    //        System.out.println("result: " + result);
-            return result;
-        }
 
-        @Override
-        public void invert() {
-            BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            builder.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-            builder.add(this.q, BooleanClause.Occur.MUST_NOT);
-            this.q = builder.build();
-        }
-
-        @Override
-        public void filter(IntermediateResult intermediateResult) {
-            BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            builder.add(this.q, BooleanClause.Occur.MUST);
-            try {
-                builder.add(new KeyFilter(intermediateResult.getBitSet(), this.luceneQuery.filterKeyName, intermediateResult.inverted), BooleanClause.Occur.MUST);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            @Override
+            public void invert() {
+                BooleanQuery.Builder builder = new BooleanQuery.Builder();
+                builder.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
+                builder.add(this.q, BooleanClause.Occur.MUST_NOT);
+                this.q = builder.build();
             }
-            this.q = builder.build();
-        }
 
-        @Override
-        public void union(IntermediateResult intermediateResult) {
-            BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            try {
-                builder.add(new KeyFilter(intermediateResult.getBitSet(), this.luceneQuery.filterKeyName, intermediateResult.inverted), BooleanClause.Occur.SHOULD);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            @Override
+            public void filter(KeyBits keys) {
+                BooleanQuery.Builder builder = new BooleanQuery.Builder();
+                builder.add(this.q, BooleanClause.Occur.MUST);
+                builder.add(keys.keyFilterFor(LuceneQuery.this.filterKeyName), BooleanClause.Occur.MUST);
+                this.q = builder.build();
             }
-            builder.add(this.q, BooleanClause.Occur.SHOULD);
-            this.q = builder.build();
-        }
 
-        @Override
-        public ExecutableRelationalQuery asExecutable() {
-            return this;
-        }
+            @Override
+            public void union(KeyBits keys) {
+                BooleanQuery.Builder builder = new BooleanQuery.Builder();
+                builder.add(keys.keyFilterFor(LuceneQuery.this.filterKeyName), BooleanClause.Occur.SHOULD);
+                builder.add(this.q, BooleanClause.Occur.SHOULD);
+                this.q = builder.build();
+            }
 
-        @Override
-        public String toString() {
-            return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + this.luceneQuery + ")";
-        }
+            @Override
+            public String toString() {
+                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + LuceneQuery.this + ")";
+            }
+        };
     }
 }

@@ -45,6 +45,10 @@ import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
 import org.meresco.lucene.ComposedQuery.Unite;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
+import org.meresco.lucene.search.join.relational.JoinANDQuery;
+import org.meresco.lucene.search.join.relational.LuceneQuery;
+import org.meresco.lucene.search.join.relational.NotQuery;
+import org.meresco.lucene.search.join.relational.WrappedRelationalQuery;
 
 
 public class ComposedQueryTest {
@@ -128,14 +132,14 @@ public class ComposedQueryTest {
                 .add("_clusteringConfig", Json.createObjectBuilder()
                     .add("clusterMoreRecords", 200)
                     .add("strategies", Json.createArrayBuilder()
-                    	.add(Json.createObjectBuilder()
-                    		.add("clusteringEps", 0.3)
-                    		.add("clusteringMinPoints", 3)
-			            	.add("fields", Json.createObjectBuilder()
-			            			.add("dcterms:title", Json.createObjectBuilder()
-			            					.add("fieldname", "dcterms:title")
-			            					.add("filterValue", "a")
-			            					.add("weight", 0.3))))))
+                        .add(Json.createObjectBuilder()
+                            .add("clusteringEps", 0.3)
+                            .add("clusteringMinPoints", 3)
+                            .add("fields", Json.createObjectBuilder()
+                                    .add("dcterms:title", Json.createObjectBuilder()
+                                            .add("fieldname", "dcterms:title")
+                                            .add("filterValue", "a")
+                                            .add("weight", 0.3))))))
                 .build();
         Map<String, JsonQueryConverter> queryConverters = new HashMap<String, JsonQueryConverter>() {{
             put("coreA", new JsonQueryConverter(new FacetsConfig(), "coreA"));
@@ -192,8 +196,8 @@ public class ComposedQueryTest {
 
         ClusterConfig clusterConfig = q.queryData.clusterConfig;
         assertEquals(0.3, clusterConfig.strategies.get(0).clusteringEps, 0.02);
-    	assertEquals(3, clusterConfig.strategies.get(0).clusteringMinPoints);
-    	assertEquals(200, clusterConfig.clusterMoreRecords);
+        assertEquals(3, clusterConfig.strategies.get(0).clusteringMinPoints);
+        assertEquals(200, clusterConfig.clusterMoreRecords);
         List<ClusterField> clusterFields = clusterConfig.strategies.get(0).clusterFields;
         assertEquals(1, clusterFields.size());
         ClusterField field = clusterFields.get(0);
@@ -264,5 +268,66 @@ public class ComposedQueryTest {
         assertEquals("coreB", unite.coreB);
         assertEquals(new TermQuery(new Term("field", "value0")), unite.queryA);
         assertEquals(new TermQuery(new Term("field2", "value1")), unite.queryB);
+    }
+
+    @SuppressWarnings("serial")
+    @Test
+    public void testRelationalFilter() throws Exception {
+        JsonObject relationalFilterJson = Json.createObjectBuilder()
+                .add("type", "JoinAnd")
+                .add("first", Json.createObjectBuilder()
+                    .add("type", "LuceneQuery")
+                    .add("core", "coreA")
+                    .add("collectKeyName", "A")
+                    .add("filterKeyName", "B")
+                    .add("query", Json.createObjectBuilder()
+                        .add("type", "TermQuery")
+                        .add("term", Json.createObjectBuilder()
+                            .add("field", "field0")
+                            .add("value", "value0"))))
+                .add("second", Json.createObjectBuilder()
+                     .add("type", "Not")
+                     .add("query", Json.createObjectBuilder()
+                          .add("type", "LuceneQuery")
+                          .add("core", "coreB")
+                          .add("collectKeyName", "B")
+                          .add("filterKeyName", "A")
+                          .add("query", Json.createObjectBuilder()
+                               .add("type", "TermQuery")
+                               .add("term", Json.createObjectBuilder()
+                                   .add("field",  "field1")
+                                   .add("value", "value1"))))).build();
+
+        JsonObject json = Json.createObjectBuilder()
+                .add("resultsFrom", "coreA")
+                .add("cores", Json.createArrayBuilder()
+                    .add("coreA")
+                    .add("coreB"))
+                .add("_matches", Json.createObjectBuilder()
+                    .add("coreA->coreB", Json.createArrayBuilder()
+                        .add(Json.createObjectBuilder()
+                            .add("core", "coreA")
+                            .add("uniqueKey", "keyA"))
+                        .add(Json.createObjectBuilder()
+                            .add("core", "coreB")
+                            .add("key", "keyB"))
+                    )
+                )
+                .add("_relationalFilterJson", relationalFilterJson.toString())
+                .build();
+
+        Map<String, JsonQueryConverter> queryConverters = new HashMap<String, JsonQueryConverter>() {{
+            put("coreA", new JsonQueryConverter(new FacetsConfig(), "coreA"));
+            put("coreB", new JsonQueryConverter(new FacetsConfig(), "coreB"));
+        }};
+        ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
+        assertEquals(
+                new WrappedRelationalQuery(
+                    new JoinANDQuery(
+                        new LuceneQuery("coreA", "A", "B", new TermQuery(new Term("field0", "value0"))),
+                        new NotQuery(
+                            new LuceneQuery("coreB", "B", "A", new TermQuery(new Term("field1", "value1")))
+                        ))),
+                q.relationalFilter);
     }
 }

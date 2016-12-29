@@ -26,6 +26,8 @@
 ## end license ##
 
 from .utils import simplifiedDict
+from meresco.components.json import JsonDict
+from simplejson.decoder import JSONDecodeError
 
 
 class ComposedQuery(object):
@@ -200,6 +202,11 @@ class ComposedQuery(object):
                 self._matchCoreSpecs(self.resultsFrom, core)
             except KeyError:
                 raise ValueError("No match set for cores %s" % str((self.resultsFrom, core)))
+        if self.relationalFilterJson:
+            try:
+                JsonDict.loads(self.relationalFilterJson)
+            except JSONDecodeError:
+                raise ValueError("Value '%s' for 'relationalFilterJson' can not be parsed as JSON." % self.relationalFilterJson)
 
     def convertWith(self, **converts):
         def convertQuery(core, query):

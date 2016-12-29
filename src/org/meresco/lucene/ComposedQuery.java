@@ -70,7 +70,7 @@ public class ComposedQuery {
         this.queries.put(resultsFrom, query);
     }
 
-    public static ComposedQuery fromJsonString(Reader jsonStringReader, Map<String, JsonQueryConverter> queryConverters) throws Exception {
+    public static ComposedQuery fromJsonString(Reader jsonStringReader, Map<String, JsonQueryConverter> queryConverters) {
         if (jsonStringReader == null) {
             return null;
         }

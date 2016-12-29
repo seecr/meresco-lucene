@@ -47,7 +47,13 @@ public class ComposedQueryHandler extends AbstractMerescoLuceneHandler {
     @Override
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Throwable {
         LuceneResponse luceneResponse = new LuceneResponse(0);
-        ComposedQuery q = ComposedQuery.fromJsonString(request.getReader(), this.multiLucene.getQueryConverters());
+        ComposedQuery q;
+        try {
+            q = ComposedQuery.fromJsonString(request.getReader(), this.multiLucene.getQueryConverters());
+        } catch (Throwable t) {
+            t.printStackTrace();
+            throw t;
+        }
         luceneResponse = this.multiLucene.executeComposedQuery(q);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json");

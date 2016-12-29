@@ -56,6 +56,13 @@ class ComposedQueryTest(SeecrTestCase):
         composedQuery.validate()
         self.assertEquals(3, composedQuery.numberOfUsedCores)
 
+    def testValidateComposedQueryForInvalidJson(self):
+        composedQuery = ComposedQuery('coreA', query='Q0')
+        composedQuery.relationalFilterJson = 'not JSON'
+        self.assertValidateRaisesValueError(composedQuery, "Value 'not JSON' for 'relationalFilterJson' can not be parsed as JSON.")
+        composedQuery.relationalFilterJson = '{"type": "MockJoinQuery"}'
+        composedQuery.validate()
+
     def testSameCoreInDifferentMatchesRequiredToHaveSameKeyForNow(self):
         composedQuery = ComposedQuery('coreA', query='qA')
         composedQuery.setCoreQuery('coreB', query='qB')
@@ -142,6 +149,7 @@ class ComposedQueryTest(SeecrTestCase):
         cq.setCoreQuery(core='coreA', query='Q0')
         cq.addFilterQuery(core='coreA', query='Q1')
         cq.addFilterQuery(core='coreA', query='Q2')
+        cq.relationalFilter = '{"type": "madeUpJoinQuery"}'
         cq.addFacet(core='coreA', facet='F0')
         cq.addFacet(core='coreA', facet='F1')
         cq.setCoreQuery(core='coreB', query='Q3')
@@ -159,6 +167,7 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEquals(0, cq2.start)
         self.assertEquals(None, cq2.stop)
         self.assertEquals(['Q0', 'Q1', 'Q2'], cq2.queriesFor('coreA'))
+        self.assertEquals('{"type": "madeUpJoinQuery"}', cq2.relationalFilter)
         self.assertEquals(['F0', 'F1'], cq2.facetsFor('coreA'))
         self.assertEquals('keyA', cq2.keyName('coreA', 'coreB'))
         self.assertEquals('keyB', cq2.keyName('coreB', 'coreA'))
@@ -299,6 +308,7 @@ class ComposedQueryTest(SeecrTestCase):
         cq.setCoreQuery(core='coreA', query='Q0')
         cq.addFilterQuery(core='coreA', query='Q1')
         cq.addFilterQuery(core='coreA', query='Q2')
+        cq.relationalFilter = '{"type": "MadeUpJoinQuery"}'
         cq.addFacet(core='coreA', facet='F0')
         cq.addFacet(core='coreA', facet='F1')
         cq.setCoreQuery(core='coreB', query='Q3')
@@ -319,6 +329,7 @@ class ComposedQueryTest(SeecrTestCase):
                 "otherCoreFacetFilters": {},
                 "queries": {"coreA": "Q0", "coreB": "Q3"},
                 "rankQueries": {},
+                'relationalFilter': '{"type": "MadeUpJoinQuery"}',
                 "resultsFrom": "coreA",
                 "sortKeys": [{"sortBy": "field", "sortDescending": True}],
                 "start": 0,

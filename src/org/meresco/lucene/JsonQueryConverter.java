@@ -198,7 +198,7 @@ public class JsonQueryConverter {
                 q = createRangeQuery(query);
                 break;
 
-            case "LuceneQuery":
+            case "RelationalLuceneQuery":
             case "JoinAndQuery":
             case "JoinOrQuery":
             case "RelationalNotQuery":

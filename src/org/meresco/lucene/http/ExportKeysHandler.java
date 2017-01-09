@@ -49,8 +49,9 @@ public class ExportKeysHandler extends AbstractMerescoLuceneHandler {
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Throwable {
         LuceneResponse luceneResponse = new LuceneResponse(0);
         String exportKey = request.getParameter("exportKey");
+        ComposedQuery q;
         try {
-            ComposedQuery q = ComposedQuery.fromJsonString(request.getReader(), this.multiLucene.getQueryConverters());
+            q = ComposedQuery.fromJsonString(request.getReader(), this.multiLucene.getQueryConverters());
         } catch (Throwable t) {
             t.printStackTrace();
             throw t;

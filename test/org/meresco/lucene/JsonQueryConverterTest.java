@@ -26,7 +26,10 @@
 
 package org.meresco.lucene;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.StringReader;
 import java.util.List;
@@ -55,10 +58,14 @@ import org.apache.lucene.search.WildcardQuery;
 import org.junit.Test;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.search.JoinSortField;
+import org.meresco.lucene.search.join.relational.JoinAndQuery;
+import org.meresco.lucene.search.join.relational.JoinOrQuery;
+import org.meresco.lucene.search.join.relational.RelationalLuceneQuery;
+import org.meresco.lucene.search.join.relational.RelationalNotQuery;
+import org.meresco.lucene.search.join.relational.WrappedRelationalQuery;
 
-public class QueryConverterTest {
 
-
+public class JsonQueryConverterTest {
     private JsonQueryConverter queryConverter = new JsonQueryConverter(new FacetsConfig(), "coreA");
 
     @Test
@@ -507,5 +514,57 @@ public class QueryConverterTest {
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         assertEquals("__key__", q.dedupField);
         assertEquals("__key__.date", q.dedupSortField);
+    }
+
+    @Test
+    public void testRelationalQuery() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "RelationalNotQuery")
+                    .add("query", Json.createObjectBuilder()
+                        .add("type", "JoinAndQuery")
+                        .add("first", Json.createObjectBuilder()
+                            .add("type", "RelationalLuceneQuery")
+                            .add("core", "coreA")
+                            .add("collectKeyName", "__key__.A")
+                            .add("filterKeyName",  "__key__.A")
+                            .add("query", Json.createObjectBuilder()
+                                .add("type", "TermQuery")
+                                .add("term", Json.createObjectBuilder()
+                                    .add("field", "field")
+                                    .add("value", "value"))))
+                        .add("second", Json.createObjectBuilder()
+                            .add("type", "JoinOrQuery")
+                            .add("first", Json.createObjectBuilder()
+                                .add("type", "RelationalLuceneQuery")
+                                .add("core", "coreB")
+                                .add("collectKeyName", "__key__.B")
+                                .add("filterKeyName",  "__key__.A")
+                                .add("query", Json.createObjectBuilder()
+                                    .add("type", "TermQuery")
+                                    .add("term", Json.createObjectBuilder()
+                                        .add("field", "field0")
+                                        .add("value", "value0"))))
+                            .add("second", Json.createObjectBuilder()
+                                    .add("type", "RelationalLuceneQuery")
+                                    .add("core", "coreA")
+                                    .add("collectKeyName", "__key__.A")
+                                    .add("filterKeyName",  "__key__.B")
+                                    .add("query", Json.createObjectBuilder()
+                                        .add("type", "TermQuery")
+                                        .add("term", Json.createObjectBuilder()
+                                            .add("field", "field1")
+                                            .add("value", "value1"))))
+                            ))).build();
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
+        assertEquals(
+            new WrappedRelationalQuery(
+                new RelationalNotQuery(
+                    new JoinAndQuery(
+                        new RelationalLuceneQuery("coreA", "__key__.A", "__key__.A", new TermQuery(new Term("field", "value"))),
+                        new JoinOrQuery(
+                            new RelationalLuceneQuery("coreB", "__key__.B", "__key__.A", new TermQuery(new Term("field0", "value0"))),
+                            new RelationalLuceneQuery("coreA", "__key__.A", "__key__.B", new TermQuery(new Term("field1", "value1"))))))),
+            q.query);
     }
 }

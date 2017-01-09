@@ -49,9 +49,9 @@ import org.junit.Test;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.LuceneResponse.DrilldownData;
 import org.meresco.lucene.search.TermFrequencySimilarity;
-import org.meresco.lucene.search.join.relational.JoinANDQuery;
-import org.meresco.lucene.search.join.relational.LuceneQuery;
-import org.meresco.lucene.search.join.relational.NotQuery;
+import org.meresco.lucene.search.join.relational.JoinAndQuery;
+import org.meresco.lucene.search.join.relational.RelationalLuceneQuery;
+import org.meresco.lucene.search.join.relational.RelationalNotQuery;
 import org.meresco.lucene.search.join.relational.WrappedRelationalQuery;
 
 
@@ -787,9 +787,9 @@ public class MultiLuceneTest extends SeecrTestCase {
         ComposedQuery q = new ComposedQuery("coreA");
         q.setCoreQuery("coreA", new MatchAllDocsQuery());
         q.addFilterQuery("coreA", new WrappedRelationalQuery(
-            new JoinANDQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-                new LuceneQuery("coreB", "B", new TermQuery(new Term("P", "true")))
+            new JoinAndQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+                new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("P", "true")))
             )
         ));
 
@@ -867,10 +867,10 @@ public class MultiLuceneTest extends SeecrTestCase {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("M", "true")));
         q.addMatch("coreA", "coreB", "A", "B");
         q.relationalFilter = new WrappedRelationalQuery(
-            new NotQuery(
-                new JoinANDQuery(
-                    new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
-                    new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
+            new RelationalNotQuery(
+                new JoinAndQuery(
+                    new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
+                    new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
                 )
             )
         );  // "A", "A-U", "A-Q", "A-QU", "A-MU", "A-MQU"

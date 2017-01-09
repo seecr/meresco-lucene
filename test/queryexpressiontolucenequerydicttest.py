@@ -25,6 +25,7 @@
 #
 ## end license ##
 
+from unittest import skip
 from seecr.test import SeecrTestCase
 
 from cqlparser import cqlToExpression, parseString as parseCql, UnsupportedCQL
@@ -527,7 +528,7 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
             dict(core='otherCore', uniqueKey='B')
         )
         self.assertEquals({
-            "type": "LuceneQuery",  # should this not be 'joined' to own core somehow? (with MatchAllDocs)
+            "type": "RelationalLuceneQuery",  # should this not be 'joined' to own core somehow? (with MatchAllDocs)
             "core": "otherCore",
             "collectKeyName": "B",
             "filterKeyName": "B",
@@ -539,11 +540,12 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
                 }
             }}, self._convert(QueryExpression.searchterm("otherCore.field", "=", "value"), composedQuery=query))
 
+    @skip('not yet implemented')
     def testOtherCoreAndQuery(self):
         self.assertEquals({
-            'type': 'JoinANDQuery',
+            'type': 'JoinAndQuery',
             'first': {
-                "type": "LuceneQuery",  # should this not be 'joined' to own core somehow?
+                "type": "RelationalLuceneQuery",  # should this not be 'joined' to own core somehow?
                 "core": "thisCore",
                 "collectKeyName": "A",  # where does this keyName come from?
                 "filterKeyName": "A",
@@ -556,7 +558,7 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
                 }
             },
             'second': {
-                "type": "LuceneQuery",  # should this not be 'joined' to own core somehow?
+                "type": "RelationalLuceneQuery",  # should this not be 'joined' to own core somehow?
                 "core": "otherCore",
                 "collectKeyName": "A",  # where does this keyName come from?
                 "filterKeyName": "A",

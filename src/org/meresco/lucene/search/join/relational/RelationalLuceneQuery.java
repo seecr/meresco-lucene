@@ -34,22 +34,22 @@ import org.meresco.lucene.Lucene;
 import org.meresco.lucene.search.join.KeySuperCollector;
 
 
-public class LuceneQuery implements RelationalQuery {
+public class RelationalLuceneQuery implements RelationalQuery {
     String core;
     String collectKeyName;
     String filterKeyName;
     Query q;
     float boost;
 
-    public LuceneQuery(String core, String keyName, Query q) {
+    public RelationalLuceneQuery(String core, String keyName, Query q) {
         this(core, keyName, keyName, q);
     }
 
-    public LuceneQuery(String core, String collectKeyName, String filterKeyName, Query q) {
+    public RelationalLuceneQuery(String core, String collectKeyName, String filterKeyName, Query q) {
         this(core, collectKeyName, filterKeyName, q, 1.0f);
     }
 
-    public LuceneQuery(String core, String collectKeyName, String filterKeyName, Query q, float boost) {
+    public RelationalLuceneQuery(String core, String collectKeyName, String filterKeyName, Query q, float boost) {
         assert core != null && collectKeyName != null && filterKeyName != null && q != null;
         this.core = core;
         this.collectKeyName = collectKeyName;
@@ -91,7 +91,7 @@ public class LuceneQuery implements RelationalQuery {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        LuceneQuery other = (LuceneQuery) obj;
+        RelationalLuceneQuery other = (RelationalLuceneQuery) obj;
         if (!collectKeyName.equals(other.collectKeyName)) {
             return false;
         }
@@ -113,13 +113,13 @@ public class LuceneQuery implements RelationalQuery {
     @Override
     public Runner runner() {
         return new Runner() {
-            Query q = LuceneQuery.this.q;
+            Query q = RelationalLuceneQuery.this.q;
 
             @Override
             public KeyBits collectKeys(Map<String, Lucene> lucenes) {
-                KeySuperCollector keyCollector = new KeySuperCollector(LuceneQuery.this.collectKeyName);
+                KeySuperCollector keyCollector = new KeySuperCollector(RelationalLuceneQuery.this.collectKeyName);
                 try {
-                    lucenes.get(LuceneQuery.this.core).search(this.q, keyCollector);
+                    lucenes.get(RelationalLuceneQuery.this.core).search(this.q, keyCollector);
                 } catch (Error|RuntimeException e) {
                     throw e;
                 } catch (Throwable e) {
@@ -143,21 +143,21 @@ public class LuceneQuery implements RelationalQuery {
             public void filter(KeyBits keys) {
                 BooleanQuery.Builder builder = new BooleanQuery.Builder();
                 builder.add(this.q, BooleanClause.Occur.MUST);
-                builder.add(keys.keyFilterFor(LuceneQuery.this.filterKeyName), BooleanClause.Occur.MUST);
+                builder.add(keys.keyFilterFor(RelationalLuceneQuery.this.filterKeyName), BooleanClause.Occur.MUST);
                 this.q = builder.build();
             }
 
             @Override
             public void union(KeyBits keys) {
                 BooleanQuery.Builder builder = new BooleanQuery.Builder();
-                builder.add(keys.keyFilterFor(LuceneQuery.this.filterKeyName), BooleanClause.Occur.SHOULD);
+                builder.add(keys.keyFilterFor(RelationalLuceneQuery.this.filterKeyName), BooleanClause.Occur.SHOULD);
                 builder.add(this.q, BooleanClause.Occur.SHOULD);
                 this.q = builder.build();
             }
 
             @Override
             public String toString() {
-                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + LuceneQuery.this + ")";
+                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + RelationalLuceneQuery.this + ")";
             }
         };
     }

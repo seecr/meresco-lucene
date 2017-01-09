@@ -55,10 +55,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.meresco.lucene.search.JoinSortField;
-import org.meresco.lucene.search.join.relational.JoinANDQuery;
-import org.meresco.lucene.search.join.relational.JoinORQuery;
-import org.meresco.lucene.search.join.relational.LuceneQuery;
-import org.meresco.lucene.search.join.relational.NotQuery;
+import org.meresco.lucene.search.join.relational.JoinAndQuery;
+import org.meresco.lucene.search.join.relational.JoinOrQuery;
+import org.meresco.lucene.search.join.relational.RelationalLuceneQuery;
+import org.meresco.lucene.search.join.relational.RelationalNotQuery;
 import org.meresco.lucene.search.join.relational.RelationalQuery;
 import org.meresco.lucene.search.join.relational.WrappedRelationalQuery;
 
@@ -141,7 +141,7 @@ public class JsonQueryConverter {
     List<FacetRequest> convertToFacets(JsonArray facets) {
         if (facets == null)
             return null;
-        List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
+        List<FacetRequest> facetRequests = new ArrayList<>();
         for (int i = 0; i < facets.size(); i++) {
             JsonObject facet = facets.getJsonObject(i);
             FacetRequest fr = new FacetRequest(facet.getString("fieldname"), facet.getInt("maxTerms"));
@@ -199,9 +199,9 @@ public class JsonQueryConverter {
                 break;
 
             case "LuceneQuery":
-            case "JoinAnd":
-            case "JoinOr":
-            case "Not":
+            case "JoinAndQuery":
+            case "JoinOrQuery":
+            case "RelationalNotQuery":
                 RelationalQuery rq = this.convertToRelationalQuery(query);
                 q = new WrappedRelationalQuery(rq);
                 break;
@@ -221,30 +221,30 @@ public class JsonQueryConverter {
             return null;
         RelationalQuery rq;
         switch (query.getString("type")) {
-            case "LuceneQuery":
+            case "RelationalLuceneQuery":
                 String core = query.getString("core");
                 String collectKeyName = query.getString("collectKeyName");
                 String filterKeyName = query.getString("filterKeyName");
                 Query nestedQ = this.convertToQuery(query.getJsonObject("query"));
-                rq = new LuceneQuery(core, collectKeyName, filterKeyName, nestedQ);
+                rq = new RelationalLuceneQuery(core, collectKeyName, filterKeyName, nestedQ);
                 break;
 
-            case "JoinAnd":
-                rq = new JoinANDQuery(
+            case "JoinAndQuery":
+                rq = new JoinAndQuery(
                     this.convertToRelationalQuery(query.getJsonObject("first")),
                     this.convertToRelationalQuery(query.getJsonObject("second"))
                 );
                 break;
 
-            case "JoinOr":
-                rq = new JoinORQuery(
+            case "JoinOrQuery":
+                rq = new JoinOrQuery(
                     this.convertToRelationalQuery(query.getJsonObject("first")),
                     this.convertToRelationalQuery(query.getJsonObject("second"))
                 );
                 break;
 
-            case "Not":
-                rq = new NotQuery(this.convertToRelationalQuery(query.getJsonObject("query")));
+            case "RelationalNotQuery":
+                rq = new RelationalNotQuery(this.convertToRelationalQuery(query.getJsonObject("query")));
                 break;
 
             default:

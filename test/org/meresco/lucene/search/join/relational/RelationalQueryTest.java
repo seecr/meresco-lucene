@@ -63,9 +63,9 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testSimpleJoinANDQuery() {
-        RelationalQuery root = new JoinANDQuery(
-            new LuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))  /* here all those args*/ ),
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))));
+        RelationalQuery root = new JoinAndQuery(
+            new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))  /* here all those args*/ ),
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))));
         KeyBits result = root.collectKeys(this.lucenes);
         assertEquals(4, result.bitset.cardinality());
         LuceneResponse response = responseForResult(result, luceneA, "A");
@@ -74,11 +74,11 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testJoinANDQueryResultFedToLuceneQuery() {
-        RelationalQuery root = new JoinANDQuery(
-            new JoinANDQuery(
-                new LuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))),
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))),
-            new LuceneQuery("coreC", "C", new TermQuery(new Term("R", "true"))));
+        RelationalQuery root = new JoinAndQuery(
+            new JoinAndQuery(
+                new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))),
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))),
+            new RelationalLuceneQuery("coreC", "C", new TermQuery(new Term("R", "true"))));
         KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-M");
@@ -86,11 +86,11 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testLuceneQueryResultFedToJoinANDQuery() {
-        RelationalQuery root = new JoinANDQuery(
-            new LuceneQuery("coreC", "C", new TermQuery(new Term("R", "true"))),
-            new JoinANDQuery(
-                new LuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))),
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        RelationalQuery root = new JoinAndQuery(
+            new RelationalLuceneQuery("coreC", "C", new TermQuery(new Term("R", "true"))),
+            new JoinAndQuery(
+                new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))),
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
             ));
         KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
@@ -99,12 +99,12 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testMultipleJoinsWithSemanticallyIncompatibleKeys() {
-        RelationalQuery root = new JoinANDQuery(
-            new JoinANDQuery(
-                new LuceneQuery("coreC", "C2", new TermQuery(new Term("R", "true"))),
-                new LuceneQuery("coreA", "A", "C", new TermQuery(new Term("M", "true")))
+        RelationalQuery root = new JoinAndQuery(
+            new JoinAndQuery(
+                new RelationalLuceneQuery("coreC", "C2", new TermQuery(new Term("R", "true"))),
+                new RelationalLuceneQuery("coreA", "A", "C", new TermQuery(new Term("M", "true")))
             ),
-            new LuceneQuery("coreB", "B", new TermQuery(new Term("N", "true")))
+            new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("N", "true")))
         );
         KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
@@ -113,15 +113,15 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testMultipleJoinsWithSemanticallyIncompatibleKeysToAndFro() {
-        RelationalQuery root = new JoinANDQuery(
-            new JoinANDQuery(
-                new LuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))),
-                new JoinANDQuery(
-                    new LuceneQuery("coreA", "C", "A", new TermQuery(new Term("M", "true"))),
-                    new LuceneQuery("coreC", "C2", new TermQuery(new Term("R", "true")))
+        RelationalQuery root = new JoinAndQuery(
+            new JoinAndQuery(
+                new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))),
+                new JoinAndQuery(
+                    new RelationalLuceneQuery("coreA", "C", "A", new TermQuery(new Term("M", "true"))),
+                    new RelationalLuceneQuery("coreC", "C2", new TermQuery(new Term("R", "true")))
                 )
             ),
-            new LuceneQuery("coreA", "A", "C", new MatchAllDocsQuery())
+            new RelationalLuceneQuery("coreA", "A", "C", new MatchAllDocsQuery())
         );
         KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
@@ -134,18 +134,18 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinANDQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
-            new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))  /* first without the NOT for reference only */
+        root = new JoinAndQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
+            new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))  /* first without the NOT for reference only */
         );
         result = root.collectKeys(this.lucenes);
         response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-M", "A-MQ");
 
-        root = new JoinANDQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
-            new NotQuery(
-                new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
+        root = new JoinAndQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
+            new RelationalNotQuery(
+                new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
             )
         );
         result = root.collectKeys(this.lucenes);
@@ -159,11 +159,11 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinANDQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
-            new NotQuery(
-                new NotQuery(
-                    new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
+        root = new JoinAndQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
+            new RelationalNotQuery(
+                new RelationalNotQuery(
+                    new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
                 )
             )
         );
@@ -178,23 +178,23 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinANDQuery(
-            new NotQuery(
-                new JoinANDQuery(
-                    new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
-                    new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
+        root = new JoinAndQuery(
+            new RelationalNotQuery(
+                new JoinAndQuery(
+                    new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
+                    new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
                 )
             ),
-            new LuceneQuery("coreA", "A", new MatchAllDocsQuery())
+            new RelationalLuceneQuery("coreA", "A", new MatchAllDocsQuery())
         );
         result = root.collectKeys(this.lucenes);
         response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A", "A-U", "A-Q", "A-QU", "A-MU", "A-MQU");
 
-        root = new NotQuery(
-            new JoinANDQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
-                new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
+        root = new RelationalNotQuery(
+            new JoinAndQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true"))),
+                new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
             )
         );
         result = root.collectKeys(this.lucenes);
@@ -209,12 +209,12 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinANDQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-            new NotQuery(
-                new JoinANDQuery(
-                    new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                    new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        root = new JoinAndQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+            new RelationalNotQuery(
+                new JoinAndQuery(
+                    new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                    new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                 )
             )
         );
@@ -225,9 +225,9 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testSimpleJoinORQuery() {
-        RelationalQuery root = new JoinORQuery(
-            new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))));
+        RelationalQuery root = new JoinOrQuery(
+            new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))));
         KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-Q", "A-QU", "A-M", "A-MQ", "A-MQU");
@@ -235,11 +235,11 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testJoinORQueryFromNot() {
-        RelationalQuery root = new JoinORQuery(
-            new NotQuery(
-                new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
+        RelationalQuery root = new JoinOrQuery(
+            new RelationalNotQuery(
+                new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true")))
             ),
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))));
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))));
         KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-Q", "A-QU", "A-MQ", "A-MQU", "A-MU");
@@ -247,10 +247,10 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testJoinORQueryOverNotQuery() {
-        RelationalQuery root = new JoinORQuery(
-            new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-            new NotQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))
+        RelationalQuery root = new JoinOrQuery(
+            new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+            new RelationalNotQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))
             )
         );
         KeyBits result = root.collectKeys(this.lucenes);
@@ -260,11 +260,11 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testJoinANDQueryOverJoinORQuery() {
-        RelationalQuery root = new JoinANDQuery(
-            new LuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))),
-            new JoinORQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-                new LuceneQuery("coreB", "B", new TermQuery(new Term("T", "B")))
+        RelationalQuery root = new JoinAndQuery(
+            new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("N", "true"))),
+            new JoinOrQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+                new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("T", "B")))
             )
         );
         KeyBits result = root.collectKeys(this.lucenes);
@@ -274,11 +274,11 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testJoinOROverJoinORQuery() {
-        RelationalQuery root = new JoinORQuery(
-            new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-            new JoinORQuery(
-                new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "false"))),
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))));
+        RelationalQuery root = new JoinOrQuery(
+            new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+            new JoinOrQuery(
+                new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "false"))),
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))));
         KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-Q", "A-QU", "A-MQ", "A-MQU", "A-M", "A-MU");
@@ -286,11 +286,11 @@ public class RelationalQueryTest extends SeecrTestCase {
 
     @Test
     public void testJoinOROverJoinANDQuery() {
-        RelationalQuery root = new JoinORQuery(
-            new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-            new JoinANDQuery(
-                new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "false"))),
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))));
+        RelationalQuery root = new JoinOrQuery(
+            new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+            new JoinAndQuery(
+                new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "false"))),
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))));
         KeyBits result = root.collectKeys(this.lucenes);
         LuceneResponse response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A-MQ", "A-MQU", "A-M");
@@ -302,12 +302,12 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinORQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-            new NotQuery(
-                new JoinORQuery(
-                    new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                    new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        root = new JoinOrQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+            new RelationalNotQuery(
+                new JoinOrQuery(
+                    new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                    new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                 )
             )
         );
@@ -323,14 +323,14 @@ public class RelationalQueryTest extends SeecrTestCase {
         LuceneResponse response;
 
         root =
-            new JoinORQuery(
-                new NotQuery(
-                    new JoinORQuery(
-                        new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                        new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))
+            new JoinOrQuery(
+                new RelationalNotQuery(
+                    new JoinOrQuery(
+                        new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                        new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))
                     )  // A-Q, A-QU, A-M, A-MQ, A-MQU
                 ),  // A, A-U, A-MU
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
             ); // A, A-U, A-M, A-MU, A-MQ, A-MQU
         result = root.collectKeys(this.lucenes);
         response = responseForResult(result, luceneA, "A");
@@ -343,12 +343,12 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinORQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-            new NotQuery(
-                new JoinANDQuery(
-                    new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                    new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        root = new JoinOrQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+            new RelationalNotQuery(
+                new JoinAndQuery(
+                    new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                    new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                 )
             )
         );
@@ -356,14 +356,14 @@ public class RelationalQueryTest extends SeecrTestCase {
         response = responseForResult(result, luceneA, "A");
         LuceneTest.compareHits(response, "A", "A-U", "A-Q", "A-QU", "A-MU", "A-MQ", "A-MQU");
 
-        root = new JoinORQuery(
-            new NotQuery(
-                new JoinANDQuery(
-                    new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                    new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        root = new JoinOrQuery(
+            new RelationalNotQuery(
+                new JoinAndQuery(
+                    new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                    new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                 )
             ),
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))
         );
         result = root.collectKeys(this.lucenes);
         response = responseForResult(result, luceneA, "A");
@@ -377,12 +377,12 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinANDQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-            new NotQuery(
-                new JoinORQuery(
-                    new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                    new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        root = new JoinAndQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+            new RelationalNotQuery(
+                new JoinOrQuery(
+                    new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                    new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                 )
             )
         );
@@ -397,13 +397,13 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinORQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
-            new JoinANDQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-                new JoinORQuery(
-                    new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                    new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        root = new JoinOrQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
+            new JoinAndQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+                new JoinOrQuery(
+                    new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                    new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                 )
             )
         );
@@ -418,14 +418,14 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinORQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
-            new JoinANDQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-                new NotQuery(
-                    new JoinORQuery(
-                        new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                        new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        root = new JoinOrQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
+            new JoinAndQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+                new RelationalNotQuery(
+                    new JoinOrQuery(
+                        new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                        new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                     )
                 )
             )
@@ -441,18 +441,18 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinANDQuery(
-            new JoinORQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("S", "4"))),
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("S", "7")))
+        root = new JoinAndQuery(
+            new JoinOrQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("S", "4"))),
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("S", "7")))
             ),
-            new JoinORQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
-                new JoinANDQuery(
-                    new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-                    new JoinORQuery(
-                        new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                        new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+            new JoinOrQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
+                new JoinAndQuery(
+                    new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+                    new JoinOrQuery(
+                        new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                        new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                     )
                 )
             )
@@ -468,15 +468,15 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinORQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("S", "1"))),
-            new JoinORQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
-                new JoinANDQuery(
-                    new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-                    new JoinORQuery(
-                        new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                        new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        root = new JoinOrQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("S", "1"))),
+            new JoinOrQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
+                new JoinAndQuery(
+                    new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+                    new JoinOrQuery(
+                        new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                        new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                     )
                 )
             )
@@ -492,14 +492,14 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinORQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
-            new JoinANDQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-                new NotQuery(
-                    new JoinANDQuery(
-                        new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                        new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        root = new JoinOrQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
+            new JoinAndQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+                new RelationalNotQuery(
+                    new JoinAndQuery(
+                        new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                        new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                     )
                 )
             )
@@ -515,14 +515,14 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new JoinANDQuery(
-            new LuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
-            new JoinORQuery(
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
-                new NotQuery(
-                    new JoinORQuery(
-                        new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                        new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+        root = new JoinAndQuery(
+            new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("U", "true"))),
+            new JoinOrQuery(
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true"))),
+                new RelationalNotQuery(
+                    new JoinOrQuery(
+                        new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                        new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
                     )
                 )
             )
@@ -538,15 +538,15 @@ public class RelationalQueryTest extends SeecrTestCase {
         KeyBits result;
         LuceneResponse response;
 
-        root = new NotQuery(
-            new JoinORQuery(
-                new NotQuery(
-                    new JoinORQuery(
-                        new LuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
-                        new LuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))
+        root = new RelationalNotQuery(
+            new JoinOrQuery(
+                new RelationalNotQuery(
+                    new JoinOrQuery(
+                        new RelationalLuceneQuery("coreB", "B", new TermQuery(new Term("O", "true"))),
+                        new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("Q", "true")))
                     )  // A-Q, A-QU, A-M, A-MQ, A-MQU
                 ),  // A, A-U, A-MU
-                new LuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
+                new RelationalLuceneQuery("coreA", "A", new TermQuery(new Term("M", "true")))
             ) // A, A-U, A-M, A-MU, A-MQ, A-MQU
         ); // A-Q, A-QU
         result = root.collectKeys(this.lucenes);

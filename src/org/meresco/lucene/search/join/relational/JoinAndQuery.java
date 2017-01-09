@@ -1,27 +1,3 @@
-/* begin license *
- *
- * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
- *
- * Copyright (C) 2016 Seecr (Seek You Too B.V.) http://seecr.nl
- *
- * This file is part of "Meresco Lucene"
- *
- * "Meresco Lucene" is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * "Meresco Lucene" is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with "Meresco Lucene"; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- *
- * end license */
-
 package org.meresco.lucene.search.join.relational;
 
 import java.util.Map;
@@ -29,11 +5,11 @@ import java.util.Map;
 import org.meresco.lucene.Lucene;
 
 
-public class JoinORQuery implements RelationalQuery {
-    private RelationalQuery first;
-    private RelationalQuery second;
+public class JoinAndQuery implements RelationalQuery {
+    RelationalQuery first;
+    RelationalQuery second;
 
-    public JoinORQuery(RelationalQuery first, RelationalQuery second) {
+    public JoinAndQuery(RelationalQuery first, RelationalQuery second) {
         assert first != null && second != null;
         this.first = first;
         this.second = second;
@@ -69,7 +45,7 @@ public class JoinORQuery implements RelationalQuery {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        JoinORQuery other = (JoinORQuery) obj;
+        JoinAndQuery other = (JoinAndQuery) obj;
         if (!first.equals(other.first)) {
             return false;
         }
@@ -82,8 +58,8 @@ public class JoinORQuery implements RelationalQuery {
     @Override
     public Runner runner() {
         return new Runner() {
-            Runner first = JoinORQuery.this.first.runner();
-            Runner second = JoinORQuery.this.second.runner();
+            Runner first = JoinAndQuery.this.first.runner();
+            Runner second = JoinAndQuery.this.second.runner();
             KeyBits filter;
             KeyBits union;
             boolean inverted;
@@ -93,32 +69,23 @@ public class JoinORQuery implements RelationalQuery {
                 if (this.filter != null) {
                     this.first.filter(this.filter);
                 }
-                else if (!this.inverted && this.union != null) {
-                    this.first.union(this.union);
+                KeyBits result = this.first.collectKeys(lucenes);
+                this.second.filter(result);
+                if (!this.inverted && this.union != null) {
+                    this.second.union(this.union);
                 }
-                KeyBits resultFirst = this.first.collectKeys(lucenes);
-
-                if (this.filter != null) {
-                    this.second.filter(this.filter);
-                }
-                this.second.union(resultFirst);
-                KeyBits result = this.second.collectKeys(lucenes);
+                result = this.second.collectKeys(lucenes);
 
                 if (this.inverted) {
                     result.inverted = true;
                     if (this.filter != null) {
-                        this.filter.intersect(result);
+                        this.filter.intersect(result);  // note: no ranking (but shouldn't be an issue)
 //                        Utils.assertTrue(this.union == null, "union not expected (because of filter) for " + this);  // TODO: can we prove somehow that this is guaranteed to be the case?
                         return this.filter;
                     }
                     else if (this.union != null) {
-                        this.union.union(result);
+                        this.union.union(result);  // note: no ranking (but shouldn't be an issue)
                         return this.union;
-                    }
-                }
-                else {
-                    if (this.union != null) {
-                        result.union(this.union);
                     }
                 }
                 return result;
@@ -141,7 +108,7 @@ public class JoinORQuery implements RelationalQuery {
 
             @Override
             public String toString() {
-                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + JoinORQuery.this + ")";
+                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + JoinAndQuery.this + ")";
             }
         };
     }

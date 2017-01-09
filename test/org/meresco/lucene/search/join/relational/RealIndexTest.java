@@ -51,10 +51,10 @@ public class RealIndexTest extends SeecrTestCase {
     @Test
     public void testQuery() throws Throwable {
         Query warmupFilter = new WrappedRelationalQuery(
-            new JoinANDQuery(
-                new LuceneQuery("summary", "__key__.lh:item.uri",
+            new JoinAndQuery(
+                new RelationalLuceneQuery("summary", "__key__.lh:item.uri",
                     new TermQuery(new Term("__all__", "vliegtuig"))),
-                new LuceneQuery("holding", "__key__.lh:item.uri",
+                new RelationalLuceneQuery("holding", "__key__.lh:item.uri",
                     new TermQuery(new Term("untokenized.lh:holder.uri", "info:isil:NL-0800070000")))));
         ComposedQuery composedQuery = new ComposedQuery("summary", new MatchAllDocsQuery());
         composedQuery.addMatch("summary", "holding", "__key__.lh:item.uri", "__key__.lh:item.uri");
@@ -74,14 +74,6 @@ public class RealIndexTest extends SeecrTestCase {
         System.out.println("warmup query took: " + (t1.getTime() - t0.getTime()));
         System.out.println("\n");
 
-        WrappedRelationalQuery fietsBnlFilterQuery = new WrappedRelationalQuery(
-            new JoinANDQuery(
-                new LuceneQuery("summary", "__key__.lh:item.uri",
-                    new TermQuery(new Term("__all__", "fiets"))),
-                new LuceneQuery("holding", "__key__.lh:item.uri",
-                    new TermQuery(new Term("untokenized.lh:holder.uri", "info:isil:NL-0773600000")))));
-        composedQuery.relationalFilter = fietsBnlFilterQuery;
-
         JsonQueryConverter summaryJsonQueryConverter = this.luceneSummary.getQueryConverter();
         Term onvolledigDrilldownTerm = summaryJsonQueryConverter.createDrilldownTerm(
                 "untokenized.ggc:kmc0500par103.uri.byOntology",
@@ -98,12 +90,14 @@ public class RealIndexTest extends SeecrTestCase {
         unwantedPar103Query.add(new TermQuery(onvolledigInKaderNbcDrilldownTerm), Occur.SHOULD);
         unwantedPar103Query.add(new TermQuery(acquisitieDrilldownTerm), Occur.SHOULD);
 
+        String KB_ISIL = "info:isil:NL-0100030000";
+        Query heldByKbQuery = new TermQuery(new Term("untokenized.lh:holder.uri", KB_ISIL));
+
         composedQuery.relationalFilter = new WrappedRelationalQuery(
-            new NotQuery(
-                new JoinANDQuery(
-                    new LuceneQuery("summary", "__key__.lh:item.uri", unwantedPar103Query.build()),
-                    new LuceneQuery("holding", "__key__.lh:item.uri",
-                        new TermQuery(new Term("untokenized.lh:holder.uri", "info:isil:NL-0100030000"))))));
+            new RelationalNotQuery(
+                new JoinAndQuery(
+                    new RelationalLuceneQuery("summary", "__key__.lh:item.uri", unwantedPar103Query.build()),
+                    new RelationalLuceneQuery("holding", "__key__.lh:item.uri", heldByKbQuery))));
 
         t0 = new Date();
         response = this.multiLucene.executeComposedQuery(composedQuery);

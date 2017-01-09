@@ -5,10 +5,10 @@ import java.util.Map;
 import org.meresco.lucene.Lucene;
 
 
-public class NotQuery implements RelationalQuery {
+public class RelationalNotQuery implements RelationalQuery {
     RelationalQuery q;
 
-    public NotQuery(RelationalQuery q) {
+    public RelationalNotQuery(RelationalQuery q) {
         assert q != null;
         this.q = q;
     }
@@ -42,7 +42,7 @@ public class NotQuery implements RelationalQuery {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        NotQuery other = (NotQuery) obj;
+        RelationalNotQuery other = (RelationalNotQuery) obj;
         if (!q.equals(other.q)) {
             return false;
         }
@@ -52,7 +52,7 @@ public class NotQuery implements RelationalQuery {
     @Override
     public Runner runner() {
         return new Runner() {
-            private Runner q = NotQuery.this.q.runner();
+            private Runner q = RelationalNotQuery.this.q.runner();
             private KeyBits filter;
             private KeyBits union;
             private boolean inverted = false;
@@ -92,7 +92,7 @@ public class NotQuery implements RelationalQuery {
 
             @Override
             public String toString() {
-                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + NotQuery.this + ")";
+                return getClass().getSimpleName() + "@" + System.identityHashCode(this) + "(" + RelationalNotQuery.this + ")";
             }
         };
     }

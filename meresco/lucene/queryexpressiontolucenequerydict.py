@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2017 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2015-2016 Stichting Kennisnet http://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
@@ -137,7 +137,7 @@ class _Converter(object):
 
         if core and not core == self._resultsFrom:
             keyName = self._composedQuery.keyName(core, self._resultsFrom)
-            query = dict(type='LuceneQuery', core=core, collectKeyName=keyName, filterKeyName=keyName, query=query)
+            query = dict(type='RelationalLuceneQuery', core=core, collectKeyName=keyName, filterKeyName=keyName, query=query)
         return query
 
     def _determineQuery(self, index, termString):

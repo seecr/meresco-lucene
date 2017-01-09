@@ -45,9 +45,9 @@ import org.apache.lucene.search.TermQuery;
 import org.junit.Test;
 import org.meresco.lucene.ComposedQuery.Unite;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
-import org.meresco.lucene.search.join.relational.JoinANDQuery;
-import org.meresco.lucene.search.join.relational.LuceneQuery;
-import org.meresco.lucene.search.join.relational.NotQuery;
+import org.meresco.lucene.search.join.relational.JoinAndQuery;
+import org.meresco.lucene.search.join.relational.RelationalLuceneQuery;
+import org.meresco.lucene.search.join.relational.RelationalNotQuery;
 import org.meresco.lucene.search.join.relational.WrappedRelationalQuery;
 
 
@@ -274,9 +274,9 @@ public class ComposedQueryTest {
     @Test
     public void testRelationalFilter() throws Exception {
         JsonObject relationalFilterJson = Json.createObjectBuilder()
-                .add("type", "JoinAnd")
+                .add("type", "JoinAndQuery")
                 .add("first", Json.createObjectBuilder()
-                    .add("type", "LuceneQuery")
+                    .add("type", "RelationalLuceneQuery")
                     .add("core", "coreA")
                     .add("collectKeyName", "A")
                     .add("filterKeyName", "B")
@@ -286,9 +286,9 @@ public class ComposedQueryTest {
                             .add("field", "field0")
                             .add("value", "value0"))))
                 .add("second", Json.createObjectBuilder()
-                     .add("type", "Not")
+                     .add("type", "RelationalNotQuery")
                      .add("query", Json.createObjectBuilder()
-                          .add("type", "LuceneQuery")
+                          .add("type", "RelationalLuceneQuery")
                           .add("core", "coreB")
                           .add("collectKeyName", "B")
                           .add("filterKeyName", "A")
@@ -323,10 +323,10 @@ public class ComposedQueryTest {
         ComposedQuery q = ComposedQuery.fromJsonString(new StringReader(json.toString()), queryConverters);
         assertEquals(
                 new WrappedRelationalQuery(
-                    new JoinANDQuery(
-                        new LuceneQuery("coreA", "A", "B", new TermQuery(new Term("field0", "value0"))),
-                        new NotQuery(
-                            new LuceneQuery("coreB", "B", "A", new TermQuery(new Term("field1", "value1")))
+                    new JoinAndQuery(
+                        new RelationalLuceneQuery("coreA", "A", "B", new TermQuery(new Term("field0", "value0"))),
+                        new RelationalNotQuery(
+                            new RelationalLuceneQuery("coreB", "B", "A", new TermQuery(new Term("field1", "value1")))
                         ))),
                 q.relationalFilter);
     }

@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2017 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -81,13 +81,13 @@ class LuceneKeyValueStore(object):
         key = str(key)
         value = self._latestModifications.get(key)
         if value is DELETED_RECORD:
-            raise KeyError()
+            raise KeyError(key)
         if not value is None:
             return value
         self._maybeReopen()
         topDocs = self._searcher.search(TermQuery(Term("key", key)), 1)
         if topDocs.totalHits == 0:
-            raise KeyError()
+            raise KeyError(key)
         return self._searcher.doc(topDocs.scoreDocs[0].doc).get("value")
 
     def __delitem__(self, key):

@@ -3,8 +3,10 @@ jcc (<< 2.22)
 python-setuptools
 gcc
 #centos6:gcc-c++
+#centos7:gcc-c++
 #wheezy:g++
 #centos6:python-devel
+#centos7:python-devel
 #wheezy:python-dev
 #jessie:python-dev
 python-meresco-pylucene (>= 4.10.1)

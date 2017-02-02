@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2017 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -25,7 +25,7 @@
 #
 ## end license ##
 
-from os.path import join, abspath, dirname
+from os.path import join, abspath, dirname, isdir
 from os import system, environ
 from traceback import print_exc
 from time import time
@@ -50,6 +50,9 @@ class IntegrationState(SeecrIntegrationState):
         self.luceneServerPort = PortNumberGenerator.next()
         self.httpPort = PortNumberGenerator.next()
         self.testdataDir = join(dirname(mydir), "data")
+        self.JAVA_BIN = "/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin"
+        if not isdir(self.JAVA_BIN):
+            self.JAVA_BIN = "/usr/lib/jvm/java-1.8.0/bin"
 
     def setUp(self):
         self.startSuggestionServer()
@@ -83,7 +86,7 @@ class IntegrationState(SeecrIntegrationState):
                 'http://localhost:{}/info'.format(self.suggestionServerPort),
                 port=self.suggestionServerPort,
                 stateDir=join(self.integrationTempdir, 'suggestion'),
-                env=environment(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
+                env=environment(JAVA_BIN=self.JAVA_BIN, LANG="en_US.UTF-8")
             )
 
     def startLuceneServer(self):
@@ -94,7 +97,7 @@ class IntegrationState(SeecrIntegrationState):
                 port=self.luceneServerPort,
                 stateDir=join(self.integrationTempdir, 'lucene-server'),
                 core=["main", "main2", "empty-core", "default"],
-                env=environment(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
+                env=environment(JAVA_BIN=self.JAVA_BIN, LANG="en_US.UTF-8")
             )
 
     def startExampleServer(self):
@@ -107,7 +110,7 @@ class IntegrationState(SeecrIntegrationState):
                 serverPort=self.luceneServerPort,
                 autocompletePort=self.suggestionServerPort,
                 stateDir=join(self.integrationTempdir, 'example-state'),
-                env=environment(JAVA_BIN="/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin", LANG="en_US.UTF-8")
+                env=environment(JAVA_BIN=self.JAVA_BIN, LANG="en_US.UTF-8")
             )
 
     def stopServer(self, serviceName):

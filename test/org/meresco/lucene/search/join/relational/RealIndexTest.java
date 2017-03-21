@@ -47,7 +47,7 @@ public class RealIndexTest extends SeecrTestCase {
         this.multiLucene = new MultiLucene(Arrays.asList(luceneSummary, luceneHolding, luceneRank));
     }
 
-    @Ignore("requires live index")
+    //@Ignore("requires live index")
     @Test
     public void testQuery() throws Throwable {
         Query warmupFilter = new WrappedRelationalQuery(

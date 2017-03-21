@@ -56,7 +56,12 @@ public class ExportKeysHandler extends AbstractMerescoLuceneHandler {
             t.printStackTrace();
             throw t;
         }
-        luceneResponse = this.multiLucene.executeComposedQuery(q, exportKey);
+        try {
+            luceneResponse = this.multiLucene.executeComposedQuery(q, exportKey);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            throw t;
+        }
         if (luceneResponse.keys == null) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write("No keys found; please check that exportKey parameter was provided.");

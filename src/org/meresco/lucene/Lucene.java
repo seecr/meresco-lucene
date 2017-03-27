@@ -116,7 +116,7 @@ public class Lucene {
     private Timer commitTimer;
     public String name;
     private Path stateDir;
-    private Map<String, OrdinalsReader> ordinalsReaders = new HashMap<String, OrdinalsReader>();
+    private Map<String, OrdinalsReader> ordinalsReaders = new HashMap<>();
     private DirectSpellChecker spellChecker = new DirectSpellChecker();
     LuceneData data = new LuceneData();
 	private JsonQueryConverter queryConverter;
@@ -410,7 +410,7 @@ public class Lucene {
         try {
             FacetSuperCollector facetCollector = facetCollector(facets, reference.taxonomyReader);
             if (facetCollector == null)
-                return new ArrayList<DrilldownData>();
+                return new ArrayList<>();
             Query filter_ = filtersFor(filterQueries, filter);
             Query query = new MatchAllDocsQuery();
             if (drilldownQueries != null)
@@ -450,18 +450,15 @@ public class Lucene {
     private Collectors createCollectors(QueryData q, int stop, Collection<KeySuperCollector> keyCollectors, List<AggregateScoreSuperCollector> scoreCollectors, SearcherAndTaxonomy reference)
             throws Exception {
         Collectors allCollectors = new Collectors();
-        SuperCollector<?> resultsCollector;
+        allCollectors.topCollector = topCollector(q.start, stop, q.sort);
+        SuperCollector<?> resultsCollector = allCollectors.topCollector;
         if (q.dedupField != null) {
-            allCollectors.topCollector = topCollector(q.start, stop, q.sort);
             allCollectors.dedupCollector = new DeDupFilterSuperCollector(q.dedupField, q.dedupSortField, allCollectors.topCollector);
             resultsCollector = allCollectors.dedupCollector;
-        } else {
-            allCollectors.topCollector = topCollector(q.start, stop, q.sort);
-            resultsCollector = allCollectors.topCollector;
         }
         allCollectors.facetCollector = facetCollector(q.facets, reference.taxonomyReader);
 
-        List<SuperCollector<?>> collectors = new ArrayList<SuperCollector<?>>();
+        List<SuperCollector<?>> collectors = new ArrayList<>();
         collectors.add(resultsCollector);
         if (allCollectors.facetCollector != null) {
             collectors.add(allCollectors.facetCollector);
@@ -501,7 +498,7 @@ public class Lucene {
     }
 
     String[] getIndexFieldNames(List<FacetRequest> facets) throws Exception {
-        Set<String> indexFieldnames = new HashSet<String>();
+        Set<String> indexFieldnames = new HashSet<>();
         for (FacetRequest f : facets)
             indexFieldnames.add(this.data.getFacetsConfig().getDimConfig(f.fieldname).indexFieldName);
         return indexFieldnames.toArray(new String[0]);
@@ -519,7 +516,7 @@ public class Lucene {
     }
 
     private List<DrilldownData> facetResult(FacetSuperCollector facetCollector, List<FacetRequest> facets) throws Exception {
-        List<DrilldownData> drilldownData = new ArrayList<DrilldownData>();
+        List<DrilldownData> drilldownData = new ArrayList<>();
         for (FacetRequest facet : facets) {
             DrilldownData dd = new DrilldownData(facet.fieldname);
             dd.path = facet.path;
@@ -536,7 +533,7 @@ public class Lucene {
         FacetResult result = facetCollector.getTopChildren(facet.maxTerms == 0 ? Integer.MAX_VALUE : facet.maxTerms, facet.fieldname, path);
         if (result == null)
             return null;
-        List<DrilldownData.Term> terms = new ArrayList<DrilldownData.Term>();
+        List<DrilldownData.Term> terms = new ArrayList<>();
         for (LabelAndValue l : result.labelValues) {
             DrilldownData.Term term = new DrilldownData.Term(l.label, l.value.intValue());
             if (hierarchical) {
@@ -563,7 +560,7 @@ public class Lucene {
 
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
-            List<TermCount> terms = new ArrayList<TermCount>();
+            List<TermCount> terms = new ArrayList<>();
             IndexReader reader = reference.searcher.getIndexReader();
             Terms termsEnum = MultiFields.getTerms(reader, field);
             if (termsEnum == null)
@@ -600,7 +597,7 @@ public class Lucene {
     public List<String> fieldnames() throws Exception {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
-            List<String> fieldnames = new ArrayList<String>();
+            List<String> fieldnames = new ArrayList<>();
             FieldInfos fields = MultiFields.getMergedFieldInfos(reference.searcher.getIndexReader());
             if (fields == null)
                 return fieldnames;
@@ -620,7 +617,7 @@ public class Lucene {
             DirectoryTaxonomyReader taxoReader = reference.taxonomyReader;
             int parentOrdinal = dim == null ? TaxonomyReader.ROOT_ORDINAL : taxoReader.getOrdinal(dim, path);
             ChildrenIterator childrenIter = taxoReader.getChildren(parentOrdinal);
-            List<String> fieldnames = new ArrayList<String>();
+            List<String> fieldnames = new ArrayList<>();
             while (true) {
                 int ordinal = childrenIter.next();
                 if (ordinal == TaxonomyReader.INVALID_ORDINAL)

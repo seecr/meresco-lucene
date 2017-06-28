@@ -5,6 +5,7 @@ gcc
 #centos6:gcc-c++
 #centos7:gcc-c++
 #wheezy:g++
+#jessie:g++
 #centos6:python-devel
 #centos7:python-devel
 #wheezy:python-dev

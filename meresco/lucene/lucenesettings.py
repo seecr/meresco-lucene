@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2017 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -93,3 +93,8 @@ class LuceneSettings(object):
         result = JsonDict(drilldownFields=drilldownFields)
         result.update((k[1:], v) for k, v in self.__dict__.iteritems() if k[1:] in SETTING_NAMES)
         return result
+
+    def __getattr__(self, key):
+        if key in SETTING_NAMES:
+            return getattr(self, '_'+key)
+        raise AttributeError(key)

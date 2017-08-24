@@ -1,18 +1,18 @@
 jcc (>= 2.21)
-jcc (<< 2.22)
+jcc (<< 2.23)
 python-setuptools
 gcc
 #centos6:gcc-c++
 #centos7:gcc-c++
-#wheezy:g++
 #jessie:g++
+#stretch:g++
 #centos6:python-devel
 #centos7:python-devel
-#wheezy:python-dev
 #jessie:python-dev
+#stretch:python-dev
 python-meresco-pylucene (>= 4.10.1)
 python-meresco-pylucene (<< 4.11)
-#wheezy:openjdk-8-jdk
 #jessie:openjdk-8-jdk
+#stretch:openjdk-8-jdk
 #centos6:java-1.8.0-openjdk-devel
 #centos7:java-1.8.0-openjdk-devel

@@ -41,14 +41,11 @@ mkdir --parents $buildDir $libDir
 
 pythonVersion=$(python --version 2>&1 | awk '{print $2}' | cut -d. -f-2)
 
-javac=/usr/lib/jvm/java-1.7.0-openjdk.x86_64/bin/javac
-if [ ! -f "$javac" ]; then
-    javac=/usr/lib/jvm/java-1.7.0/bin/javac
-fi
-
+JAVA_VERSION=8
+javac=/usr/lib/jvm/java-1.${JAVA_VERSION}.0/bin/javac
 luceneJarDir=/usr/lib64/python${pythonVersion}/site-packages/lucene
 if [ -f /etc/debian_version ]; then
-    javac=/usr/lib/jvm/java-7-openjdk-amd64/bin/javac
+    javac=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64/bin/javac
     luceneJarDir=/usr/lib/python${pythonVersion}/dist-packages/lucene
 fi
 

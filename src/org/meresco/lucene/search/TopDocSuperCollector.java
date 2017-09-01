@@ -32,8 +32,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
 
-public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubCollector<?>> {
 
+public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubCollector<?>> {
     protected final Sort sort;
     protected final int numHits;
 
@@ -48,8 +48,8 @@ public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubColle
         for (int i = 0; i < topdocs.length; i++)
             topdocs[i] = this.subs.get(i).topdocs;
         if (this.sort == null)
-            return TopDocs.merge(start, numHits - start, topdocs);
-        return TopDocs.merge(this.sort, start, this.numHits - start, (TopFieldDocs[]) topdocs);
+            return TopDocs.merge(start, numHits - start, topdocs, true);
+        return TopDocs.merge(this.sort, start, this.numHits - start, (TopFieldDocs[]) topdocs, true);
     }
 
     public int getTotalHits() throws IOException {

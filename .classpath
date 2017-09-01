@@ -10,11 +10,7 @@
 	<classpathentry kind="lib" path="jars/jetty-all-9.2.14.v20151106.jar"/>
 	<classpathentry kind="lib" path="jars/commons-math3-3.4.1.jar"/>
 	<classpathentry kind="lib" path="jars/trove-3.0.2.jar"/>
-	<classpathentry kind="lib" path="jars/lucene/lucene-analyzers-common-6.1.0.jar"/>
-	<classpathentry kind="lib" path="jars/lucene/lucene-core-6.1.0.jar" sourcepath="/lucene-solr-6.1.0"/>
-	<classpathentry kind="lib" path="jars/lucene/lucene-facet-6.1.0.jar" sourcepath="/lucene-solr-6.1.0"/>
-	<classpathentry kind="lib" path="jars/lucene/lucene-queries-6.1.0.jar" sourcepath="/lucene-solr-6.1.0"/>
-	<classpathentry kind="lib" path="jars/lucene/lucene-suggest-6.1.0.jar" sourcepath="/lucene-solr-6.1.0"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/lucene-solr-6.5.0"/>
 	<classpathentry kind="output" path="ecl-bin"/>
 </classpath>

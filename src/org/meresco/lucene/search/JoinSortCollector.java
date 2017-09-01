@@ -65,7 +65,7 @@ public class JoinSortCollector extends SimpleCollector {
         this.otherKeyName = otherKeyName;
     }
 
-    public FieldComparator<?> getComparator(String field, Type type, boolean reverse, final int numHits, final int sortPos, Object missingValue) throws IOException {
+    public FieldComparator<?> getComparator(String field, Type type, boolean reverse, final int numHits, final int sortPos, Object missingValue) {
         switch(type) {
             case STRING:
                 return new JoinTermOrdValComparator(numHits, field, missingValue == SortField.STRING_LAST, this);

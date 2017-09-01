@@ -27,19 +27,22 @@
 
 package org.meresco.lucene.test;
 
-import org.apache.lucene.index.LeafReader;
+import java.io.IOException;
+
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.util.Bits;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.BinaryDocValues;
-import java.io.IOException;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.util.Bits;
+
 
 public class DummyIndexReader {
     public static LeafReader dummyIndexReader(final int maxDoc) {
@@ -133,6 +136,11 @@ public class DummyIndexReader {
 
             @Override
             public PointValues getPointValues() {
+                return null;
+            }
+
+            @Override
+            public Sort getIndexSort() {
                 return null;
             }
         };

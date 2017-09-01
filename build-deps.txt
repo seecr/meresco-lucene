@@ -1,5 +1,5 @@
-jcc (>= 2.21)
-jcc (<< 2.22)
+jcc (>= 3.0)
+jcc (<< 3.1)
 python-setuptools
 gcc
 #centos7:gcc-c++

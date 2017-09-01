@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2017 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -96,7 +96,8 @@ public class DocumentStringToDocument {
             case "NoTermsFrequencyField":
                 fields.add(new Field(name, jsonField.getString("value"), NO_TERMS_FREQUENCY_FIELD));
                 break;
-            case "IntField":
+            case "IntPoint":
+            case "IntField":  // for backwards compatibility
                 int intValue = jsonField.getInt("value");
                 if (jsonField.getBoolean("sort", false)) {
                     fields.add(new NumericDocValuesField(name, intValue));
@@ -106,7 +107,8 @@ public class DocumentStringToDocument {
                     fields.add(new IntPoint(name, intValue));
                 }
                 break;
-            case "DoubleField":
+            case "DoublePoint":
+            case "DoubleField":  // for backwards compatibility
                 double doubleValue = jsonField.getJsonNumber("value").doubleValue();
                 if (jsonField.getBoolean("sort", false)) {
                     fields.add(new NumericDocValuesField(name, NumericUtils.doubleToSortableLong(doubleValue)));
@@ -116,7 +118,8 @@ public class DocumentStringToDocument {
                     fields.add(new DoublePoint(name, doubleValue));
                 }
                 break;
-            case "LongField":
+            case "LongPoint":
+            case "LongField":  // for backwards compatibility
                 long longValue = jsonField.getJsonNumber("value").longValue();
                 if (jsonField.getBoolean("sort", false)) {
                     fields.add(new NumericDocValuesField(name, longValue));

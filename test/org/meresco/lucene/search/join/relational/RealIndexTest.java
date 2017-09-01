@@ -12,6 +12,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.meresco.lucene.ComposedQuery;
 import org.meresco.lucene.JsonQueryConverter;
@@ -47,7 +48,7 @@ public class RealIndexTest extends SeecrTestCase {
         this.multiLucene = new MultiLucene(Arrays.asList(luceneSummary, luceneHolding, luceneRank));
     }
 
-    //@Ignore("requires live index")
+    @Ignore("requires live index")
     @Test
     public void testQuery() throws Throwable {
         Query warmupFilter = new WrappedRelationalQuery(

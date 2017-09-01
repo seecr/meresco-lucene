@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2017 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -201,6 +201,10 @@ INTFIELD_STORED = _FieldDefinition("IntField",
     isUntokenized=False,
     phraseQueryPossible=False,
     stored=True)
+INTPOINT = _FieldDefinition("IntPoint",
+    pythonType=int,
+    isUntokenized=False,
+    phraseQueryPossible=False)
 LONGFIELD = _FieldDefinition("LongField",
     pythonType=long,
     isUntokenized=False,
@@ -210,6 +214,10 @@ LONGFIELD_STORED = _FieldDefinition("LongField",
     isUntokenized=False,
     phraseQueryPossible=False,
     stored=True)
+LONGPOINT = _FieldDefinition("LongPoint",
+    pythonType=long,
+    isUntokenized=False,
+    phraseQueryPossible=False)
 DOUBLEFIELD = _FieldDefinition("DoubleField",
     pythonType=float,
     isUntokenized=False,
@@ -219,6 +227,10 @@ DOUBLEFIELD_STORED = _FieldDefinition("DoubleField",
     isUntokenized=False,
     phraseQueryPossible=False,
     stored=True)
+DOUBLEPOINT = _FieldDefinition("DoublePoint",
+    pythonType=float,
+    isUntokenized=False,
+    phraseQueryPossible=False)
 NUMERICFIELD = _FieldDefinition("NumericField",
     pythonType=long,
     isUntokenized=False,

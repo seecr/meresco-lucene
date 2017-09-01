@@ -2,7 +2,7 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2017 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -36,8 +36,8 @@ import org.apache.lucene.analysis.miscellaneous.RemoveDuplicatesTokenFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.tartarus.snowball.ext.DutchStemmer;
 
-public class MerescoDutchStemmingAnalyzer extends MerescoStandardAnalyzer {
 
+public class MerescoDutchStemmingAnalyzer extends MerescoStandardAnalyzer {
     private List<String> stemmingFields = null;
 
     public MerescoDutchStemmingAnalyzer(String[] stemmingFields) {
@@ -53,7 +53,7 @@ public class MerescoDutchStemmingAnalyzer extends MerescoStandardAnalyzer {
         tok = new RemoveDuplicatesTokenFilter(tok); // removes one if keyword and term are still the same
         return tok;
     }
-    
+
     public String[] getStemmingFields() {
         return this.stemmingFields.toArray(new String[0]);
     }

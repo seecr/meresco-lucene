@@ -26,13 +26,11 @@
 
 package org.meresco.lucene.search;
 
-import java.io.IOException;
-
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
 
-public class JoinSortField extends SortField {
 
+public class JoinSortField extends SortField {
     private JoinSortCollector joinSortCollector;
     private String coreName;
 
@@ -40,12 +38,13 @@ public class JoinSortField extends SortField {
         super(field, type, reverse);
         this.coreName = coreName;
     }
-    
+
     public void setCollector(JoinSortCollector collector) {
         this.joinSortCollector = collector;
     }
-    
-    public FieldComparator<?> getComparator(final int numHits, final int sortPos) throws IOException {
+
+    @Override
+    public FieldComparator<?> getComparator(final int numHits, final int sortPos) {
         return this.joinSortCollector.getComparator(this.getField(), this.getType(), this.getReverse(), numHits, sortPos, this.missingValue);
     }
 

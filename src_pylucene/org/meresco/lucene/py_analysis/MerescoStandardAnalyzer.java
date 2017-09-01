@@ -2,7 +2,7 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2013-2017 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -39,10 +39,11 @@ import org.apache.lucene.analysis.standard.ClassicFilter;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
-public class MerescoStandardAnalyzer {
 
+public class MerescoStandardAnalyzer {
     public List<String> pre_analyse(String fieldName, String string) throws IOException {
-        final ClassicTokenizer src = new ClassicTokenizer(new StringReader(string));
+        final ClassicTokenizer src = new ClassicTokenizer();
+        src.setReader(new StringReader(string));
         TokenStream tok = new ClassicFilter(src);
         tok = new ASCIIFoldingFilter(tok);
         tok = new LowerCaseFilter(tok);
@@ -50,7 +51,7 @@ public class MerescoStandardAnalyzer {
     }
 
     public List<String> post_analyse(String fieldName, String string) throws IOException {
-        ClassicTokenizer src = new ClassicTokenizer(new StringReader(string));
+        ClassicTokenizer src = new ClassicTokenizer();
         src.setReader(new StringReader(string));
         TokenStream tok = this.post_analyzer(fieldName, src);
         return this.readTokenStream(tok);
@@ -65,7 +66,7 @@ public class MerescoStandardAnalyzer {
         CharTermAttribute termAtt = tok.addAttribute(CharTermAttribute.class);
         try {
             tok.reset();
-            while( tok.incrementToken()) {
+            while (tok.incrementToken()) {
                 terms.add(termAtt.toString());
             }
             tok.end();

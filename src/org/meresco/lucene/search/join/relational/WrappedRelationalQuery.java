@@ -15,7 +15,7 @@ public class WrappedRelationalQuery extends Query {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) {
         throw new UnsupportedOperationException();
     }
 

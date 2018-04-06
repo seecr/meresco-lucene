@@ -3,7 +3,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013, 2015-2017 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015-2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -74,7 +74,7 @@ if [ ! -f ${JUNIT} ]; then
 fi
 
 JARS=$(find ../jars -type f -name "*.jar")
-LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*-6.5.*.jar")
+LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*-7.3.*.jar")
 
 CP="$JUNIT:$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':'):../build"
 
@@ -86,6 +86,8 @@ if [ -f /etc/debian_version ]; then
     javac=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64/bin/javac
 fi
 javaFiles=$(find ../src -name "*.java")
+
+echo "Compiling with classpath $CP"
 ${javac} -d ${BUILDDIR} -cp $CP $javaFiles
 if [ "$?" != "0" ]; then
     echo "Build failed"

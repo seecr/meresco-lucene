@@ -29,23 +29,24 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
+
 public class TermFrequencySimilarity extends Similarity {
 
     @Override
     public long computeNorm(FieldInvertState state) {
-        return (long) (1000 * state.getBoost()); // in milliboosts ;-)
+        return 1L;  // ???
     }
 
     @Override
-    public SimWeight computeWeight(CollectionStatistics collectionStats, TermStatistics... termStats) {
-        return new TermFrequencySimilarityWeight();
+    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+        return new TermFrequencySimilarityWeight(boost);
     }
 
     @Override
@@ -70,18 +71,12 @@ public class TermFrequencySimilarity extends Similarity {
         };
     }
 
+
     class TermFrequencySimilarityWeight extends SimWeight {
         float queryBoost;
 
-        @Override
-        public float getValueForNormalization() {
-            return 1.0f;
-        }
-
-        @Override
-        public void normalize(float queryNorm, float boost) {
+        public TermFrequencySimilarityWeight(float boost) {
             this.queryBoost = boost;
         }
     }
-
 }

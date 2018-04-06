@@ -32,12 +32,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import org.apache.lucene.index.IndexReader.CacheKey;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 
+
 public class KeyValuesCache {
-    private static Map<Object, Map<String, CacheValue>> cache = new WeakHashMap<Object, Map<String, CacheValue>>();
+    private static Map<Object, Map<String, CacheValue>> cache = new WeakHashMap<>();
 
     public static int[] get(LeafReaderContext context, String keyName) throws IOException {
         LeafReader reader = context.reader();
@@ -52,16 +54,19 @@ public class KeyValuesCache {
             return keyValues;
         }
         for (int i = 0; i <  reader.maxDoc(); i++) {
-            keyValues[i] = (int) ndv.get(i);
+            if (ndv.advanceExact(i)) {
+                keyValues[i] = (int) ndv.longValue();
+            }
         }
         return keyValues;
     }
 
     private static synchronized CacheValue safeGet(LeafReader reader, String keyName) {
-        Map<String, CacheValue> fieldCache = cache.get(reader.getCoreCacheKey());
+        CacheKey cacheKey = reader.getCoreCacheHelper().getKey();
+        Map<String, CacheValue> fieldCache = cache.get(cacheKey);
         if (fieldCache == null) {
-            fieldCache = new HashMap<String, CacheValue>();
-            KeyValuesCache.cache.put(reader.getCoreCacheKey(), fieldCache);
+            fieldCache = new HashMap<>();
+            KeyValuesCache.cache.put(cacheKey, fieldCache);
         }
         CacheValue cacheValue = fieldCache.get(keyName);
         if (cacheValue == null) {
@@ -72,6 +77,7 @@ public class KeyValuesCache {
         return cacheValue;
     }
 }
+
 
 class CacheValue {
     int[] keyValues;

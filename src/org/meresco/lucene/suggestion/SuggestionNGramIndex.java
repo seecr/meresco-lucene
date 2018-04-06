@@ -178,7 +178,7 @@ public class SuggestionNGramIndex {
     }
 
     public static List<String> ngrams(String s, Boolean trigram) throws IOException {
-        List<String> ngram = new ArrayList<String>();
+        List<String> ngram = new ArrayList<>();
         Analyzer ngramAnalyzer = trigram ? TRIGRAM_ANALYZER : BIGRAM_ANALYZER;
         TokenStream stream = ngramAnalyzer.tokenStream("ignored", s);
         stream.reset();
@@ -244,7 +244,7 @@ public class SuggestionNGramIndex {
                 builder.add(keySetFilter, Occur.FILTER);
             }
             TopDocs t = searcher.search(builder.build(), limit);
-            Suggestion[] suggestions = new Suggestion[t.totalHits < limit ? t.totalHits : limit];
+            Suggestion[] suggestions = new Suggestion[t.totalHits < limit ? (int) t.totalHits : limit];
             int i = 0;
             for (ScoreDoc d : t.scoreDocs) {
                 Document doc = searcher.doc(d.doc);

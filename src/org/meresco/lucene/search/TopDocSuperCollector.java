@@ -52,7 +52,7 @@ public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubColle
         return TopDocs.merge(this.sort, start, this.numHits - start, (TopFieldDocs[]) topdocs, true);
     }
 
-    public int getTotalHits() throws IOException {
+    public long getTotalHits() throws IOException {
         return this.topDocs(0).totalHits;
     }
 }

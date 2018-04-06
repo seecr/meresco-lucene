@@ -30,7 +30,6 @@ package org.meresco.lucene.search.join;
 import java.io.IOException;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.lang.Math;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -42,7 +41,7 @@ import org.meresco.lucene.search.SuperCollector;
 
 public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     final String keyName;
-    final BlockingDeque<byte[]> arrayPool = new LinkedBlockingDeque<byte[]>();
+    final BlockingDeque<byte[]> arrayPool = new LinkedBlockingDeque<>();
     private byte[] scores;
 
     public ScoreSuperCollector(String keyName) {
@@ -115,6 +114,7 @@ class ScoreSubCollector extends SubCollector {
     @Override
     public void collect(int doc) throws IOException {
         if (this.keyValues != null) {
+
             int value = (int) this.keyValues.get(doc);
             if (value > 0) {
                 if (value >= this.scores.length) {

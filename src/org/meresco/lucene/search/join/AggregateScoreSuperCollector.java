@@ -138,13 +138,14 @@ class AggregateSuperScorer extends Scorer {
         this.keyValues = keyValues;
     }
 
+    @Override
     public float score() throws IOException {
         float score = 1.0f;
         int docId = this.docID();
         int key = this.keyValues != null ? this.keyValues[docId] : 0;
         for (ScoreSuperCollector sc : this.otherScoreCollectors) {
             float otherScore = sc.score(key);
-            score *= (float) (1 + otherScore);
+            score *= 1 + otherScore;
         }
 
         /*
@@ -155,10 +156,7 @@ class AggregateSuperScorer extends Scorer {
         return (1.0f - this.otherScoreRatio) * this.scorer.score() + this.otherScoreRatio * score;
     }
 
-    public int freq() throws IOException {
-        return this.scorer.freq();
-    }
-
+    @Override
     public int docID() {
         return this.scorer.docID();
     }

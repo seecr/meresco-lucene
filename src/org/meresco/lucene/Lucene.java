@@ -233,7 +233,7 @@ public class Lucene {
 
     public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Query> filters, List<AggregateScoreSuperCollector> scoreCollectors,
             Collection<KeySuperCollector> keyCollectors) throws Throwable {
-        int totalHits;
+        long totalHits;
         List<LuceneResponse.Hit> hits;
         Collectors collectors = null;
         Map<String, Long> times = new HashMap<>();
@@ -317,7 +317,7 @@ public class Lucene {
     }
 
     private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader, ClusterConfig clusterConfig) throws Exception {
-        int totalHits = collectors.topCollector.getTotalHits();
+        long totalHits = collectors.topCollector.getTotalHits();
         TopDocs topDocs = collectors.topCollector.topDocs(q.start);
 
         MerescoClusterer clusterer = new MerescoClusterer(indexReader, clusterConfig, this.getSettings().interpolateEpsilon, totalHits, q.stop - q.start);
@@ -368,7 +368,7 @@ public class Lucene {
     }
 
     private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws Exception {
-        int totalHits = collectors.topCollector.getTotalHits();
+        long totalHits = collectors.topCollector.getTotalHits();
 
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;
 

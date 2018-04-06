@@ -11,6 +11,6 @@
 	<classpathentry kind="lib" path="jars/commons-math3-3.4.1.jar"/>
 	<classpathentry kind="lib" path="jars/trove-3.0.2.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/lucene-solr-6.5.0"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/lucene-solr-7.3.0"/>
 	<classpathentry kind="output" path="ecl-bin"/>
 </classpath>

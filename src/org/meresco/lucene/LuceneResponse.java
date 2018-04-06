@@ -47,7 +47,7 @@ import org.meresco.lucene.search.MerescoCluster.TermScore;
 
 
 public class LuceneResponse {
-    public int total;
+    public long total;
     public Integer totalWithDuplicates;
     public List<Hit> hits = new ArrayList<>();
     public List<DrilldownData> drilldownData = new ArrayList<>();
@@ -56,12 +56,12 @@ public class LuceneResponse {
     public Map<String, Long> times = new HashMap<>();
     public FixedBitSet keys;
 
-    public LuceneResponse(int totalHits) {
-        total = totalHits;
+    public LuceneResponse(long totalHits) {
+        this.total = totalHits;
     }
 
     public void addHit(Hit hit) {
-        hits.add(hit);
+        this.hits.add(hit);
     }
 
 
@@ -80,6 +80,7 @@ public class LuceneResponse {
             return id.compareTo(o.id);
         }
 
+        @Override
         public String toString() {
         	return "Hit(" + id + ", " + score + ")";
         }
@@ -121,6 +122,7 @@ public class LuceneResponse {
             this.fieldname = fieldname;
         }
 
+        @Override
         public boolean equals(Object object) {
             if(object instanceof DrilldownData){
                 DrilldownData ddObject = (DrilldownData) object;
@@ -140,6 +142,7 @@ public class LuceneResponse {
                 this.count = count;
             }
 
+            @Override
             public boolean equals(Object object) {
                 if(object instanceof Term){
                     Term term = (Term) object;

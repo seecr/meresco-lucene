@@ -151,22 +151,42 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator impl
         return new SortedDocValues() {
 
             @Override
-            public int getOrd(int docID) {
+            public int ordValue() throws IOException {
                 return -1;
             }
 
             @Override
-            public int lookupTerm(BytesRef key) {
-                return -1;
-            }
-
-            @Override
-            public BytesRef lookupOrd(int ord) {
+            public BytesRef lookupOrd(int ord) throws IOException {
                 return null;
             }
 
             @Override
             public int getValueCount() {
+                return 0;
+            }
+
+            @Override
+            public boolean advanceExact(int target) throws IOException {
+                return false;
+            }
+
+            @Override
+            public int docID() {
+                return 0;
+            }
+
+            @Override
+            public int nextDoc() throws IOException {
+                return 0;
+            }
+
+            @Override
+            public int advance(int target) throws IOException {
+                return 0;
+            }
+
+            @Override
+            public long cost() {
                 return 0;
             }
         };
@@ -180,17 +200,29 @@ class JoinTermOrdValComparator extends FieldComparator.TermOrdValComparator impl
 
     @Override
     public int compareBottom(int doc) {
-        return super.compareBottom(this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this));
+        try {
+            return super.compareBottom(this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public int compareTop(int doc) {
-        return super.compareTop(this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this));
+        try {
+            return super.compareTop(this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public void copy(int slot, int doc) {
-        super.copy(slot, this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this));
+        try {
+            super.copy(slot, this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -254,7 +286,11 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
         int otherDoc = this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this);
         if (otherDoc == -1)
             return Integer.compare(this.bottomValue, this.missingValue);
-        return super.compareBottom(otherDoc);
+        try {
+            return super.compareBottom(otherDoc);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -262,7 +298,11 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
         int otherDoc = this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this);
         if (otherDoc == -1)
             return Integer.compare(this.topValue, this.missingValue);
-        return super.compareTop(otherDoc);
+        try {
+            return super.compareTop(otherDoc);
+        } catch (IOException e) {
+           throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -272,7 +312,11 @@ class JoinIntComparator extends FieldComparator.IntComparator implements JoinFie
             values[slot] = this.missingValue;
         }
         else {
-            super.copy(slot, otherDoc);
+            try {
+                super.copy(slot, otherDoc);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -340,7 +384,11 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
         int otherDoc = this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this);
         if (otherDoc == -1)
             return Double.compare(this.bottomValue, this.missingValue);
-        return super.compareBottom(otherDoc);
+        try {
+            return super.compareBottom(otherDoc);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -348,7 +396,11 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
         int otherDoc = this.collector.otherDocIdForKey(this.resultKeys != null ? this.resultKeys[doc] : 0, this);
         if (otherDoc == -1)
             return Double.compare(this.topValue, this.missingValue);
-        return super.compareTop(otherDoc);
+        try {
+            return super.compareTop(otherDoc);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -358,7 +410,11 @@ class JoinDoubleComparator extends FieldComparator.DoubleComparator implements J
             values[slot] = this.missingValue;
         }
         else {
-            super.copy(slot, otherDoc);
+            try {
+                super.copy(slot, otherDoc);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

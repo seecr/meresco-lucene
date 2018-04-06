@@ -43,8 +43,8 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.IntsRef;
 
-public class MerescoTaxonomyFacetCounts extends TaxonomyFacets {
 
+public class MerescoTaxonomyFacetCounts extends TaxonomyFacets {
     private final List<OrdinalsReader> ordinalsReaders;
     private FacetsCollector fc;
     private int[] values;
@@ -83,15 +83,17 @@ public class MerescoTaxonomyFacetCounts extends TaxonomyFacets {
         rollup();
     }
 
+    @Override
     protected FacetsConfig.DimConfig verifyDim(String dim) {
         return this.config.getDimConfig(dim);
     }
-    
+
 
     /** Rolls up any single-valued hierarchical dimensions. */
     protected void rollup() throws IOException {
+      int[] children = getChildren();
       // Rollup any necessary dims:
-      for(Map.Entry<String,DimConfig> ent : config.getDimConfigs().entrySet()) {
+      for (Map.Entry<String,DimConfig> ent : config.getDimConfigs().entrySet()) {
         String dim = ent.getKey();
         DimConfig ft = ent.getValue();
         if (ft.hierarchical && ft.multiValued == false) {
@@ -106,14 +108,20 @@ public class MerescoTaxonomyFacetCounts extends TaxonomyFacets {
     }
 
     private int rollup(int ord) {
-      int sum = 0;
-      while (ord != TaxonomyReader.INVALID_ORDINAL) {
-        int childValue = values[ord] + rollup(children[ord]);
-        values[ord] = childValue;
-        sum += childValue;
-        ord = siblings[ord];
-      }
-      return sum;
+        try {
+            int[] children = getChildren();
+            int[] siblings = getSiblings();
+            int sum = 0;
+            while (ord != TaxonomyReader.INVALID_ORDINAL) {
+                int childValue = values[ord] + rollup(children[ord]);
+                values[ord] = childValue;
+                sum += childValue;
+                ord = siblings[ord];
+            }
+            return sum;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -148,15 +156,17 @@ public class MerescoTaxonomyFacetCounts extends TaxonomyFacets {
       }
 
       TopOrdAndIntQueue q = new TopOrdAndIntQueue(Math.min(taxoReader.getSize(), topN));
-      
+
       int bottomValue = 0;
 
-      int ord = children[dimOrd];
+      int ord = getChildren()[dimOrd];
+      int[] siblings = getSiblings();
+
       int totValue = 0;
       int childCount = 0;
 
       TopOrdAndIntQueue.OrdAndValue reuse = null;
-      while(ord != TaxonomyReader.INVALID_ORDINAL) {
+      while (ord != TaxonomyReader.INVALID_ORDINAL) {
         if (values[ord] > 0) {
           totValue += values[ord];
           childCount++;
@@ -200,5 +210,4 @@ public class MerescoTaxonomyFacetCounts extends TaxonomyFacets {
 
       return new FacetResult(dim, path, totValue, labelValues, childCount);
     }
-
 }

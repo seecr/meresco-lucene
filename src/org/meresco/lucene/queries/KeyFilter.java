@@ -58,8 +58,8 @@ public class KeyFilter extends Query {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores) {
-        return new ConstantScoreWeight(this) {
+    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) {
+        return new ConstantScoreWeight(this, 1.0f) {  // JPM: simply ignore boost for filter?!?
             @Override
             public Scorer scorer(LeafReaderContext context) throws IOException {
                 return new ConstantScoreScorer(this, score(), new DocIdSetIterator() {
@@ -114,6 +114,11 @@ public class KeyFilter extends Query {
                     }
                });
            }
+
+            @Override
+            public boolean isCacheable(LeafReaderContext ctx) {
+                return true;
+            }
        };
     }
 

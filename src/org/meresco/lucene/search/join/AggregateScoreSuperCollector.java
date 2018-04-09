@@ -145,7 +145,7 @@ class AggregateSuperScorer extends Scorer {
         int key = this.keyValues != null ? this.keyValues[docId] : 0;
         for (ScoreSuperCollector sc : this.otherScoreCollectors) {
             float otherScore = sc.score(key);
-            score *= 1 + otherScore;
+            score *= (1 + otherScore);
         }
 
         /*

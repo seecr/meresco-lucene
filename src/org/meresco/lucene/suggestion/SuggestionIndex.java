@@ -59,7 +59,7 @@ public class SuggestionIndex {
     private static final String RECORD_VALUE_FIELDNAME = "__record_value__";
     private static final String KEY_FIELDNAME = "__key__";
     private static int MAX_COMMIT_COUNT_SUGGESTION = 1000000;
-    
+
     public static final FieldType SIMPLE_NOT_STORED_STRING_FIELD = new FieldType();
     public static final FieldType SIMPLE_STORED_STRING_FIELD = new FieldType();
     static {
@@ -75,18 +75,18 @@ public class SuggestionIndex {
         SIMPLE_STORED_STRING_FIELD.setTokenized(false);
         SIMPLE_STORED_STRING_FIELD.freeze();
     }
-  
+
     public IndexingState indexingState = null;
-    
+
     private final IndexWriter writer;
     private final ShingleAnalyzer shingleAnalyzer;
     private final FSDirectory suggestionIndexDir;
     private final int maxCommitCount;
-    
+
     private int commitCount = 0;
 
-	private SuggestionNGramIndex suggestionNGramIndex;
-	private String suggestionNGramIndexDir;
+    private SuggestionNGramIndex suggestionNGramIndex;
+    private String suggestionNGramIndexDir;
     private Reader currentReader;
     private Map<String, Bits> filterKeySets = new HashMap<>();
 
@@ -124,70 +124,69 @@ public class SuggestionIndex {
         this.writer.deleteDocuments(new Term(ID_FIELD, identifier));
         maybeCommitAfterUpdate();
     }
-    
+
     public void registerFilterKeySet(String name, Bits keySet) throws IOException {
         this.filterKeySets.put(name, keySet);
     }
 
     public synchronized void createSuggestionNGramIndex(boolean wait, final boolean verbose) throws IOException {
-    	this.commit();
+        this.commit();
+        Thread create = new Thread(){
+            @Override
+            public void run() {
+                indexingState = new IndexingState();
+                try {
+                    DirectoryReader reader = DirectoryReader.open(suggestionIndexDir);
+                    String tempDir = suggestionNGramIndexDir+"~";
+                    String tempTempDir = suggestionNGramIndexDir+"~~";
+                    deleteIndexDirectory(tempDir);
+                    deleteIndexDirectory(tempTempDir);
+                    SuggestionNGramIndex newSuggestionNGramIndex = new SuggestionNGramIndex(tempDir, MAX_COMMIT_COUNT_SUGGESTION);
+                    newSuggestionNGramIndex.createSuggestions(reader, RECORD_VALUE_FIELDNAME, KEY_FIELDNAME, indexingState);
+                    newSuggestionNGramIndex.close();
+                    reader.close();
+                    suggestionNGramIndex.close();
+                    new File(suggestionNGramIndexDir).renameTo(new File(tempTempDir));
+                    new File(tempDir).renameTo(new File(suggestionNGramIndexDir));
 
-    	Thread create = new Thread(){
-	    	public void run() {
-	    		indexingState = new IndexingState();
-		    	try {
-		    		DirectoryReader reader = DirectoryReader.open(suggestionIndexDir);
-		    		String tempDir = suggestionNGramIndexDir+"~";
-		    		String tempTempDir = suggestionNGramIndexDir+"~~";
-		    		deleteIndexDirectory(tempDir);
-		    		deleteIndexDirectory(tempTempDir);
-		    		SuggestionNGramIndex newSuggestionNGramIndex = new SuggestionNGramIndex(tempDir, MAX_COMMIT_COUNT_SUGGESTION);
-		    		newSuggestionNGramIndex.createSuggestions(reader, RECORD_VALUE_FIELDNAME, KEY_FIELDNAME, indexingState);
-		    		newSuggestionNGramIndex.close();
-		        	reader.close();
-		        	suggestionNGramIndex.close();
-		        	new File(suggestionNGramIndexDir).renameTo(new File(tempTempDir));
-		        	new File(tempDir).renameTo(new File(suggestionNGramIndexDir));
+                    suggestionNGramIndex = new SuggestionNGramIndex(suggestionNGramIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
+                    deleteIndexDirectory(tempTempDir);
 
-		        	suggestionNGramIndex = new SuggestionNGramIndex(suggestionNGramIndexDir, MAX_COMMIT_COUNT_SUGGESTION);
-		        	deleteIndexDirectory(tempTempDir);
-
-		        	if (currentReader != null)
-		        	    currentReader.reopen();
-		        	else
-		        	    createSuggestionsReader();
-		        } catch (IOException e) {
-					e.printStackTrace();
-				} finally {
-					long totalTime = (System.currentTimeMillis() - indexingState.started) / 1000;
-					long averageSpeed = totalTime > 0 ? indexingState.count / totalTime : 0;
+                    if (currentReader != null)
+                        currentReader.reopen();
+                    else
+                        createSuggestionsReader();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    long totalTime = (System.currentTimeMillis() - indexingState.started) / 1000;
+                    long averageSpeed = totalTime > 0 ? indexingState.count / totalTime : 0;
                     if (verbose) {
-    					System.out.println("Creating " + indexingState.count + " suggestions took: " + totalTime + "s" + "; Average: " + averageSpeed + "/s");
-    			        System.out.flush();
+                        System.out.println("Creating " + indexingState.count + " suggestions took: " + totalTime + "s" + "; Average: " + averageSpeed + "/s");
+                        System.out.flush();
                     }
-			        indexingState = null;
-				}
+                    indexingState = null;
+                }
+            }
 
-		    }
-
-			private void deleteIndexDirectory(String dir) {
-				File[] files = new File(dir).listFiles();
-				if (files != null) {
-					for(File currentFile: new File(dir).listFiles()) {
-				    	currentFile.delete();
-					}
-					new File(dir).delete();
-				}
-			}
-    	};
-    	if (wait)
-    		create.run();
-    	else
-    		create.start();
+            private void deleteIndexDirectory(String dir) {
+                File[] files = new File(dir).listFiles();
+                if (files != null) {
+                    for(File currentFile: new File(dir).listFiles()) {
+                        currentFile.delete();
+                    }
+                    new File(dir).delete();
+                }
+            }
+        };
+        if (wait)
+            create.run();
+        else
+            create.start();
     }
 
     public IndexingState indexingState() {
-    	return indexingState;
+        return indexingState;
     }
 
     public int numDocs() throws IOException {
@@ -196,21 +195,21 @@ public class SuggestionIndex {
         reader.close();
         return numDocs;
     }
-    
+
     public long ngramIndexTimestamp(){
-    	return new File(suggestionNGramIndexDir).lastModified();
+        return new File(suggestionNGramIndexDir).lastModified();
     }
 
     public void createSuggestionsReader() throws IOException {
         this.currentReader = this.suggestionNGramIndex.createReader(this.filterKeySets);
     }
-    
+
     public SuggestionNGramIndex.Reader getSuggestionsReader() throws IOException {
         if (this.currentReader == null)
             createSuggestionsReader();
         return this.currentReader;
     }
-    
+
     private void maybeCommitAfterUpdate() throws IOException {
         this.commitCount++;
         if (this.commitCount >= this.maxCommitCount) {
@@ -229,7 +228,7 @@ public class SuggestionIndex {
     }
 
     public List<String> shingles(String s) throws IOException {
-        List<String> shingles = new ArrayList<String>();
+        List<String> shingles = new ArrayList<>();
         TokenStream stream = this.shingleAnalyzer.tokenStream("ignored", s);
         stream.reset();
         CharTermAttribute termAttribute = stream.getAttribute(CharTermAttribute.class);
@@ -241,12 +240,12 @@ public class SuggestionIndex {
     }
 
     public class IndexingState {
-    	public long started;
-    	public int count;
+        public long started;
+        public int count;
 
-    	public IndexingState() {
-    		started = System.currentTimeMillis();
-    		count = 0;
-    	}
+        public IndexingState() {
+            started = System.currentTimeMillis();
+            count = 0;
+        }
     }
 }

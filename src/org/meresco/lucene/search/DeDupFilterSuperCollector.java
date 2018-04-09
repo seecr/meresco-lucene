@@ -32,19 +32,18 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Scorer;
 
-public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubCollector> {
 
+public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubCollector> {
     private final String keyName;
     private final String sortByFieldName;
     private final SuperCollector<?> delegate;
-    ConcurrentHashMap<Long, AtomicReference<DeDupFilterSuperCollector.Key>> keys = new ConcurrentHashMap<Long, AtomicReference<DeDupFilterSuperCollector.Key>>();
+    ConcurrentHashMap<Long, AtomicReference<DeDupFilterSuperCollector.Key>> keys = new ConcurrentHashMap<>();
     private IndexReaderContext topLevelReaderContext = null;
 
     public DeDupFilterSuperCollector(String keyName, String sortByFieldName, SuperCollector<?> delegate) {
@@ -86,12 +85,16 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
         NumericDocValues docValues = context.reader().getNumericDocValues(this.keyName);
         if (docValues == null)
             return null;
-        long keyValue = docValues.get(docId - context.docBase);
+        if (!docValues.advanceExact(docId - context.docBase)) {
+            return null;
+        }
+        long keyValue = docValues.longValue();
         if (keyValue == 0)
             return null;
         return this.keys.get(keyValue).get();
     }
-    
+
+
     public static class Key {
         private int docId;
         private long sortByValue;
@@ -128,6 +131,7 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
     }
 }
 
+
 class DeDupFilterSubCollector extends SubCollector {
     private final SubCollector delegate;
     private ConcurrentHashMap<Long, AtomicReference<DeDupFilterSuperCollector.Key>> keys;
@@ -135,8 +139,8 @@ class DeDupFilterSubCollector extends SubCollector {
     private int currentDocBase;
     private final String keyName;
     private final String sortByFieldName;
-    private NumericDocValues sortByValues;
-    private NumericDocValues keyValues;
+    private NumericDocValuesRandomAccess sortByValues;
+    private NumericDocValuesRandomAccess keyValues;
     private int totalHits = 0;
     LeafReaderContext context;
 
@@ -153,16 +157,8 @@ class DeDupFilterSubCollector extends SubCollector {
         this.context = context;
         this.delegate.setNextReader(context);
         this.currentDocBase = context.docBase;
-        NumericDocValues kv = context.reader().getNumericDocValues(this.keyName);
-        if (kv == null)
-            kv = DocValues.emptyNumeric();
-        this.keyValues = kv;
-        NumericDocValues sbv = null;
-        if (this.sortByFieldName != null)
-            sbv = context.reader().getNumericDocValues(this.sortByFieldName);
-        if (sbv == null)
-            sbv = DocValues.emptyNumeric();
-        this.sortByValues = sbv;
+        this.keyValues = new NumericDocValuesRandomAccess(context.reader(), this.keyName);
+        this.sortByValues = new NumericDocValuesRandomAccess(context.reader(), this.sortByFieldName);
         this.delegate.setNextReader(context);
     }
 
@@ -182,7 +178,7 @@ class DeDupFilterSubCollector extends SubCollector {
 		int absDoc = this.currentDocBase + doc;
 		long sortByValue = this.sortByValues.get(doc);
 
-		AtomicReference<DeDupFilterSuperCollector.Key> ref = new AtomicReference<DeDupFilterSuperCollector.Key>();
+		AtomicReference<DeDupFilterSuperCollector.Key> ref = new AtomicReference<>();
 		AtomicReference<DeDupFilterSuperCollector.Key> newRef = this.keys.putIfAbsent(keyValue, ref);
 		if (newRef == null) {
 		    newRef = ref;

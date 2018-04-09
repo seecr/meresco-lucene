@@ -69,7 +69,10 @@ public class SuggestionNGramKeysFilter extends Query {
                     public int nextDoc() throws IOException {
                         this.docId++;
                         while (this.docId < this.maxDoc) {
-                            String keys = this.keysDocValues.get(this.docId).utf8ToString();
+                            if (!this.keysDocValues.advanceExact(this.docId)) {
+                                continue;
+                            }
+                            String keys = this.keysDocValues.binaryValue().utf8ToString();
                             for (String key: keys.split("\\|")) {
                                 if (keySet.get(Integer.parseInt(key))) {
                                     return this.docId;

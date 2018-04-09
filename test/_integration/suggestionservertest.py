@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2016, 2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
@@ -24,13 +24,15 @@
 #
 ## end license ##
 
+from StringIO import StringIO
+from struct import pack
+
+from simplejson import loads
 
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import postRequest, getRequest
-from simplejson import loads
-from org.apache.lucene.util import OpenBitSet
-from StringIO import StringIO
-from struct import pack
+
+from org.apache.lucene.util import FixedBitSet
 
 
 class SuggestionServerTest(IntegrationTestCase):
@@ -109,7 +111,7 @@ class SuggestionServerTest(IntegrationTestCase):
             header, body = postRequest(self.suggestionServerPort, '/suggest', data=data, parse=False)
             self.assertTrue("200 OK" in header.upper(), header + body)
             self.assertEqual([
-                {"suggestion": "harry", "type": "uri:book", "creator": 'rowling', "score": 0.5348455309867859},
+                {"suggestion": "harry", "type": "uri:book", "creator": 'rowling', "score": 0.5753641724586487},
             ], loads(body))
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
@@ -154,16 +156,16 @@ class SuggestionServerTest(IntegrationTestCase):
         self.assertTrue("count" in loads(body), body)
 
     def testRegisterKeySet(self):
-        keySet = OpenBitSet()
-        keySet.set(2L)
+        keySet = FixedBitSet(3)
+        keySet.set(2)
 
-        header, body = postRequest(self.suggestionServerPort, '/registerFilterKeySet?name=test', data=openBitSetAsBytes(keySet), parse=False)
+        header, body = postRequest(self.suggestionServerPort, '/registerFilterKeySet?name=test', data=fixedBitSetAsBytes(keySet), parse=False)
         self.assertTrue("200 OK" in header.upper(), header + body)
 
 
-def openBitSetAsBytes(bitSet):
+def fixedBitSetAsBytes(bitSet):
     s = StringIO()
-    s.write(pack('>i', bitSet.getNumWords()))
+    s.write(pack('>i', bitSet.length()))
     bits = bitSet.getBits()
     s.write(pack('>i', len(bits)))
     for i in xrange(0, len(bits)):

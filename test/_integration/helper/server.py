@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016, 2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -34,7 +34,7 @@ from sys import stdout
 from weightless.http import HttpRequest1_1, SocketPool
 from weightless.io import Reactor
 from weightless.core import compose, be
-from meresco.core import Observable, TransactionScope
+from meresco.core import Observable, TransactionScope, Transparent
 from meresco.core.processtools import setSignalHandlers
 from meresco.components import Xml2Fields, Venturi, XmlPrintLxml, FilterField, RenameField, FilterMessages, TransformFieldValue, ParseArguments
 from meresco.components.http import StringServer, ObservableHttpServer, BasicHttpHandler, ApacheLogger, PathFilter, PathRename, FileServer
@@ -59,6 +59,14 @@ from org.meresco.lucene.py_analysis import MerescoDutchStemmingAnalyzer
 myPath = abspath(dirname(__file__))
 dynamicPath = join(myPath, 'html', 'dynamic')
 staticPath = join(myPath, 'html', 'static')
+
+
+class RetrieveDataToGetData(Transparent):
+    def retrieveData(self, **kwargs):
+        data = self.call.getData(**kwargs)
+        raise StopIteration(data)
+        yield
+
 
 def uploadHelix(lucene, storageComponent, drilldownFields, fieldRegistry):
     indexHelix = (Fields2LuceneDoc('record', fieldRegistry=fieldRegistry),
@@ -155,8 +163,10 @@ def main(reactor, port, serverPort, autocompletePort, databasePath, **kwargs):
             (http11_request,)
         )
     storageComponent = be(
-        (StorageComponentAdapter(),
-            (MultiSequentialStorage(directory=join(databasePath, 'storage')),)
+        (RetrieveDataToGetData(),
+            (StorageComponentAdapter(),
+                (MultiSequentialStorage(directory=join(databasePath, 'storage')),)
+            )
         )
     )
 

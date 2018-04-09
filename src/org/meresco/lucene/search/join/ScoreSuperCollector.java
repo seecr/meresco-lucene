@@ -32,9 +32,9 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.SmallFloat;
+import org.meresco.lucene.search.NumericDocValuesRandomAccess;
 import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
 
@@ -90,10 +90,11 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     }
 }
 
+
 class ScoreSubCollector extends SubCollector {
     private byte[] scores = new byte[0];
     private Scorer scorer;
-    private NumericDocValues keyValues;
+    private NumericDocValuesRandomAccess keyValues;
     private final ScoreSuperCollector parent;
 
     public ScoreSubCollector(ScoreSuperCollector parent) throws IOException {
@@ -108,20 +109,17 @@ class ScoreSubCollector extends SubCollector {
 
     @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
-        this.keyValues = context.reader().getNumericDocValues(parent.keyName);
+        this.keyValues = new NumericDocValuesRandomAccess(context.reader(), parent.keyName);
     }
 
     @Override
     public void collect(int doc) throws IOException {
-        if (this.keyValues != null) {
-
-            int value = (int) this.keyValues.get(doc);
-            if (value > 0) {
-                if (value >= this.scores.length) {
-                    this.scores = ScoreSuperCollector.resize(this.scores, (int) ((value + 1) * 1.25));
-                }
-                this.scores[value] = SmallFloat.floatToByte315(scorer.score());
+        int value = (int) this.keyValues.get(doc);
+        if (value > 0) {
+            if (value >= this.scores.length) {
+                this.scores = ScoreSuperCollector.resize(this.scores, (int) ((value + 1) * 1.25));
             }
+            this.scores[value] = SmallFloat.floatToByte315(scorer.score());
         }
     }
 

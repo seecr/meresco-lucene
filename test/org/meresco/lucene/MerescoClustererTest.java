@@ -55,7 +55,7 @@ public class MerescoClustererTest extends SeecrTestCase {
     private Lucene lucene;
 
     @Override
-	@Before
+    @Before
     public void setUp() throws Exception {
         super.setUp();
         Document doc;
@@ -85,7 +85,7 @@ public class MerescoClustererTest extends SeecrTestCase {
     }
 
     @Override
-	@After
+    @After
     public void tearDown() throws Exception {
         lucene.close();
         super.tearDown();
@@ -93,8 +93,8 @@ public class MerescoClustererTest extends SeecrTestCase {
 
     @Test
     public void testClusterOnTermVectors() throws IOException, UninitializedException {
-    	ClusterConfig clusterConfig = new ClusterConfig().addStrategy(new ClusterStrategy(0.5, 1).addField("termvector.field", 1.0, null));
-    	MerescoClusterer merescoClusterer = new MerescoClusterer(getIndexReader(), clusterConfig);
+        ClusterConfig clusterConfig = new ClusterConfig().addStrategy(new ClusterStrategy(0.5, 1).addField("termvector.field", 1.0, null));
+        MerescoClusterer merescoClusterer = new MerescoClusterer(getIndexReader(), clusterConfig);
         for (int i = 0; i < 15; i++) {
             merescoClusterer.collect(i);
         }
@@ -131,8 +131,8 @@ public class MerescoClustererTest extends SeecrTestCase {
 
     @Test
     public void testClusteringWithFieldFilter() throws IOException, UninitializedException {
-    	ClusterConfig clusterConfig = new ClusterConfig().addStrategy(new ClusterStrategy(0.5, 1).addField("termvector.field", 1.0, "noot"));
-    	MerescoClusterer merescoClusterer = new MerescoClusterer(getIndexReader(), clusterConfig);
+        ClusterConfig clusterConfig = new ClusterConfig().addStrategy(new ClusterStrategy(0.5, 1).addField("termvector.field", 1.0, "noot"));
+        MerescoClusterer merescoClusterer = new MerescoClusterer(getIndexReader(), clusterConfig);
         for (int i = 0; i < 15; i++) {
             merescoClusterer.collect(i);
         }
@@ -162,16 +162,16 @@ public class MerescoClustererTest extends SeecrTestCase {
 
         InterpolateEpsilon interpolateEpsilon = new InterpolateEpsilon() {
             @Override
-            public double interpolateEpsilon(int hits, int sliceSize, double clusteringEps, int clusterMoreRecords) {
-            	assertEquals(100, hits);
-            	assertEquals(10, sliceSize);
-            	assertTrue(clusteringEps >= 0.4);
-            	assertEquals(42, clusterMoreRecords);
+            public double interpolateEpsilon(long hits, int sliceSize, double clusteringEps, int clusterMoreRecords) {
+                assertEquals(100, hits);
+                assertEquals(10, sliceSize);
+                assertTrue(clusteringEps >= 0.4);
+                assertEquals(42, clusterMoreRecords);
                 return clusteringEps;
             }
         };
         IndexReader indexReader = getIndexReader();
-    	MerescoClusterer merescoClusterer = new MerescoClusterer(indexReader, clusterConfig, interpolateEpsilon, 100, 10);
+        MerescoClusterer merescoClusterer = new MerescoClusterer(indexReader, clusterConfig, interpolateEpsilon, 100, 10);
         for (int i = 0; i < 15; i++) {
             merescoClusterer.collect(i);
         }
@@ -179,28 +179,28 @@ public class MerescoClustererTest extends SeecrTestCase {
 
         assertEquals(3, merescoClusterer.clusters.size());
         for (int i = 0; i < 15; i++) {
-        	String theID = indexReader.document(i).get(Lucene.ID_FIELD);
-        	MerescoCluster cluster = merescoClusterer.cluster(i);
-        	Set<String> ids = new HashSet<>();
-	        for (DocScore ds : cluster.topDocs) {
-	        	ids.add(indexReader.document(ds.docId).get(Lucene.ID_FIELD));
-	        }
-        	assertTrue(ids.contains(theID));
-        	int idOrd = Integer.valueOf(theID.split(":")[1]);
-        	if (0 <= idOrd && idOrd <= 4) {
-	        	assertEquals(new HashSet<String>(Arrays.asList("id:4", "id:0", "id:1", "id:2", "id:3")), ids);
-	        }
-        	else if (5 <= idOrd && idOrd <= 9) {
-	        	assertEquals(new HashSet<String>(Arrays.asList("id:8", "id:7", "id:6", "id:5", "id:9")), ids);
-	        }
-        	else {
-	        	assertEquals(new HashSet<String>(Arrays.asList("id:10", "id:11", "id:12", "id:13", "id:14")), ids);
-	        }
+            String theID = indexReader.document(i).get(Lucene.ID_FIELD);
+            MerescoCluster cluster = merescoClusterer.cluster(i);
+            Set<String> ids = new HashSet<>();
+            for (DocScore ds : cluster.topDocs) {
+                ids.add(indexReader.document(ds.docId).get(Lucene.ID_FIELD));
+            }
+            assertTrue(ids.contains(theID));
+            int idOrd = Integer.valueOf(theID.split(":")[1]);
+            if (0 <= idOrd && idOrd <= 4) {
+                assertEquals(new HashSet<>(Arrays.asList("id:4", "id:0", "id:1", "id:2", "id:3")), ids);
+            }
+            else if (5 <= idOrd && idOrd <= 9) {
+                assertEquals(new HashSet<>(Arrays.asList("id:8", "id:7", "id:6", "id:5", "id:9")), ids);
+            }
+            else {
+                assertEquals(new HashSet<>(Arrays.asList("id:10", "id:11", "id:12", "id:13", "id:14")), ids);
+            }
         }
     }
 
 
-	private IndexReader getIndexReader() throws IOException, UninitializedException {
-		return lucene.data.getManager().acquire().searcher.getIndexReader();
-	}
+    private IndexReader getIndexReader() throws IOException, UninitializedException {
+        return lucene.data.getManager().acquire().searcher.getIndexReader();
+    }
 }

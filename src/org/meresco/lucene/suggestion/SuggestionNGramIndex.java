@@ -48,6 +48,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
@@ -134,7 +135,11 @@ public class SuggestionNGramIndex {
 
 	private Long keyForDoc(int docId, List<LeafReaderContext> leaves, String keyFieldname) throws IOException {
 	    LeafReaderContext context = leaves.get(ReaderUtil.subIndex(docId, leaves));
-        return context.reader().getNumericDocValues(keyFieldname).get(docId - context.docBase);
+        NumericDocValues keys = context.reader().getNumericDocValues(keyFieldname);
+        if (!keys.advanceExact(docId - context.docBase)) {
+            return 0L;  // mimics behaviour of e.g. the old DocValues.emptyNumeric()
+        }
+        return keys.longValue();
     }
 
     private void maybeCommitAfterUpdate() throws IOException {

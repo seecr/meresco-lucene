@@ -57,8 +57,8 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.BooleanQuery.Builder;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -69,11 +69,11 @@ import org.apache.lucene.util.FixedBitSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.Lucene.TermCount;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
 import org.meresco.lucene.LuceneResponse.DedupHit;
 import org.meresco.lucene.LuceneResponse.Hit;
-import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.search.InterpolateEpsilon;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoCluster.TermScore;
@@ -85,6 +85,7 @@ import org.meresco.lucene.search.join.ScoreSuperCollector;
 public class LuceneTest extends SeecrTestCase {
     private Lucene lucene;
 
+    @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -93,6 +94,7 @@ public class LuceneTest extends SeecrTestCase {
         lucene = new Lucene(this.tmpDir, settings);
     }
 
+    @Override
     @After
     public void tearDown() throws Exception {
         lucene.close();
@@ -181,7 +183,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(3, result.total);
         assertEquals(0, result.drilldownData.size());
 
-        ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
+        ArrayList<FacetRequest> facets = new ArrayList<>();
         facets.add(new FacetRequest("facet-field2", 10));
         result = lucene.executeQuery(new MatchAllDocsQuery(), facets);
         assertEquals(3, result.total);
@@ -195,7 +197,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1, result.drilldownData.get(0).terms.get(1).count);
         assertEquals(1, result.drilldownData.get(0).terms.get(2).count);
 
-        facets = new ArrayList<FacetRequest>();
+        facets = new ArrayList<>();
         facets.add(new FacetRequest("facet-field3", 10));
         result = lucene.executeQuery(new MatchAllDocsQuery(), facets);
         assertEquals(3, result.total);
@@ -226,7 +228,7 @@ public class LuceneTest extends SeecrTestCase {
         this.lucene.getSettings().facetsConfig.setMultiValued("facet-field", true);
         this.lucene.addDocument("id1", doc1);
 
-        ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
+        ArrayList<FacetRequest> facets = new ArrayList<>();
         FacetRequest facet = new FacetRequest("facet-field", 10);
         facet.path = new String[] {"first"};
         facets.add(facet);
@@ -251,7 +253,7 @@ public class LuceneTest extends SeecrTestCase {
         doc1.add(new FacetField("field2", "value2"));
         lucene.addDocument("id0", doc1);
 
-        ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
+        ArrayList<FacetRequest> facets = new ArrayList<>();
         facets.add(new FacetRequest("field0", 10));
         facets.add(new FacetRequest("field1", 10));
         facets.add(new FacetRequest("field2", 10));
@@ -272,7 +274,7 @@ public class LuceneTest extends SeecrTestCase {
         facetsConfig.setIndexFieldName("field0", "$facets_1");
         facetsConfig.setIndexFieldName("field2", "$facets_1");
 
-        ArrayList<FacetRequest> facets = new ArrayList<FacetRequest>();
+        ArrayList<FacetRequest> facets = new ArrayList<>();
         facets.add(new FacetRequest("field0", 10));
         facets.add(new FacetRequest("field1", 10));
         facets.add(new FacetRequest("field2", 10));
@@ -591,12 +593,12 @@ public class LuceneTest extends SeecrTestCase {
         LuceneSettings settings = lucene.getSettings();
         settings.interpolateEpsilon = new InterpolateEpsilon() {
             @Override
-            public double interpolateEpsilon(int hits, int slice, double clusteringEps, int clusterMoreRecords) {
+            public double interpolateEpsilon(long hits, int slice, double clusteringEps, int clusterMoreRecords) {
                 return 0.4;
             }
         };
 
-        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        List<ClusterField> clusterFields = new ArrayList<>();
         clusterFields.add(new ClusterField("termvector", 1.0, "vuur"));
         settings.clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
@@ -654,7 +656,7 @@ public class LuceneTest extends SeecrTestCase {
         q.clustering = true;
         lucene.getSettings().interpolateEpsilon = new InterpolateEpsilon() {
             @Override
-            public double interpolateEpsilon(int hits, int slice, double clusteringEps, int clusterMoreRecords) {
+            public double interpolateEpsilon(long hits, int slice, double clusteringEps, int clusterMoreRecords) {
                 return 0.4;
             }
         };
@@ -723,7 +725,7 @@ public class LuceneTest extends SeecrTestCase {
         q.start = 0;
         q.stop = 2;
 
-        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        List<ClusterField> clusterFields = new ArrayList<>();
         clusterFields.add(new ClusterField("termvector", 1.0, null));
         lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
@@ -737,7 +739,7 @@ public class LuceneTest extends SeecrTestCase {
         LuceneSettings settings = lucene.getSettings();
         settings.interpolateEpsilon = new InterpolateEpsilon() {
             @Override
-            public double interpolateEpsilon(int hits, int slice, double clusteringEps, int clusterMoreRecords) {
+            public double interpolateEpsilon(long hits, int slice, double clusteringEps, int clusterMoreRecords) {
                 return 10.0;
             }
         };
@@ -763,7 +765,7 @@ public class LuceneTest extends SeecrTestCase {
         lucene.addDocument("id:3", doc);
 
         settings.clusterConfig.strategies.get(0).clusteringEps = 10.0;
-        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        List<ClusterField> clusterFields = new ArrayList<>();
         clusterFields.add(new ClusterField("termvector", 1.0, null));
         lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
@@ -813,7 +815,7 @@ public class LuceneTest extends SeecrTestCase {
         q.start = 0;
         q.stop = 5;
 
-        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        List<ClusterField> clusterFields = new ArrayList<>();
         clusterFields.add(new ClusterField("termvector", 1.0, null));
         lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
@@ -853,7 +855,7 @@ public class LuceneTest extends SeecrTestCase {
         q.start = 0;
         q.stop = 10;
 
-        List<ClusterField> clusterFields = new ArrayList<ClusterField>();
+        List<ClusterField> clusterFields = new ArrayList<>();
         clusterFields.add(new ClusterField("termvector1", 1.0, null));
         lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
 
@@ -873,7 +875,7 @@ public class LuceneTest extends SeecrTestCase {
                 assertTrue(id100);
         }
 
-        clusterFields = new ArrayList<ClusterField>();
+        clusterFields = new ArrayList<>();
         clusterFields.add(new ClusterField("termvector1", 1.0, null));
         clusterFields.add(new ClusterField("termvector2", 1.0, null));
         lucene.getSettings().clusterConfig.strategies.get(0).clusterFields = clusterFields;
@@ -1112,20 +1114,20 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     public static void compareHits(LuceneResponse response, String... hitIds) {
-        Set<String> responseHitIds = new HashSet<String>();
+        Set<String> responseHitIds = new HashSet<>();
         for (Hit hit : response.hits)
             responseHitIds.add(hit.id);
-        Set<String> expectedHitIds = new HashSet<String>();
+        Set<String> expectedHitIds = new HashSet<>();
         for (String hitId : hitIds)
             expectedHitIds.add(hitId);
         assertEquals(expectedHitIds, responseHitIds);
     }
 
     public static void compareHitsOrdered(LuceneResponse response, String... hitIds) {
-        List<String> responseHitIds = new ArrayList<String>();
+        List<String> responseHitIds = new ArrayList<>();
         for (Hit hit : response.hits)
             responseHitIds.add(hit.id);
-        List<String> expectedHitIds = new ArrayList<String>();
+        List<String> expectedHitIds = new ArrayList<>();
         for (String hitId : hitIds)
             expectedHitIds.add(hitId);
         assertEquals(expectedHitIds, responseHitIds);

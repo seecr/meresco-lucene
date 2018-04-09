@@ -41,7 +41,7 @@ public class TermFrequencySimilarity extends Similarity {
 
     @Override
     public long computeNorm(FieldInvertState state) {
-        return 1L;  // ???
+        return 1L;
     }
 
     @Override

@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016, 2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
@@ -26,7 +26,6 @@
 
 from urllib import urlencode
 
-from weightless.core import consume
 from weightless.io.utils import asProcess
 from meresco.core import Observable
 from meresco.components.json import JsonList, JsonDict
@@ -38,20 +37,25 @@ from _connect import _Connect
 
 
 class Lucene(Observable):
-    def __init__(self, host, port, settings, name, **kwargs):
+    def __init__(self, host, port, settings, name, readonly=False, **kwargs):
         Observable.__init__(self, name=name)
         self._connect = _Connect(host, port, pathPrefix = "/" + name, observable=self)
         self.settings = settings
         self._fieldRegistry = settings.fieldRegistry
         self._name = name
+        self._readonly = readonly
 
     def observer_init(self):
         asProcess(self.initialize())
 
     def initialize(self):
+        if self._readonly:
+            return
         yield self._connect.send(jsonDict=self.settings.asPostDict(), path="/settings/")
 
     def setSettings(self, numberOfConcurrentTasks=None, similarity=None, clustering=None):
+        if self._readonly:
+            raise RuntimeError('Changing settings not allowed for readonly Lucene connection.')
         settingsDict = JsonDict()
         if numberOfConcurrentTasks:
             settingsDict["numberOfConcurrentTasks"] = numberOfConcurrentTasks
@@ -66,10 +70,14 @@ class Lucene(Observable):
         raise StopIteration((yield self._connect.read(path='/settings/')))
 
     def addDocument(self, fields, identifier=None):
+        if self._readonly:
+            raise RuntimeError('Adding documents not allowed for readonly Lucene connection.')
         args = urlencode(dict(identifier=identifier)) if identifier else ''
         yield self._connect.send(jsonDict=JsonList(fields), path='/update/?{}'.format(args))
 
     def delete(self, identifier):
+        if self._readonly:
+            raise RuntimeError('Deleting not allowed for readonly Lucene connection.')
         yield self._connect.send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
 
     def updateSortKey(self, sortKey):

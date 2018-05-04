@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014-2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2015, 2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
 #
@@ -40,7 +40,6 @@ DEFAULTS = dict(
     commitTimeout = 10,
     cacheFacetOrdinals = True,
     verbose = True,
-    readonly = False
 )
 
 class LuceneSettingsTest(SeecrTestCase):
@@ -54,7 +53,6 @@ class LuceneSettingsTest(SeecrTestCase):
 
     def testAsPostDict(self):
         settings = LuceneSettings()
-        self.assertEquals(DEFAULTS.keys(), settings.asPostDict().keys())
         self.assertEquals(DEFAULTS, settings.asPostDict())
 
     def testPostDictWithDrilldownFields(self):
@@ -73,7 +71,6 @@ class LuceneSettingsTest(SeecrTestCase):
         soll = copy(DEFAULTS)
         soll['cacheFacetOrdinals'] = False
         ist = settings.asPostDict()
-        self.assertEquals(soll.keys(), ist.keys())
         self.assertEquals(soll, ist)
 
     def testConfigureMergePolicy(self):
@@ -83,7 +80,6 @@ class LuceneSettingsTest(SeecrTestCase):
         soll = copy(DEFAULTS)
         soll['mergePolicy'] = dict(type='LogDocMergePolicy', mergeFactor=2, maxMergeDocs=100)
         ist = settings.asPostDict()
-        self.assertEquals(soll.keys(), ist.keys())
         self.assertEquals(soll, ist)
 
     def testGetters(self):

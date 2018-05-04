@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014-2017 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -25,21 +25,18 @@
 #
 ## end license ##
 
-from copy import copy
 from org.meresco.lucene.py_analysis import MerescoStandardAnalyzer, MerescoDutchStemmingAnalyzer
 from org.apache.lucene.analysis.core import WhitespaceAnalyzer
 
-from java.lang import Class
 from meresco.components.json import JsonDict
 from meresco.lucene.fieldregistry import FieldRegistry
 
-SETTING_NAMES = ["commitTimeout", "commitCount", "readonly", "lruTaxonomyWriterCacheSize", "analyzer", "similarity", "mergePolicy", "numberOfConcurrentTasks", "cacheFacetOrdinals", "verbose"]
+SETTING_NAMES = ["commitTimeout", "commitCount", "lruTaxonomyWriterCacheSize", "analyzer", "similarity", "mergePolicy", "numberOfConcurrentTasks", "cacheFacetOrdinals", "verbose"]
 
 class LuceneSettings(object):
     def __init__(self,
                 commitTimeout=10,
                 commitCount=100000,
-                readonly=False,
                 lruTaxonomyWriterCacheSize=4000,
                 analyzer=dict(type="MerescoStandardAnalyzer"),
                 similarity=dict(type="BM25Similarity"),

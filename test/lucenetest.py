@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016, 2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
@@ -39,7 +39,10 @@ from lucenesettingstest import DEFAULTS
 class LuceneTest(SeecrTestCase):
     def setUp(self):
         SeecrTestCase.setUp(self)
-        self._lucene = Lucene(host="localhost", port=1234, name='lucene', settings=LuceneSettings())
+        self.setUpLucene()
+
+    def setUpLucene(self, **kwargs):
+        self._lucene = Lucene(host="localhost", port=1234, name='lucene', settings=LuceneSettings(), **kwargs)
         self.post = []
         self.response = ""
         def mockPost(data, path, **kwargs):
@@ -224,3 +227,11 @@ class LuceneTest(SeecrTestCase):
         response = retval(self._lucene.similarDocuments(identifier='record:3'))
         self.assertEqual(887, response.total)
         self.assertEqual(2, len(response.hits))
+
+    def testLuceneReadonly(self):
+        self.setUpLucene(readonly=True)
+        self._lucene.observer_init()
+        self.assertEqual([], self.post)
+        self.assertRaises(RuntimeError, lambda: consume(self._lucene.setSettings()))
+        self.assertRaises(RuntimeError, lambda: consume(self._lucene.addDocument(fields=[])))
+        self.assertRaises(RuntimeError, lambda: consume(self._lucene.delete('identifier')))

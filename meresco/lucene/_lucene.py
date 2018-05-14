@@ -37,9 +37,9 @@ from _connect import _Connect
 
 
 class Lucene(Observable):
-    def __init__(self, host, port, settings, name, readonly=False, **kwargs):
+    def __init__(self, name, settings, host=None, port=None, readonly=False, **kwargs):
         Observable.__init__(self, name=name)
-        self._connect = _Connect(host, port, pathPrefix = "/" + name, observable=self)
+        self._host, self._port = host, port
         self.settings = settings
         self._fieldRegistry = settings.fieldRegistry
         self._name = name
@@ -51,7 +51,7 @@ class Lucene(Observable):
     def initialize(self):
         if self._readonly:
             return
-        yield self._connect.send(jsonDict=self.settings.asPostDict(), path="/settings/")
+        yield self._connect().send(jsonDict=self.settings.asPostDict(), path="/settings/")
 
     def setSettings(self, numberOfConcurrentTasks=None, similarity=None, clustering=None):
         if self._readonly:
@@ -64,21 +64,21 @@ class Lucene(Observable):
         if clustering:
             settingsDict["clustering"] = clustering
         if settingsDict:
-            yield self._connect.send(jsonDict=settingsDict, path="/settings/")
+            yield self._connect().send(jsonDict=settingsDict, path="/settings/")
 
     def getSettings(self):
-        raise StopIteration((yield self._connect.read(path='/settings/')))
+        raise StopIteration((yield self._connect().read(path='/settings/')))
 
     def addDocument(self, fields, identifier=None):
         if self._readonly:
             raise RuntimeError('Adding documents not allowed for readonly Lucene connection.')
         args = urlencode(dict(identifier=identifier)) if identifier else ''
-        yield self._connect.send(jsonDict=JsonList(fields), path='/update/?{}'.format(args))
+        yield self._connect().send(jsonDict=JsonList(fields), path='/update/?{}'.format(args))
 
     def delete(self, identifier):
         if self._readonly:
             raise RuntimeError('Deleting not allowed for readonly Lucene connection.')
-        yield self._connect.send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
+        yield self._connect().send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
 
     def updateSortKey(self, sortKey):
         missingValue = self._fieldRegistry.defaultMissingValueForSort(sortKey["sortBy"], sortKey["sortDescending"])
@@ -105,7 +105,7 @@ class Lucene(Observable):
         )
         if suggestionRequest:
             jsonDict["suggestionRequest"] = suggestionRequest
-        responseDict = (yield self._connect.send(jsonDict=jsonDict, path='/query/'))
+        responseDict = (yield self._connect().send(jsonDict=jsonDict, path='/query/'))
         response = luceneResponseFromDict(responseDict)
         response.info = {
             'type': 'Query',
@@ -128,14 +128,14 @@ class Lucene(Observable):
             limit=limit,
         )
         args = urlencode(dict(fieldname=fieldname, prefix=prefix, limit=limit))
-        responseDict = (yield self._connect.send(jsonDict=jsonDict, path='/prefixSearch/?{}'.format(args)))
+        responseDict = (yield self._connect().send(jsonDict=jsonDict, path='/prefixSearch/?{}'.format(args)))
         hits = [((term, count) if showCount else term) for term, count in sorted(responseDict, key=lambda t: t[1], reverse=True)]
         response = LuceneResponse(total=len(hits), hits=hits)
         raise StopIteration(response)
         yield
 
     def fieldnames(self, **kwargs):
-        fieldnames = (yield self._connect.send(path='/fieldnames/'))
+        fieldnames = (yield self._connect().send(path='/fieldnames/'))
         raise StopIteration(LuceneResponse(total=len(fieldnames), hits=fieldnames))
         yield
 
@@ -145,13 +145,13 @@ class Lucene(Observable):
             args["dim"] = path[0]
             args["path"] = path[1:]
         args = urlencode(args, doseq=True)
-        fieldnames = (yield self._connect.send(path='/drilldownFieldnames/?{}'.format(args)))
+        fieldnames = (yield self._connect().send(path='/drilldownFieldnames/?{}'.format(args)))
         raise StopIteration(LuceneResponse(total=len(fieldnames), hits=fieldnames))
         yield
 
     def similarDocuments(self, identifier):
         args = urlencode(dict(identifier=identifier))
-        responseDict = (yield self._connect.send(path='/similarDocuments/?{}'.format(args)))
+        responseDict = (yield self._connect().send(path='/similarDocuments/?{}'.format(args)))
         response = luceneResponseFromDict(responseDict)
         raise StopIteration(response)
         yield
@@ -160,7 +160,7 @@ class Lucene(Observable):
         return self._fieldRegistry
 
     def numDocs(self):
-        raise StopIteration((yield self._connect.send(path='/numDocs/')))
+        raise StopIteration((yield self._connect().send(path='/numDocs/')))
 
     def coreInfo(self):
         yield self.LuceneInfo(self)
@@ -170,6 +170,13 @@ class Lucene(Observable):
             inner._lucene = self
             inner.name = self._name
             inner.numDocs = self.numDocs
+
+    def _connect(self):
+        if self._host:
+            host, port = self._host, self._port
+        else:
+            host, port = self.call.luceneServer()
+        return _Connect(host, port, pathPrefix = "/" + self._name, observable=self)
 
 
 def luceneResponseFromDict(responseDict):

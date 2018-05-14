@@ -24,7 +24,8 @@
 #
 ## end license ##
 
-from seecr.test import SeecrTestCase
+from seecr.test import SeecrTestCase, CallTrace
+from meresco.components.http.utils import okJson, CRLF, parseResponse
 from meresco.components.json import JsonDict, JsonList
 from meresco.lucene import Lucene, LuceneSettings
 from meresco.lucene.fieldregistry import FieldRegistry
@@ -45,11 +46,12 @@ class LuceneTest(SeecrTestCase):
         self._lucene = Lucene(host="localhost", port=1234, name='lucene', settings=LuceneSettings(), **kwargs)
         self.post = []
         self.response = ""
+        connect = self._lucene._connect()
         def mockPost(data, path, **kwargs):
             self.post.append(dict(data=data, path=path))
             raise StopIteration(self.response)
             yield
-        self._lucene._connect._post = mockPost
+        connect._post = mockPost
 
         self.read = []
         self.response = ""
@@ -57,7 +59,8 @@ class LuceneTest(SeecrTestCase):
             self.read.append(path)
             raise StopIteration(self.response)
             yield
-        self._lucene._connect.read = mockRead
+        connect.read = mockRead
+        self._lucene._connect = lambda: connect
 
     def testPostSettingsAddObserverInit(self):
         self.assertEqual([], self.post)
@@ -235,3 +238,29 @@ class LuceneTest(SeecrTestCase):
         self.assertRaises(RuntimeError, lambda: consume(self._lucene.setSettings()))
         self.assertRaises(RuntimeError, lambda: consume(self._lucene.addDocument(fields=[])))
         self.assertRaises(RuntimeError, lambda: consume(self._lucene.delete('identifier')))
+
+    def testLuceneServerHostPortDynamic(self):
+        lucene = Lucene(name='lucene', settings=LuceneSettings(), readonly=True)
+        def httprequest1_1Mock(**kwargs):
+            raise StopIteration(parseResponse(HTTP_RESPONSE))
+            yield
+        observer = CallTrace(
+            'observer',
+            returnValues=dict(luceneServer=('example.org', 1234)),
+            methods=dict(httprequest1_1=httprequest1_1Mock))
+        lucene.addObserver(observer)
+        query = QueryExpressionToLuceneQueryDict([], LuceneSettings()).convert(cqlToExpression("field=value"))
+        response = retval(lucene.executeQuery(
+            luceneQuery=query, start=1, stop=5,
+        ))
+        self.assertEquals(887, response.total)
+        self.assertEquals(['luceneServer', 'httprequest1_1'], observer.calledMethodNames())
+
+
+HTTP_RESPONSE = okJson + CRLF * 2 + '''{
+    "total": 887,
+    "queryTime": 6,
+    "times": {"searchTime": 3},
+    "hits": [
+    ]
+}'''

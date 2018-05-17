@@ -54,6 +54,7 @@ import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.spell.SuggestMode;
 import org.meresco.lucene.search.JoinSortField;
 import org.meresco.lucene.search.join.relational.JoinAndQuery;
 import org.meresco.lucene.search.join.relational.JoinOrQuery;
@@ -158,16 +159,30 @@ public class JsonQueryConverter {
         return facetRequests;
     }
 
-
     public SuggestionRequest convertToSuggestionRequest(JsonObject suggestionRequest) {
         if (suggestionRequest == null)
             return null;
-        SuggestionRequest sugRequest = new SuggestionRequest(suggestionRequest.getString("field"), suggestionRequest.getInt("count"));
+        SuggestionRequest sugRequest = new SuggestionRequest(
+            suggestionRequest.getString("field"),
+            suggestionRequest.getInt("count"),
+            suggestModeFromString(suggestionRequest.getString("mode", null)));
         JsonArray suggests = suggestionRequest.getJsonArray("suggests");
         for (int i=0; i < suggests.size(); i++) {
             sugRequest.suggests.add(suggests.getString(i));
         }
         return sugRequest;
+    }
+
+    private SuggestMode suggestModeFromString(String suggestMode) {
+        if (suggestMode != null) {
+            switch (suggestMode) {
+                case "SUGGEST_MORE_POPULAR":
+                    return SuggestMode.SUGGEST_MORE_POPULAR;
+                case "SUGGEST_ALWAYS":
+                    return SuggestMode.SUGGEST_ALWAYS;
+            }
+        }
+        return SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
     }
 
     public Query convertToQuery(JsonObject query) {
@@ -355,6 +370,7 @@ public class JsonQueryConverter {
     public static class SuggestionRequest {
         public String field;
         public int count;
+        public SuggestMode mode = SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX;
         List<String> suggests = new ArrayList<>();
 
         public SuggestionRequest(String field, int count) {
@@ -362,9 +378,13 @@ public class JsonQueryConverter {
             this.count = count;
         }
 
+        public SuggestionRequest(String field, int count, SuggestMode mode) {
+            this(field, count);
+            this.mode = mode;
+        }
+
         public void add(String suggest) {
             suggests.add(suggest);
         }
-
     }
 }

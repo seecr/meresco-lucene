@@ -64,6 +64,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.junit.After;
@@ -545,7 +546,11 @@ public class LuceneTest extends SeecrTestCase {
     @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
     @Test
     public void testSuggestions() throws Throwable {
-        addDocument(lucene, "id:0", null, new HashMap() {{put("field1", "value0"); put("field2", "value2" ); put("field5", "value2" );}});
+        addDocument(lucene, "id:0", null, new HashMap() {{
+            put("field1", "value0");
+            put("field2", "value2" );
+            put("field5", "value2" );
+        }});
 
         assertEquals("value2", lucene.suggest("value0", 2, "field5")[0].string);
         assertEquals("value2", lucene.suggest("valeu", 2, "field5")[0].string);
@@ -559,6 +564,30 @@ public class LuceneTest extends SeecrTestCase {
         compareHits(response, "id:0");
         assertEquals("value2", response.suggestions.get("value0")[0].string);
         assertEquals("value2", response.suggestions.get("valeu")[0].string);
+    }
+
+    @SuppressWarnings({ "serial", "rawtypes", "unchecked" })
+    @Test
+    public void testSuggestionsSuggestMorePopular() throws Throwable {
+        addDocument(lucene, "id:0", null, new HashMap() {{
+            put("field0", "value" );
+        }});
+        addDocument(lucene, "id:1", null, new HashMap() {{
+            put("field0", "valeu" );
+        }});
+        addDocument(lucene, "id:2", null, new HashMap() {{
+            put("field0", "valeu" );
+        }});
+
+        assertEquals(0, lucene.suggest("value", 2, "field0", SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX).length);
+        assertEquals("valeu", lucene.suggest("value", 2, "field0", SuggestMode.SUGGEST_MORE_POPULAR)[0].string);
+
+        JsonQueryConverter.SuggestionRequest sr = new JsonQueryConverter.SuggestionRequest("field0", 2, SuggestMode.SUGGEST_MORE_POPULAR);
+        sr.add("value");
+        QueryData q = new QueryData();
+        q.suggestionRequest = sr;
+        LuceneResponse response = lucene.executeQuery(q);
+        assertEquals("valeu", response.suggestions.get("value")[0].string);
     }
 
     @SuppressWarnings({ "serial", "unchecked", "rawtypes" })

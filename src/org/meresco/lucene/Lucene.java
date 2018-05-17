@@ -81,6 +81,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spell.DirectSpellChecker;
+import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -293,8 +294,9 @@ public class Lucene {
             if (q.suggestionRequest != null) {
                 long t1 = System.currentTimeMillis();
                 HashMap<String, SuggestWord[]> result = new HashMap<>();
-                for (String suggest : q.suggestionRequest.suggests)
-                    result.put(suggest, suggest(suggest, q.suggestionRequest.count, q.suggestionRequest.field));
+                for (String suggest : q.suggestionRequest.suggests) {
+                    result.put(suggest, suggest(suggest, q.suggestionRequest.count, q.suggestionRequest.field, q.suggestionRequest.mode));
+                }
                 times.put("suggestionTime", System.currentTimeMillis() - t1);
                 response.suggestions = result;
             }
@@ -723,9 +725,14 @@ public class Lucene {
     }
 
     public SuggestWord[] suggest(String term, int count, String field) throws Exception {
+        return suggest(term, count, field, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX);
+    }
+
+
+    public SuggestWord[] suggest(String term, int count, String field, SuggestMode suggestMode) throws Exception {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
-            return spellChecker.suggestSimilar(new Term(field, term), count, reference.searcher.getIndexReader());
+            return spellChecker.suggestSimilar(new Term(field, term), count, reference.searcher.getIndexReader(), suggestMode);
         } finally {
             data.getManager().release(reference);
         }

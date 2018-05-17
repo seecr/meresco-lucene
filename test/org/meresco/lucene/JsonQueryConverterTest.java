@@ -55,6 +55,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.spell.SuggestMode;
 import org.junit.Test;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.search.JoinSortField;
@@ -500,6 +501,25 @@ public class JsonQueryConverterTest {
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         assertEquals("field1", q.suggestionRequest.field);
         assertEquals(2, q.suggestionRequest.count);
+        assertArrayEquals(new String[] {"valeu"}, q.suggestionRequest.suggests.toArray(new String[0]));
+    }
+
+    @Test
+    public void testSuggestionRequestWithSuggestMode() {
+        JsonObject json = Json.createObjectBuilder()
+                .add("query", Json.createObjectBuilder()
+                    .add("type", "MatchAllDocsQuery"))
+                .add("suggestionRequest", Json.createObjectBuilder()
+                    .add("field", "field1")
+                    .add("count", 2)
+                    .add("mode", "SUGGEST_MORE_POPULAR")
+                    .add("suggests", Json.createArrayBuilder()
+                        .add("valeu")))
+                .build();
+        QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
+        assertEquals("field1", q.suggestionRequest.field);
+        assertEquals(2, q.suggestionRequest.count);
+        assertEquals(SuggestMode.SUGGEST_MORE_POPULAR, q.suggestionRequest.mode);
         assertArrayEquals(new String[] {"valeu"}, q.suggestionRequest.suggests.toArray(new String[0]));
     }
 

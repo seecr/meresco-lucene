@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016, 2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -25,23 +25,29 @@
 #
 ## end license ##
 
+from seecr.test import SeecrTestCase, CallTrace
+
+from simplejson import loads
+
 from cqlparser import cqlToExpression
+
+from weightless.core import consume, asList, retval
+from meresco.components.http.utils import parseResponse
 from meresco.components.json import JsonDict
+
 from meresco.lucene import LuceneSettings, Lucene
 from meresco.lucene.composedquery import ComposedQuery
 from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
-from seecr.test import SeecrTestCase
-from weightless.core import consume, asList, retval
-from simplejson import loads
+
+from lucenetest import HTTP_RESPONSE
 
 
 class MultiLuceneTest(SeecrTestCase):
     def setUp(self):
         SeecrTestCase.setUp(self)
         self.registry = FieldRegistry()
-
         self._multiLucene = MultiLucene(defaultCore='coreA', host="localhost", port=12345)
         self._lucene = Lucene(host="localhost", port=12345, settings=LuceneSettings(), name='coreA')
         self._multiLucene.addObserver(self._lucene)
@@ -51,7 +57,9 @@ class MultiLuceneTest(SeecrTestCase):
             self.post.append(dict(data=data, path=path))
             raise StopIteration(self.response)
             yield
-        self._multiLucene._connect._post = mockPost
+        connect = self._multiLucene._connect()
+        connect._post = mockPost
+        self._multiLucene._connect = lambda: connect
 
     def testInfoOnQuery(self):
         self.response = JsonDict({
@@ -139,3 +147,18 @@ class MultiLuceneTest(SeecrTestCase):
     def testCoreInfo(self):
         infos = asList(self._multiLucene.coreInfo())
         self.assertEquals(1, len(infos))
+
+    def testLuceneServerHostPortDynamic(self):
+        multiLucene = MultiLucene(defaultCore='core1')
+        def httprequest1_1Mock(**kwargs):
+            raise StopIteration(parseResponse(HTTP_RESPONSE))
+            yield
+        observer = CallTrace(
+            'observer',
+            returnValues=dict(luceneServer=('example.org', 1234)),
+            methods=dict(httprequest1_1=httprequest1_1Mock))
+        multiLucene.addObserver(observer)
+        query = QueryExpressionToLuceneQueryDict([], LuceneSettings()).convert(cqlToExpression("field=value"))
+        response = retval(multiLucene.executeComposedQuery(ComposedQuery('core1', query)))
+        self.assertEquals(887, response.total)
+        self.assertEquals(['luceneServer', 'httprequest1_1'], observer.calledMethodNames())

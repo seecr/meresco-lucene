@@ -172,10 +172,7 @@ class Lucene(Observable):
             inner.numDocs = self.numDocs
 
     def _connect(self):
-        if self._host:
-            host, port = self._host, self._port
-        else:
-            host, port = self.call.luceneServer()
+        host, port = (self._host, self._port) if self._host else self.call.luceneServer()
         return _Connect(host, port, pathPrefix = "/" + self._name, observable=self)
 
 

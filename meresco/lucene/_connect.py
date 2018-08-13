@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2016, 2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
@@ -26,7 +26,6 @@
 
 
 from simplejson import loads
-
 
 
 class _Connect(object):
@@ -73,6 +72,7 @@ class _Connect(object):
             raise UninitializedException()
         if not statusAndHeaders['StatusCode'].startswith('20'):
             raise IOError("Expected status '20x' from Lucene server, but got {} {}\n{}".format(statusAndHeaders['StatusCode'], statusAndHeaders['ReasonPhrase'], body))
+
 
 class UninitializedException(Exception):
     pass

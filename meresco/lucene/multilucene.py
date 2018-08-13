@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016, 2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -34,10 +34,10 @@ from _lucene import luceneResponseFromDict
 
 
 class MultiLucene(Observable):
-    def __init__(self, host, port, defaultCore):
+    def __init__(self, defaultCore, host=None, port=None):
         Observable.__init__(self)
         self._defaultCore = defaultCore
-        self._connect = _Connect(host, port, observable=self)
+        self._host, self._port = host, port
 
     def initialize(self):
         yield self.all.initialize()
@@ -51,7 +51,7 @@ class MultiLucene(Observable):
         for sortKey in query.sortKeys:
             coreName = sortKey.get('core', query.resultsFrom)
             self.call[coreName].updateSortKey(sortKey)
-        responseDict = (yield self._connect.send(jsonDict=JsonDict(query.asDict()), path='/query/'))
+        responseDict = (yield self._connect().send(jsonDict=JsonDict(query.asDict()), path='/query/'))
         response = luceneResponseFromDict(responseDict)
         response.info = query.infoDict()
         raise StopIteration(response)
@@ -69,3 +69,6 @@ class MultiLucene(Observable):
     def coreInfo(self):
         yield self.all.coreInfo()
 
+    def _connect(self):
+        host, port = (self._host, self._port) if self._host else self.call.luceneServer()
+        return _Connect(host, port, observable=self)

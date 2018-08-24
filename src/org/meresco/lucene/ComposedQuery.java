@@ -1,9 +1,10 @@
+
 /* begin license *
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016, 2018 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -60,6 +61,23 @@ public class ComposedQuery {
     public List<Match> matches = new ArrayList<Match>();
     public QueryData queryData = new QueryData();
     public ClusterConfig clusterConfig;
+
+    public String toString() {
+        return "ComposedQuery(resultsFrom=" + resultsFrom + ",\n    " +
+            "cores=" + cores + ",\n    " +
+            "queries=" + queries + ",\n    " +
+            "relationalFilter=" + relationalFilter + ",\n    " +
+            "filterQueries=" + filterQueries + ",\n    " +
+            "facets=" + facets + ",\n    " +
+            "drilldownQueries=" + drilldownQueries + ",\n    " +
+            "otherCoreFacetsFilter=" + otherCoreFacetsFilter + ",\n    " +
+            "rankQueries=" + rankQueries + ",\n    " +
+            "rankQueryScoreRatio=" + rankQueryScoreRatio + ",\n    " +
+            "unites=" + unites + ",\n    " +
+            "matches=" + matches + ",\n    " +
+            "queryData=" + queryData + ",\n    " +
+            "clusterConfig=" + clusterConfig + ")";
+    }
 
     public ComposedQuery(String resultsFrom) {
         this.resultsFrom = resultsFrom;
@@ -323,6 +341,10 @@ public class ComposedQuery {
         private String core2;
         private String keyName;
 
+        public String toString() {
+            return "Match(" + core1 + ", " + core2 + ", " + keyName + ")";
+        }
+
         public Match(String core1, String core2, String keyName) {
             this.core1 = core1;
             this.core2 = core2;
@@ -335,6 +357,10 @@ public class ComposedQuery {
         public String coreB;
         public Query queryA;
         public Query queryB;
+
+        public String toString() {
+            return "Unite(" + coreA + ", " + coreB + ", " + queryA + ", " + queryB + ")";
+        }
 
         public Unite(String core1, String core2, Query query1, Query query2) {
             this.coreA = core1;

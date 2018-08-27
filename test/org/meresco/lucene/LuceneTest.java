@@ -136,6 +136,17 @@ public class LuceneTest extends SeecrTestCase {
     }
 
     @Test
+    public void testDeleteDocuments() throws Throwable {
+        lucene.addDocument("id1", new Document());
+        lucene.addDocument("id2", new Document());
+        lucene.addDocument("id3", new Document());
+        lucene.deleteDocuments(new TermQuery(new Term(Lucene.ID_FIELD, "id1")));
+        LuceneResponse response = lucene.executeQuery(new MatchAllDocsQuery());
+        assertEquals(2, response.total);
+        assertEquals(2, response.hits.size());
+    }
+
+    @Test
     public void testAddTwiceUpdatesDocument() throws Throwable {
         Document doc1 = new Document();
         doc1.add(new StringField("field0", "value0", Store.NO));

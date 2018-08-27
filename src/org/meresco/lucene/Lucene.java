@@ -174,6 +174,11 @@ public class Lucene {
         maybeCommitAfterUpdate();
     }
 
+    public void deleteDocuments(Query query) throws Exception {
+        data.getIndexWriter().deleteDocuments(query);
+        maybeCommitAfterUpdate();
+    }
+
     public void maybeCommitAfterUpdate() throws Exception {
         commitCount++;
         LuceneSettings settings = data.getSettings();

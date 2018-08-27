@@ -26,15 +26,18 @@
 
 package org.meresco.lucene.http;
 
+import javax.json.Json;
+import javax.json.JsonObject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.lucene.search.Query;
 import org.eclipse.jetty.server.Request;
 import org.meresco.lucene.Lucene;
 import org.meresco.lucene.OutOfMemoryShutdown;
 
-public class DeleteHandler extends AbstractMerescoLuceneHandler {
 
+public class DeleteHandler extends AbstractMerescoLuceneHandler {
     private Lucene lucene;
 
     public DeleteHandler(Lucene lucene, OutOfMemoryShutdown shutdown) {
@@ -45,7 +48,14 @@ public class DeleteHandler extends AbstractMerescoLuceneHandler {
     @Override
     public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws Exception {
         String identifier = request.getParameter("identifier");
-        this.lucene.deleteDocument(identifier);
+        if (identifier != null) {
+            this.lucene.deleteDocument(identifier);
+        }
+        else {
+            JsonObject json = Json.createReader(request.getReader()).readObject();
+            Query query = this.lucene.getQueryConverter().convertToQuery(json);
+            this.lucene.deleteDocuments(query);
+        }
         response.setStatus(HttpServletResponse.SC_OK);
     }
 }

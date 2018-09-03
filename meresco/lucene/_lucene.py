@@ -69,8 +69,13 @@ class Lucene(Observable):
         args = urlencode(dict(identifier=identifier)) if identifier else ''
         yield self._connect.send(jsonDict=JsonList(fields), path='/update/?{}'.format(args))
 
-    def delete(self, identifier):
-        yield self._connect.send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
+    def delete(self, identifier=None, luceneQuery=None):
+        if not identifier is None:
+            yield self._connect().send(path='/delete/?{}'.format(urlencode(dict(identifier=identifier))))
+            return
+        if luceneQuery is None:
+            raise ValueError("'specifify either 'identifier' or 'luceneQuery'")
+        yield self._connect().send(path='/delete/', jsonDict=JsonDict(query=luceneQuery))
 
     def updateSortKey(self, sortKey):
         missingValue = self._fieldRegistry.defaultMissingValueForSort(sortKey["sortBy"], sortKey["sortDescending"])

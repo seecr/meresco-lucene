@@ -48,10 +48,9 @@ class FieldRegistry(object):
         self._termVectorFieldNames = set(termVectorFields or [])
         for field in (drilldownFields or []):
             self.registerDrilldownField(field.name, hierarchical=field.hierarchical, multiValued=field.multiValued, indexFieldName=field.indexFieldName)
-        self._isDrilldownFieldFunction = lambda name: False
+        self.isDrilldownField = lambda name: name in self.drilldownFieldNames
         if isDrilldownFieldFunction is not None:
-            self._isDrilldownFieldFunction = isDrilldownFieldFunction
-            warn("isDrilldownFieldFunction can have side effects.")
+            self.isDrilldownField = isDrilldownFieldFunction
 
     def createField(self, fieldname, value):
         return self._getFieldDefinition(fieldname).createField(fieldname, value, fieldname in self._termVectorFieldNames)
@@ -81,14 +80,6 @@ class FieldRegistry(object):
                 multiValued=multiValued,
                 indexFieldName=indexFieldName
             )
-
-    def isDrilldownField(self, fieldname):
-        if self._isDrilldownFieldFunction(fieldname):
-            # Side effect will only happen when using the _isDrilldownFieldFunction
-            if fieldname not in self.drilldownFieldNames:
-                self.registerDrilldownField(fieldname, multiValued=True)
-            return True
-        return fieldname in self.drilldownFieldNames
 
     def isHierarchicalDrilldown(self, fieldname):
         return self.drilldownFieldNames.get(fieldname, {}).get("hierarchical")

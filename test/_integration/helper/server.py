@@ -136,7 +136,7 @@ def main(reactor, port, serverPort, autocompletePort, databasePath, **kwargs):
     luceneSettings = LuceneSettings(
                 fieldRegistry=fieldRegistry,
                 commitCount=30,
-                commitTimeout=1,
+                commitTimeout=0.3,
                 #analyzer=MerescoDutchStemmingAnalyzer(["field4", "field5"]),
                 analyzer=dict(type="MerescoDutchStemmingAnalyzer", stemmingFields=['field4', 'field5'])
             )

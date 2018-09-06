@@ -81,10 +81,6 @@ class LuceneSettings(object):
     def asPostDict(self):
         drilldownFields = []
         for fieldname, options in self.fieldRegistry.drilldownFieldNames.items():
-            hierarchical, multiValued, indexFieldName = options['hierarchical'], options['multiValued'], options['indexFieldName']
-            if not hierarchical and multiValued and indexFieldName is None:
-                # Default settings, do not bother.
-                continue
             drilldownFields.append({
                 "dim": fieldname,
                 "hierarchical": options["hierarchical"],

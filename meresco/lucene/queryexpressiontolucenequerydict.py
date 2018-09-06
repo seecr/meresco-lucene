@@ -3,7 +3,7 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2017 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2018 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2015-2016 Stichting Kennisnet http://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
@@ -29,16 +29,16 @@ from re import compile
 from cqlparser import UnsupportedCQL
 from cqlparser.cqltoexpression import QueryExpression
 
-from weightless.core import Observable
+from weightless.core import Transparent
 
 from java.io import StringReader
 from org.meresco.lucene.py_analysis import MerescoStandardAnalyzer
 from meresco.components.json import JsonDict
 
 
-class QueryExpressionToLuceneQueryDict(Observable):
+class QueryExpressionToLuceneQueryDict(Transparent):
     def __init__(self, unqualifiedTermFields, luceneSettings, ignoreStemmingForWords=None):
-        Observable.__init__(self)
+        Transparent.__init__(self)
         self._unqualifiedTermFields = unqualifiedTermFields
         self._analyzer = luceneSettings.createAnalyzer()
         self._fieldRegistry = luceneSettings.fieldRegistry

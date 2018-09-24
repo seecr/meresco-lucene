@@ -2,10 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014-2017 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2018 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2018 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -148,6 +148,7 @@ class _FieldDefinition(object):
     def __init__(self, type, pythonType, isUntokenized, phraseQueryPossible, stored=False):
         self.type = type
         self.pythonType = pythonType
+        self._transformValue = (lambda x:x) if pythonType is None else (lambda x:pythonType(x))
         self.phraseQueryPossible = phraseQueryPossible
         self.isUntokenized = isUntokenized
         self.stored = stored
@@ -156,7 +157,7 @@ class _FieldDefinition(object):
         field = dict(
             type=self.type,
             name=name,
-            value=value,
+            value=self._transformValue(value),
         )
         if termVectors:
             field['termVectors'] = True
@@ -227,6 +228,6 @@ NUMERICFIELD = _FieldDefinition("NumericField",
     isUntokenized=False,
     phraseQueryPossible=False)
 KEYFIELD = _FieldDefinition("KeyField",
-    pythonType=long,
+    pythonType=None,
     isUntokenized=True,
     phraseQueryPossible=False)

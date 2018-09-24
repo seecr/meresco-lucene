@@ -2,10 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2014-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2014-2016, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2018 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -185,7 +185,7 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(registry.isNumeric('longfield'))
         self.assertTrue(registry.isNumeric('intfield'))
         self.assertTrue(registry.isNumeric('range.double.afield'))
-        self.assertTrue(registry.isNumeric('__key__.field1'))
+        self.assertFalse(registry.isNumeric('__key__.field1'))
 
     def testRangeQueryAndType(self):
         registry = FieldRegistry()
@@ -222,5 +222,5 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertEqual("STRING_LAST", registry.defaultMissingValueForSort("sorted.stringfield", False))
         self.assertEqual(None, registry.defaultMissingValueForSort("score", False))
 
-        field = registry.createField('sorted.longfield', 'id:1')
-        self.assertEqual({'name': 'sorted.longfield', 'type': 'LongField', 'value': 'id:1', 'sort': True}, field)
+        field = registry.createField('sorted.longfield', '1')
+        self.assertEqual({'name': 'sorted.longfield', 'type': 'LongField', 'value': 1, 'sort': True}, field)

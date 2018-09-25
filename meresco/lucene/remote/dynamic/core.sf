@@ -2,9 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013, 2015 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2015, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+# Copyright (C) 2018 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -39,7 +40,7 @@ def main(arguments, **kwargs):
     yield '<dl>\n'
     yield '<dt>Fields</dt><dd>'
     yield '<ul>'
-    for field in (yield observable.any.fieldnames(core=name)).hits:
+    for field in sorted((yield observable.any.fieldnames(core=name)).hits):
         yield '<li><a href="field?%s">%s</a></li>\n' % (
                 escapeHtml(urlencode(dict(name=name, fieldname=field))),
                 escapeHtml(field),
@@ -49,7 +50,7 @@ def main(arguments, **kwargs):
 
     yield '<dt>Drilldown fields</dt><dd>'
     yield '<ul>'
-    for field in (yield observable.any.drilldownFieldnames(core=name)).hits:
+    for field in sorted((yield observable.any.drilldownFieldnames(core=name)).hits):
         yield '<li><a href="drilldownvalues?%s">%s</a></li>\n' % (
                 escapeHtml(urlencode(dict(name=name, path=[field]))),
                 escapeHtml(field),

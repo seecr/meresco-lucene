@@ -120,9 +120,9 @@ class FieldRegistry(object):
             return "Long"
 
     def defaultMissingValueForSort(self, fieldname, sortDescending):
-        if not self.isNumeric(fieldname) and fieldname != "score":
-            return "STRING_FIRST" if sortDescending else "STRING_LAST"
-        return None
+        if fieldname == 'score':
+            return None
+        return self._getFieldDefinition(fieldname).missingValuesForSort[1 if sortDescending else 0]
 
     def _getFieldDefinition(self, fieldname):
         fieldDefinition = self._fieldDefinitions.get(fieldname)
@@ -145,13 +145,14 @@ class FieldRegistry(object):
 # These names should be the same in the meresco-lucene-server code.
 
 class _FieldDefinition(object):
-    def __init__(self, type, pythonType, isUntokenized, phraseQueryPossible, stored=False):
+    def __init__(self, type, pythonType, isUntokenized, phraseQueryPossible, stored=False, missingValuesForSort=(None, None)):
         self.type = type
         self.pythonType = pythonType
         self._transformValue = (lambda x:x) if pythonType is None else (lambda x:pythonType(x))
         self.phraseQueryPossible = phraseQueryPossible
         self.isUntokenized = isUntokenized
         self.stored = stored
+        self.missingValuesForSort=missingValuesForSort
 
     def createField(self, name, value, termVectors=False):
         field = dict(
@@ -167,58 +168,57 @@ class _FieldDefinition(object):
             field["stored"] = True
         return field
 
-STRINGFIELD_STORED = _FieldDefinition("StringField",
-    pythonType=str,
-    isUntokenized=True,
-    phraseQueryPossible=True,
-    stored=True)
+    def clone(self, **kwargs):
+        newArgs = dict(type=self.type, pythonType=self.pythonType, phraseQueryPossible=self.phraseQueryPossible, isUntokenized=self.isUntokenized, stored=self.stored, missingValuesForSort=self.missingValuesForSort)
+        newArgs.update(**kwargs)
+        return _FieldDefinition(**newArgs)
+
+JAVA_MAX_INT, JAVA_MIN_INT = 2**31-1, -2**31
+JAVA_MAX_LONG, JAVA_MIN_LONG = 2**63-1, -2**63
+
 STRINGFIELD = _FieldDefinition("StringField",
     pythonType=str,
     isUntokenized=True,
-    phraseQueryPossible=True)
+    phraseQueryPossible=True,
+    missingValuesForSort=('STRING_LAST', 'STRING_FIRST'))
+STRINGFIELD_STORED = STRINGFIELD.clone(stored=True)
 TEXTFIELD = _FieldDefinition("TextField",
     pythonType=str,
     isUntokenized=False,
-    phraseQueryPossible=True)
+    phraseQueryPossible=True,
+    missingValuesForSort=('STRING_LAST', 'STRING_FIRST'))
 NO_TERMS_FREQUENCY_FIELD = _FieldDefinition("NoTermsFrequencyField",
     pythonType=str,
     isUntokenized=False,
-    phraseQueryPossible=False)
+    phraseQueryPossible=False,
+    missingValuesForSort=('STRING_LAST', 'STRING_FIRST'))
 INTFIELD = _FieldDefinition("IntField",
     pythonType=int,
     isUntokenized=False,
-    phraseQueryPossible=False)
-INTFIELD_STORED = _FieldDefinition("IntField",
-    pythonType=int,
-    isUntokenized=False,
     phraseQueryPossible=False,
-    stored=True)
+    missingValuesForSort=(JAVA_MAX_INT, JAVA_MIN_INT))
+INTFIELD_STORED = INTFIELD.clone(stored=True)
 INTPOINT = _FieldDefinition("IntPoint",
     pythonType=int,
     isUntokenized=False,
-    phraseQueryPossible=False)
+    phraseQueryPossible=False,
+    missingValuesForSort=(JAVA_MAX_INT, JAVA_MIN_INT))
 LONGFIELD = _FieldDefinition("LongField",
     pythonType=long,
     isUntokenized=False,
-    phraseQueryPossible=False)
-LONGFIELD_STORED = _FieldDefinition("LongField",
-    pythonType=long,
-    isUntokenized=False,
     phraseQueryPossible=False,
-    stored=True)
+    missingValuesForSort=(JAVA_MAX_LONG, JAVA_MIN_LONG))
+LONGFIELD_STORED = LONGFIELD.clone(stored=True)
 LONGPOINT = _FieldDefinition("LongPoint",
     pythonType=long,
     isUntokenized=False,
-    phraseQueryPossible=False)
+    phraseQueryPossible=False,
+    missingValuesForSort=(JAVA_MAX_LONG, JAVA_MIN_LONG))
 DOUBLEFIELD = _FieldDefinition("DoubleField",
     pythonType=float,
     isUntokenized=False,
     phraseQueryPossible=False)
-DOUBLEFIELD_STORED = _FieldDefinition("DoubleField",
-    pythonType=float,
-    isUntokenized=False,
-    phraseQueryPossible=False,
-    stored=True)
+DOUBLEFIELD_STORED = DOUBLEFIELD.clone(stored=True)
 DOUBLEPOINT = _FieldDefinition("DoublePoint",
     pythonType=float,
     isUntokenized=False,

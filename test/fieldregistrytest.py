@@ -26,7 +26,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.fieldregistry import FieldRegistry, STRINGFIELD_STORED, NO_TERMS_FREQUENCY_FIELD, STRINGFIELD, TEXTFIELD, LONGFIELD, INTFIELD, NUMERICFIELD
+from meresco.lucene.fieldregistry import FieldRegistry, STRINGFIELD_STORED, NO_TERMS_FREQUENCY_FIELD, STRINGFIELD, TEXTFIELD, LONGFIELD, INTFIELD, NUMERICFIELD, JAVA_MAX_INT, JAVA_MIN_INT, JAVA_MAX_LONG, JAVA_MIN_LONG
 from meresco.lucene import DrilldownField
 import warnings
 
@@ -212,14 +212,17 @@ class FieldRegistryTest(SeecrTestCase):
         registry.register("sorted.stringfield", fieldDefinition=STRINGFIELD)
 
         self.assertEqual("Long", registry.sortFieldType("sorted.longfield"))
-        self.assertEqual(None, registry.defaultMissingValueForSort("sorted.longfield", True))
+        self.assertEqual(JAVA_MIN_LONG, registry.defaultMissingValueForSort("sorted.longfield", True))
+        self.assertEqual(JAVA_MAX_LONG, registry.defaultMissingValueForSort("sorted.longfield", False))
 
         self.assertEqual("Int", registry.sortFieldType("sorted.intfield"))
-        self.assertEqual(None, registry.defaultMissingValueForSort("sorted.intfield", True))
+        self.assertEqual(JAVA_MIN_INT, registry.defaultMissingValueForSort("sorted.intfield", True))
+        self.assertEqual(JAVA_MAX_INT, registry.defaultMissingValueForSort("sorted.intfield", False))
 
         self.assertEqual("String", registry.sortFieldType("sorted.stringfield"))
         self.assertEqual("STRING_FIRST", registry.defaultMissingValueForSort("sorted.stringfield", True))
         self.assertEqual("STRING_LAST", registry.defaultMissingValueForSort("sorted.stringfield", False))
+
         self.assertEqual(None, registry.defaultMissingValueForSort("score", False))
 
         field = registry.createField('sorted.longfield', '1')

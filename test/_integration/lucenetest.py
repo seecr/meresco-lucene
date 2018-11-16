@@ -2,10 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2018 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -27,7 +27,7 @@
 
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import getRequest, postRequest
-from meresco.xml.namespaces import xpathFirst, xpath
+from meresco.xml.namespaces import namespaces as _namespaces
 from simplejson import loads
 from time import sleep
 from meresco.lucene.fieldregistry import KEY_PREFIX
@@ -35,6 +35,10 @@ from meresco.lucene import ComposedQuery
 from meresco.lucene.synchronousremote import SynchronousRemote
 from cqlparser import parseString
 from cqlparser.cqltoexpression import cqlToExpression
+
+namespaces = _namespaces.copyUpdate(dict(example='http://meresco.org/namespace/example'))
+xpath = namespaces.xpath
+xpathFirst = namespaces.xpathFirst
 
 
 class LuceneTest(IntegrationTestCase):
@@ -98,6 +102,17 @@ class LuceneTest(IntegrationTestCase):
         body = self.doSruQuery('*', sortKeys='sorted.field4,,0')
         records = xpath(body, '//srw:recordIdentifier/text()')
         self.assertEquals('record:1', records[0])
+
+        body = self.doSruQuery('field_missing=test', sortKeys='sorted.intfield_missing,,0')
+        self.assertEqual('10', xpathFirst(body, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))
+        def missing_intfields(body):
+            values = []
+            for rec in xpath(body, '//srw:record/srw:recordData'):
+                values.append(xpathFirst(rec, 'example:document/example:intfield_missing/text()'))
+            return values
+        self.assertEqual(['66775', '187', '64', '42', '17', '-5', '-308', None, None, None], missing_intfields(body))
+        body = self.doSruQuery('field_missing=test', sortKeys='sorted.intfield_missing,,1')
+        self.assertEqual(['-308', '-5', '17', '42', '64', '187', '66775', None, None, None], missing_intfields(body))
 
     def testFacet(self):
         body = self.doSruQuery('*', facet='untokenized.field2')

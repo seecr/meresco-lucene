@@ -2,10 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016, 2018 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2018 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -49,7 +49,7 @@ from meresco.sequentialstore import MultiSequentialStorage, StorageComponentAdap
 from meresco.lucene import Lucene, Fields2LuceneDoc, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, DrilldownField, LuceneSettings
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
-from meresco.lucene.fieldregistry import FieldRegistry
+from meresco.lucene.fieldregistry import FieldRegistry, INTFIELD
 from meresco.lucene.adaptertolucenequery import AdapterToLuceneQuery
 from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
 
@@ -92,7 +92,7 @@ def uploadHelix(lucene, storageComponent, drilldownFields, fieldRegistry):
                             (FilterField(lambda name: 'fieldHier' not in name and not name.startswith('__key__')),
                                 indexHelix,
                             ),
-                            (FilterField(lambda name: name == 'intfield1'),
+                            (FilterField(lambda name: name in ['intfield1', 'intfield_missing']),
                                 (RenameField(lambda name: SORTED_PREFIX + name),
                                     indexHelix,
                                 )
@@ -133,6 +133,11 @@ def main(reactor, port, serverPort, autocompletePort, databasePath, **kwargs):
     ]
 
     fieldRegistry = FieldRegistry(drilldownFields)
+    fieldRegistry.register('intfield1', INTFIELD)
+    fieldRegistry.register('intfield2', INTFIELD)
+    fieldRegistry.register('intfield3', INTFIELD)
+    fieldRegistry.register('intfield_missing', INTFIELD)
+    fieldRegistry.register('sorted.intfield_missing', INTFIELD)
     luceneSettings = LuceneSettings(
                 fieldRegistry=fieldRegistry,
                 commitCount=30,

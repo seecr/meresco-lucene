@@ -2,10 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2018 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -69,7 +69,7 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         lists = bodyLxml.xpath('//ul')
         fieldList = lists[0]
         fields = fieldList.xpath('li/a/text()')
-        self.assertEquals(16, len(fields))
+        self.assertEquals(19, len(fields))
         self.assertEqual([
                 '$facets',
                 '__id__',
@@ -80,12 +80,15 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
                 'field3',
                 'field4',
                 'field5',
+                'field_missing',
                 'intfield1',
                 'intfield2',
                 'intfield3',
+                'intfield_missing',
                 'sorted.field2',
                 'sorted.field4',
                 'sorted.intfield1',
+                'sorted.intfield_missing',
                 'untokenized.field3',
             ], fields)
 

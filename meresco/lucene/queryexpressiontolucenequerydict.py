@@ -3,8 +3,8 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2018 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2015-2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2015-2018 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2015-2016, 2018 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -123,15 +123,19 @@ class _Converter(object):
 
     def _fieldQuery(self, expr):
         core, field = self._parseCorePrefix(expr.index)
-        if expr.relation in ['==', 'exact'] or \
-                (expr.relation == '=' and self._fieldRegistry.isUntokenized(field)):  # TODO: use fieldRegistry for specific core...
-            query = self._createQuery(field, expr.term)
-        elif expr.relation in ['<','<=','>=','>']:
-            query = self._termRangeQuery(field, expr.relation, expr.term)
-        elif expr.relation == '=':
-            query = self._determineQuery(field, expr.term)
-        else:
+        if not expr.relation in ['=', '==', 'exact', '>', '>=', '<=', '<']:
             raise UnsupportedCQL("'%s' not supported for the field '%s'" % (expr.relation, field))
+        if self._fieldRegistry.isNumeric(field):
+            query = self._termRangeQuery(field, expr.relation, expr.term)
+        else:
+            if expr.relation in ['==', 'exact'] or \
+                    (expr.relation == '=' and self._fieldRegistry.isUntokenized(field)):  # TODO: use fieldRegistry for specific core...
+                query = self._createTermQuery(field, expr.term)
+            elif expr.relation in ['<','<=','>=','>']:
+                query = self._termRangeQuery(field, expr.relation, expr.term)
+            else: # expr.relation == '=':
+                query = self._determineQuery(field, expr.term)
+
         if expr.relation_boost:
             query['boost'] = expr.relation_boost
 
@@ -148,10 +152,10 @@ class _Converter(object):
             else:
                 terms = self._post_analyzeToken(index, terms[0])
                 if len(terms) == 1:
-                    return self._createQuery(index, terms[0])
+                    return self._createTermQuery(index, terms[0])
                 q = dict(type="BooleanQuery", clauses=[])
                 for term in terms:
-                    query = self._createQuery(index, term)
+                    query = self._createTermQuery(index, term)
                     query['occur'] = OCCUR["OR"]
                     q["clauses"].append(query)
                 return q
@@ -165,13 +169,14 @@ class _Converter(object):
 
     def _termRangeQuery(self, index, relation, termString):
         field = index
-        if '<' in relation:
-            lowerTerm, upperTerm = None, termString
-        else:
-            lowerTerm, upperTerm = termString, None
         rangeQueryType, pythonType = self._fieldRegistry.rangeQueryAndType(field)
-        lowerTerm = pythonType(lowerTerm) if lowerTerm else None
-        upperTerm = pythonType(upperTerm) if upperTerm else None
+        termValue = pythonType(termString) if termString else None
+        if relation in {'=', '==', 'exact'}:
+            return rangeQuery(rangeQueryType, field, termValue, termValue, True, True)
+        if '<' in relation:
+            lowerTerm, upperTerm = None, termValue
+        else:
+            lowerTerm, upperTerm = termValue, None
         includeLower, includeUpper = relation == '>=' or lowerTerm is None, relation == '<=' or upperTerm is None
         return rangeQuery(rangeQueryType, field, lowerTerm, upperTerm, includeLower, includeUpper)
 
@@ -187,13 +192,8 @@ class _Converter(object):
             return list(self._analyzer.post_analyse(index, token))
         return [token]
 
-    def _createQuery(self, field, term):
-        if self._fieldRegistry.isNumeric(field):
-            rangeQueryType, pythonType = self._fieldRegistry.rangeQueryAndType(field)
-            term = pythonType(term) if term else None
-            return rangeQuery(rangeQueryType, field, term, term, True, True)
-        else:
-            return dict(type="TermQuery", term=self._createStringTerm(field, term))
+    def _createTermQuery(self, field, term):
+        return dict(type="TermQuery", term=self._createStringTerm(field, term))
 
     def _createStringTerm(self, field, value):
         if self._fieldRegistry.isDrilldownField(field):

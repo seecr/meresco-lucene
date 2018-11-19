@@ -4,8 +4,8 @@
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2015-2016, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2016, 2018 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -402,6 +402,10 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
         self.assertEquals(q, self._convert('intField < 3'))
         q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=None, upperTerm=3, includeLower=True, includeUpper=True)
         self.assertEquals(q, self._convert('intField <= 3'))
+        q = dict(type="RangeQuery", rangeType="Int", field='intField', lowerTerm=3, upperTerm=3, includeLower=True, includeUpper=True)
+        self.assertEquals(q, self._convert('intField = 3'))
+        self.assertEquals(q, self._convert(QueryExpression.searchterm(index='intField', relation='exact', term=3)))
+        self.assertEquals(q, self._convert(QueryExpression.searchterm(index='intField', relation='=', term=3)))
 
     def testLongRangeQuery(self):
         # (field, lowerTerm, upperTerm, includeLower, includeUpper)

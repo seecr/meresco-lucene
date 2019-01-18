@@ -453,7 +453,7 @@ public class Lucene {
         allCollectors.topCollector = topCollector(q.start, stop, q.sort);
         SuperCollector<?> resultsCollector = allCollectors.topCollector;
         if (q.dedupField != null) {
-            allCollectors.dedupCollector = new DeDupFilterSuperCollector(q.dedupField, q.dedupSortField, allCollectors.topCollector);
+            allCollectors.dedupCollector = new DeDupFilterSuperCollector(q.dedupField, q.dedupSortField1, q.dedupSortField2, allCollectors.topCollector);
             resultsCollector = allCollectors.dedupCollector;
         }
         allCollectors.facetCollector = facetCollector(q.facets, reference.taxonomyReader);

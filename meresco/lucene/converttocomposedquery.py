@@ -37,13 +37,16 @@ from meresco.lucene.extractfilterqueries import ExtractFilterQueries
 
 
 class ConvertToComposedQuery(Observable):
-    def __init__(self, resultsFrom, matches=None, dedupFieldName=None, dedupSortFieldName=None, dedupByDefault=True, drilldownFieldnamesTranslate=lambda s: s):
+    def __init__(self, resultsFrom, matches=None, dedupFieldName=None, dedupSortFieldName1=None, dedupSortFieldName2=None, dedupByDefault=True, drilldownFieldnamesTranslate=lambda s: s):
         Observable.__init__(self)
         self._resultsFrom = resultsFrom
         self._matches = matches or []
         self._cores = set(cSpec['core'] for match in self._matches for cSpec in match)
         self._dedupFieldName = dedupFieldName
-        self._dedupSortFieldName = dedupSortFieldName
+        self._dedupSortFieldName1 = dedupSortFieldName1
+        print self._dedupSortFieldName1
+        self._dedupSortFieldName2 = dedupSortFieldName2
+        print self._dedupSortFieldName2
         self._dedupByDefault = dedupByDefault
         self._drilldownFieldnamesTranslate = drilldownFieldnamesTranslate
         self._clusteringEnabled = True
@@ -96,7 +99,10 @@ class ConvertToComposedQuery(Observable):
         if self._dedupFieldName:
             if 'true' == extraArguments.get('x-filter-common-keys', ['true' if self._dedupByDefault else 'false'])[0]:
                 setattr(cq, "dedupField", self._dedupFieldName)
-                setattr(cq, "dedupSortField", self._dedupSortFieldName)
+                print 'A',self._dedupSortFieldName1
+                setattr(cq, "dedupSortField1", self._dedupSortFieldName1)
+                print 'A',self._dedupSortFieldName2
+                setattr(cq, "dedupSortField2", self._dedupSortFieldName2)
 
         if self._clusteringEnabled and 'true' == extraArguments.get('x-clustering', [None])[0]:
             setattr(cq, "clustering", True)

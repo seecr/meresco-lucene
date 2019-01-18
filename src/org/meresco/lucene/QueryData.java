@@ -51,7 +51,8 @@ public class QueryData {
     public Sort sort;
     public SuggestionRequest suggestionRequest;
     public String dedupField;
-    public String dedupSortField;
+    public String dedupSortField1;
+    public String dedupSortField2;
     public boolean clustering;
     public ClusterConfig clusterConfig;
 
@@ -67,7 +68,8 @@ public class QueryData {
         this.sort = converter.convertToSort(object.getJsonArray("sortKeys"));
         this.suggestionRequest = converter.convertToSuggestionRequest(object.getJsonObject("suggestionRequest"));
         this.dedupField = object.getString("dedupField", null);
-        this.dedupSortField = object.getString("dedupSortField", null);
+        this.dedupSortField1 = object.getString("dedupSortField1", null);
+        this.dedupSortField2 = object.getString("dedupSortField2", null);
         this.clustering = object.getBoolean("clustering", false);
         this.clusterConfig = ClusterConfig.parseFromJsonObject(object);
     }

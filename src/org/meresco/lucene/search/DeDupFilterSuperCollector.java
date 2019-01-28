@@ -47,7 +47,6 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
     private final SuperCollector<?> delegate;
     private ConcurrentHashMap<Long, AtomicReference<DeDupFilterSuperCollector.Key>> keys = new ConcurrentHashMap<>();
     private ConcurrentHashMap<Integer, Long> docIdToWorkId = new ConcurrentHashMap<>();
-    private IndexReaderContext topLevelReaderContext = null;
 
     public DeDupFilterSuperCollector(String keyName, String sortByFieldName1, String sortByFieldName2, SuperCollector<?> delegate) {
         super();
@@ -67,6 +66,13 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
         int totalHits = 0;
         for (DeDupFilterSubCollector dsc : this.subs) {
             totalHits += dsc.getTotalHits();
+        }
+        return totalHits;
+    }
+
+    public int adjustTotalHits(int totalHits) {
+        for (AtomicReference<DeDupFilterSuperCollector.Key> key : keys.values()) {
+            totalHits -= (key.get().count - 1);
         }
         return totalHits;
     }
@@ -233,7 +239,7 @@ class DeDupFilterSubCollector extends SubCollector {
         this.totalHits++;
         long keyValue = this.keyValues.get(docId);
         if (keyValue > 0) {
-            docIdToWorkId.put(docId, keyValue);
+            docIdToWorkId.put(currentDocBase+docId, keyValue);
             countDocForKey(docId, keyValue);
         }
         this.delegate.collect(docId);
@@ -278,6 +284,7 @@ class DeDupFilterSubCollector extends SubCollector {
 
     @Override
     public void complete() throws IOException {
+        System.err.println("sub total hits: "+totalHits);
         this.delegate.complete();
     }
 

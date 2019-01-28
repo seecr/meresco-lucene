@@ -88,15 +88,20 @@ public class SuperIndexSearcher extends IndexSearcher {
     }
 
     public void search(Query q, SuperCollector<?> c) throws Throwable {
-        SubCollector subCollector = c.subCollector();
-        Weight weight = super.createNormalizedWeight(q, subCollector.needsScores());
-        ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(this.executor);
-        List<Future<String>> futures = new ArrayList<Future<String>>();
-        for (List<LeafReaderContext> leaf_group : this.grouped_leaves.subList(1, this.grouped_leaves.size()))
-            futures.add(ecs.submit(new SearchTask(leaf_group, weight, c.subCollector()), "Done"));
-        new SearchTask(this.grouped_leaves.get(0), weight, subCollector).run();
+        ExecutorCompletionService<String> ecs = new ExecutorCompletionService<>(this.executor);
+        List<Future<String>> futures = new ArrayList<>();
+        boolean isFirstTask = true;
+        Weight weight=null;
+        for (List<LeafReaderContext> leaf_group : this.grouped_leaves.subList(0, this.grouped_leaves.size())) {
+            SubCollector subCollector = c.subCollector();
+            if (isFirstTask) {
+                weight = super.createNormalizedWeight(q, subCollector.needsScores());
+                isFirstTask = false;
+            }
+            futures.add(ecs.submit(new SearchTask(leaf_group, weight, subCollector), "Done"));
+        }
         try {
-            for (int i = 0; i < this.grouped_leaves.size() - 1; i++) {
+            for (int i = 0; i < this.grouped_leaves.size(); i++) {
                 ecs.take().get();
             }
         } catch (ExecutionException e) {

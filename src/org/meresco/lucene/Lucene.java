@@ -235,7 +235,7 @@ public class Lucene {
             Collection<KeySuperCollector> keyCollectors) throws Throwable {
         int totalHits;
         List<LuceneResponse.Hit> hits;
-        Collectors collectors = null;
+        Collectors collectors;
         Map<String, Long> times = new HashMap<>();
         long t0 = System.currentTimeMillis();
         int topCollectorStop = q.stop;
@@ -267,6 +267,9 @@ public class Lucene {
                 } else {
                     t1 = System.currentTimeMillis();
                     hits = topDocsResponse(q, collectors);
+                    if (collectors.dedupCollector!=null) {
+                        totalHits = collectors.dedupCollector.adjustTotalHits(totalHits);
+                    }
                     times.put("topDocsTime", System.currentTimeMillis() - t1);
                 }
 
@@ -368,57 +371,88 @@ public class Lucene {
     }
 
     private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws Exception {
+
         collectors.topCollector.getTotalHits();
+
+        List<LuceneResponse.Hit> hits = new ArrayList<>();
 
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;
 
-        HashSet<Long> seenIds = new HashSet<>();
-        int count = q.start;
-        List<LuceneResponse.Hit> hits = new ArrayList<>();
-        for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(q.stop == 0 ? 1 : q.start).scoreDocs) { // TODO: temp fix for
-                                                                                                         // start/stop = 0
-            if (count >= q.stop) {
-                break;
-            }
-            Document document;
-            Hit hit;
-            if (dedupCollector != null) {
-                Long workId = dedupCollector.getWorkId(scoreDoc.doc);
-                if (seenIds.contains(workId)) {
-                    continue;
-                }
-                seenIds.add(workId);
+        System.err.println("q.start and q.stop: "+q.start+" "+q.stop);
 
-                DeDupFilterSuperCollector.Key keyForDocId;
-                int newDocId;
-                if (workId==null) {
-                    keyForDocId = null;
-                    newDocId = scoreDoc.doc;
-                }
-                else {
-                    keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc);
-                    newDocId = keyForDocId.getDocId();
-                }
+        int loopCount = 0;
 
-                document = getDocument(newDocId);
-                DedupHit dedupHit = new DedupHit(document.get(ID_FIELD), scoreDoc.score);
-                dedupHit.duplicateField = dedupCollector.getKeyName();
-                dedupHit.duplicateCount = 1;
-                if (keyForDocId != null) {
-                    dedupHit.duplicateCount = keyForDocId.getCount();
+        int startAt = q.stop == 0 ? 1 : q.start; // TODO: temp fix for start/stop = 0
+        if (dedupCollector == null) {
+            int count = startAt;
+            for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(startAt).scoreDocs) {
+                if (count >= q.stop) {
+                    break;
                 }
-                dedupHit.score = scoreDoc.score;
-                hit = dedupHit;
-            } else {
-                document = getDocument(scoreDoc.doc);
-                hit = new Hit(document.get(ID_FIELD), scoreDoc.score);
+                Document document = getDocument(scoreDoc.doc);
+                Hit hit = new Hit(document.get(ID_FIELD), scoreDoc.score);
+                for (String storedField : q.storedFields) {
+                    hit.fields.add(document.getFields(storedField));
+                }
+                hits.add(hit);
+                count++;
             }
-            for (String storedField : q.storedFields) {
-                hit.fields.add(document.getFields(storedField));
-            }
-            hits.add(hit);
-            count++;
         }
+        else {
+            HashSet<Long> seenIds = new HashSet<>();
+            int count = 0;
+            System.err.println(">>"+collectors.topCollector.topDocs(0).scoreDocs.length);
+            for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(0).scoreDocs) {
+                loopCount++;
+
+                if (count >= q.stop) {
+                    System.err.println("break");
+                    break;
+                }
+
+                Long workId = dedupCollector.getWorkId(scoreDoc.doc);
+                System.out.println("count="+(count+1)+", docId="+scoreDoc.doc+", workId="+workId);
+                if (workId != null) {
+                    if (seenIds.contains(workId)) {
+                        System.err.println("continue");
+                        continue;
+                    }
+                    seenIds.add(workId);
+                }
+
+                if (count >= startAt) {
+                    if (count==startAt) {
+                        System.err.println("***");
+                    }
+                    DeDupFilterSuperCollector.Key keyForDocId;
+                    int newDocId;
+                    if (workId==null) {
+                        keyForDocId = null;
+                        newDocId = scoreDoc.doc;
+                    }
+                    else {
+                        keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc);
+                        newDocId = keyForDocId.getDocId();
+                    }
+
+                    Document document = getDocument(newDocId);
+                    DedupHit dedupHit = new DedupHit(document.get(ID_FIELD), scoreDoc.score);
+                    dedupHit.duplicateField = dedupCollector.getKeyName();
+                    dedupHit.duplicateCount = 1;
+                    if (keyForDocId != null) {
+                        dedupHit.duplicateCount = keyForDocId.getCount();
+                    }
+                    dedupHit.score = scoreDoc.score;
+                    Hit hit = dedupHit;
+                    for (String storedField : q.storedFields) {
+                        hit.fields.add(document.getFields(storedField));
+                    }
+                    hits.add(hit);
+                }
+                count++;
+            }
+        }
+        System.err.println("Finished (loopCount="+loopCount+")");
         return hits;
     }
 

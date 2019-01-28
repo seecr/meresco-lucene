@@ -368,28 +368,45 @@ public class Lucene {
     }
 
     private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws Exception {
-        int totalHits = collectors.topCollector.getTotalHits();
+        collectors.topCollector.getTotalHits();
 
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;
 
-        HashSet<String> seenIds = new HashSet<>();
+        HashSet<Long> seenIds = new HashSet<>();
         int count = q.start;
         List<LuceneResponse.Hit> hits = new ArrayList<>();
         for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(q.stop == 0 ? 1 : q.start).scoreDocs) { // TODO: temp fix for
                                                                                                          // start/stop = 0
-            if (count >= q.stop)
+            if (count >= q.stop) {
                 break;
+            }
             Document document;
             Hit hit;
             if (dedupCollector != null) {
-                DeDupFilterSuperCollector.Key keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc);
-                int newDocId = keyForDocId == null ? scoreDoc.doc : keyForDocId.getDocId();
+                Long workId = dedupCollector.getWorkId(scoreDoc.doc);
+                if (seenIds.contains(workId)) {
+                    continue;
+                }
+                seenIds.add(workId);
+
+                DeDupFilterSuperCollector.Key keyForDocId;
+                int newDocId;
+                if (workId==null) {
+                    keyForDocId = null;
+                    newDocId = scoreDoc.doc;
+                }
+                else {
+                    keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc);
+                    newDocId = keyForDocId.getDocId();
+                }
+
                 document = getDocument(newDocId);
                 DedupHit dedupHit = new DedupHit(document.get(ID_FIELD), scoreDoc.score);
                 dedupHit.duplicateField = dedupCollector.getKeyName();
                 dedupHit.duplicateCount = 1;
-                if (keyForDocId != null)
+                if (keyForDocId != null) {
                     dedupHit.duplicateCount = keyForDocId.getCount();
+                }
                 dedupHit.score = scoreDoc.score;
                 hit = dedupHit;
             } else {

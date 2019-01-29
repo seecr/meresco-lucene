@@ -257,6 +257,14 @@ public class Lucene {
         if (q.dedupField != null) {
             moreRecords = 100;
         }
+
+        Query filter = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Query[0]));
+
+        Query query = mergeQueryAndFilter(q.query, filter);
+        if (drilldownQueries != null) {
+            query = createDrilldownQuery(query, drilldownQueries);
+        }
+
         try {
             while (true) {
                 loopCount++;
@@ -264,11 +272,7 @@ public class Lucene {
                     System.err.println("clusterMoreRecords=" + clusterConfig.clusterMoreRecords);
                 }
                 collectors = createCollectors(q, topCollectorStop + moreRecords, keyCollectors, scoreCollectors, reference);
-                Query filter = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Query[0]));
 
-                Query query = mergeQueryAndFilter(q.query, filter);
-                if (drilldownQueries != null)
-                    query = createDrilldownQuery(query, drilldownQueries);
                 long t1 = System.currentTimeMillis();
                 ((SuperIndexSearcher) reference.searcher).search(query, collectors.root);
                 times.put("searchTime", System.currentTimeMillis() - t1);

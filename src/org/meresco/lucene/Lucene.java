@@ -240,16 +240,30 @@ public class Lucene {
         long t0 = System.currentTimeMillis();
         int topCollectorStop = q.stop;
         SearcherAndTaxonomy reference = data.getManager().acquire();
+        int loopCount=0;
+        int prevTotalHits = 0;
+        int adjustedTotalHits;
+        int moreRecords = 0;
+        ClusterConfig clusterConfig = null;
+        if (q.clustering) {
+            clusterConfig = q.clusterConfig;
+            if (clusterConfig == null) {
+                clusterConfig = data.getSettings().clusterConfig;
+            }
+            if (clusterConfig != null) {
+                moreRecords = clusterConfig.clusterMoreRecords;
+            }
+        }
+        if (q.dedupField != null) {
+            moreRecords = 100;
+        }
         try {
             while (true) {
-                ClusterConfig clusterConfig = null;
-                if (q.clustering) {
-                    clusterConfig = q.clusterConfig;
-                    if (clusterConfig == null) {
-                        clusterConfig = data.getSettings().clusterConfig;
-                    }
+                loopCount++;
+                if (clusterConfig!=null) {
+                    System.err.println("clusterMoreRecords=" + clusterConfig.clusterMoreRecords);
                 }
-                collectors = createCollectors(q, topCollectorStop + (q.clustering ? clusterConfig.clusterMoreRecords : 0), keyCollectors, scoreCollectors, reference);
+                collectors = createCollectors(q, topCollectorStop + moreRecords, keyCollectors, scoreCollectors, reference);
                 Query filter = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Query[0]));
 
                 Query query = mergeQueryAndFilter(q.query, filter);
@@ -260,6 +274,7 @@ public class Lucene {
                 times.put("searchTime", System.currentTimeMillis() - t1);
 
                 totalHits = collectors.topCollector.getTotalHits();
+                adjustedTotalHits = totalHits;
                 if (q.clustering) {
                     t1 = System.currentTimeMillis();
                     hits = clusterTopDocsResponse(q, collectors, times, reference.searcher.getIndexReader(), clusterConfig);
@@ -268,20 +283,24 @@ public class Lucene {
                     t1 = System.currentTimeMillis();
                     hits = topDocsResponse(q, collectors);
                     if (collectors.dedupCollector!=null) {
-                        totalHits = collectors.dedupCollector.adjustTotalHits(totalHits);
+                        adjustedTotalHits = collectors.dedupCollector.adjustTotalHits(totalHits);
                     }
                     times.put("topDocsTime", System.currentTimeMillis() - t1);
                 }
 
-                if (hits.size() == q.stop - q.start || topCollectorStop >= totalHits)
+                System.err.println("hits.size() = "+hits.size());
+                if (hits.size() == (q.stop - q.start) || prevTotalHits == totalHits) {
                     break;
+                }
+                prevTotalHits = totalHits;
                 topCollectorStop *= 10;
                 if (topCollectorStop > 10000) {
                     break;
                 }
             }
+            System.err.println("loopCount="+loopCount);
 
-            LuceneResponse response = new LuceneResponse(totalHits);
+            LuceneResponse response = new LuceneResponse(adjustedTotalHits);
             if (collectors.dedupCollector != null)
                 response.totalWithDuplicates = collectors.dedupCollector.getTotalHits();
 
@@ -410,7 +429,8 @@ public class Lucene {
                     break;
                 }
 
-                Long workId = dedupCollector.getWorkId(scoreDoc.doc);
+                DeDupFilterSuperCollector.Key deDupKey = dedupCollector.keyForDocId(scoreDoc.doc);
+                Long workId = deDupKey != null ? deDupKey.getDeDupKey() : null;
                 System.out.println("count="+(count+1)+", docId="+scoreDoc.doc+", workId="+workId);
                 if (workId != null) {
                     if (seenIds.contains(workId)) {

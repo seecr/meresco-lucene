@@ -51,19 +51,12 @@ public class SuperIndexSearcher extends IndexSearcher {
         super(reader);
         this.executor = executor;
         this.grouped_leaves = this.group_leaves(reader.leaves(), tasks);
-//        for (List<LeafReaderContext> l : this.grouped_leaves) {
-//            int t = 0;
-//            for (LeafReaderContext ctx : l)
-//                t += ctx.reader().numDocs();
-//             System.out.print(" " + t + " ");
-//        }
-//        System.out.println();
     }
 
     private List<List<LeafReaderContext>> group_leaves(List<LeafReaderContext> leaves, int tasks) {
-        List<List<LeafReaderContext>> slices = new ArrayList<List<LeafReaderContext>>(tasks);
+        List<List<LeafReaderContext>> slices = new ArrayList<>(tasks);
         for (int i = 0; i < tasks; i++)
-            slices.add(new ArrayList<LeafReaderContext>());
+            slices.add(new ArrayList<>());
         int sizes[] = new int[tasks];
         int max_i = 0;
         for (LeafReaderContext context : leaves) {

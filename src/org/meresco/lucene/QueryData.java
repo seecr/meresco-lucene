@@ -51,8 +51,7 @@ public class QueryData {
     public Sort sort;
     public SuggestionRequest suggestionRequest;
     public String dedupField;
-    public String dedupSortField1;
-    public String dedupSortField2;
+    public String dedupSortFields[];
     public boolean clustering;
     public ClusterConfig clusterConfig;
 
@@ -68,13 +67,24 @@ public class QueryData {
         this.sort = converter.convertToSort(object.getJsonArray("sortKeys"));
         this.suggestionRequest = converter.convertToSuggestionRequest(object.getJsonObject("suggestionRequest"));
         this.dedupField = object.getString("dedupField", null);
-        this.dedupSortField1 = object.getString("dedupSortField1", null);
-        this.dedupSortField2 = object.getString("dedupSortField2", null);
+        storeDedupSortFieldsJson(object.getJsonArray("dedupSortFields"));
         this.clustering = object.getBoolean("clustering", false);
         this.clusterConfig = ClusterConfig.parseFromJsonObject(object);
     }
 
     public QueryData() {
 
+    }
+
+    public void storeDedupSortFieldsJson(JsonArray arr) {
+        if (arr==null) {
+            dedupSortFields = new String[0];
+        }
+        else {
+            dedupSortFields = new String[arr.size()];
+            for (int i=0; i<arr.size(); i++) {
+                dedupSortFields[i] = arr.getString(i);
+            }
+        }
     }
 }

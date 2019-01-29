@@ -509,11 +509,11 @@ public class JsonQueryConverterTest {
                 .add("query", Json.createObjectBuilder()
                     .add("type", "MatchAllDocsQuery"))
                 .add("dedupField", "__key__")
-                .add("dedupSortField", "__key__.date")
+                .add("dedupSortFields", "__key__.date")
                 .build();
         QueryData q = new QueryData(new StringReader(json.toString()), queryConverter);
         assertEquals("__key__", q.dedupField);
-        assertEquals("__key__.date", q.dedupSortField);
+        assertEquals("__key__.date", q.dedupSortFields);
     }
 
     @Test

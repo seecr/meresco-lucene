@@ -445,9 +445,6 @@ public class Lucene {
                 }
 
                 if (count >= startAt) {
-                    if (count==startAt) {
-                        System.err.println("***");
-                    }
                     DeDupFilterSuperCollector.Key keyForDocId;
                     int newDocId;
                     if (workId==null) {
@@ -528,7 +525,7 @@ public class Lucene {
         allCollectors.topCollector = topCollector(q.start, stop, q.sort);
         SuperCollector<?> resultsCollector = allCollectors.topCollector;
         if (q.dedupField != null) {
-            allCollectors.dedupCollector = new DeDupFilterSuperCollector(q.dedupField, q.dedupSortFields, allCollectors.topCollector);
+            allCollectors.dedupCollector = new DeDupFilterSuperCollector(q.dedupField, q.dedupSortField, allCollectors.topCollector);
             resultsCollector = allCollectors.dedupCollector;
         }
         allCollectors.facetCollector = facetCollector(q.facets, reference.taxonomyReader);

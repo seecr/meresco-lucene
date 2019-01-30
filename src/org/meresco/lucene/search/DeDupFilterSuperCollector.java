@@ -49,7 +49,15 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
         this.sortByFieldNames = sortByFieldName;
         this.delegate = delegate;
 
-        System.out.println("keyName: "+keyName+" sortByNames: "+this.sortByFieldNames[0]+" and "+this.sortByFieldNames[1]);
+        if (this.sortByFieldNames.length==0) {
+            System.out.println("Nothing!!!");
+        }
+        else if (this.sortByFieldNames.length==1) {
+            System.out.println("keyName: "+keyName+" sortByNames: "+this.sortByFieldNames[0]);
+        }
+        else {
+            System.out.println("keyName: "+keyName+" sortByNames: "+this.sortByFieldNames[0]+" and "+this.sortByFieldNames[1]);
+        }
     }
 
     public String getKeyName() {

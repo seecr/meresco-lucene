@@ -42,7 +42,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         SeecrTestCase.setUp(self)
         self.setupDna()
 
-    def setupDna(self, dedupFieldName="__key__", dedupSortFieldNames=["__key__.date"], dedupByDefault=True):
+    def setupDna(self, dedupFieldName="__key__", dedupSortFieldName="__key__.date", dedupByDefault=True):
         self.observer = CallTrace('observer', emptyGeneratorMethods=['executeComposedQuery'])
         self.response = LuceneResponse()
         def executeComposedQuery(*args, **kwargs):
@@ -63,7 +63,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
                             )
                         ],
                         dedupFieldName=dedupFieldName,
-                        dedupSortFieldNames=dedupSortFieldNames,
+                        dedupSortFieldName=dedupSortFieldName,
                         dedupByDefault=dedupByDefault,
                         drilldownFieldnamesTranslate=lambda name: 'prefix.' + name if name == 'toBePrefixed' else name,
                     ),

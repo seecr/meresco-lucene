@@ -70,7 +70,7 @@ class IntegrationState(SeecrIntegrationState):
         start = time()
         print "Creating database in", self.integrationTempdir
         try:
-            self._runExecutable(join(self.testdataDir, 'upload.py'), processName='IntegrationUpload', cwd=self.testdataDir, port=self.httpPort, redirect=False, timeoutInSeconds=60)
+            self._runExecutable(join(self.testdataDir, 'upload.py'), processName='IntegrationUpload', cwd=self.testdataDir, port=self.httpPort, redirect=False, timeoutInSeconds=30)
             sleepWheel(5)
             postRequest(self.luceneServerPort, "/default/settings/", data=JsonDict(commitCount=1).dumps(), parse=False)
             print "Finished creating database in %s seconds" % (time() - start)

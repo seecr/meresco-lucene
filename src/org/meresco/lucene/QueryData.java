@@ -30,13 +30,13 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.json.*;
-
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.JsonQueryConverter.SuggestionRequest;
+
+import javax.json.*;
 
 
 public class QueryData {
@@ -64,7 +64,7 @@ public class QueryData {
         this.sort = converter.convertToSort(object.getJsonArray("sortKeys"));
         this.suggestionRequest = converter.convertToSuggestionRequest(object.getJsonObject("suggestionRequest"));
         this.dedupField = object.getString("dedupField", null);
-        storeDedupSortFieldsJson(object);
+        getDedupSortFieldsFromJson(object);
         this.clustering = object.getBoolean("clustering", false);
         this.clusterConfig = ClusterConfig.parseFromJsonObject(object);
     }
@@ -73,7 +73,7 @@ public class QueryData {
 
     }
 
-    public void storeDedupSortFieldsJson(JsonObject object) {
+    public void getDedupSortFieldsFromJson(JsonObject object) {
         JsonValue v = object.get("_dedupSortField");
         if (v==null) {
             dedupSortField = new String[0];

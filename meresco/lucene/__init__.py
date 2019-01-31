@@ -42,10 +42,6 @@ if not isfile(sofile) or stat(sofile).st_mtime < lastMtime:                     
     if result:                                                                   #DO_NOT_DISTRIBUTE
         exit(result)                                                             #DO_NOT_DISTRIBUTE
 sysPath.insert(0, libDir)                                                        #DO_NOT_DISTRIBUTE
-print srcDir
-import sys
-sys.stdout.flush()
-
 
 from meresco.pylucene import getJVM
 VM = getJVM()

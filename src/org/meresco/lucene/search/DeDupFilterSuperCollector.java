@@ -48,16 +48,6 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
         this.keyName = keyName;
         this.sortByFieldNames = sortByFieldName;
         this.delegate = delegate;
-
-        if (this.sortByFieldNames.length==0) {
-            System.out.println("Nothing!!!");
-        }
-        else if (this.sortByFieldNames.length==1) {
-            System.out.println("keyName: "+keyName+" sortByNames: "+this.sortByFieldNames[0]);
-        }
-        else {
-            System.out.println("keyName: "+keyName+" sortByNames: "+this.sortByFieldNames[0]+" and "+this.sortByFieldNames[1]);
-        }
     }
 
     public String getKeyName() {
@@ -165,7 +155,7 @@ class DeDupFilterSubCollector extends SubCollector {
     private final String keyName;
     private final String sortByFieldNames[];
     private NumericDocValues sortByDocValues[];
-    private NumericDocValues keyDocValues; // key value == work identifier
+    private NumericDocValues keyDocValues;
     private int totalHits = 0;
     LeafReaderContext context;
 
@@ -195,8 +185,6 @@ class DeDupFilterSubCollector extends SubCollector {
         for (int i=0; i<sortByFieldNames.length; i++) {
             kv = context.reader().getNumericDocValues(sortByFieldNames[i]);
             if (kv == null) {
-                System.out.println("sortByFieldNames[" + sortByFieldNames[i] + "] did not result in DocValues");
-                System.out.flush();
                 kv = DocValues.emptyNumeric();
             }
             this.sortByDocValues[i] = kv;
@@ -254,7 +242,6 @@ class DeDupFilterSubCollector extends SubCollector {
 
     @Override
     public void complete() throws IOException {
-        System.err.println("sub total hits: "+totalHits);
         this.delegate.complete();
     }
 

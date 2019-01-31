@@ -172,6 +172,7 @@ class LuceneTest(IntegrationTestCase):
         )
 
         response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.groupfield", dedupSortField="__id__", core="main2", stop=3)
+        self.assertEqual(3, len(response.hits))
         self.assertEqual(10, response.total)
         self.assertEqual(1000, response.totalWithDuplicates)
         self.assertEquals(

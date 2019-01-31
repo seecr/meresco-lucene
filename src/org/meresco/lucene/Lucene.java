@@ -233,17 +233,15 @@ public class Lucene {
 
     public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Query> filters, List<AggregateScoreSuperCollector> scoreCollectors,
             Collection<KeySuperCollector> keyCollectors) throws Throwable {
-        int totalHits;
+
         List<LuceneResponse.Hit> hits;
         Collectors collectors;
         Map<String, Long> times = new HashMap<>();
         long t0 = System.currentTimeMillis();
         int topCollectorStop = q.stop;
-        SearcherAndTaxonomy reference = data.getManager().acquire();
-        int loopCount=0;
-        int prevTotalHits = 0;
-        int adjustedTotalHits;
         int moreRecords = 0;
+        SearcherAndTaxonomy reference = data.getManager().acquire();
+
         ClusterConfig clusterConfig = null;
         if (q.clustering) {
             clusterConfig = q.clusterConfig;
@@ -266,19 +264,19 @@ public class Lucene {
         }
 
         try {
+            int totalHits=0;
+            int adjustedTotalHits=0;
+
             while (true) {
-                loopCount++;
-                if (clusterConfig!=null) {
-                    System.err.println("clusterMoreRecords=" + clusterConfig.clusterMoreRecords);
-                }
                 collectors = createCollectors(q, topCollectorStop + moreRecords, keyCollectors, scoreCollectors, reference);
 
                 long t1 = System.currentTimeMillis();
                 ((SuperIndexSearcher) reference.searcher).search(query, collectors.root);
                 times.put("searchTime", System.currentTimeMillis() - t1);
 
-                totalHits = collectors.topCollector.getTotalHits();
-                adjustedTotalHits = totalHits;
+                if (totalHits==0) {
+                    totalHits = collectors.topCollector.getTotalHits();
+                }
                 if (q.clustering) {
                     t1 = System.currentTimeMillis();
                     hits = clusterTopDocsResponse(q, collectors, times, reference.searcher.getIndexReader(), clusterConfig);
@@ -286,27 +284,27 @@ public class Lucene {
                 } else {
                     t1 = System.currentTimeMillis();
                     hits = topDocsResponse(q, collectors);
-                    if (collectors.dedupCollector!=null) {
+                    if (adjustedTotalHits==0 && collectors.dedupCollector!=null) {
                         adjustedTotalHits = collectors.dedupCollector.adjustTotalHits(totalHits);
                     }
                     times.put("topDocsTime", System.currentTimeMillis() - t1);
                 }
+                if (adjustedTotalHits==0) {
+                    adjustedTotalHits = totalHits;
+                }
 
-                System.err.println("hits.size() = "+hits.size());
-                if (hits.size() == (q.stop - q.start) || prevTotalHits == totalHits) {
+                if (hits.size() == q.stop - q.start || (topCollectorStop + moreRecords) >= totalHits) {
                     break;
                 }
-                prevTotalHits = totalHits;
                 topCollectorStop *= 10;
                 if (topCollectorStop > 10000) {
                     break;
                 }
             }
-            System.err.println("loopCount="+loopCount);
 
             LuceneResponse response = new LuceneResponse(adjustedTotalHits);
             if (collectors.dedupCollector != null)
-                response.totalWithDuplicates = collectors.dedupCollector.getTotalHits();
+                response.totalWithDuplicates = collectors.topCollector.getTotalHits();
 
             response.hits = hits;
 
@@ -401,10 +399,6 @@ public class Lucene {
 
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;
 
-        System.err.println("q.start and q.stop: "+q.start+" "+q.stop);
-
-        int loopCount = 0;
-
         int startAt = q.stop == 0 ? 1 : q.start; // TODO: temp fix for start/stop = 0
         if (dedupCollector == null) {
             int count = startAt;
@@ -424,44 +418,40 @@ public class Lucene {
         else {
             HashSet<Long> seenIds = new HashSet<>();
             int count = 0;
-            System.err.println(">>"+collectors.topCollector.topDocs(0).scoreDocs.length);
-            for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(0).scoreDocs) {
-                loopCount++;
+            TopDocs topDocs = collectors.topCollector.topDocs(0);
+            for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
 
                 if (count >= q.stop) {
-                    System.err.println("break");
                     break;
                 }
 
                 DeDupFilterSuperCollector.Key deDupKey = dedupCollector.keyForDocId(scoreDoc.doc);
                 Long workId = deDupKey != null ? deDupKey.getDeDupKey() : null;
-                System.out.println("count="+(count+1)+", docId="+scoreDoc.doc+", workId="+workId);
                 if (workId != null) {
                     if (seenIds.contains(workId)) {
-                        System.err.println("continue");
                         continue;
                     }
                     seenIds.add(workId);
                 }
 
                 if (count >= startAt) {
-                    DeDupFilterSuperCollector.Key keyForDocId;
+                    DeDupFilterSuperCollector.Key dedupKey;
                     int newDocId;
                     if (workId==null) {
-                        keyForDocId = null;
+                        dedupKey = null;
                         newDocId = scoreDoc.doc;
                     }
                     else {
-                        keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc);
-                        newDocId = keyForDocId.getDocId();
+                        dedupKey = dedupCollector.keyForDocId(scoreDoc.doc);
+                        newDocId = dedupKey.getDocId();
                     }
 
                     Document document = getDocument(newDocId);
                     DedupHit dedupHit = new DedupHit(document.get(ID_FIELD), scoreDoc.score);
                     dedupHit.duplicateField = dedupCollector.getKeyName();
                     dedupHit.duplicateCount = 1;
-                    if (keyForDocId != null) {
-                        dedupHit.duplicateCount = keyForDocId.getCount();
+                    if (dedupKey != null) {
+                        dedupHit.duplicateCount = dedupKey.getCount();
                     }
                     dedupHit.score = scoreDoc.score;
                     Hit hit = dedupHit;
@@ -473,7 +463,6 @@ public class Lucene {
                 count++;
             }
         }
-        System.err.println("Finished (loopCount="+loopCount+")");
         return hits;
     }
 

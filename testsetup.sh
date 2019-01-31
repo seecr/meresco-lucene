@@ -61,4 +61,3 @@ find tmp -name '*.py' -exec sed -r -e "
 export SEECRTEST_USR_SHARE="${mydir}/tmp/usr/share"
 runtests "$@"
 rm -rf tmp build
-

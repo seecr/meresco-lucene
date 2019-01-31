@@ -182,12 +182,12 @@ class LuceneTest(IntegrationTestCase):
 
     def testDedupSortFieldAsList(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
-        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.groupfield", dedupSortField=["__id__"], core="main2", stop=3)
-        self.assertEqual(3, len(response.hits))
+        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.groupfield", dedupSortField=["__id__"], core="main2", stop=100000)
+        self.assertEqual(10, len(response.hits))
         self.assertEqual(10, response.total)
         self.assertEqual(1000, response.totalWithDuplicates)
         self.assertEquals(
-            [100] * 3,
+            [100] * 10,
             [hit.duplicateCount['__key__.groupfield'] for hit in response.hits]
         )
 

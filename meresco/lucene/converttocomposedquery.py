@@ -94,9 +94,6 @@ class ConvertToComposedQuery(Observable):
                 cq.setRankQuery(core=core, query=cqlToExpression(' OR '.join(q)))
 
         if self._dedupFieldName:
-            print "***",self._dedupSortFieldName,"***"
-            import sys
-            sys.stdout.flush()
             if 'true' == extraArguments.get('x-filter-common-keys', ['true' if self._dedupByDefault else 'false'])[0]:
                 setattr(cq, "dedupField", self._dedupFieldName)
                 setattr(cq, "dedupSortField", self._dedupSortFieldName)

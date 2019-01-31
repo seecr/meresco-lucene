@@ -180,6 +180,17 @@ class LuceneTest(IntegrationTestCase):
             [hit.duplicateCount['__key__.groupfield'] for hit in response.hits]
         )
 
+    def testDedupSortFieldAsList(self):
+        remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
+        response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.groupfield", dedupSortField=["__id__"], core="main2", stop=3)
+        self.assertEqual(3, len(response.hits))
+        self.assertEqual(10, response.total)
+        self.assertEqual(1000, response.totalWithDuplicates)
+        self.assertEquals(
+            [100] * 3,
+            [hit.duplicateCount['__key__.groupfield'] for hit in response.hits]
+        )
+
     def testDutchStemming(self):
         self.assertEquals(1, self.numberOfRecords("field5=katten"))
         self.assertEquals(1, self.numberOfRecords("field4=kat"))

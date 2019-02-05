@@ -88,8 +88,5 @@ public class QueryData {
                 dedupSortField[0] = ((JsonString)v).getString();
             }
         }
-        if (dedupSortField==null) {
-            dedupSortField = new String[0];
-        }
     }
 }

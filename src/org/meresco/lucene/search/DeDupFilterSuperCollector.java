@@ -46,7 +46,12 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
     public DeDupFilterSuperCollector(String keyName, String sortByFieldName[], SuperCollector<?> delegate) {
         super();
         this.keyName = keyName;
-        this.sortByFieldName = sortByFieldName;
+        if (sortByFieldName==null) {
+            this.sortByFieldName = new String[0];
+        }
+        else {
+            this.sortByFieldName = sortByFieldName;
+        }
         this.delegate = delegate;
     }
 

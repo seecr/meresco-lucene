@@ -555,7 +555,7 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
         result = this.multiLucene.executeComposedQuery(q);
         LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
-        assertTrue(result.queryTime < 50);
+        assertTrue(result.queryTime < 5);
         LuceneTest.addDocument(this.luceneB, "B-N>A-MU", new HashMap() {{this.put("B", 60);}}, new HashMap() {{this.put("N", "true"); this.put("O", "false"); this.put("P", "false");}});
         result = this.multiLucene.executeComposedQuery(q);
         LuceneTest.compareHits(result, "A-M", "A-MQ", "A-MQU");

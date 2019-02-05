@@ -63,7 +63,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
     public void testCollectorTransparentlyDelegatesToNextCollector() throws Throwable {
         addDocument("urn:1", 2L, null);
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
-        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", "__sort__", tc);
+        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         assertEquals(1, tc.topDocs(0).totalHits);
     }
@@ -83,7 +83,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         addDocument("urn:1", 2L, 1L);
         addDocument("urn:2", 2L, 2L);
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
-        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", "__sort__", tc);
+        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         TopDocs topDocsResult = tc.topDocs(0);
         assertEquals(1, topDocsResult.totalHits);
@@ -105,7 +105,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         addDocument("urn:5",  1L, 2009L); // result 2x
         //expected: "urn:2', "urn:3" and "urn:5" in no particular order
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
-        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", "__sort__", tc);
+        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         TopDocs topDocsResult = tc.topDocs(0);
         assertEquals(3, topDocsResult.totalHits);
@@ -129,7 +129,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
     public void testSilentyYieldsWrongResultWhenFieldNameDoesNotMatch() throws Throwable {
         addDocument("urn:1", 2L, null);
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
-        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__wrong_field__", "__sort__", tc);
+        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__wrong_field__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         assertEquals(1, tc.topDocs(0).totalHits);
     }
@@ -148,7 +148,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         addDocument("urn:A", null, null);
         addDocument("urn:B", null, null); // trigger a merge;
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
-        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", "__sort__", tc);
+        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         assertEquals(10, tc.topDocs(0).totalHits);
     }

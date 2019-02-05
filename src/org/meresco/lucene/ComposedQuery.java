@@ -44,7 +44,6 @@ import javax.json.JsonValue;
 import org.apache.lucene.search.Query;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 
-
 public class ComposedQuery {
     public String resultsFrom;
     public Set<String> cores = new HashSet<String>();
@@ -89,7 +88,7 @@ public class ComposedQuery {
         }
         cq.queryData.sort = queryConverter.convertToSort(json.getJsonArray("_sortKeys"));
         cq.queryData.dedupField = json.getString("_dedupField", null);
-        cq.queryData.getDedupSortFieldsFromJson(json);
+        cq.queryData.getDedupSortFieldsFromJson(json, "_dedupSortField");
         cq.queryData.clustering = json.getBoolean("_clustering", false);
         JsonArray fields = json.getJsonArray("_storedFields");
         if (fields != null) {

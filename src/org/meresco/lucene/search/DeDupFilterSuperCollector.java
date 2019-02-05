@@ -225,8 +225,6 @@ class DeDupFilterSubCollector extends SubCollector {
 		        break;
 		    }
             retryCount++;
-		    System.out.println(retryCount);
-		    System.out.flush();
 		    if (retryCount > 10000) {
 		        System.out.println("More than 10000 tries in DeDupFilterSubCollector.collect.");
 		        System.out.flush();

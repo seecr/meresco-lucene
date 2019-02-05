@@ -1,2 +1,2 @@
 
-version = '$Version: 1.2.4$'[9:-1].strip()
+version = '$Version: 0.2.x$'[9:-1].strip()

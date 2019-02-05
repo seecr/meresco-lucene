@@ -64,7 +64,7 @@ public class QueryData {
         this.sort = converter.convertToSort(object.getJsonArray("sortKeys"));
         this.suggestionRequest = converter.convertToSuggestionRequest(object.getJsonObject("suggestionRequest"));
         this.dedupField = object.getString("dedupField", null);
-        getDedupSortFieldsFromJson(object);
+        getDedupSortFieldsFromJson(object, "dedupSortField");
         this.clustering = object.getBoolean("clustering", false);
         this.clusterConfig = ClusterConfig.parseFromJsonObject(object);
     }
@@ -73,12 +73,9 @@ public class QueryData {
 
     }
 
-    public void getDedupSortFieldsFromJson(JsonObject object) {
-        JsonValue v = object.get("_dedupSortField");
-        if (v==null) {
-            dedupSortField = new String[0];
-        }
-        else {
+    public void getDedupSortFieldsFromJson(JsonObject object, String fieldName) {
+        JsonValue v = object.get(fieldName);
+        if (v!=null) {
             if (v.getValueType() == JsonValue.ValueType.ARRAY) {
                 JsonArray arr = (JsonArray)v;
                 dedupSortField = new String[arr.size()];
@@ -90,6 +87,9 @@ public class QueryData {
                 dedupSortField = new String[1];
                 dedupSortField[0] = ((JsonString)v).getString();
             }
+        }
+        if (dedupSortField==null) {
+            dedupSortField = new String[0];
         }
     }
 }

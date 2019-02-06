@@ -190,7 +190,6 @@ class LuceneTest(IntegrationTestCase):
         )
 
         response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('groupfield=1'), dedupField="__key__.groupfield", dedupSortField=["__numeric__.sort1","__numeric__.sort2"], core="main2", stop=10000)
-        print response.__dict__
         self.assertEqual(1, len(response.hits))
         self.assertEqual(1, response.total)
         self.assertEqual(100, response.totalWithDuplicates)
@@ -198,7 +197,6 @@ class LuceneTest(IntegrationTestCase):
         )
 
         response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('groupfield=1'), dedupField="__key__.groupfield", dedupSortField=["__numeric__.sort2","__numeric__.sort1"], core="main2", stop=10000)
-        print response.__dict__
         self.assertEqual(1, len(response.hits))
         self.assertEqual(1, response.total)
         self.assertEqual(100, response.totalWithDuplicates)

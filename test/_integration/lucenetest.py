@@ -202,7 +202,7 @@ class LuceneTest(IntegrationTestCase):
         self.assertEqual(1, len(response.hits))
         self.assertEqual(1, response.total)
         self.assertEqual(100, response.totalWithDuplicates)
-        self.assertEquals(['record:100'], [hit.id for hit in response.hits]
+        self.assertEquals(['record:199'], [hit.id for hit in response.hits]
         )
 
     def testDutchStemming(self):

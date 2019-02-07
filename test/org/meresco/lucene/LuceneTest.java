@@ -570,7 +570,7 @@ public class LuceneTest extends SeecrTestCase {
         q.query = new MatchAllDocsQuery();
         q.facets = new ArrayList<FacetRequest>() {{add(new FacetRequest("cat_A", 10));}};
         q.dedupField = "__key__";
-        q.dedupSortField = Arrays.asList("__key__.date").toArray(new String[0]);
+        q.dedupSortFields = Arrays.asList("__key__.date").toArray(new String[0]);
         LuceneResponse result = lucene.executeQuery(q);
         // expected two hits: "urn:2" (3x) and "urn:4" in no particular order
         assertEquals(2, result.total);

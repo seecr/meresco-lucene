@@ -267,6 +267,8 @@ public class Lucene {
             int totalHits=0;
             int adjustedTotalHits=0;
 
+            boolean isFirstLoop = true;
+
             while (true) {
                 collectors = createCollectors(q, topCollectorStop + moreRecords, keyCollectors, scoreCollectors, reference);
 
@@ -274,9 +276,17 @@ public class Lucene {
                 ((SuperIndexSearcher) reference.searcher).search(query, collectors.root);
                 times.put("searchTime", System.currentTimeMillis() - t1);
 
-                if (totalHits==0) {
+                if (isFirstLoop) {
                     totalHits = collectors.topCollector.getTotalHits();
+                    if (collectors.dedupCollector != null) {
+                        adjustedTotalHits = collectors.dedupCollector.adjustTotalHits(totalHits);
+                    }
+                    else {
+                        adjustedTotalHits = totalHits;
+                    }
                 }
+                isFirstLoop = false;
+
                 if (q.clustering) {
                     t1 = System.currentTimeMillis();
                     hits = clusterTopDocsResponse(q, collectors, times, reference.searcher.getIndexReader(), clusterConfig);
@@ -284,13 +294,7 @@ public class Lucene {
                 } else {
                     t1 = System.currentTimeMillis();
                     hits = topDocsResponse(q, collectors);
-                    if (adjustedTotalHits==0 && collectors.dedupCollector!=null) {
-                        adjustedTotalHits = collectors.dedupCollector.adjustTotalHits(totalHits);
-                    }
                     times.put("topDocsTime", System.currentTimeMillis() - t1);
-                }
-                if (adjustedTotalHits==0) {
-                    adjustedTotalHits = totalHits;
                 }
 
                 if (hits.size() == q.stop - q.start || (topCollectorStop + moreRecords) >= totalHits) {
@@ -300,6 +304,7 @@ public class Lucene {
                 if (topCollectorStop > 10000) {
                     break;
                 }
+
             }
 
             LuceneResponse response = new LuceneResponse(adjustedTotalHits);
@@ -514,7 +519,7 @@ public class Lucene {
         allCollectors.topCollector = topCollector(q.start, stop, q.sort);
         SuperCollector<?> resultsCollector = allCollectors.topCollector;
         if (q.dedupField != null) {
-            allCollectors.dedupCollector = new DeDupFilterSuperCollector(q.dedupField, q.dedupSortField, allCollectors.topCollector);
+            allCollectors.dedupCollector = new DeDupFilterSuperCollector(q.dedupField, q.dedupSortFields, allCollectors.topCollector);
             resultsCollector = allCollectors.dedupCollector;
         }
         allCollectors.facetCollector = facetCollector(q.facets, reference.taxonomyReader);

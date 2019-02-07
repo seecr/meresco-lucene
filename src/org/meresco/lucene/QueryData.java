@@ -48,7 +48,7 @@ public class QueryData {
     public Sort sort;
     public SuggestionRequest suggestionRequest;
     public String dedupField;
-    public String dedupSortField[];
+    public String dedupSortFields[];
     public boolean clustering;
     public ClusterConfig clusterConfig;
 
@@ -78,14 +78,14 @@ public class QueryData {
         if (v!=null) {
             if (v.getValueType() == JsonValue.ValueType.ARRAY) {
                 JsonArray arr = (JsonArray)v;
-                dedupSortField = new String[arr.size()];
+                dedupSortFields = new String[arr.size()];
                 for (int i=0; i<arr.size(); i++) {
-                    dedupSortField[i] = arr.getString(i);
+                    dedupSortFields[i] = arr.getString(i);
                 }
             }
             else if (v.getValueType() == JsonValue.ValueType.STRING) {
-                dedupSortField = new String[1];
-                dedupSortField[0] = ((JsonString)v).getString();
+                dedupSortFields = new String[1];
+                dedupSortFields[0] = ((JsonString)v).getString();
             }
         }
     }

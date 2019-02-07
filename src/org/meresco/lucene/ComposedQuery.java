@@ -44,6 +44,7 @@ import javax.json.JsonValue;
 import org.apache.lucene.search.Query;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 
+
 public class ComposedQuery {
     public String resultsFrom;
     public Set<String> cores = new HashSet<String>();

@@ -95,7 +95,6 @@ class Lucene(Observable):
             clustering=clustering,
             storedFields=storedFields or [],
         )
-
         if suggestionRequest:
             jsonDict["suggestionRequest"] = suggestionRequest
         responseDict = (yield self._connect.send(jsonDict=jsonDict, path='/query/'))
@@ -163,6 +162,7 @@ class Lucene(Observable):
             inner._lucene = self
             inner.name = self._name
             inner.numDocs = self.numDocs
+
 
 def luceneResponseFromDict(responseDict):
     hits = [Hit(**hit) for hit in responseDict['hits']]

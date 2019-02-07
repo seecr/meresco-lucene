@@ -38,19 +38,19 @@ import org.apache.lucene.search.Scorer;
 public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubCollector> {
 
     private final String keyName;
-    private final String sortByFieldName[];
+    private final String sortByFieldNames[];
     private final SuperCollector<?> delegate;
     private ConcurrentHashMap<Long, AtomicReference<DeDupFilterSuperCollector.Key>> keys = new ConcurrentHashMap<>();
     private IndexReaderContext topLevelReaderContext = null;
 
-    public DeDupFilterSuperCollector(String keyName, String sortByFieldName[], SuperCollector<?> delegate) {
+    public DeDupFilterSuperCollector(String keyName, String sortByFieldNames[], SuperCollector<?> delegate) {
         super();
         this.keyName = keyName;
-        if (sortByFieldName==null) {
-            this.sortByFieldName = new String[0];
+        if (sortByFieldNames ==null) {
+            this.sortByFieldNames = new String[0];
         }
         else {
-            this.sortByFieldName = sortByFieldName;
+            this.sortByFieldNames = sortByFieldNames;
         }
         this.delegate = delegate;
     }
@@ -77,7 +77,7 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
     @Override
     protected DeDupFilterSubCollector createSubCollector() throws IOException {
         SubCollector delegateSubCollector = this.delegate.subCollector();
-        return new DeDupFilterSubCollector(this.keyName, this.sortByFieldName, delegateSubCollector, this.keys);
+        return new DeDupFilterSubCollector(this.keyName, this.sortByFieldNames, delegateSubCollector, this.keys);
     }
 
     @Override
@@ -105,29 +105,29 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
         private long enumeratedKeyValue;
         private int baseId;
         private int docId;
-        private long sortByValue[];
+        private long sortByValues[];
         private int count;
         private long deDupKey;
 
-        public Key(long enumeratedKeyValue, int baseId, int docId, long sortByValue[], int count, long deDupKey) {
+        public Key(long enumeratedKeyValue, int baseId, int docId, long sortByValues[], int count, long deDupKey) {
             this.enumeratedKeyValue = enumeratedKeyValue;
             this.baseId = baseId;
             this.docId = docId;
-            this.sortByValue = sortByValue;
+            this.sortByValues = sortByValues;
             this.count = count;
             this.deDupKey = deDupKey;
         }
 
-        public Key(Key key, long enumeratedKeyValue, int baseId, int docId, long sortByValue[], long deDupKey) {
-            this(enumeratedKeyValue, baseId, docId, sortByValue, 1, deDupKey);
+        public Key(Key key, long enumeratedKeyValue, int baseId, int docId, long sortByValues[], long deDupKey) {
+            this(enumeratedKeyValue, baseId, docId, sortByValues, 1, deDupKey);
             if (key != null) {
-                for (int n=0; n<sortByValue.length; n++) {
-                    if (sortByValue[n] > key.sortByValue[n]) {
+                for (int n = 0; n< sortByValues.length; n++) {
+                    if (sortByValues[n] > key.sortByValues[n]) {
                         break;
                     }
-                    else if (sortByValue[n] < key.sortByValue[n]) {
+                    else if (sortByValues[n] < key.sortByValues[n]) {
                         this.enumeratedKeyValue = key.enumeratedKeyValue;
-                        this.sortByValue = key.sortByValue;
+                        this.sortByValues = key.sortByValues;
                         this.baseId = key.baseId;
                         this.docId = key.docId;
                         break;
@@ -158,21 +158,21 @@ class DeDupFilterSubCollector extends SubCollector {
 
     private int currentDocBase;
     private final String keyName;
-    private final String sortByFieldName[];
+    private final String sortByFieldNames[];
     private NumericDocValues sortByDocValues[];
     private NumericDocValues keyDocValues;
     private int totalHits = 0;
     LeafReaderContext context;
 
     public DeDupFilterSubCollector(String keyName,
-                                   String sortByFieldName[],
+                                   String sortByFieldNames[],
                                    SubCollector delegate,
                                    ConcurrentHashMap<Long, AtomicReference<DeDupFilterSuperCollector.Key>> keys) {
         super();
         this.delegate = delegate;
         this.keys = keys;
         this.keyName = keyName;
-        this.sortByFieldName = sortByFieldName;
+        this.sortByFieldNames = sortByFieldNames;
     }
 
     @Override
@@ -186,9 +186,9 @@ class DeDupFilterSubCollector extends SubCollector {
             kv = DocValues.emptyNumeric();
         this.keyDocValues = kv;
 
-        this.sortByDocValues = new NumericDocValues[sortByFieldName.length];
-        for (int i = 0; i< sortByFieldName.length; i++) {
-            kv = context.reader().getNumericDocValues(sortByFieldName[i]);
+        this.sortByDocValues = new NumericDocValues[sortByFieldNames.length];
+        for (int i = 0; i< sortByFieldNames.length; i++) {
+            kv = context.reader().getNumericDocValues(sortByFieldNames[i]);
             if (kv == null) {
                 kv = DocValues.emptyNumeric();
             }
@@ -209,8 +209,8 @@ class DeDupFilterSubCollector extends SubCollector {
 	private void countDocForKey(int docId, long keyValue) {
 		int absDoc = this.currentDocBase + docId;
 		long enumeratedKeyValue = this.keyDocValues.get(docId);
-		long sortByValues[] = new long[sortByFieldName.length];
-		for (int i = 0; i< sortByFieldName.length; i++) {
+		long sortByValues[] = new long[sortByFieldNames.length];
+		for (int i = 0; i< sortByFieldNames.length; i++) {
 		    sortByValues[i] = this.sortByDocValues[i].get(docId);
         }
 

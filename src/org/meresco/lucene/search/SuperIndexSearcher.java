@@ -51,12 +51,19 @@ public class SuperIndexSearcher extends IndexSearcher {
         super(reader);
         this.executor = executor;
         this.grouped_leaves = this.group_leaves(reader.leaves(), tasks);
+//        for (List<LeafReaderContext> l : this.grouped_leaves) {
+//            int t = 0;
+//            for (LeafReaderContext ctx : l)
+//                t += ctx.reader().numDocs();
+//             System.out.print(" " + t + " ");
+//        }
+//        System.out.println();
     }
 
     private List<List<LeafReaderContext>> group_leaves(List<LeafReaderContext> leaves, int tasks) {
-        List<List<LeafReaderContext>> slices = new ArrayList<>(tasks);
+        List<List<LeafReaderContext>> slices = new ArrayList<List<LeafReaderContext>>(tasks);
         for (int i = 0; i < tasks; i++)
-            slices.add(new ArrayList<>());
+            slices.add(new ArrayList<LeafReaderContext>());
         int sizes[] = new int[tasks];
         int max_i = 0;
         for (LeafReaderContext context : leaves) {
@@ -81,20 +88,15 @@ public class SuperIndexSearcher extends IndexSearcher {
     }
 
     public void search(Query q, SuperCollector<?> c) throws Throwable {
-        ExecutorCompletionService<String> ecs = new ExecutorCompletionService<>(this.executor);
-        List<Future<String>> futures = new ArrayList<>();
-        boolean isFirstTask = true;
-        Weight weight=null;
-        for (List<LeafReaderContext> leaf_group : this.grouped_leaves.subList(0, this.grouped_leaves.size())) {
-            SubCollector subCollector = c.subCollector();
-            if (isFirstTask) {
-                weight = super.createNormalizedWeight(q, subCollector.needsScores());
-                isFirstTask = false;
-            }
-            futures.add(ecs.submit(new SearchTask(leaf_group, weight, subCollector), "Done"));
-        }
+        SubCollector subCollector = c.subCollector();
+        Weight weight = super.createNormalizedWeight(q, subCollector.needsScores());
+        ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(this.executor);
+        List<Future<String>> futures = new ArrayList<Future<String>>();
+        for (List<LeafReaderContext> leaf_group : this.grouped_leaves.subList(1, this.grouped_leaves.size()))
+            futures.add(ecs.submit(new SearchTask(leaf_group, weight, c.subCollector()), "Done"));
+        new SearchTask(this.grouped_leaves.get(0), weight, subCollector).run();
         try {
-            for (int i = 0; i < this.grouped_leaves.size(); i++) {
+            for (int i = 0; i < this.grouped_leaves.size() - 1; i++) {
                 ecs.take().get();
             }
         } catch (ExecutionException e) {

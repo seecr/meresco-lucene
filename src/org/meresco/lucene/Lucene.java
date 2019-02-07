@@ -430,19 +430,19 @@ public class Lucene {
                     break;
                 }
 
-                DeDupFilterSuperCollector.Key deDupKey = dedupCollector.keyForDocId(scoreDoc.doc);
-                Long workId = deDupKey != null ? deDupKey.getDeDupKey() : null;
-                if (workId != null) {
-                    if (seenIds.contains(workId)) {
+                DeDupFilterSuperCollector.Key key = dedupCollector.keyForDocId(scoreDoc.doc);
+                Long deDupKey = key != null ? key.getDeDupKey() : null;
+                if (deDupKey != null) {
+                    if (seenIds.contains(deDupKey)) {
                         continue;
                     }
-                    seenIds.add(workId);
+                    seenIds.add(deDupKey);
                 }
 
                 if (count >= startAt) {
                     DeDupFilterSuperCollector.Key dedupKey;
                     int newDocId;
-                    if (workId==null) {
+                    if (deDupKey==null) {
                         dedupKey = null;
                         newDocId = scoreDoc.doc;
                     }

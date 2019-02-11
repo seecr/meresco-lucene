@@ -397,9 +397,7 @@ public class Lucene {
     }
 
     private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws Exception {
-
         List<LuceneResponse.Hit> hits = new ArrayList<>();
-
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;
 
         int startAt = q.stop == 0 ? 1 : q.start; // TODO: temp fix for start/stop = 0
@@ -423,11 +421,9 @@ public class Lucene {
             int count = 0;
             TopDocs topDocs = collectors.topCollector.topDocs(0);
             for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-
                 if (count >= q.stop) {
                     break;
                 }
-
                 DeDupFilterSuperCollector.Key key = dedupCollector.keyForDocId(scoreDoc.doc);
                 Long deDupKey = key != null ? key.getDeDupKey() : null;
                 if (deDupKey != null) {
@@ -436,7 +432,6 @@ public class Lucene {
                     }
                     seenIds.add(deDupKey);
                 }
-
                 if (count >= startAt) {
                     DeDupFilterSuperCollector.Key dedupKey;
                     int newDocId;

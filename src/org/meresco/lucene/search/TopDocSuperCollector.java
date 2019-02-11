@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -44,15 +44,28 @@ public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubColle
     }
 
     public TopDocs topDocs(int start) throws IOException {
-        TopDocs[] topdocs = this.sort == null ? new TopDocs[this.subs.size()] : new TopFieldDocs[this.subs.size()];
-        for (int i = 0; i < topdocs.length; i++)
-            topdocs[i] = this.subs.get(i).topdocs;
-        if (this.sort == null)
+        TopDocs[] topdocs;
+        if (this.sort==null) {
+            topdocs = new TopDocs[this.subs.size()];
+            for (int i = 0; i < topdocs.length; i++) {
+                topdocs[i] = this.subs.get(i).topdocs;
+            }
             return TopDocs.merge(start, numHits - start, topdocs, true);
-        return TopDocs.merge(this.sort, start, this.numHits - start, (TopFieldDocs[]) topdocs, true);
+        }
+        else {
+            topdocs = new TopFieldDocs[this.subs.size()];
+            for (int i = 0; i < topdocs.length; i++) {
+                topdocs[i] = this.subs.get(i).topdocs;
+            }
+            return TopDocs.merge(this.sort, start, this.numHits - start, (TopFieldDocs[]) topdocs, true);
+        }
     }
 
     public long getTotalHits() throws IOException {
-        return this.topDocs(0).totalHits;
+        long totalHits = 0;
+        for (TopDocSubCollector<?> sub : this.subs) {
+            totalHits += sub.topdocs.totalHits;
+        }
+        return totalHits;
     }
 }

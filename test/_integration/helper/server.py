@@ -46,7 +46,7 @@ from meresco.html import DynamicHtml
 from meresco.xml import namespaces
 from meresco.sequentialstore import MultiSequentialStorage, StorageComponentAdapter
 
-from meresco.lucene import Lucene, Fields2LuceneDoc, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, DrilldownField, LuceneSettings
+from meresco.lucene import Lucene, Fields2LuceneDoc, KEY_PREFIX, NUMERIC_PREFIX, SORTED_PREFIX, UNTOKENIZED_PREFIX, version, MultiLucene, DrilldownField, LuceneSettings
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 from meresco.lucene.remote import LuceneRemoteService, LuceneRemote
 from meresco.lucene.fieldregistry import FieldRegistry, INTFIELD
@@ -89,7 +89,7 @@ def uploadHelix(lucene, storageComponent, drilldownFields, fieldRegistry):
                                     indexHelix,
                                 ),
                             ),
-                            (FilterField(lambda name: 'fieldHier' not in name and not name.startswith('__key__')),
+                            (FilterField(lambda name: 'fieldHier' not in name and not name.startswith('__key__') and not name in ['sort1','sort2']),
                                 indexHelix,
                             ),
                             (FilterField(lambda name: name in ['intfield1', 'intfield_missing']),
@@ -110,6 +110,20 @@ def uploadHelix(lucene, storageComponent, drilldownFields, fieldRegistry):
                             (FilterField(lambda name: name == 'field2'),
                                 (RenameField(lambda name: UNTOKENIZED_PREFIX + name + '.copy'),
                                     indexHelix,
+                                )
+                            ),
+                            (FilterField(lambda name: name in ['groupfield']),
+                                (RenameField(lambda name: KEY_PREFIX + name),
+                                    (TransformFieldValue(lambda value: int(value)),
+                                        indexHelix,
+                                    )
+                                )
+                            ),
+                            (FilterField(lambda name: name in ['sort1', 'sort2']),
+                                (RenameField(lambda name: NUMERIC_PREFIX + name),
+                                    (TransformFieldValue(lambda value: int(value)),
+                                        indexHelix,
+                                    )
                                 )
                             ),
                         )

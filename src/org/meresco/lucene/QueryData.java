@@ -30,16 +30,13 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonString;
-
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.meresco.lucene.JsonQueryConverter.FacetRequest;
 import org.meresco.lucene.JsonQueryConverter.SuggestionRequest;
+
+import javax.json.*;
 
 
 public class QueryData {
@@ -51,7 +48,7 @@ public class QueryData {
     public Sort sort;
     public SuggestionRequest suggestionRequest;
     public String dedupField;
-    public String dedupSortField;
+    public String dedupSortFields[];
     public boolean clustering;
     public ClusterConfig clusterConfig;
 
@@ -67,12 +64,29 @@ public class QueryData {
         this.sort = converter.convertToSort(object.getJsonArray("sortKeys"));
         this.suggestionRequest = converter.convertToSuggestionRequest(object.getJsonObject("suggestionRequest"));
         this.dedupField = object.getString("dedupField", null);
-        this.dedupSortField = object.getString("dedupSortField", null);
+        getDedupSortFieldsFromJson(object, "dedupSortField");
         this.clustering = object.getBoolean("clustering", false);
         this.clusterConfig = ClusterConfig.parseFromJsonObject(object);
     }
 
     public QueryData() {
 
+    }
+
+    public void getDedupSortFieldsFromJson(JsonObject object, String fieldName) {
+        JsonValue v = object.get(fieldName);
+        if (v!=null) {
+            if (v.getValueType() == JsonValue.ValueType.ARRAY) {
+                JsonArray arr = (JsonArray)v;
+                dedupSortFields = new String[arr.size()];
+                for (int i=0; i<arr.size(); i++) {
+                    dedupSortFields[i] = arr.getString(i);
+                }
+            }
+            else if (v.getValueType() == JsonValue.ValueType.STRING) {
+                dedupSortFields = new String[1];
+                dedupSortFields[0] = ((JsonString)v).getString();
+            }
+        }
     }
 }

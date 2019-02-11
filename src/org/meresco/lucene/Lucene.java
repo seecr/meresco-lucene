@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -239,33 +239,59 @@ public class Lucene {
 
     public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Query> filters, List<AggregateScoreSuperCollector> scoreCollectors,
             Collection<KeySuperCollector> keyCollectors) throws Throwable {
-        long totalHits;
         List<LuceneResponse.Hit> hits;
-        Collectors collectors = null;
+        Collectors collectors;
         Map<String, Long> times = new HashMap<>();
         long t0 = System.currentTimeMillis();
         int topCollectorStop = q.stop;
+        int moreRecords = 0;
         SearcherAndTaxonomy reference = data.getManager().acquire();
-        try {
-            while (true) {
-                ClusterConfig clusterConfig = null;
-                if (q.clustering) {
-                    clusterConfig = q.clusterConfig;
-                    if (clusterConfig == null) {
-                        clusterConfig = data.getSettings().clusterConfig;
-                    }
-                }
-                collectors = createCollectors(q, topCollectorStop + (q.clustering ? clusterConfig.clusterMoreRecords : 0), keyCollectors, scoreCollectors, reference);
-                Query filter = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Query[0]));
 
-                Query query = mergeQueryAndFilter(q.query, filter);
-                if (drilldownQueries != null)
-                    query = createDrilldownQuery(query, drilldownQueries);
+        ClusterConfig clusterConfig = null;
+        if (q.clustering) {
+            clusterConfig = q.clusterConfig;
+            if (clusterConfig == null) {
+                clusterConfig = data.getSettings().clusterConfig;
+            }
+            if (clusterConfig != null) {
+                moreRecords = clusterConfig.clusterMoreRecords;
+            }
+        }
+        if (q.dedupField != null) {
+            moreRecords = 100;
+        }
+
+        Query filter = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Query[0]));
+
+        Query query = mergeQueryAndFilter(q.query, filter);
+        if (drilldownQueries != null) {
+            query = createDrilldownQuery(query, drilldownQueries);
+        }
+
+        try {
+            int totalHits=0;
+            int adjustedTotalHits=0;
+
+            boolean isFirstLoop = true;
+
+            while (true) {
+                collectors = createCollectors(q, topCollectorStop + moreRecords, keyCollectors, scoreCollectors, reference);
+
                 long t1 = System.currentTimeMillis();
                 ((SuperIndexSearcher) reference.searcher).search(query, collectors.root);
                 times.put("searchTime", System.currentTimeMillis() - t1);
 
-                totalHits = collectors.topCollector.getTotalHits();
+                if (isFirstLoop) {
+                    totalHits = collectors.topCollector.getTotalHits();
+                    if (collectors.dedupCollector != null) {
+                        adjustedTotalHits = collectors.dedupCollector.adjustTotalHits(totalHits);
+                    }
+                    else {
+                        adjustedTotalHits = totalHits;
+                    }
+                }
+                isFirstLoop = false;
+
                 if (q.clustering) {
                     t1 = System.currentTimeMillis();
                     hits = clusterTopDocsResponse(q, collectors, times, reference.searcher.getIndexReader(), clusterConfig);
@@ -276,17 +302,19 @@ public class Lucene {
                     times.put("topDocsTime", System.currentTimeMillis() - t1);
                 }
 
-                if (hits.size() == q.stop - q.start || topCollectorStop >= totalHits)
+                if (hits.size() == q.stop - q.start || (topCollectorStop + moreRecords) >= totalHits) {
                     break;
+                }
                 topCollectorStop *= 10;
                 if (topCollectorStop > 10000) {
                     break;
                 }
+
             }
 
-            LuceneResponse response = new LuceneResponse(totalHits);
+            LuceneResponse response = new LuceneResponse(adjustedTotalHits);
             if (collectors.dedupCollector != null)
-                response.totalWithDuplicates = collectors.dedupCollector.getTotalHits();
+                response.totalWithDuplicates = collectors.topCollector.getTotalHits();
 
             response.hits = hits;
 
@@ -375,39 +403,68 @@ public class Lucene {
     }
 
     private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws Exception {
-        long totalHits = collectors.topCollector.getTotalHits();
-
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;
 
-        HashSet<String> seenIds = new HashSet<>();
-        int count = q.start;
-        List<LuceneResponse.Hit> hits = new ArrayList<>();
-        for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(q.stop == 0 ? 1 : q.start).scoreDocs) { // TODO: temp fix for
-                                                                                                         // start/stop = 0
-            if (count >= q.stop)
-                break;
-            Document document;
-            Hit hit;
-            if (dedupCollector != null) {
-                DeDupFilterSuperCollector.Key keyForDocId = dedupCollector.keyForDocId(scoreDoc.doc);
-                int newDocId = keyForDocId == null ? scoreDoc.doc : keyForDocId.getDocId();
-                document = getDocument(newDocId);
-                DedupHit dedupHit = new DedupHit(document.get(ID_FIELD), scoreDoc.score);
-                dedupHit.duplicateField = dedupCollector.getKeyName();
-                dedupHit.duplicateCount = 1;
-                if (keyForDocId != null)
-                    dedupHit.duplicateCount = keyForDocId.getCount();
-                dedupHit.score = scoreDoc.score;
-                hit = dedupHit;
-            } else {
-                document = getDocument(scoreDoc.doc);
-                hit = new Hit(document.get(ID_FIELD), scoreDoc.score);
+        int startAt = q.stop == 0 ? 1 : q.start; // TODO: temp fix for start/stop = 0
+        if (dedupCollector == null) {
+            int count = startAt;
+            for (ScoreDoc scoreDoc : collectors.topCollector.topDocs(startAt).scoreDocs) {
+                if (count >= q.stop) {
+                    break;
+                }
+                Document document = getDocument(scoreDoc.doc);
+                Hit hit = new Hit(document.get(ID_FIELD), scoreDoc.score);
+                for (String storedField : q.storedFields) {
+                    hit.fields.add(document.getFields(storedField));
+                }
+                hits.add(hit);
+                count++;
             }
-            for (String storedField : q.storedFields) {
-                hit.fields.add(document.getFields(storedField));
+        }
+        else {
+            HashSet<Long> seenIds = new HashSet<>();
+            int count = 0;
+            TopDocs topDocs = collectors.topCollector.topDocs(0);
+            for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+                if (count >= q.stop) {
+                    break;
+                }
+                DeDupFilterSuperCollector.Key key = dedupCollector.keyForDocId(scoreDoc.doc);
+                Long deDupKey = key != null ? key.getDeDupKey() : null;
+                if (deDupKey != null) {
+                    if (seenIds.contains(deDupKey)) {
+                        continue;
+                    }
+                    seenIds.add(deDupKey);
+                }
+                if (count >= startAt) {
+                    DeDupFilterSuperCollector.Key dedupKey;
+                    int newDocId;
+                    if (deDupKey==null) {
+                        dedupKey = null;
+                        newDocId = scoreDoc.doc;
+                    }
+                    else {
+                        dedupKey = dedupCollector.keyForDocId(scoreDoc.doc);
+                        newDocId = dedupKey.getDocId();
+                    }
+
+                    Document document = getDocument(newDocId);
+                    DedupHit dedupHit = new DedupHit(document.get(ID_FIELD), scoreDoc.score);
+                    dedupHit.duplicateField = dedupCollector.getKeyName();
+                    dedupHit.duplicateCount = 1;
+                    if (dedupKey != null) {
+                        dedupHit.duplicateCount = dedupKey.getCount();
+                    }
+                    dedupHit.score = scoreDoc.score;
+                    Hit hit = dedupHit;
+                    for (String storedField : q.storedFields) {
+                        hit.fields.add(document.getFields(storedField));
+                    }
+                    hits.add(hit);
+                }
+                count++;
             }
-            hits.add(hit);
-            count++;
         }
         return hits;
     }
@@ -460,7 +517,7 @@ public class Lucene {
         allCollectors.topCollector = topCollector(q.start, stop, q.sort);
         SuperCollector<?> resultsCollector = allCollectors.topCollector;
         if (q.dedupField != null) {
-            allCollectors.dedupCollector = new DeDupFilterSuperCollector(q.dedupField, q.dedupSortField, allCollectors.topCollector);
+            allCollectors.dedupCollector = new DeDupFilterSuperCollector(q.dedupField, q.dedupSortFields, allCollectors.topCollector);
             resultsCollector = allCollectors.dedupCollector;
         }
         allCollectors.facetCollector = facetCollector(q.facets, reference.taxonomyReader);

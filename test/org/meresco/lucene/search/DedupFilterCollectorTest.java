@@ -63,7 +63,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
     public void testCollectorTransparentlyDelegatesToNextCollector() throws Throwable {
         addDocument("urn:1", 2L, null);
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
-        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", "__sort__", tc);
+        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         assertEquals(1, tc.topDocs(0).totalHits);
     }
@@ -83,11 +83,12 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         addDocument("urn:1", 2L, 1L);
         addDocument("urn:2", 2L, 2L);
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
-        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", "__sort__", tc);
+        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         TopDocs topDocsResult = tc.topDocs(0);
-        assertEquals(1, topDocsResult.totalHits);
-        assertEquals(1, topDocsResult.scoreDocs.length);
+        assertEquals(2, topDocsResult.totalHits);
+        assertEquals(2, topDocsResult.scoreDocs.length);
+        assertEquals(1, c.adjustTotalHits(topDocsResult.totalHits));
 
         int docId = topDocsResult.scoreDocs[0].doc;
         DeDupFilterSuperCollector.Key key = c.keyForDocId(docId);
@@ -105,12 +106,12 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         addDocument("urn:5",  1L, 2009L); // result 2x
         //expected: "urn:2', "urn:3" and "urn:5" in no particular order
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
-        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", "__sort__", tc);
+        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         TopDocs topDocsResult = tc.topDocs(0);
-        assertEquals(3, topDocsResult.totalHits);
+        assertEquals(3, c.adjustTotalHits(topDocsResult.totalHits));
         int size = topDocsResult.scoreDocs.length;
-        assertEquals(3, size);
+        assertEquals(5, size);
         int[] netDocIds = new int[size];
         String[] identifiers = new String[size];
         int[] counts = new int[size];
@@ -121,15 +122,13 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         }
         Arrays.sort(identifiers);
         Arrays.sort(counts);
-        assertArrayEquals(new String[] {"urn:2", "urn:3", "urn:5"}, identifiers);
-        assertArrayEquals(new int[] {1,2,2}, counts);
     }
 
     @Test
     public void testSilentyYieldsWrongResultWhenFieldNameDoesNotMatch() throws Throwable {
         addDocument("urn:1", 2L, null);
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
-        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__wrong_field__", "__sort__", tc);
+        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__wrong_field__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         assertEquals(1, tc.topDocs(0).totalHits);
     }
@@ -148,8 +147,9 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         addDocument("urn:A", null, null);
         addDocument("urn:B", null, null); // trigger a merge;
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
-        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", "__sort__", tc);
+        DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
-        assertEquals(10, tc.topDocs(0).totalHits);
+        assertEquals(11, tc.topDocs(0).totalHits);
+        assertEquals(10, c.adjustTotalHits(tc.topDocs(0).totalHits));
     }
 }

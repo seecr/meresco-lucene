@@ -13,7 +13,9 @@
 <intfield3>5003</intfield3>
 <field3>5N63 HYM1jM75SJjL sf2TCN1AyRK aY0JiT5zkx GXgRRuJo KN0NS SAIKdpT5ahZ6 dVg 7wwZ406ILmX JeYQEC2m</field3>
 <__key__.field>84</__key__.field>
-<__key__.groupfield>10</__key__.groupfield>
+<groupfield>10</groupfield>
+<sort1>25</sort1>
+<sort2>5</sort2>
 <fieldHier>
             <value>parent1</value>
             <value>child1</value>

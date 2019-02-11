@@ -44,15 +44,28 @@ public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubColle
     }
 
     public TopDocs topDocs(int start) throws IOException {
-        TopDocs[] topdocs = this.sort == null ? new TopDocs[this.subs.size()] : new TopFieldDocs[this.subs.size()];
-        for (int i = 0; i < topdocs.length; i++)
-            topdocs[i] = this.subs.get(i).topdocs;
-        if (this.sort == null)
+        TopDocs[] topdocs;
+        if (this.sort==null) {
+            topdocs = new TopDocs[this.subs.size()];
+            for (int i = 0; i < topdocs.length; i++) {
+                topdocs[i] = this.subs.get(i).topdocs;
+            }
             return TopDocs.merge(start, numHits - start, topdocs);
-        return TopDocs.merge(this.sort, start, this.numHits - start, (TopFieldDocs[]) topdocs);
+        }
+        else {
+            topdocs = new TopFieldDocs[this.subs.size()];
+            for (int i = 0; i < topdocs.length; i++) {
+                topdocs[i] = this.subs.get(i).topdocs;
+            }
+            return TopDocs.merge(this.sort, start, this.numHits - start, (TopFieldDocs[]) topdocs);
+        }
     }
 
     public int getTotalHits() throws IOException {
-        return this.topDocs(0).totalHits;
+        int totalHits = 0;
+        for (TopDocSubCollector<?> sub : this.subs) {
+            totalHits += sub.topdocs.totalHits;
+        }
+        return totalHits;
     }
 }

@@ -398,8 +398,6 @@ public class Lucene {
 
     private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws Exception {
 
-        collectors.topCollector.getTotalHits();
-
         List<LuceneResponse.Hit> hits = new ArrayList<>();
 
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;

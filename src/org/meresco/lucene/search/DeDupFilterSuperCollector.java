@@ -4,7 +4,7 @@
  *
  * Copyright (C) 2014-2016, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
- * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015-2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"

@@ -269,8 +269,8 @@ public class Lucene {
         }
 
         try {
-            int totalHits=0;
-            int adjustedTotalHits=0;
+            long totalHits=0;
+            long adjustedTotalHits=0;
 
             boolean isFirstLoop = true;
 
@@ -403,6 +403,7 @@ public class Lucene {
     }
 
     private List<Hit> topDocsResponse(QueryData q, Collectors collectors) throws Exception {
+        List<LuceneResponse.Hit> hits = new ArrayList<>();
         DeDupFilterSuperCollector dedupCollector = collectors.dedupCollector;
 
         int startAt = q.stop == 0 ? 1 : q.start; // TODO: temp fix for start/stop = 0

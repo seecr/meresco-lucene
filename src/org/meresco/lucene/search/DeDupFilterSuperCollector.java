@@ -36,7 +36,6 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
-
 import org.apache.lucene.search.Scorer;
 
 
@@ -71,7 +70,7 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
         return totalHits;
     }
 
-    public int adjustTotalHits(int totalHits) {
+    public long adjustTotalHits(long totalHits) {
         for (AtomicReference<DeDupFilterSuperCollector.Key> key : keys.values()) {
             totalHits -= (key.get().count - 1);
         }

@@ -48,7 +48,7 @@ import org.meresco.lucene.search.MerescoCluster.TermScore;
 
 public class LuceneResponse {
     public long total;
-    public Integer totalWithDuplicates;
+    public Long totalWithDuplicates;
     public List<Hit> hits = new ArrayList<>();
     public List<DrilldownData> drilldownData = new ArrayList<>();
     public long queryTime = 0;

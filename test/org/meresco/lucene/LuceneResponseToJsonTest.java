@@ -37,10 +37,10 @@ import javax.json.JsonObject;
 import javax.json.JsonString;
 import javax.json.JsonValue;
 
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.search.spell.SuggestWord;
 import org.junit.Test;
 import org.meresco.lucene.LuceneResponse.ClusterHit;
@@ -59,14 +59,14 @@ public class LuceneResponseToJsonTest {
         response.addHit(new LuceneResponse.Hit("id1", 0.1f));
         response.addHit(new LuceneResponse.Hit("id2", 0.2f));
         LuceneResponse.DrilldownData dd = new DrilldownData("field");
-        List<DrilldownData.Term> terms = new ArrayList<DrilldownData.Term>();
+        List<DrilldownData.Term> terms = new ArrayList<>();
         terms.add(new DrilldownData.Term("value1", 1));
         DrilldownData.Term t = new DrilldownData.Term("value2", 5);
-        t.subTerms = new ArrayList<DrilldownData.Term>();
+        t.subTerms = new ArrayList<>();
         t.subTerms.add(new DrilldownData.Term("subValue2", 1));
         terms.add(t);
         dd.terms = terms;
-        response.drilldownData = new ArrayList<LuceneResponse.DrilldownData>();
+        response.drilldownData = new ArrayList<>();
         response.drilldownData.add(dd);
 
         response.times.put("facetTime", 12L);
@@ -114,11 +114,11 @@ public class LuceneResponseToJsonTest {
     public void testHierarchicalDrilldown() {
         LuceneResponse response = new LuceneResponse(2);
         LuceneResponse.DrilldownData dd = new DrilldownData("field");
-        List<DrilldownData.Term> terms = new ArrayList<DrilldownData.Term>();
+        List<DrilldownData.Term> terms = new ArrayList<>();
         terms.add(new DrilldownData.Term("value1", 1));
         dd.path = new String[] {"subpath"};
         dd.terms = terms;
-        response.drilldownData = new ArrayList<LuceneResponse.DrilldownData>();
+        response.drilldownData = new ArrayList<>();
         response.drilldownData.add(dd);
         JsonObject jsonResponse = response.toJson();
         JsonArray ddData = jsonResponse.getJsonArray("drilldownData");
@@ -133,7 +133,7 @@ public class LuceneResponseToJsonTest {
     @Test
     public void testDedup() {
         LuceneResponse response = new LuceneResponse(2);
-        response.totalWithDuplicates = 5;
+        response.totalWithDuplicates = 5L;
         DedupHit hit1 = new DedupHit("id1", 0.1f);
         hit1.duplicateField = "__key__";
         hit1.duplicateCount = 2;

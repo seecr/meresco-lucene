@@ -3,7 +3,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 #
 # This file is part of "Meresco Lucene"
@@ -30,28 +30,21 @@ from os import listdir, getpid
 from sys import argv, exit
 from seecr.test.utils import postRequest
 from optparse import OptionParser
-from create import createRecord
 from time import time
 
 mypath = dirname(abspath(__file__))
 
-def main(port, random, start, **kwargs):
+def main(port, **kwargs):
     t0 = time()
     try:
-        if random <= 0:
-            uploadUpdateRequests(mypath, port)
-        else:
-            if start <= 0:
-                raise ValueError("Expected start > 0")
-            for recordNumber in xrange(start, start + random):
-                updateRequest = createRecord(recordNumber)
-                _uploadUpdateRequest(updateRequest, '/update', port)
+        uploadUpdateRequests(mypath, port)
     finally:
         t1 = time()
         print 'Took %s seconds' % (t1 - t0)
 
 def uploadUpdateRequests(datadir, uploadPort):
-    for coreDir in [join(datadir, core) for core in listdir(datadir) if isdir(join(datadir, core))]:
+    for core in ['main', 'main2']:
+        coreDir = join(datadir, core)
         uploadPath = '/update_%s' % basename(coreDir)
         requests = (join(coreDir, r) for r in sorted(listdir(coreDir)) if r.endswith('.updateRequest'))
         for filename in requests:
@@ -72,12 +65,10 @@ def _uploadUpdateRequest(updateRequest, uploadPath, uploadPort):
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-p", "--port", type=int)
-    parser.add_option('-n', '--random', type=int, default=0, help="Number of random created records to upload.")
-    parser.add_option('-s', '--start', type=int, default=1, help="Startrecord number.")
     parser.add_option("", "--pid", action="store_true", default=False)
     options, arguments = parser.parse_args()
     if options.port is None:
-        print """Usage: %s --port <portnumber> [--random <number> [--start <number>]]
+        print """Usage: %s --port <portnumber> [--start <number>]
         This will upload all requests in this directory to the given server on localhost.
         If used with random will create <number> new random records starting with start number (default 1)
         """ % argv[0]

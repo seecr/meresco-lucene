@@ -210,14 +210,14 @@ class LuceneTest(IntegrationTestCase):
         self.assertEqual(1, len(response.hits))
         self.assertEqual(1, response.total)
         self.assertEqual(100, response.totalWithDuplicates)
-        self.assertEquals(['record:199'], [hit.id for hit in response.hits]
+        self.assertEquals(['main2:record:199'], [hit.id for hit in response.hits]
         )
 
         response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('groupfield=1'), dedupField="__key__.groupfield", dedupSortField=["__numeric__.sort2","__numeric__.sort1"], core="main2", stop=10000)
         self.assertEqual(1, len(response.hits))
         self.assertEqual(1, response.total)
         self.assertEqual(100, response.totalWithDuplicates)
-        self.assertEquals(['record:199'], [hit.id for hit in response.hits]
+        self.assertEquals(['main2:record:199'], [hit.id for hit in response.hits]
         )
 
     def testDutchStemming(self):

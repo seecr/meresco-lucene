@@ -1,7 +1,7 @@
 <ucp:updateRequest xmlns:ucp="info:lc/xmlns/update-v1">
     <srw:version xmlns:srw="http://www.loc.gov/zing/srw/">1.0</srw:version>
     <ucp:action>info:srw/action/1/replace</ucp:action>
-    <ucp:recordIdentifier>record:146</ucp:recordIdentifier>
+    <ucp:recordIdentifier>main2:record:146</ucp:recordIdentifier>
     <srw:record xmlns:srw="http://www.loc.gov/zing/srw/">
         <srw:recordPacking>xml</srw:recordPacking>
         <srw:recordSchema>data</srw:recordSchema>

@@ -2,8 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015-2016, 2019 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -170,6 +170,11 @@ public class Lucene {
 
     public void deleteDocument(String identifier) throws Exception {
         data.getIndexWriter().deleteDocuments(new Term(ID_FIELD, identifier));
+        maybeCommitAfterUpdate();
+    }
+
+    public void deleteDocuments(Query query) throws Exception {
+        data.getIndexWriter().deleteDocuments(query);
         maybeCommitAfterUpdate();
     }
 

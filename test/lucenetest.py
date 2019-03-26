@@ -92,6 +92,13 @@ class LuceneTest(SeecrTestCase):
         self.assertEqual('/lucene/delete/?identifier=id1', self.post[0]['path'])
         self.assertEqual(None, self.post[0]['data'])
 
+    def testDeleteByQuery(self):
+        query = QueryExpressionToLuceneQueryDict([], LuceneSettings()).convert(cqlToExpression("field=value"))
+        consume(self._lucene.delete(luceneQuery=query))
+        self.assertEqual(1, len(self.post))
+        self.assertEqual('/lucene/delete/', self.post[0]['path'])
+        self.assertEqual('{"query": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"}}', self.post[0]['data'])
+
     def testExecuteQuery(self):
         self.response = JsonDict({
                 "total": 887,

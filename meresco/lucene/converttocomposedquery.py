@@ -93,11 +93,9 @@ class ConvertToComposedQuery(Observable):
             for core, q in queries.items():
                 cq.setRankQuery(core=core, query=cqlToExpression(' OR '.join(q)))
 
-        nbcaggregate = extraArguments.get('x-nbcaggregate', [])
-        if len(nbcaggregate) >=1:
-            nbcDedupField = '__key__.'+nbcaggregate[0]
-            print nbcDedupField
-            setattr(cq, "dedupField", nbcDedupField)
+        urlParamDedupFields = extraArguments.get('x-filter-common-keys-field', [])
+        if len(urlParamDedupFields) >=1:
+            setattr(cq, "dedupField", '__key__.'+urlParamDedupFields[0])
             setattr(cq, "dedupSortField", self._dedupSortFieldName)
         elif self._dedupFieldName:
             if 'true' == extraArguments.get('x-filter-common-keys', ['true' if self._dedupByDefault else 'false'])[0]:

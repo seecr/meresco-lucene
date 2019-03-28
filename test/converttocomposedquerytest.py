@@ -172,6 +172,22 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals(None, cq.dedupField)
         self.assertEquals(None, cq.dedupSortField)
 
+    def testDedupFieldParamSet(self):
+        self.setupDna(dedupByDefault=False)
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-filter-common-keys-field': ['dcterms:isFormatOf.uri']}, facets=[]))
+        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
+        cq = self.observer.calledMethods[0].kwargs['query']
+        self.assertEquals("__key__.dcterms:isFormatOf.uri", cq.dedupField)
+        self.assertEquals("__key__.date", cq.dedupSortField)
+
+    def testXFilterCommonKeysFieldOverridesXFilterCommonKeys(self):
+        self.setupDna(dedupByDefault=False)
+        consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-filter-common-keys-field': ['dcterms:isFormatOf.uri'], 'x-filter-common-keys': ['true']}, facets=[]))
+        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
+        cq = self.observer.calledMethods[0].kwargs['query']
+        self.assertEquals("__key__.dcterms:isFormatOf.uri", cq.dedupField)
+        self.assertEquals("__key__.date", cq.dedupSortField)
+
     def testClusteringNotEnabledIfTurnedOffInConfig(self):
         consume(self.tree.any.updateConfig(config=dict(features_disabled=['clustering']), indexConfig={}))
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('fiets'), extraArguments={'x-clustering': ['true']}, facets=[]))

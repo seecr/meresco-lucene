@@ -2,10 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016, 2019 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2015-2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Drents Archief http://www.drentsarchief.nl
-# Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
@@ -29,10 +29,10 @@
 from collections import defaultdict
 
 from cqlparser import cqlToExpression
-from cqlparser.cqltoexpression import QueryExpression
 
 from meresco.core import Observable, asyncnoreturnvalue
 from meresco.lucene import ComposedQuery
+from meresco.lucene.fieldregistry import KEY_PREFIX
 from meresco.lucene.extractfilterqueries import ExtractFilterQueries
 
 
@@ -93,14 +93,10 @@ class ConvertToComposedQuery(Observable):
             for core, q in queries.items():
                 cq.setRankQuery(core=core, query=cqlToExpression(' OR '.join(q)))
 
-        urlParamDedupFields = extraArguments.get('x-filter-common-keys-field', [])
-        if len(urlParamDedupFields) >=1:
-            setattr(cq, "dedupField", '__key__.'+urlParamDedupFields[0])
-            setattr(cq, "dedupSortField", self._dedupSortFieldName)
-        elif self._dedupFieldName:
-            if 'true' == extraArguments.get('x-filter-common-keys', ['true' if self._dedupByDefault else 'false'])[0]:
-                setattr(cq, "dedupField", self._dedupFieldName)
-                setattr(cq, "dedupSortField", self._dedupSortFieldName)
+        filterCommonKeysField = extraArguments.get('x-filter-common-keys-field', [self._dedupFieldName])[0]
+        if filterCommonKeysField and 'true' == extraArguments.get('x-filter-common-keys', ['true' if self._dedupByDefault else 'false'])[0]:
+            cq.dedupField = ('' if filterCommonKeysField.startswith(KEY_PREFIX) else KEY_PREFIX) + filterCommonKeysField
+            cq.dedupSortField = self._dedupSortFieldName
 
         if self._clusteringEnabled and 'true' == extraArguments.get('x-clustering', [None])[0]:
             setattr(cq, "clustering", True)

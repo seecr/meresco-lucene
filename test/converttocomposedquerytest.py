@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2016, 2019 Seecr (Seek You Too B.V.) http://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -42,7 +42,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         SeecrTestCase.setUp(self)
         self.setupDna()
 
-    def setupDna(self, dedupFieldName="__key__", dedupSortFieldName="__key__.date", dedupByDefault=True):
+    def setupDna(self, dedupFieldName="__key__.dedup", dedupSortFieldName="__key__.date", dedupByDefault=True):
         self.observer = CallTrace('observer', emptyGeneratorMethods=['executeComposedQuery'])
         self.response = LuceneResponse()
         def executeComposedQuery(*args, **kwargs):
@@ -137,7 +137,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals("__key__", cq.dedupField)
+        self.assertEquals("__key__.dedup", cq.dedupField)
         self.assertEquals("__key__.date", cq.dedupSortField)
 
     def testNoDedupWhenDedupByDefaultSetToFalse(self):
@@ -153,7 +153,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-filter-common-keys': ['true']}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals("__key__", cq.dedupField)
+        self.assertEquals("__key__.dedup", cq.dedupField)
         self.assertEquals("__key__.date", cq.dedupSortField)
 
     def testXFilterCommonKeysIgnoredWhenNoDedupFieldSpecified(self):
@@ -177,8 +177,8 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         consume(self.tree.any.executeQuery(cqlAbstractSyntaxTree=parseCQL('*'), extraArguments={'x-filter-common-keys-field': ['dcterms:isFormatOf.uri']}, facets=[]))
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
-        self.assertEquals("__key__.dcterms:isFormatOf.uri", cq.dedupField)
-        self.assertEquals("__key__.date", cq.dedupSortField)
+        self.assertEquals(None, cq.dedupField)
+        self.assertEquals(None, cq.dedupSortField)
 
     def testXFilterCommonKeysFieldOverridesXFilterCommonKeys(self):
         self.setupDna(dedupByDefault=False)

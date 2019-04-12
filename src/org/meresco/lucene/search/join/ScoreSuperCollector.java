@@ -50,8 +50,9 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     }
 
     public float score(int key) {
-        if (key < this.scores.length) {
-            return SmallFloat.byte315ToFloat(this.scores[key]);
+        if (key < (this.scores.length>>1)) {
+            int floatInt = ((this.scores[(key<<1)] & 0xff) << 8 | this.scores[(key<<1)+1] & 0xff) << 15;
+            return Float.intBitsToFloat(floatInt);
         }
         return 0;
     }
@@ -117,10 +118,17 @@ class ScoreSubCollector extends SubCollector {
         if (this.keyValues != null) {
             int value = (int) this.keyValues.get(doc);
             if (value > 0) {
-                if (value >= this.scores.length) {
-                    this.scores = ScoreSuperCollector.resize(this.scores, (int) ((value + 1) * 1.25));
+                if (value >= (this.scores.length>>>1)) {
+                    this.scores = ScoreSuperCollector.resize(this.scores, (int)((value + 1) * 2 * 1.25));
                 }
-                this.scores[value] = SmallFloat.floatToByte315(scorer.score());
+                // float IEE754 bits : abbbbbbb bccccccc cccccccc cccccccc
+                // where a=sign, b=exponent, c=mantissa
+                // the sign bit we can ignore since scores are always positive,
+                // so >>> 15 creates bbbbbbbb cccccccc which reduces the precision
+                // of the mantissa with 15 bits
+                int floatToBytes = Float.floatToRawIntBits(scorer.score()) >>> 15;
+                this.scores[(value<<1)] = (byte)((floatToBytes>>>8) & 0xff);
+                this.scores[(value<<1)+1] = (byte)(floatToBytes & 0xff);
             }
         }
     }

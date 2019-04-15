@@ -130,4 +130,30 @@ public class Utils {
             System.err.println(message);
         }
     }
+
+    // Modelled after SmallFloat.floatToByte from the Lucene core library
+    // mantissa=10 bits and zeroExp=31
+    // result is an int where the 2 least significant bytes contain the result
+    public static int floatToInt1031(float f) {
+        int fzero = (127-31)<<10;
+        int bits = Float.floatToRawIntBits(f);
+        int smallfloat = bits >> (23-10);
+        if (smallfloat <= fzero) {
+            return (bits<=0) ? 0 : 1;  
+        } else if (smallfloat > fzero + 0xffff) {
+            return -1;
+        } else {
+            return (smallfloat - fzero);
+        }
+    }
+
+    // Modelled after SmallFloat.byteToFloat from the Lucene core library
+    // mantissa=10 bits and zeroExp=31
+    // reverses the conversion as done by floatToInt1031
+    public static float int1031ToFloat(int b) {
+        if (b == 0) return 0.0f;
+        int bits = (b&0xffff) << (23-10);
+        bits += (127-31) << 23;
+        return Float.intBitsToFloat(bits);
+    }
 }

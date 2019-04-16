@@ -52,9 +52,10 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     }
 
     public float score(int key) {
-        if (key < (this.scores.length>>1)) {
-            int floatInt = (this.scores[(key<<1)] & 0xff) << 8 | this.scores[(key<<1)+1] & 0xff;
-            return Utils.int1120ToFloat(floatInt);
+        int scoresIndex = key * 2;
+        if ((scoresIndex + 1) < this.scores.length) {
+            int scoreAsBytes = (this.scores[scoresIndex] & 0xff) << 8 | (this.scores[scoresIndex + 1] & 0xff);
+            return Utils.int1120ToFloat(scoreAsBytes);
         }
         return 0;
     }
@@ -120,12 +121,13 @@ class ScoreSubCollector extends SubCollector {
         if (this.keyValues != null) {
             int value = (int) this.keyValues.get(doc);
             if (value > 0) {
-                if (value >= (this.scores.length>>>1)) {
-                    this.scores = ScoreSuperCollector.resize(this.scores, (int)((value + 1) * 2 * 1.25));
+                int scoresIndex = value * 2;
+                if ((scoresIndex + 1) >= this.scores.length) {
+                    this.scores = ScoreSuperCollector.resize(this.scores, (int) ((scoresIndex + 2) * 1.25));
                 }
-                int floatToBytes = Utils.floatToInt1120(scorer.score());
-                this.scores[(value<<1)] = (byte)((floatToBytes>>>8) & 0xff);
-                this.scores[(value<<1)+1] = (byte)(floatToBytes & 0xff);
+                int scoreAsBytes = Utils.floatToInt1120(scorer.score());
+                this.scores[scoresIndex] = (byte) ((scoreAsBytes >>> 8) & 0xff);
+                this.scores[scoresIndex + 1] = (byte) (scoreAsBytes & 0xff);
             }
         }
     }

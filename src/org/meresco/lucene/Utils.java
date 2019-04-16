@@ -2,8 +2,8 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2015-2016, 2019 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -136,11 +136,11 @@ public class Utils {
     // result is an int where the 2 least significant bytes contain the result
     // range of this float is 9.5414E-7 to 4095.0
     public static int floatToInt1120(float f) {
-        int fzero = (127-20)<<11;
+        int fzero = (127-20) << 11;
         int bits = Float.floatToRawIntBits(f);
         int smallfloat = bits >> (23-11);
         if (smallfloat <= fzero) {
-            return (bits<=0) ? 0 : 1;
+            return (bits <= 0) ? 0 : 1;
         } else if (smallfloat > fzero + 0xffff) {
             return 0xffff;
         } else {

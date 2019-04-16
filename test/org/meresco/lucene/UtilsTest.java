@@ -37,6 +37,9 @@ import org.apache.lucene.util.FixedBitSet;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.meresco.lucene.Utils;
+import org.meresco.lucene.Utils;
+
 public class UtilsTest {
 
     @Before
@@ -69,4 +72,29 @@ public class UtilsTest {
         assertTrue(bitSet.get(8));
     }
 
+    @Test
+    public void testInt1120() {
+        assertEquals(0, Utils.int1120ToFloat(Utils.floatToInt1120(0)), 0);
+        assertEquals(0, Utils.int1120ToFloat(Utils.floatToInt1120(-1.f)), 0);
+
+        float smallestFloat = Float.intBitsToFloat((1<<(23-11)) + ((127-20) << 23)); // 9.5414E-7
+        assertEquals(smallestFloat, toInt1120AndBack(smallestFloat), 0);
+
+        float smallerThanSmallestFloat = smallestFloat * 0.5f;
+        assertEquals(smallestFloat, toInt1120AndBack(smallerThanSmallestFloat), 0);
+
+        float biggestFloat = Float.intBitsToFloat((0xffff<<(23-11)) + ((127-20) << 23)); // 4095.0
+        assertEquals(biggestFloat, toInt1120AndBack(biggestFloat), 0);
+
+        float biggerThanBiggestFloat = biggestFloat * 2.0f;
+        assertEquals(biggestFloat, toInt1120AndBack(biggerThanBiggestFloat), 0);
+
+        assertEquals(3.140625f, toInt1120AndBack((float)Math.PI), 0);
+    }
+
+    float toInt1120AndBack(float f) {
+        int i = Utils.floatToInt1120(f);
+        i &= 0xffff;
+        return Utils.int1120ToFloat(i);
+    }
 }

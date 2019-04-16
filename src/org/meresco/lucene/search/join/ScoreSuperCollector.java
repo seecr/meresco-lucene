@@ -2,9 +2,9 @@
  *
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
- * Copyright (C) 2014, 2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2014, 2016, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
- * Copyright (C) 2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
+ * Copyright (C) 2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -26,6 +26,8 @@
  * end license */
 
 package org.meresco.lucene.search.join;
+
+import org.meresco.lucene.Utils;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingDeque;
@@ -49,8 +51,10 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     }
 
     public float score(int key) {
-        if (key < this.scores.length) {
-            return SmallFloat.byte315ToFloat(this.scores[key]);
+        int scoresIndex = key * 2;
+        if ((scoresIndex + 1) < this.scores.length) {
+            int scoreAsBytes = (this.scores[scoresIndex] & 0xff) << 8 | (this.scores[scoresIndex + 1] & 0xff);
+            return Utils.int1120ToFloat(scoreAsBytes);
         }
         return 0;
     }
@@ -116,10 +120,13 @@ class ScoreSubCollector extends SubCollector {
     public void collect(int doc) throws IOException {
         int value = (int) this.keyValues.get(doc);
         if (value > 0) {
-            if (value >= this.scores.length) {
-                this.scores = ScoreSuperCollector.resize(this.scores, (int) ((value + 1) * 1.25));
+            int scoresIndex = value * 2;
+            if ((scoresIndex + 1) >= this.scores.length) {
+                this.scores = ScoreSuperCollector.resize(this.scores, (int) ((scoresIndex + 2) * 1.25));
             }
-            this.scores[value] = SmallFloat.floatToByte315(scorer.score());
+            int scoreAsBytes = Utils.floatToInt1120(scorer.score());
+            this.scores[scoresIndex] = (byte) ((scoreAsBytes >>> 8) & 0xff);
+            this.scores[scoresIndex + 1] = (byte) (scoreAsBytes & 0xff);
         }
     }
 

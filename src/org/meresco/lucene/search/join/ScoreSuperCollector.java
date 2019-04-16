@@ -54,7 +54,7 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     public float score(int key) {
         if (key < (this.scores.length>>1)) {
             int floatInt = (this.scores[(key<<1)] & 0xff) << 8 | this.scores[(key<<1)+1] & 0xff;
-            return Utils.int1031ToFloat(floatInt);
+            return Utils.int1120ToFloat(floatInt);
         }
         return 0;
     }
@@ -123,7 +123,7 @@ class ScoreSubCollector extends SubCollector {
                 if (value >= (this.scores.length>>>1)) {
                     this.scores = ScoreSuperCollector.resize(this.scores, (int)((value + 1) * 2 * 1.25));
                 }
-                int floatToBytes = Utils.floatToInt1031(scorer.score());
+                int floatToBytes = Utils.floatToInt1120(scorer.score());
                 this.scores[(value<<1)] = (byte)((floatToBytes>>>8) & 0xff);
                 this.scores[(value<<1)+1] = (byte)(floatToBytes & 0xff);
             }

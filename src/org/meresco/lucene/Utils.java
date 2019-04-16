@@ -142,7 +142,7 @@ public class Utils {
         if (smallfloat <= fzero) {
             return (bits<=0) ? 0 : 1;
         } else if (smallfloat > fzero + 0xffff) {
-            return -1;
+            return 0xffff;
         } else {
             return (smallfloat - fzero);
         }

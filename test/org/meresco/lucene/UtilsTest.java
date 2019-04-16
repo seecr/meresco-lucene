@@ -88,6 +88,8 @@ public class UtilsTest {
 
         float biggerThanBiggestFloat = biggestFloat * 2.0f;
         assertEquals(biggestFloat, toInt1120AndBack(biggerThanBiggestFloat), 0);
+
+        assertEquals(3.140625f, toInt1120AndBack((float)Math.PI), 0);
     }
 
     float toInt1120AndBack(float f) {

@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2015-2016, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -38,8 +38,8 @@ import org.meresco.lucene.Lucene;
 import org.meresco.lucene.Lucene.TermCount;
 import org.meresco.lucene.OutOfMemoryShutdown;
 
-public class PrefixSearchHandler extends AbstractMerescoLuceneHandler {
 
+public class PrefixSearchHandler extends AbstractMerescoLuceneHandler {
     private Lucene lucene;
 
     public PrefixSearchHandler(Lucene lucene, OutOfMemoryShutdown shutdown) {
@@ -53,12 +53,9 @@ public class PrefixSearchHandler extends AbstractMerescoLuceneHandler {
         response.setCharacterEncoding("UTF-8");
         String fieldname = request.getParameter("fieldname");
         String prefix = request.getParameter("prefix");
+
         String limitParam = request.getParameter("limit");
-        int limit;
-        if (limitParam == null)
-            limit = 10;
-        else
-            limit = Integer.parseInt(limitParam);
+        int limit = (limitParam == null ? 10 : Integer.parseInt(limitParam));
         List<TermCount> terms = lucene.termsForField(fieldname, prefix, limit);
         JsonArrayBuilder json = Json.createArrayBuilder();
         for (TermCount t : terms) {

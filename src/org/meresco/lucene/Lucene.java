@@ -208,6 +208,7 @@ public class Lucene {
             commitTimer.purge();
             commitTimer = null;
         }
+        System.out.println("commit " + this.name);
         data.commit();
     }
 
@@ -776,6 +777,7 @@ public class Lucene {
     }
 
     public ScoreSuperCollector doScoreCollecting(String keyName, Query query) throws Throwable {
+    	System.out.println("[" + this.name + "] doScoreCollecting for " + keyName + ", " + query);
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             ScoreSuperCollector scoreCollector = new ScoreSuperCollector(keyName);

@@ -32,8 +32,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
 
-public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubCollector<?>> {
 
+public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubCollector<?>> {
     protected final Sort sort;
     protected final int numHits;
 

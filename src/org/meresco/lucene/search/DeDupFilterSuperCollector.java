@@ -35,8 +35,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.Scorer;
 
-public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubCollector> {
 
+public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubCollector> {
     private final String keyName;
     private final String sortByFieldNames[];
     private final SuperCollector<?> delegate;
@@ -83,6 +83,7 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
     @Override
     public void complete() throws IOException {
         this.delegate.complete();
+//        super.subs.clear();   // would require some refactoring
     }
 
     public DeDupFilterSuperCollector.Key keyForDocId(int docId) throws IOException {
@@ -151,8 +152,8 @@ public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubColl
     }
 }
 
-class DeDupFilterSubCollector extends SubCollector {
 
+class DeDupFilterSubCollector extends SubCollector {
     private final SubCollector delegate;
     private ConcurrentHashMap<Long, AtomicReference<DeDupFilterSuperCollector.Key>> keys;
 

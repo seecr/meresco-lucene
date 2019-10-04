@@ -29,8 +29,10 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
-public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSubCollector> {
 
+public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSubCollector> {
+    private int totalHits = 0;
+    
     @Override
     public TotalHitCountSubCollector createSubCollector() {
         return new TotalHitCountSubCollector();
@@ -38,19 +40,21 @@ public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSub
 
     @Override
     public void complete() {
-    }
-
-    public int getTotalHits() {
-        int n = 0;
+    	int n = 0;
         for (TotalHitCountSubCollector sub : super.subs) {
             n += sub.getTotalHits();
         }
-        return n;
+        this.totalHits = n;
+        super.subs.clear();
+    }
+
+    public int getTotalHits() {
+    	return this.totalHits;
     }
 }
 
-class TotalHitCountSubCollector extends SubCollector {
 
+class TotalHitCountSubCollector extends SubCollector {
     private int totalHits = 0;
 
     @Override

@@ -69,6 +69,7 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     public void complete() {
         mergePool(this.arrayPool.poll());
         this.scores = this.arrayPool.poll();
+        super.subs.clear();
     }
 
     public void mergePool(byte[] scores) {
@@ -94,6 +95,7 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
         return dest;
     }
 }
+
 
 class ScoreSubCollector extends SubCollector {
     private byte[] scores = new byte[0];

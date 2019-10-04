@@ -73,6 +73,7 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
     public void complete() {
         this.mergeValues = this.arrayPool.poll();
         mergePool(this.mergeValues);
+        super.subs.clear();
     }
 
     public void mergePool(int[] values) {
@@ -96,6 +97,7 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
         return this.arrayPool.peek();
     }
 }
+
 
 class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSuperCollector> {
     public FacetSubCollector(FacetsCollector delegate, FacetSuperCollector parent) throws IOException {

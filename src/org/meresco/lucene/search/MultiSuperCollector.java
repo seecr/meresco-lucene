@@ -34,8 +34,8 @@ import java.util.stream.Stream;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorer;
 
-public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
 
+public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
     private final SuperCollector<?>[] collectors;
 
     public MultiSuperCollector(List<SuperCollector<?>> collectors) {
@@ -62,8 +62,10 @@ public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
         for (SuperCollector<?> sc : collectors) {
             sc.complete();
         }
+        super.subs.clear();
     }
 }
+
 
 class MultiSubCollector extends SubCollector {
     private final SubCollector[] subCollectors;

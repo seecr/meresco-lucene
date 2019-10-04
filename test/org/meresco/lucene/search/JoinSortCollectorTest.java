@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2016 Seecr (Seek You Too B.V.) http://seecr.nl
+ * Copyright (C) 2016, 2019 Seecr (Seek You Too B.V.) http://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -79,6 +79,7 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         luceneB.addDocument(doc2);
 
         Document doc5 = new Document();
+        doc5.add(new NumericDocValuesField("keyB", 98));
         doc5.add(new SortedDocValuesField("sortfieldB", new BytesRef("c")));
         doc5.add(new NumericDocValuesField("intSortfieldB", 3));
         doc5.add(new NumericDocValuesField("doubleSortfieldB", NumericUtils.doubleToSortableLong(3.0)));
@@ -96,8 +97,9 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         doc4.add(new NumericDocValuesField("intSortfieldA", 2));
         doc4.add(new NumericDocValuesField("doubleSortfieldA", NumericUtils.doubleToSortableLong(2.0)));
         luceneA.addDocument("id4", doc4);
-        
+
         Document doc6 = new Document();
+        doc6.add(new NumericDocValuesField("keyA", 99));
         doc6.add(new SortedDocValuesField("sortfieldA", new BytesRef("c")));
         doc6.add(new NumericDocValuesField("intSortfieldA", 3));
         doc6.add(new NumericDocValuesField("doubleSortfieldA", NumericUtils.doubleToSortableLong(3.0)));
@@ -119,16 +121,16 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         q.queryData.sort = new Sort(new JoinSortField("sortfieldA", SortField.Type.STRING, false, "A"));
         LuceneResponse response = multiLucene.executeComposedQuery(q);
         assertEquals(3, response.total);
-        assertEquals("id6", response.hits.get(0).id);
-        assertEquals("id3", response.hits.get(1).id);
-        assertEquals("id4", response.hits.get(2).id);
+        assertEquals("id3", response.hits.get(0).id);
+        assertEquals("id4", response.hits.get(1).id);
+        assertEquals("id6", response.hits.get(2).id);
 
         q.queryData.sort = new Sort(new JoinSortField("sortfieldA", SortField.Type.STRING, true, "A"));
         response = multiLucene.executeComposedQuery(q);
         assertEquals(3, response.total);
-        assertEquals("id4", response.hits.get(0).id);
-        assertEquals("id3", response.hits.get(1).id);
-        assertEquals("id6", response.hits.get(2).id);
+        assertEquals("id6", response.hits.get(0).id);
+        assertEquals("id4", response.hits.get(1).id);
+        assertEquals("id3", response.hits.get(2).id);
     }
 
     @Test
@@ -139,16 +141,16 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         q.queryData.sort = new Sort(new JoinSortField("sortfieldB", SortField.Type.STRING, false, "B"));
         LuceneResponse response = multiLucene.executeComposedQuery(q);
         assertEquals(3, response.total);
-        assertEquals("id6", response.hits.get(0).id);
-        assertEquals("id3", response.hits.get(1).id);
-        assertEquals("id4", response.hits.get(2).id);
+        assertEquals("id3", response.hits.get(0).id);
+        assertEquals("id4", response.hits.get(1).id);
+        assertEquals("id6", response.hits.get(2).id);
 
         q.queryData.sort = new Sort(new JoinSortField("sortfieldB", SortField.Type.STRING, true, "B"));
         response = multiLucene.executeComposedQuery(q);
         assertEquals(3, response.total);
-        assertEquals("id4", response.hits.get(0).id);
-        assertEquals("id3", response.hits.get(1).id);
-        assertEquals("id6", response.hits.get(2).id);
+        assertEquals("id6", response.hits.get(0).id);
+        assertEquals("id4", response.hits.get(1).id);
+        assertEquals("id3", response.hits.get(2).id);
     }
 
     @Test

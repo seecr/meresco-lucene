@@ -105,7 +105,7 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
 
     def testRemoteInfoFieldWithPrefix(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='field2', name='main', prefix='value8'), parse=False)
-        self.assertTrue("<pre>value8: 10</pre>" in body, body)
+        self.assertTrue("<pre>0 value8: 10\n</pre>" in body, body)
 
     def testRemoteInfoDrilldownValues(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/drilldownvalues', arguments=dict(path='untokenized.field2', name='main'), parse=False)

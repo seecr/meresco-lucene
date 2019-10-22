@@ -111,7 +111,7 @@ class SuggestionServerTest(IntegrationTestCase):
             header, body = postRequest(self.suggestionServerPort, '/suggest', data=data, parse=False)
             self.assertTrue("200 OK" in header.upper(), header + body)
             self.assertEqual([
-                {"suggestion": "harry", "type": "uri:book", "creator": 'rowling', "score": 0.5753641724586487},
+                {"suggestion": "harry", "type": "uri:book", "creator": 'rowling', "score": 0.2615291476249695},
             ], loads(body))
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)

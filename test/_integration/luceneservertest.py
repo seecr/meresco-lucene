@@ -61,7 +61,7 @@ class LuceneServerTest(IntegrationTestCase):
         self.assertEqual(1, response['total'])
         self.assertTrue("queryTime" in response)
         self.assertTrue("times" in response)
-        self.assertEqual([{'id': 'id1', 'score': 0.28768208622932434}], response['hits'])
+        self.assertEqual([{'id': 'id1', 'score': 0.13076457381248474}], response['hits'])
 
     def testFacets(self):
         data = JsonList([

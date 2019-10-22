@@ -80,7 +80,7 @@ class MultiSubCollector extends SubCollector {
             c.getLeafCollector(context);
         }
     }
-    
+
     @Override
     public void setScorer(Scorable s) throws IOException {
         for (SubCollector c : this.subCollectors) {
@@ -102,8 +102,4 @@ class MultiSubCollector extends SubCollector {
         }
     }
 
-    //@Override
-    //public boolean needsScores() {
-    //    return Stream.of(this.subCollectors).anyMatch(c -> c.needsScores());
-    //}
 }

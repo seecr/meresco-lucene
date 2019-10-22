@@ -32,7 +32,7 @@ import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 
 public abstract class DelegatingSubCollector<CollectorType extends Collector, SuperCollectorType extends SuperCollector<?>> extends SubCollector {
 
@@ -52,10 +52,10 @@ public abstract class DelegatingSubCollector<CollectorType extends Collector, Su
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
-        this.leaf.setScorer(scorer);
+    public void setScorer(Scorable s) throws IOException {
+        this.leaf.setScorer(s);
     }
-    
+
     @Override
     public void collect(int doc) throws IOException {
         this.leaf.collect(doc);

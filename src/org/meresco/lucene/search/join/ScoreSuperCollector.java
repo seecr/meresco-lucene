@@ -107,11 +107,6 @@ class ScoreSubCollector extends SubCollector {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
-        this.scorer = scorer;
-    }
-
-    @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
         this.keyValues = new NumericDocValuesRandomAccess(context.reader(), parent.keyName);
     }
@@ -135,8 +130,4 @@ class ScoreSubCollector extends SubCollector {
         this.parent.mergePool(this.scores);
     }
 
-    @Override
-    public boolean needsScores() {
-        return true;
-    }
 }

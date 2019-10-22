@@ -64,7 +64,7 @@ public abstract class TopDocSuperCollector extends SuperCollector<TopDocSubColle
     public long getTotalHits() throws IOException {
         long totalHits = 0;
         for (TopDocSubCollector<?> sub : this.subs) {
-            totalHits += sub.topdocs.totalHits;
+            totalHits += sub.topdocs.totalHits.value;
         }
         return totalHits;
     }

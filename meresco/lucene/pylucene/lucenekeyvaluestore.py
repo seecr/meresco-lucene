@@ -86,7 +86,7 @@ class LuceneKeyValueStore(object):
             return value
         self._maybeReopen()
         topDocs = self._searcher.search(TermQuery(Term("key", key)), 1)
-        if topDocs.totalHits == 0:
+        if topDocs.totalHits.value == 0:
             raise KeyError(key)
         return self._searcher.doc(topDocs.scoreDocs[0].doc).get("value")
 

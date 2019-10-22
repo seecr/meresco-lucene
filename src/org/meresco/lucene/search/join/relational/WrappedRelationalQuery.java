@@ -3,6 +3,7 @@ package org.meresco.lucene.search.join.relational;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.ScoreMode;
 
 
 public class WrappedRelationalQuery extends Query {
@@ -15,7 +16,7 @@ public class WrappedRelationalQuery extends Query {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
         throw new UnsupportedOperationException();
     }
 

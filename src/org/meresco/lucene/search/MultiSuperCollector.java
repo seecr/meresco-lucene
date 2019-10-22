@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 
 public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
 
@@ -63,6 +63,7 @@ public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
             sc.complete();
         }
     }
+
 }
 
 class MultiSubCollector extends SubCollector {
@@ -81,7 +82,7 @@ class MultiSubCollector extends SubCollector {
     }
     
     @Override
-    public void setScorer(Scorer s) throws IOException {
+    public void setScorer(Scorable s) throws IOException {
         for (SubCollector c : this.subCollectors) {
             c.setScorer(s);
         }
@@ -101,8 +102,8 @@ class MultiSubCollector extends SubCollector {
         }
     }
 
-    @Override
-    public boolean needsScores() {
-        return Stream.of(this.subCollectors).anyMatch(c -> c.needsScores());
-    }
+    //@Override
+    //public boolean needsScores() {
+    //    return Stream.of(this.subCollectors).anyMatch(c -> c.needsScores());
+    //}
 }

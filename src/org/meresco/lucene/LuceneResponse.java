@@ -161,8 +161,10 @@ public class LuceneResponse {
 
         JsonArrayBuilder hitsArray = Json.createArrayBuilder();
         for (Hit hit : hits) {
-            JsonObjectBuilder hitBuilder = Json.createObjectBuilder()
-                    .add("score", hit.score);
+            JsonObjectBuilder hitBuilder = Json.createObjectBuilder();
+            if (!Float.isNaN(hit.score)) {
+                hitBuilder.add("score", hit.score);
+            }
             if (hit.id == null)
                 hitBuilder.add("id", JsonValue.NULL);
             else

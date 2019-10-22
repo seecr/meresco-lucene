@@ -63,11 +63,6 @@ public class KeyCollector extends SubCollector {
         keyValuesArray = KeyValuesCache.get(context, keyName);
     }
 
-    @Override
-    public boolean needsScores() {
-        return false;
-    }
-
     public FixedBitSet getCollectedKeys() throws IOException {
         return this.currentKeySet;
     }

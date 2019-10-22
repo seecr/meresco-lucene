@@ -45,38 +45,15 @@ public class TermFrequencySimilarity extends Similarity {
     }
 
     @Override
-    public SimWeight computeWeight(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-        return new TermFrequencySimilarityWeight(boost);
-    }
-
-    @Override
-    public SimScorer simScorer(SimWeight weight, LeafReaderContext context) throws IOException {
-        final TermFrequencySimilarityWeight tfsWeight = (TermFrequencySimilarityWeight) weight;
+    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
         return new SimScorer() {
 
             @Override
-            public float score(int doc, float freq) {
-                return freq / 1000.0f * tfsWeight.queryBoost;
+            public float score(float freq, long norm) {
+                return freq / 1000.0f * boost;
             }
 
-            @Override
-            public float computeSlopFactor(int distance) {
-                return 1;
-            }
-
-            @Override
-            public float computePayloadFactor(int doc, int start, int end, BytesRef payload) {
-                return 1;
-            }
         };
     }
 
-
-    class TermFrequencySimilarityWeight extends SimWeight {
-        float queryBoost;
-
-        public TermFrequencySimilarityWeight(float boost) {
-            this.queryBoost = boost;
-        }
-    }
 }

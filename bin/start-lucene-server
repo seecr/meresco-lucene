@@ -30,7 +30,7 @@ from sys import argv
 from glob import glob
 
 USR_SHARE_JAVA_DIR='/usr/share/java'
-LUCENEVERSION = "7.3.0"
+LUCENEVERSION = "8.1.1"
 LUCENE_JARS = glob("{0}/lucene-*{1}.jar".format(USR_SHARE_JAVA_DIR, LUCENEVERSION))
 if 'SEECRTEST_USR_SHARE' in environ and environ['SEECRTEST_USR_SHARE']:
     USR_SHARE_JAVA_DIR = environ['SEECRTEST_USR_SHARE'] + '/java'

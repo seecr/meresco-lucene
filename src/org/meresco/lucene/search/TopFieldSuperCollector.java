@@ -45,8 +45,9 @@ public class TopFieldSuperCollector extends TopDocSuperCollector {
 
     @Override
     protected TopDocSubCollector<TopFieldSuperCollector> createSubCollector() throws IOException {
+        // Needs some TLC: create on TopFieldCollector changed
         return new TopDocSubCollector<TopFieldSuperCollector>(TopFieldCollector.create(this.sort,
-                this.numHits, /*fillFields*/ true, this.trackDocScores, this.trackMaxScore), this);
+                this.numHits, this.numHits), this);
     }
 
     @Override

@@ -30,7 +30,7 @@ from sys import argv
 from glob import glob
 
 USR_SHARE_JAVA_DIR='/usr/share/java'
-LUCENEVERSION = "7.3.0"
+LUCENEVERSION = "8.1.1"
 LUCENE_JARS = glob("{0}/lucene-*{1}.jar".format(USR_SHARE_JAVA_DIR, LUCENEVERSION))
 if 'SEECRTEST_USR_SHARE' in environ and environ['SEECRTEST_USR_SHARE']:
     USR_SHARE_JAVA_DIR = environ['SEECRTEST_USR_SHARE'] + '/java'
@@ -59,6 +59,7 @@ if system("%s -version 2>&1 | grep '1.8' > /dev/null" % java) != 0:
     print "Java version should be java 8; You could specify a different java with JAVA_BIN"
     exit(1)
 
+print java
 execv(
     java,
     [argv0] + XOptions + [

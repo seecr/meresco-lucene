@@ -66,8 +66,8 @@ class TotalHitCountSubCollector extends SubCollector {
     public void complete() {
     }
 
-    @Override
-    public boolean needsScores() {
-        return false;
-    }
+    //@Override
+    //public boolean needsScores() {
+    //    return false;
+    // }
 }

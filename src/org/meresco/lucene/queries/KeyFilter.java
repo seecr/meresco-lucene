@@ -36,6 +36,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -58,11 +59,11 @@ public class KeyFilter extends Query {
     }
 
     @Override
-    public Weight createWeight(IndexSearcher searcher, boolean needsScores, float boost) {
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
         return new ConstantScoreWeight(this, 1.0f) {  // simply ignore boost for filtering (javadoc suggests something else, but then not cachable...?!?)
             @Override
             public Scorer scorer(LeafReaderContext context) throws IOException {
-                return new ConstantScoreScorer(this, score(), new DocIdSetIterator() {
+                return new ConstantScoreScorer(this, score(), scoreMode, new DocIdSetIterator() {
                     private int[] keyValuesArray = KeyValuesCache.get(context, keyName);
                     private int maxDoc = context.reader().maxDoc();
                     int docId = -1;

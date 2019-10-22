@@ -36,7 +36,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 
 
 public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubCollector> {
@@ -205,6 +205,11 @@ class DeDupFilterSubCollector extends SubCollector {
         this.delegate.collect(docId);
     }
 
+    @Override
+    public void setScorer(Scorable s) throws IOException {
+        this.delegate.setScorer(s);
+    }
+
 	private void countDocForKey(int docId, long keyValue) {
 		int absDoc = this.currentDocBase + docId;
 		long enumeratedKeyValue = this.keyDocValues.get(docId);
@@ -238,11 +243,6 @@ class DeDupFilterSubCollector extends SubCollector {
 	}
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
-        this.delegate.setScorer(scorer);
-    }
-
-    @Override
     public void complete() throws IOException {
         this.delegate.complete();
     }
@@ -251,8 +251,4 @@ class DeDupFilterSubCollector extends SubCollector {
         return this.totalHits;
     }
 
-    @Override
-    public boolean needsScores() {
-        return this.delegate.needsScores();
-    }
 }

@@ -55,7 +55,7 @@ public class MerescoStandardAnalyzer extends Analyzer {
         tok = new ASCIIFoldingFilter(tok);
         tok = new LowerCaseFilter(tok);
         Analyzer.TokenStreamComponents tsc = new Analyzer.TokenStreamComponents(src, tok);
-        return new Analyzer.TokenStreamComponents(tsc.getTokenizer(), post_analyzer(fieldName, tsc.getTokenStream()));
+        return new Analyzer.TokenStreamComponents(src, post_analyzer(fieldName, tsc.getTokenStream()));
     }
 
     protected TokenStream post_analyzer(String fieldName, TokenStream tok) {

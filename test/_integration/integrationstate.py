@@ -52,6 +52,8 @@ class IntegrationState(SeecrIntegrationState):
         self.testdataDir = join(dirname(mydir), "data")
         self.JAVA_BIN = "/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin"
         if not isdir(self.JAVA_BIN):
+            self.JAVA_BIN = "/usr/lib/jvm/java-8-openjdk-amd64/jre/bin"
+        if not isdir(self.JAVA_BIN):
             self.JAVA_BIN = "/usr/lib/jvm/java-1.8.0/bin"
 
     def setUp(self):

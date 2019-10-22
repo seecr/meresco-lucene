@@ -51,6 +51,6 @@ public class QueryHandler extends AbstractMerescoLuceneHandler {
         luceneResponse = this.lucene.executeQuery(q, null, null, null, null, null);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json");
-        response.getWriter().write(luceneResponse.toJson().toString());        
+        response.getWriter().write(luceneResponse.toJson().toString());
     }
 }

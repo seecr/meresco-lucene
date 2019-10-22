@@ -47,7 +47,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiBits;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.ReaderUtil;
@@ -106,9 +107,9 @@ public class SuggestionNGramIndex {
 	}
 
 	public void createSuggestions(IndexReader reader, String suggestionFieldname, String keyFieldname, IndexingState indexingState) throws IOException {
-        Bits liveDocs = MultiFields.getLiveDocs(reader);
+        Bits liveDocs = MultiBits.getLiveDocs(reader);
         List<LeafReaderContext> leaves = reader.leaves();
-        Terms terms = MultiFields.getTerms(reader, suggestionFieldname);
+        Terms terms = MultiTerms.getTerms(reader, suggestionFieldname);
         if (terms == null)
             return;
 		TermsEnum termsEnum = terms.iterator();
@@ -249,7 +250,7 @@ public class SuggestionNGramIndex {
                 builder.add(keySetFilter, Occur.FILTER);
             }
             TopDocs t = searcher.search(builder.build(), limit);
-            Suggestion[] suggestions = new Suggestion[t.totalHits < limit ? (int) t.totalHits : limit];
+            Suggestion[] suggestions = new Suggestion[t.totalHits.value < limit ? (int) t.totalHits.value : limit];
             int i = 0;
             for (ScoreDoc d : t.scoreDocs) {
                 Document doc = searcher.doc(d.doc);

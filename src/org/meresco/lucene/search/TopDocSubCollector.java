@@ -44,9 +44,4 @@ public class TopDocSubCollector<SuperCollectorType extends TopDocSuperCollector>
     public void complete() {
         this.topdocs = this.delegate.topDocs();
     }
-
-    @Override
-    public boolean needsScores() {
-        return this.delegate.needsScores();
-    }
 }

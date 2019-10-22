@@ -43,11 +43,13 @@ class MultiLucene(Observable):
         yield self.all.initialize()
 
     def executeQuery(self, core=None, **kwargs):
+        print "executeQuery", core, kwargs
         coreName = self._defaultCore if core is None else core
         response = yield self.any[coreName].executeQuery(**kwargs)
         raise StopIteration(response)
 
     def executeComposedQuery(self, query):
+        print "executeComposedQuery", query
         for sortKey in query.sortKeys:
             coreName = sortKey.get('core', query.resultsFrom)
             self.call[coreName].updateSortKey(sortKey)

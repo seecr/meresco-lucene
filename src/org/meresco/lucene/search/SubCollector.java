@@ -31,6 +31,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.ScoreMode;
 
 public abstract class SubCollector extends SimpleCollector {
 
@@ -49,5 +50,10 @@ public abstract class SubCollector extends SimpleCollector {
     public void setNextReader(LeafReaderContext context) throws IOException {
         getLeafCollector(context);
     }
-    
+
+    @Override
+    public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE;
+    }
+
 }

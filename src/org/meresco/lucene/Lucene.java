@@ -64,6 +64,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
@@ -627,7 +628,7 @@ public class Lucene {
         try {
             List<TermCount> terms = new ArrayList<>();
             IndexReader reader = reference.searcher.getIndexReader();
-            Terms termsEnum = MultiFields.getTerms(reader, field);
+            Terms termsEnum = MultiTerms.getTerms(reader, field);
             if (termsEnum == null)
                 return terms;
             TermsEnum iterator = termsEnum.iterator();
@@ -652,18 +653,18 @@ public class Lucene {
     }
 
     public int numDocs() throws Exception {
-        return this.data.getIndexWriter().numDocs();
+        return this.data.getIndexWriter().getDocStats().numDocs;
     }
 
     public int maxDoc() throws Exception {
-        return this.data.getIndexWriter().maxDoc();
+        return this.data.getIndexWriter().getDocStats().maxDoc;
     }
 
     public List<String> fieldnames() throws Exception {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
             List<String> fieldnames = new ArrayList<>();
-            FieldInfos fields = MultiFields.getMergedFieldInfos(reference.searcher.getIndexReader());
+            FieldInfos fields = FieldInfos.getMergedFieldInfos(reference.searcher.getIndexReader());
             if (fields == null)
                 return fieldnames;
             for (Iterator<FieldInfo> iterator = fields.iterator(); iterator.hasNext();) {
@@ -806,7 +807,7 @@ public class Lucene {
         try {
             Query idQuery = new TermQuery(new Term(ID_FIELD, identifier));
             TopDocs topDocs = reference.searcher.search(idQuery, 1);
-            if (topDocs.totalHits == 0)
+            if (topDocs.totalHits.value == 0)
                 return new LuceneResponse(0);
             int docId = topDocs.scoreDocs[0].doc;
             IndexReader reader = reference.searcher.getIndexReader();

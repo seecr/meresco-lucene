@@ -36,56 +36,68 @@ if [ -z "$libDir" ]; then
     libDir=$(dirname $mydir)/lib
 fi
 
-pythonVersion=$(python2 --version 2>&1 | awk '{print $2}' | cut -d. -f-2)
+PKGNAME=meresco-lucene
+_PKGNAME=$(echo ${PKGNAME} | sed 's,-,_,g')
+
+pythonVersion=$(python --version 2>&1 | awk '{print $2}' | cut -d. -f-2)
 pythonPackagesDir=/usr/lib64/python${pythonVersion}/site-packages
 if [ -f /etc/debian_version ]; then
     pythonPackagesDir=/usr/lib/python${pythonVersion}/dist-packages
 fi
 
-JCC_VERSION=3.0
+JCC_VERSION=3.6
 if ! grep -q "VERSION=\"${JCC_VERSION}\"" ${pythonPackagesDir}/jcc/config.py; then
     echo "JCC ${JCC_VERSION} is required."
     exit 1
 fi
 
-JAVA_VERSION=8
-javac=/usr/lib/jvm/java-1.${JAVA_VERSION}.0/bin/javac
-if [ -f /etc/debian_version ]; then
-    javac=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64/bin/javac
+JAVA_HOME=
+test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+test -f /etc/redhat_version && JAVA_HOME=/usr/lib/jvm/java
+if [ -z "${JAVA_HOME}" ]; then
+    echo "Unable to determine JAVA_HOME"
+    exit 0
 fi
-if [ ! -f "$javac" ]; then
-    echo "No Java ${JAVA_VERSION} javac found."
-    exit 1
+
+if [ ! -d "${JAVA_HOME}" ]; then
+    echo "${JAVA_HOME} does not exist"
+    exit 0
 fi
+
+export JAVA_HOME
+javac=${JAVA_HOME}/bin/javac
 
 luceneJarDir=${pythonPackagesDir}/lucene
 
-PYLUCENEVERSION=6.5.0
+PYLUCENEVERSION=8.1.1
 
-classpath=${luceneJarDir}/lucene-core-$PYLUCENEVERSION.jar:${luceneJarDir}/lucene-analyzers-common-$PYLUCENEVERSION.jar
+classpath=${luceneJarDir}/lucene-core-${PYLUCENEVERSION}.jar:${luceneJarDir}/lucene-analyzers-common-${PYLUCENEVERSION}.jar
 
-rm -rf $buildDir $libDir
-mkdir --parents $buildDir $libDir
+rm -rf ${buildDir} ${libDir}
+mkdir --parents ${buildDir} ${libDir}
+
+
+JARFILE=${buildDir}/${PKGNAME}.jar
 
 ${javac} -cp ${classpath} -d ${buildDir} `find . -name "*.java"`
-(cd $buildDir; jar -c org > $buildDir/meresco-lucene.jar)
+(cd $buildDir; jar -c org > ${JARFILE})
 
-python2 -m jcc.__main__ \
-    --root $mydir/root \
+python -m jcc.__main__ \
+    --root ${mydir}/root \
     --use_full_names \
     --import lucene \
     --shared \
     --arch x86_64 \
-    --jar $buildDir/meresco-lucene.jar \
-    --python meresco_lucene \
+    --jar ${JARFILE} \
+    --python ${_PKGNAME} \
     --build \
     --install
 
-rootLibDir=$mydir/root/usr/lib64/python${pythonVersion}/site-packages/meresco_lucene
+rootLibDir=${mydir}/root/usr/lib64/python${pythonVersion}/site-packages/${_PKGNAME}
 if [ -f /etc/debian_version ]; then
-    rootLibDir=$mydir/root/usr/local/lib/python${pythonVersion}/dist-packages/meresco_lucene
+    rootLibDir=$mydir/root/usr/local/lib/python${pythonVersion}/dist-packages/${_PKGNAME}
 fi
 
-mv ${rootLibDir} $libDir/
+mv ${rootLibDir} ${libDir}/
 
-rm -rf $buildDir $mydir/root $mydir/meresco_lucene.egg-info
+rm -rf ${buildDir} ${mydir}/root ${mydir}/${_PKGNAME}.egg-info

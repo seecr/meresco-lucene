@@ -28,7 +28,7 @@
 
 export LANG=en_US.UTF-8
 export PYTHONPATH=.:"$PYTHONPATH"
-python2 _alltests.py "$@"
+python _alltests.py "$@"
 
 if [ $? -ne 0 ] ; then
     exit
@@ -51,7 +51,7 @@ if [ ! -f ${JUNIT} ]; then
 fi
 
 JARS=$(find ../jars -type f -name "*.jar")
-LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*-7.3.*.jar")
+LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*-8.1.*.jar")
 
 CP="$JUNIT:$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':'):../build"
 

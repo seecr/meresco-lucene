@@ -91,12 +91,6 @@ class AggregateScoreSubCollector extends SubCollector {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
-        this.scorer = new AggregateSuperScorer(scorer, this.otherScoreCollectors, this.keyValues, this.otherScoreRatio);
-        this.delegate.setScorer(this.scorer);
-    }
-
-    @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
         this.keyValues = KeyValuesCache.get(context, keyName);
         if (this.scorer != null)
@@ -112,11 +106,6 @@ class AggregateScoreSubCollector extends SubCollector {
     @Override
     public void complete() throws IOException {
         this.delegate.complete();
-    }
-
-    @Override
-    public boolean needsScores() {
-        return true;
     }
 }
 
@@ -173,5 +162,10 @@ class AggregateSuperScorer extends Scorer {
     @Override
     public DocIdSetIterator iterator() {
         return this.scorer.iterator();
+    }
+
+    @Override
+    public float getMaxScore(int upTo) throws IOException {
+        return 1.0f;
     }
 }

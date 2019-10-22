@@ -26,7 +26,7 @@
 ## end license ##
 
 VERSION=$1
-LUCENEVERSION=7.3.0
+LUCENEVERSION=8.1.1
 JARS=$(find jars -type f -name "*.jar")
 LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*${LUCENEVERSION}.jar")
 
@@ -42,14 +42,22 @@ mkdir $BUILDDIR
 
 CP="$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':')"
 
-JAVA_VERSION=8
-javac=/usr/lib/jvm/java-1.${JAVA_VERSION}.0/bin/javac
-if [ -f /etc/debian_version ]; then
-    javac=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64/bin/javac
+JAVA_HOME=
+test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+test -f /etc/redhat_version && JAVA_HOME=/usr/lib/jvm/java
+if [ -z "${JAVA_HOME}" ]; then
+    echo "Unable to determine JAVA_HOME"
+    exit 0
 fi
 
-javaFiles=$(find src/org -name "*.java")
-${javac} -d $BUILDDIR -cp $CP $javaFiles
+if [ ! -d "${JAVA_HOME}" ]; then
+    echo "${JAVA_HOME} does not exist"
+    exit 0
+fi
+export JAVA_HOME
+javac=${JAVA_HOME}/bin/javac
+
+${javac} -d $BUILDDIR -cp $CP `find src/org -name "*.java"`
 if [ "$?" != "0" ]; then
     echo "Build failed"
     exit 1

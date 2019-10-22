@@ -37,6 +37,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
 import org.apache.lucene.util.BytesRef;
@@ -101,6 +102,11 @@ public class JoinSortCollector extends SimpleCollector {
     }
 
     @Override
+    public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE;
+    }
+
+    @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
         if (this.topLevelReaderContext == null) {
             this.topLevelReaderContext = ReaderUtil.getTopLevelContext(context);
@@ -128,10 +134,6 @@ public class JoinSortCollector extends SimpleCollector {
         return leaves.get(ReaderUtil.subIndex(docId, leaves));
     }
 
-    @Override
-    public boolean needsScores() {
-        return false;
-    }
 }
 
 

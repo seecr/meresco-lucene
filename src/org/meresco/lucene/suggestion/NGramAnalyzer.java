@@ -51,10 +51,10 @@ class NGramAnalyzer extends Analyzer {
         Tokenizer source = new StandardTokenizer();
         TokenStream src = new LowerCaseFilter(source);
         src = new AddWordBoundaryFilter(src);
-        NGramTokenFilter filter = new NGramTokenFilter(src, this.minShingleSize, this.maxShingleSize);
+        NGramTokenFilter filter = new NGramTokenFilter(src, this.minShingleSize, this.maxShingleSize, false);
         return new TokenStreamComponents(source, filter);
     }
-    
+
     private class AddWordBoundaryFilter extends TokenFilter {
         private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 

@@ -45,7 +45,7 @@ public abstract class DelegatingSubCollector<CollectorType extends Collector, Su
         this.delegate = delegate;
         this.parent = parent;
     }
-    
+
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
         this.leaf = this.delegate.getLeafCollector(context);

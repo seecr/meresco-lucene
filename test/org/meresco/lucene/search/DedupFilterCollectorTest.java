@@ -65,7 +65,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
         DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
-        assertEquals(1, tc.topDocs(0).totalHits);
+        assertEquals(1, tc.topDocs(0).totalHits.value);
     }
 
     public void addDocument(String identifier, Long isformatof, Long sort) throws Throwable {
@@ -86,9 +86,9 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         TopDocs topDocsResult = tc.topDocs(0);
-        assertEquals(2, topDocsResult.totalHits);
+        assertEquals(2, topDocsResult.totalHits.value);
         assertEquals(2, topDocsResult.scoreDocs.length);
-        assertEquals(1, c.adjustTotalHits(topDocsResult.totalHits));
+        assertEquals(1, c.adjustTotalHits(topDocsResult.totalHits.value));
 
         int docId = topDocsResult.scoreDocs[0].doc;
         DeDupFilterSuperCollector.Key key = c.keyForDocId(docId);
@@ -109,7 +109,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
         TopDocs topDocsResult = tc.topDocs(0);
-        assertEquals(3, c.adjustTotalHits(topDocsResult.totalHits));
+        assertEquals(3, c.adjustTotalHits(topDocsResult.totalHits.value));
         int size = topDocsResult.scoreDocs.length;
         assertEquals(5, size);
         int[] netDocIds = new int[size];
@@ -130,7 +130,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
         DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__wrong_field__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
-        assertEquals(1, tc.topDocs(0).totalHits);
+        assertEquals(1, tc.topDocs(0).totalHits.value);
     }
 
     @Test
@@ -149,7 +149,7 @@ public class DedupFilterCollectorTest extends SeecrTestCase {
         TopScoreDocSuperCollector tc = new TopScoreDocSuperCollector(100);
         DeDupFilterSuperCollector c = new DeDupFilterSuperCollector("__isformatof__", Arrays.asList("__sort__").toArray(new String[0]), tc);
         lucene.search(new MatchAllDocsQuery(), null, c);
-        assertEquals(11, tc.topDocs(0).totalHits);
-        assertEquals(10, c.adjustTotalHits(tc.topDocs(0).totalHits));
+        assertEquals(11, tc.topDocs(0).totalHits.value);
+        assertEquals(10, c.adjustTotalHits(tc.topDocs(0).totalHits.value));
     }
 }

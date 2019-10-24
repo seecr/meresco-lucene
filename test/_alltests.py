@@ -56,4 +56,3 @@ from pylucene.lucenekeyvaluestoretest import LuceneKeyValueStoreTest
 
 if __name__ == '__main__':
     unittest.main()
-

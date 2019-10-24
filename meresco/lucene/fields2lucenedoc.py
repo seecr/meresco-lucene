@@ -27,9 +27,8 @@
 
 from meresco.core import Observable
 from meresco.lucene import SORTED_PREFIX
-from org.apache.lucene.document import Document
 
-from fieldregistry import IDFIELD, KEY_PREFIX
+from fieldregistry import IDFIELD
 
 
 class Fields2LuceneDoc(Observable):

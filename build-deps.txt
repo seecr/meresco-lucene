@@ -1,15 +1,10 @@
-jcc (>= 3.0)
-jcc (<< 3.1)
+jcc (>= 3.6)
+jcc (<< 3.7)
 python-setuptools
 gcc
+python-meresco-pylucene (>= 8.1.1)
+python-meresco-pylucene (<< 8.2)
+debian:openjdk-8-jdk
 #centos7:gcc-c++
-#jessie:g++
-#stretch:g++
 #centos7:python-devel
-#jessie:python-dev
-#stretch:python-dev
-python-meresco-pylucene (>= 6.5.0)
-python-meresco-pylucene (<< 6.6)
-#jessie:openjdk-8-jdk
-#stretch:openjdk-8-jdk
 #centos7:java-1.8.0-openjdk-devel

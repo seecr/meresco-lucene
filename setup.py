@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 ## begin license ##
 #
@@ -35,7 +35,6 @@ version = '$Version: trunk$'[9:-1].strip()
 name='meresco-lucene'
 
 from distutils.core import setup
-from distutils.extension import Extension
 from os import walk
 from os.path import join
 

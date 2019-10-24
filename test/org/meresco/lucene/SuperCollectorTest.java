@@ -86,7 +86,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         I.search(Q, null, C);
         TopDocs td = C.topDocs(0);
         assertEquals(3, C.getTotalHits());
-        assertEquals(3, td.totalHits);
+        assertEquals(3, td.totalHits.value);
         assertEquals(2, td.scoreDocs.length);
     }
 
@@ -103,7 +103,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         I.search(Q, null, C);
         TopDocs td = C.topDocs(1);
         assertEquals(3, C.getTotalHits());
-        assertEquals(3, td.totalHits);
+        assertEquals(3, td.totalHits.value);
         assertEquals(1, td.scoreDocs.length);
         assertEquals(1, td.scoreDocs[0].score, 0);
     }
@@ -166,7 +166,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         MatchAllDocsQuery Q = new MatchAllDocsQuery();
         I.search(Q, null, C);
 
-        assertEquals(99, t.topDocs(0).totalHits);
+        assertEquals(99, t.topDocs(0).totalHits.value);
         assertEquals(10, t.topDocs(0).scoreDocs.length);
         FacetResult tc = f.getTopChildren(10, "facet1");
 
@@ -202,7 +202,7 @@ public class SuperCollectorTest extends SeecrTestCase {
         I.search(Q, null, C);
         TopDocs td = C.topDocs(0);
         assertEquals(3, C.getTotalHits());
-        assertEquals(3, td.totalHits);
+        assertEquals(3, td.totalHits.value);
         assertEquals(2, td.scoreDocs.length);
         assertEquals("id2", I.getDocument(td.scoreDocs[0].doc).get("__id__"));
         assertEquals("id3", I.getDocument(td.scoreDocs[1].doc).get("__id__"));

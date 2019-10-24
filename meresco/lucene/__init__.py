@@ -27,7 +27,6 @@
 
 from os.path import dirname, abspath, join, isfile                               #DO_NOT_DISTRIBUTE
 from os import stat, system, walk                                                #DO_NOT_DISTRIBUTE
-from glob import glob                                                            #DO_NOT_DISTRIBUTE
 from sys import exit, path as sysPath                                            #DO_NOT_DISTRIBUTE
 from itertools import chain                                                      #DO_NOT_DISTRIBUTE
 mydir = dirname(abspath(__file__))                                               #DO_NOT_DISTRIBUTE

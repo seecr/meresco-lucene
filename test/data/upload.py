@@ -24,7 +24,7 @@
 #
 ## end license ##
 
-from os.path import dirname, abspath, join, basename, isdir
+from os.path import dirname, abspath, join, basename
 from lxml.etree import XML, tostring
 from os import listdir, getpid
 from sys import argv, exit

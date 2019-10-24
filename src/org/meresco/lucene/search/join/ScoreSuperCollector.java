@@ -34,7 +34,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.SmallFloat;
 import org.meresco.lucene.search.NumericDocValuesRandomAccess;
 import org.meresco.lucene.search.SubCollector;
@@ -98,7 +98,7 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
 
 class ScoreSubCollector extends SubCollector {
     private byte[] scores = new byte[0];
-    private Scorer scorer;
+    private Scorable scorer;
     private NumericDocValuesRandomAccess keyValues;
     private final ScoreSuperCollector parent;
 
@@ -110,6 +110,11 @@ class ScoreSubCollector extends SubCollector {
     @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
         this.keyValues = new NumericDocValuesRandomAccess(context.reader(), parent.keyName);
+    }
+
+    @Override
+    public void setScorer(Scorable s) throws IOException {
+        scorer = s;
     }
 
     @Override

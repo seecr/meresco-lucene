@@ -33,6 +33,7 @@ import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Weight;
 import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
@@ -96,6 +97,11 @@ class AggregateScoreSubCollector extends SubCollector {
         if (this.scorer != null)
             this.scorer.setKeyValues(this.keyValues);
         this.delegate.setNextReader(context);
+    }
+
+    @Override
+    public void setScorer(Scorable s) throws IOException {
+        this.delegate.setScorer(s);
     }
 
     @Override

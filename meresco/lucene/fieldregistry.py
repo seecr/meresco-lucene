@@ -25,10 +25,6 @@
 #
 ## end license ##
 
-
-from warnings import warn
-
-
 IDFIELD = '__id__'
 SORTED_PREFIX = "sorted."
 UNTOKENIZED_PREFIX = "untokenized."

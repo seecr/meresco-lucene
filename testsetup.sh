@@ -30,27 +30,21 @@ rm -rf tmp build
 mydir=$(cd $(dirname $0); pwd)
 source /usr/share/seecr-tools/functions.d/test
 
-if [ -e /usr/bin/python2.6 ]; then
-    pyversions="python2.6"
-fi
-if [ -e /usr/bin/python2.7 ]; then
-    pyversions="python2.7"
-fi
+pyversion="python2.7"
 VERSION="x.y.z"
 
-for pyversion in $pyversions; do
-    definePythonVars $pyversion
-    echo "###### $pyversion, $PYTHON"
-    (cd $mydir/src_pylucene; ./build.sh ${SITEPACKAGES}/meresco/lucene)
-    (
-        cd $mydir
-        mkdir --parents tmp/usr/share/java/meresco-lucene
-        cp jars/*.jar tmp/usr/share/java/meresco-lucene/
-        ./build.sh "$VERSION"
-        mv meresco-lucene-${VERSION}.jar tmp/usr/share/java/meresco-lucene/
-    )
-    ${PYTHON} setup.py install --root tmp
-done
+definePythonVars $pyversion
+echo "###### $pyversion, $PYTHON"
+(cd $mydir/src_pylucene; ./build.sh ${SITEPACKAGES}/meresco/lucene)
+(
+    cd $mydir
+    mkdir --parents tmp/usr/share/java/meresco-lucene
+    cp jars/*.jar tmp/usr/share/java/meresco-lucene/
+    ./build.sh "$VERSION"
+    mv meresco-lucene-${VERSION}.jar tmp/usr/share/java/meresco-lucene/
+)
+${PYTHON} setup.py install --root tmp
+
 cp -r test tmp/test
 removeDoNotDistribute tmp
 find tmp -name '*.py' -exec sed -r -e "

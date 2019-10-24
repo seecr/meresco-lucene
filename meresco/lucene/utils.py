@@ -42,7 +42,6 @@ class _JsonEncoder(JSONEncoder):
 
 def readFixedBitSet(data):
     numBits = unpack('>i', data[4:8])[0]
-    numWords = unpack('>i', data[:4])[0]
     longs = []
     for i in xrange(8, len(data), 8):
         longs.append(long(unpack('>q', data[i:i+8])[0]))

@@ -38,7 +38,7 @@ import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.OrdinalsReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-
+import org.apache.lucene.search.ScoreMode;
 
 public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
     final TaxonomyReader taxoReader;
@@ -66,7 +66,8 @@ public class FacetSuperCollector extends SuperCollector<FacetSubCollector> {
 
     public FacetResult getTopChildren(int topN, String dim, String... path) throws IOException {
         // This will not really need a ordinalsReader. but will call getIndexFieldName()
-        return new MerescoTaxonomyFacetCounts(this.ordinalsReaders, this.taxoReader, this.facetConfig, null, this.mergeValues).getTopChildren(topN, dim, path);
+        return new MerescoTaxonomyFacetCounts(this.ordinalsReaders, this.taxoReader, this.facetConfig, null,
+                this.mergeValues).getTopChildren(topN, dim, path);
     }
 
     @Override
@@ -105,9 +106,14 @@ class FacetSubCollector extends DelegatingSubCollector<FacetsCollector, FacetSup
     @Override
     public void complete() throws IOException {
         int[] values = new int[this.parent.taxoReader.getSize()];
-        MerescoTaxonomyFacetCounts counts = new MerescoTaxonomyFacetCounts(this.parent.ordinalsReaders, this.parent.taxoReader, this.parent.facetConfig, this.delegate, values);
+        MerescoTaxonomyFacetCounts counts = new MerescoTaxonomyFacetCounts(this.parent.ordinalsReaders,
+                this.parent.taxoReader, this.parent.facetConfig, this.delegate, values);
         counts.doCount();
         this.parent.mergePool(values);
     }
 
+    @Override
+    public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE_NO_SCORES;
+    }
 }

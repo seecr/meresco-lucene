@@ -27,19 +27,17 @@
 
 package org.meresco.lucene.search.join;
 
-import org.meresco.lucene.Utils;
-
 import java.io.IOException;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorable;
-import org.apache.lucene.util.SmallFloat;
+import org.apache.lucene.search.ScoreMode;
+import org.meresco.lucene.Utils;
 import org.meresco.lucene.search.NumericDocValuesRandomAccess;
 import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
-
 
 public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     final String keyName;
@@ -94,7 +92,6 @@ public class ScoreSuperCollector extends SuperCollector<ScoreSubCollector> {
     }
 }
 
-
 class ScoreSubCollector extends SubCollector {
     private byte[] scores = new byte[0];
     private Scorable scorer;
@@ -135,4 +132,8 @@ class ScoreSubCollector extends SubCollector {
         this.parent.mergePool(this.scores);
     }
 
+    @Override
+    public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE;
+    }
 }

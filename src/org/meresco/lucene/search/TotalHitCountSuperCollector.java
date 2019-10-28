@@ -29,8 +29,9 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
-public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSubCollector> {
+import org.apache.lucene.search.ScoreMode;
 
+public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSubCollector> {
     @Override
     public TotalHitCountSubCollector createSubCollector() {
         return new TotalHitCountSubCollector();
@@ -50,7 +51,6 @@ public class TotalHitCountSuperCollector extends SuperCollector<TotalHitCountSub
 }
 
 class TotalHitCountSubCollector extends SubCollector {
-
     private int totalHits = 0;
 
     @Override
@@ -66,4 +66,8 @@ class TotalHitCountSubCollector extends SubCollector {
     public void complete() {
     }
 
+    @Override
+    public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE_NO_SCORES;
+    }
 }

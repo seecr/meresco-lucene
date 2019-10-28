@@ -30,9 +30,9 @@ package org.meresco.lucene.search.join;
 import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.util.FixedBitSet;
 import org.meresco.lucene.search.SubCollector;
-
 
 public class KeyCollector extends SubCollector {
     protected String keyName;
@@ -47,8 +47,8 @@ public class KeyCollector extends SubCollector {
     @Override
     public void collect(int docId) throws IOException {
         if (this.keyValuesArray != null) {
-        	int value = this.keyValuesArray[docId];
-        	if (value > 0) {
+            int value = this.keyValuesArray[docId];
+            if (value > 0) {
                 if (value > this.biggestKeyFound) {
                     this.biggestKeyFound = value;
                     this.currentKeySet = FixedBitSet.ensureCapacity(this.currentKeySet, value + 1);
@@ -67,7 +67,12 @@ public class KeyCollector extends SubCollector {
         return this.currentKeySet;
     }
 
-	@Override
-	public void complete() throws IOException {
-	}
+    @Override
+    public void complete() throws IOException {
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE_NO_SCORES;
+    }
 }

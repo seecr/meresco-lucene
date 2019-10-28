@@ -28,11 +28,12 @@ package org.meresco.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 
-public class TopDocSubCollector<SuperCollectorType extends TopDocSuperCollector> extends
-        DelegatingSubCollector<TopDocsCollector<?>, SuperCollectorType> {
+public class TopDocSubCollector<SuperCollectorType extends TopDocSuperCollector>
+        extends DelegatingSubCollector<TopDocsCollector<?>, SuperCollectorType> {
 
     TopDocs topdocs;
 
@@ -43,5 +44,10 @@ public class TopDocSubCollector<SuperCollectorType extends TopDocSuperCollector>
     @Override
     public void complete() {
         this.topdocs = this.delegate.topDocs();
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+        return this.delegate.scoreMode();
     }
 }

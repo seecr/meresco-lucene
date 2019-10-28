@@ -63,7 +63,7 @@ public class KeyFilter extends Query {
         return new ConstantScoreWeight(this, 1.0f) {  // simply ignore boost for filtering (javadoc suggests something else, but then not cachable...?!?)
             @Override
             public Scorer scorer(LeafReaderContext context) throws IOException {
-                return new ConstantScoreScorer(this, score(), scoreMode, new DocIdSetIterator() {
+                return new ConstantScoreScorer(this, score(), ScoreMode.COMPLETE_NO_SCORES, new DocIdSetIterator() {
                     private int[] keyValuesArray = KeyValuesCache.get(context, keyName);
                     private int maxDoc = context.reader().maxDoc();
                     int docId = -1;

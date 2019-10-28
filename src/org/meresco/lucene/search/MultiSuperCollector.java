@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreMode;
 
 public class MultiSuperCollector extends SuperCollector<MultiSubCollector> {
 
@@ -102,4 +103,11 @@ class MultiSubCollector extends SubCollector {
         }
     }
 
+    @Override
+    public ScoreMode scoreMode() {
+        if (Stream.of(this.subCollectors).anyMatch(c -> (ScoreMode.COMPLETE_NO_SCORES != c.scoreMode()))) {
+            return ScoreMode.COMPLETE;
+        }
+        return ScoreMode.COMPLETE_NO_SCORES;
+    }
 }

@@ -90,10 +90,7 @@ public class SuperIndexSearcher extends IndexSearcher {
     public void search(Query q, SuperCollector<?> c) throws Throwable {
         SubCollector subCollector = c.subCollector();
         float boost = 1.0f;
-
-        // NEEDS WORK: was createNormalizedWeight call
-        // See: 
-        // https://lucene.apache.org/core/7_6_0/core/org/apache/lucene/search/IndexSearcher.html#createNormalizedWeight-org.apache.lucene.search.Query-boolean-
+        q = rewrite(q);
         Weight weight = super.createWeight(q, subCollector.scoreMode(), boost);
         ExecutorCompletionService<String> ecs = new ExecutorCompletionService<String>(this.executor);
         List<Future<String>> futures = new ArrayList<Future<String>>();

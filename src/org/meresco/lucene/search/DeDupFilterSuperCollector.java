@@ -37,6 +37,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreMode;
 
 
 public class DeDupFilterSuperCollector extends SuperCollector<DeDupFilterSubCollector> {
@@ -251,4 +252,7 @@ class DeDupFilterSubCollector extends SubCollector {
         return this.totalHits;
     }
 
+    public ScoreMode scoreMode() {
+        return this.delegate.scoreMode();
+    }
 }

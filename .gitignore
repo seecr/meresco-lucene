@@ -4,3 +4,4 @@ lib
 meresco-lucene.jar
 .classpath
 /ecl-bin/
+.project

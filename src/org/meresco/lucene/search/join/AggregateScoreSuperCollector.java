@@ -31,11 +31,8 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
 import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
 
@@ -102,11 +99,13 @@ class AggregateScoreSubCollector extends SubCollector {
 
     @Override
     public void setScorer(Scorable s) throws IOException {
-        this.delegate.setScorer(s);
+        this.scorer = new AggregateSuperScorer(s, this.otherScoreCollectors, this.keyValues, this.otherScoreRatio);
+        this.delegate.setScorer(this.scorer);
     }
 
     @Override
     public void collect(int doc) throws IOException {
+        System.out.println("COLLECT: " + doc);
         this.delegate.collect(doc);
     }
 
@@ -121,16 +120,15 @@ class AggregateScoreSubCollector extends SubCollector {
     }
 }
 
-class AggregateSuperScorer extends Scorer {
-    private final Scorer scorer;
+class AggregateSuperScorer extends Scorable {
+    private final Scorable scorer;
     private int[] keyValues;
     private final ScoreSuperCollector[] otherScoreCollectors;
     private float otherScoreRatio; // a value between 0.0f and 1.0f
 
-    AggregateSuperScorer(Scorer scorer, ScoreSuperCollector[] otherScoreCollectors, int[] keyValues,
+    AggregateSuperScorer(Scorable s, ScoreSuperCollector[] otherScoreCollectors, int[] keyValues,
             float otherScoreRatio) {
-        super(weightFromScorer(scorer));
-        this.scorer = scorer;
+        this.scorer = s;
         this.otherScoreCollectors = otherScoreCollectors;
         this.keyValues = keyValues;
         this.otherScoreRatio = otherScoreRatio;
@@ -142,6 +140,7 @@ class AggregateSuperScorer extends Scorer {
 
     @Override
     public float score() throws IOException {
+    	
         float score = 1.0f;
         int docId = this.docID();
         int key = this.keyValues != null ? this.keyValues[docId] : 0;
@@ -149,6 +148,7 @@ class AggregateSuperScorer extends Scorer {
             float otherScore = sc.score(key);
             score *= (1 + otherScore);
         }
+        System.out.println("SCORE: " + score);
 
         /*
          * Note: the following score weighing applies to one
@@ -163,23 +163,5 @@ class AggregateSuperScorer extends Scorer {
     @Override
     public int docID() {
         return this.scorer.docID();
-    }
-
-    private static Weight weightFromScorer(Scorer scorer) {
-        try {
-            return scorer.getWeight();
-        } catch (UnsupportedOperationException e) {
-            return null;
-        }
-    }
-
-    @Override
-    public DocIdSetIterator iterator() {
-        return this.scorer.iterator();
-    }
-
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-        return 1.0f;
     }
 }

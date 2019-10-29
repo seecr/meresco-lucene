@@ -110,7 +110,6 @@ public class SuggestionIndex {
 
     public void add(String identifier, int key, String[] values, String[] types, String[] creators) throws IOException {
         Document recordDoc = new Document();
-        System.out.format("values length: %d", values.length);
         recordDoc.add(new Field(ID_FIELD, identifier, SIMPLE_NOT_STORED_STRING_FIELD));
         recordDoc.add(new NumericDocValuesField(KEY_FIELDNAME, key));
         for (int i = 0; i < values.length; i++) {

@@ -271,7 +271,7 @@ public class SuggestionNGramIndex {
             if (chain.length == 1)
                 return chain[0];
             BooleanQuery.Builder builder = new BooleanQuery.Builder();
-            Stream.of(chain).forEach(f -> builder.add(f, Occur.SHOULD));
+            Stream.of(chain).forEach(f -> builder.add(f, Occur.FILTER));
             return builder.build();
         }
 

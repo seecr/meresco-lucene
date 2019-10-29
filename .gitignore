@@ -2,3 +2,4 @@
 build
 lib
 meresco-lucene.jar
+.classpath

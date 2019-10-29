@@ -103,7 +103,7 @@ public class JoinSortCollector extends SimpleCollector {
 
     @Override
     public ScoreMode scoreMode() {
-        return ScoreMode.COMPLETE;
+        return ScoreMode.COMPLETE_NO_SCORES;
     }
 
     @Override

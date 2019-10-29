@@ -32,12 +32,12 @@ import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Scorable;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.meresco.lucene.search.SubCollector;
 import org.meresco.lucene.search.SuperCollector;
-
 
 public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreSubCollector> {
     private final String keyName;
@@ -45,7 +45,8 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
     private SuperCollector<?> delegate;
     private float otherScoreRatio = 0.5f;
 
-    public AggregateScoreSuperCollector(String keyName, List<ScoreSuperCollector> otherScoreCollectors, Float otherScoreRatio) {
+    public AggregateScoreSuperCollector(String keyName, List<ScoreSuperCollector> otherScoreCollectors,
+            Float otherScoreRatio) {
         this.keyName = keyName;
         this.otherScoreCollectors = otherScoreCollectors.toArray(new ScoreSuperCollector[0]);
         if (otherScoreRatio != null) {
@@ -62,7 +63,8 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
 
     @Override
     protected AggregateScoreSubCollector createSubCollector() throws IOException {
-        return new AggregateScoreSubCollector(this.keyName, this.otherScoreCollectors, this.delegate.subCollector(), this.otherScoreRatio);
+        return new AggregateScoreSubCollector(this.keyName, this.otherScoreCollectors, this.delegate.subCollector(),
+                this.otherScoreRatio);
     }
 
     @Override
@@ -72,7 +74,6 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
 
 }
 
-
 class AggregateScoreSubCollector extends SubCollector {
     private final SubCollector delegate;
     private final ScoreSuperCollector[] otherScoreCollectors;
@@ -81,8 +82,8 @@ class AggregateScoreSubCollector extends SubCollector {
     private AggregateSuperScorer scorer;
     private float otherScoreRatio;
 
-    public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate, float otherScoreRatio)
-            throws IOException {
+    public AggregateScoreSubCollector(String keyName, ScoreSuperCollector[] otherScoreCollectors, SubCollector delegate,
+            float otherScoreRatio) throws IOException {
         super();
         this.keyName = keyName;
         this.delegate = delegate;
@@ -112,16 +113,21 @@ class AggregateScoreSubCollector extends SubCollector {
     public void complete() throws IOException {
         this.delegate.complete();
     }
-}
 
+    @Override
+    public ScoreMode scoreMode() {
+        return ScoreMode.COMPLETE;
+    }
+}
 
 class AggregateSuperScorer extends Scorer {
     private final Scorer scorer;
     private int[] keyValues;
     private final ScoreSuperCollector[] otherScoreCollectors;
-    private float otherScoreRatio;  // a value between 0.0f and 1.0f
+    private float otherScoreRatio; // a value between 0.0f and 1.0f
 
-    AggregateSuperScorer(Scorer scorer, ScoreSuperCollector[] otherScoreCollectors, int[] keyValues, float otherScoreRatio) {
+    AggregateSuperScorer(Scorer scorer, ScoreSuperCollector[] otherScoreCollectors, int[] keyValues,
+            float otherScoreRatio) {
         super(weightFromScorer(scorer));
         this.scorer = scorer;
         this.otherScoreCollectors = otherScoreCollectors;
@@ -144,9 +150,11 @@ class AggregateSuperScorer extends Scorer {
         }
 
         /*
-         * Note: the following score weighing applies to one AggregateScoreSuperCollector at a time.
-         * In other words: behaviour will (probably) not be as expected when multiple AggregateScoreSuperCollector instances play a part
-         * (which is currently the case when multiple 'key' fields on the 'result core' come into play for one query).
+         * Note: the following score weighing applies to one
+         * AggregateScoreSuperCollector at a time. In other words: behaviour will
+         * (probably) not be as expected when multiple AggregateScoreSuperCollector
+         * instances play a part (which is currently the case when multiple 'key' fields
+         * on the 'result core' come into play for one query).
          */
         return (1.0f - this.otherScoreRatio) * this.scorer.score() + this.otherScoreRatio * score;
     }

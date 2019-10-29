@@ -104,7 +104,6 @@ class AggregateScoreSubCollector extends SubCollector {
 
     @Override
     public void collect(int doc) throws IOException {
-        System.out.println("COLLECT: " + doc);
         this.delegate.collect(doc);
     }
 
@@ -147,7 +146,6 @@ class AggregateSuperScorer extends Scorable {
             float otherScore = sc.score(key);
             score *= (1 + otherScore);
         }
-        System.out.println("SCORE: " + score);
 
         /*
          * Note: the following score weighing applies to one

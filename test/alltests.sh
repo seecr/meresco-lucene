@@ -28,32 +28,9 @@
 
 export LANG=en_US.UTF-8
 export PYTHONPATH=.:"$PYTHONPATH"
-pyversions=""
-if [ -e /usr/bin/python2.6 ]; then
-    pyversions="$pyversions python2.6"
-fi
-if [ -e /usr/bin/python2.7 ]; then
-    pyversions="$pyversions python2.7"
-fi
-option=$1
-if [ "${option:0:10}" == "--python2." ]; then
-    shift
-    pyversions="${option:2}"
-fi
-echo Found Python versions: $pyversions
-for pycmd in $pyversions; do
-    if [ "${pycmd}" == "python2.6" -a -f /etc/debian_version ]; then
-        debian_version=$(cat /etc/debian_version)
-        if [ "${debian_version:0:1}" == "7" ]; then
-            echo "Skipping ${pycmd} for Wheezy"
-            continue
-        fi
-    fi
-    echo "================ $t with $pycmd _alltests.py $@ ================"
-    $pycmd _alltests.py "$@"
-done
+python2 _alltests.py "$@"
 
-if [ $# -ne 0 ] ; then
+if [ $? -ne 0 ] ; then
     exit
 fi
 

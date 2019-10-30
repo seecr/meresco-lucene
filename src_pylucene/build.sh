@@ -36,7 +36,7 @@ if [ -z "$libDir" ]; then
     libDir=$(dirname $mydir)/lib
 fi
 
-pythonVersion=$(python --version 2>&1 | awk '{print $2}' | cut -d. -f-2)
+pythonVersion=$(python2 --version 2>&1 | awk '{print $2}' | cut -d. -f-2)
 pythonPackagesDir=/usr/lib64/python${pythonVersion}/site-packages
 if [ -f /etc/debian_version ]; then
     pythonPackagesDir=/usr/lib/python${pythonVersion}/dist-packages
@@ -70,7 +70,7 @@ mkdir --parents $buildDir $libDir
 ${javac} -cp ${classpath} -d ${buildDir} `find . -name "*.java"`
 (cd $buildDir; jar -c org > $buildDir/meresco-lucene.jar)
 
-python -m jcc.__main__ \
+python2 -m jcc.__main__ \
     --root $mydir/root \
     --use_full_names \
     --import lucene \

@@ -159,11 +159,15 @@ public class SuggestionIndex {
                 } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
-                    long totalTime = (System.currentTimeMillis() - indexingState.started) / 1000;
-                    long averageSpeed = totalTime > 0 ? indexingState.count / totalTime : 0;
+                    long totalTime = (System.currentTimeMillis() - indexingState.started);
+                    float averageSpeed = totalTime > 0 ? 1000 * (float) indexingState.count / totalTime : 0;
                     if (verbose) {
-                        System.out.println("Creating " + indexingState.count + " suggestions took: " + totalTime + "s" + "; Average: " + averageSpeed + "/s");
+                        System.out.println("Creating " + indexingState.count + " suggestions took: " + totalTime + "ms" + "; Average: " + averageSpeed + "/s");
                         System.out.flush();
+                    }
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
                     }
                     indexingState = null;
                 }

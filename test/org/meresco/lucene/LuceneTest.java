@@ -711,33 +711,27 @@ public class LuceneTest extends SeecrTestCase {
         Collections.sort(hits);
         assertEquals(Arrays.asList(2, 3, 5), hits);
 
-        List<List<String>> hitIds = new ArrayList<>(hits.size());
-        List<String> hit0ids = new ArrayList<>();
-        for (DocScore scoreDoc : hit0.topDocs) {
-        	hit0ids.add(scoreDoc.identifier);
-        }
-        Collections.sort(hit0ids);
-        hitIds.add(hits.indexOf(hit0ids.size()), hit0ids);
+        @SuppressWarnings("unchecked")
+		List<String>[] hitIds = new List[3];
+        collect_hit_ids(hit0, hits, hitIds);
+        collect_hit_ids(hit1, hits, hitIds);
+        collect_hit_ids(hit2, hits, hitIds);
 
-        List<String> hit1ids = new ArrayList<>();
-        for (DocScore scoreDoc : hit1.topDocs) {
-        	hit1ids.add(scoreDoc.identifier);
-        }
-        Collections.sort(hit1ids);
-        hitIds.add(hits.indexOf(hit1ids.size()), hit1ids);
-
-        List<String> hit2ids = new ArrayList<>();
-        for (DocScore scoreDoc : hit2.topDocs) {
-        	hit2ids.add(scoreDoc.identifier);
-        }
-        Collections.sort(hit2ids);
-        hitIds.add(hits.indexOf(hit2ids.size()), hit2ids);
-
-        assertEquals(Arrays.asList("id:8", "id:9"), hitIds.get(0));
-        assertEquals(Arrays.asList("id:5", "id:6", "id:7"), hitIds.get(1));
-        assertEquals(Arrays.asList("id:0", "id:1", "id:2", "id:3", "id:4"), hitIds.get(2));
+        assertEquals(Arrays.asList("id:8", "id:9"), hitIds[0]);
+        assertEquals(Arrays.asList("id:5", "id:6", "id:7"), hitIds[1]);
+        assertEquals(Arrays.asList("id:0", "id:1", "id:2", "id:3", "id:4"), hitIds[2]);
 
     }
+
+	private void collect_hit_ids(ClusterHit hit, List<Integer> hit_counts, List<String>[] hitIds) {
+		List<String> hit_ids = new ArrayList<>();
+        for (DocScore scoreDoc : hit.topDocs) {
+        	hit_ids.add(scoreDoc.identifier);
+        }
+        Collections.sort(hit_ids);
+        int indexOf = hit_counts.indexOf(hit_ids.size());
+		hitIds[indexOf] = hit_ids;
+	}
 
 
     @Test

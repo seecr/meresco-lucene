@@ -206,9 +206,10 @@ public class SuggestionIndexTest extends SeecrTestCase {
         assertEquals(null, index.indexingState());
         for (int i=0; i<100; i++)
             index.add("identifier" + i, 1,new String[] {"Lord rings", "Lord magic"}, new String[] {null, null}, new String[] {null, null});
+        index.commit();
         try {
             index.createSuggestionNGramIndex(false, false);
-            Thread.sleep(5); // Wait for thread
+            Thread.sleep(5);
             IndexingState state = index.indexingState();
             assertNotEquals(null, state);
             assertTrue(0 <= state.count);

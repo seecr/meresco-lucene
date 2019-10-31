@@ -197,15 +197,8 @@ public class SuggestionIndexTest extends SeecrTestCase {
         assertEquals(2, suggestions.length);
         assertEquals("Lord magic", suggestions[0].suggestion);
         assertEquals("Lord of the rings", suggestions[1].suggestion);
-
-        // TODO (upgrading from Lucene 7.3 to 8.1):
-        // Both scores below turn out lower than expected by the same factor: 2.2
-        // Might be caused by or related to
-        // http://issues.apache.org/jira/browse/LUCENE-8563 ?
-        // (This was the only one of the issues in the release notes that suggests maybe
-        // having an impact)?
-        assertEquals(0.40459534525871277, suggestions[0].score, 0);
-        assertEquals(0.33187204599380493, suggestions[1].score, 0);
+        assertEquals(0.18390695750713348, suggestions[0].score, 0);
+        assertEquals(0.15085092186927795, suggestions[1].score, 0);
     }
 
     @Test

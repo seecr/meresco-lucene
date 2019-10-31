@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -49,6 +50,7 @@ import org.meresco.lucene.search.InterpolateEpsilon;
 import org.meresco.lucene.search.MerescoCluster;
 import org.meresco.lucene.search.MerescoCluster.DocScore;
 import org.meresco.lucene.search.MerescoClusterer;
+import org.meresco.lucene.search.MerescoVector;
 
 
 public class MerescoClustererTest extends SeecrTestCase {
@@ -91,7 +93,8 @@ public class MerescoClustererTest extends SeecrTestCase {
         super.tearDown();
     }
 
-    @Test
+	@SuppressWarnings("serial")
+	@Test
     public void testClusterOnTermVectors() throws IOException, UninitializedException {
         ClusterConfig clusterConfig = new ClusterConfig().addStrategy(new ClusterStrategy(0.5, 1).addField("termvector.field", 1.0, null));
         MerescoClusterer merescoClusterer = new MerescoClusterer(getIndexReader(), clusterConfig);
@@ -100,34 +103,56 @@ public class MerescoClustererTest extends SeecrTestCase {
         }
         merescoClusterer.finish();
 
-        MerescoCluster cluster1 = merescoClusterer.cluster(5);
-        assertEquals(5, cluster1.topDocs.length);
-        assertEquals(2, cluster1.topTerms.length);
-        String[] terms = new String[cluster1.topTerms.length];
+        Object lastTopDocs = null;
+        Set<String[]> terms = new HashSet<String[]>();
+        for (Cluster<MerescoVector> cl : merescoClusterer.clusters) {
+        	System.out.println("CLUSTER: " + cl.getPoints());
+        	int docId = cl.getPoints().get(0).docId();
+        	MerescoCluster cluster = merescoClusterer.cluster(docId);
+            assertEquals(5, cluster.topDocs.length);
+            assertNotSame(lastTopDocs, cluster.topDocs);
+            lastTopDocs = cluster.topDocs;
+            String[] collected_terms = collect_terms(cluster);
+            System.out.println("TERMEN:"+ Arrays.toString(collected_terms));
+			terms.add(collected_terms);
+        }
+        assertEquals(new HashSet<String[]>() {{
+        	this.add(new String[]{"else", "something"});
+        	this.add(new String[]{"noot", "aap", "vuur"});
+        	this.add(new String[]{"anders", "iets"});
+        }}, terms);
+        
+        
+//        MerescoCluster cluster1 = merescoClusterer.cluster(5);
+//        assertEquals(5, cluster1.topDocs.length);
+//        assertEquals(2, cluster1.topTerms.length);
+//        String[] terms = collect_terms(cluster1);
+//        System.out.println("A>>>" + Arrays.toString(terms));
+//        assertArrayEquals(new String[] { "else", "something" }, terms);
+//
+//        MerescoCluster cluster2 = merescoClusterer.cluster(7);
+//        assertEquals(5, cluster2.topDocs.length);
+//        terms = collect_terms(cluster2);
+//        System.out.println("B>>>" + Arrays.toString(terms));
+//        //assertArrayEquals(new String[] { "noot", "aap", "vuur" }, terms);
+//
+//        MerescoCluster cluster3 = merescoClusterer.cluster(0);
+//        assertEquals(5, cluster3.topDocs.length);
+//        terms = collect_terms(cluster3);
+//        System.out.println("C>>>" + Arrays.toString(terms));
+//        assertArrayEquals(new String[] { "anders", "iets" }, terms);
+
+//        assertNotSame(cluster1.topDocs, cluster2.topDocs);
+//        assertNotSame(cluster1.topDocs, cluster3.topDocs);
+    }
+
+	private String[] collect_terms(MerescoCluster cluster1) {
+		String[] terms = new String[cluster1.topTerms.length];
         for (int i = 0; i < terms.length; i++) {
             terms[i] = cluster1.topTerms[i].term;
         }
-        assertArrayEquals(new String[] { "else", "something" }, terms);
-
-        MerescoCluster cluster2 = merescoClusterer.cluster(10);
-        assertEquals(5, cluster2.topDocs.length);
-        terms = new String[cluster2.topTerms.length];
-        for (int i = 0; i < terms.length; i++) {
-            terms[i] = cluster2.topTerms[i].term;
-        }
-        assertArrayEquals(new String[] { "noot", "aap", "vuur" }, terms);
-
-        MerescoCluster cluster3 = merescoClusterer.cluster(0);
-        assertEquals(5, cluster3.topDocs.length);
-        terms = new String[cluster3.topTerms.length];
-        for (int i = 0; i < terms.length; i++) {
-            terms[i] = cluster3.topTerms[i].term;
-        }
-        assertArrayEquals(new String[] { "anders", "iets" }, terms);
-
-        assertNotSame(cluster1.topDocs, cluster2.topDocs);
-        assertNotSame(cluster1.topDocs, cluster3.topDocs);
-    }
+		return terms;
+	}
 
     @Test
     public void testClusteringWithFieldFilter() throws IOException, UninitializedException {

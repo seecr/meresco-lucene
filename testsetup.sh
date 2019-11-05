@@ -39,8 +39,7 @@ echo "###### $pyversion, $PYTHON"
 (
     cd $mydir
     mkdir --parents tmp/usr/share/java/meresco-lucene
-    cp jars/*.jar tmp/usr/share/java/meresco-lucene/
-    ./build.sh "$VERSION"
+    ./build.sh "${VERSION}"
     mv meresco-lucene-${VERSION}.jar tmp/usr/share/java/meresco-lucene/
 )
 ${PYTHON} setup.py install --root tmp

@@ -38,7 +38,8 @@ if [ ! -f ${JUNIT} ]; then
     exit 1
 fi
 
-JARS=$(find ../jars -type f -name "*.jar")
+JARS=
+test -d ../jars && JARS=$(find ../jars -type f -name "*.jar")
 LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*-8.1.*.jar")
 
 CP="$JUNIT:$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':'):../build"

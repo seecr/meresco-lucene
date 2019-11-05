@@ -4,7 +4,7 @@ python-setuptools
 gcc
 python-meresco-pylucene (>= 8.1.1)
 python-meresco-pylucene (<< 8.2)
-debian:openjdk-8-jdk
-#centos7:gcc-c++
-#centos7:python-devel
-#centos7:java-1.8.0-openjdk-devel
+#debian:openjdk-8-jdk
+#centos:gcc-c++
+#centos:python-devel
+#centos:java-1.8.0-openjdk-devel

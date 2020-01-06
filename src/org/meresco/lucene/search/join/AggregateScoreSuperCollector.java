@@ -67,6 +67,7 @@ public class AggregateScoreSuperCollector extends SuperCollector<AggregateScoreS
     @Override
     public void complete() throws IOException {
         this.delegate.complete();
+        super.subs.clear();
     }
 
 }

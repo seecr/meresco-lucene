@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2014 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013-2014, 2020 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2020 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -36,6 +37,9 @@ class LuceneResponse(object):
 
     def asJson(self, **kwargs):
         return dumps(vars(self), cls=LuceneResponseJsonEncoder, **kwargs)
+
+    def __str__(self):
+        return 'LuceneResponse(%s)' % self.asJson(sort_keys=True)
 
 
 class LuceneResponseJsonEncoder(JSONEncoder):

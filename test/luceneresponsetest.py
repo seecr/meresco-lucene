@@ -2,8 +2,9 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2013, 2020 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2020 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -36,3 +37,4 @@ class LuceneResponseTest(SeecrTestCase):
         self.assertEquals(['1','2','3'], response2.hits)
         self.assertEquals([{'terms':[], 'fieldname':'field'}], response2.drilldownData)
 
+        self.assertEquals("""LuceneResponse({"drilldownData": [{"fieldname": "field", "terms": []}], "hits": ["1", "2", "3"], "total": 3})""", str(response))

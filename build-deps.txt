@@ -5,6 +5,8 @@ gcc
 python-meresco-pylucene (>= 8.1.1)
 python-meresco-pylucene (<< 8.2)
 #debian:openjdk-8-jdk
+#buster:g++
+#buster:python2-dev
 #centos:gcc-c++
 #centos:python-devel
 #centos:java-1.8.0-openjdk-devel

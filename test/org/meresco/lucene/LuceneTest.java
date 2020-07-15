@@ -3,7 +3,7 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016, 2018-2019 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2015-2016, 2018-2020 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -962,7 +962,8 @@ public class LuceneTest extends SeecrTestCase {
         for (int i =0; i <10; i++)
             lucene.executeQuery(new QueryData(), Arrays.asList(query), null, null, null, null);
         LuceneResponse responseWithCaching = lucene.executeQuery(new QueryData(), Arrays.asList(query), null, null, null, null);
-        assertTrue(responseWithCaching.queryTime < response.queryTime);
+        assertTrue(String.format("Should be smaller: %s < %s", responseWithCaching.queryTime, response.queryTime),
+                responseWithCaching.queryTime < response.queryTime);
     }
 
     @Test

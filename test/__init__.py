@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2018 Seecr (Seek You Too B.V.) http://seecr.nl
+# Copyright (C) 2018 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Meresco Lucene"
 #

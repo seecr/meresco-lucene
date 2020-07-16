@@ -179,6 +179,14 @@ public class MultiLuceneTest extends SeecrTestCase {
         result = this.multiLucene.executeComposedQuery(q);
         assertEquals(7, result.total);
         LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A", "A-U", "A-Q", "A-QU");
+
+        //B
+        q = new ComposedQuery("coreB");
+        q.addExcludeFilterQuery("coreA", new TermQuery(new Term("U", "true")));
+        q.addMatch("coreA", "coreB", "A", "B");
+        result = this.multiLucene.executeComposedQuery(q);
+        assertEquals(7, result.total);
+        LuceneTest.compareHits(result, "B-N>A-M", "B-N>A-MQ", "B-N", "B", "B-P>A-M", "B-P>A-MQ", "B-P");
     }
 
     @Test

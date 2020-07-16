@@ -3,8 +3,8 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015-2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2019 Seecr (Seek You Too B.V.) https://seecr.nl
- * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+ * Copyright (C) 2015-2020 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -214,13 +214,13 @@ public class Lucene {
     }
 
     public LuceneResponse executeQuery(QueryData q) throws Throwable {
-        return executeQuery(q, null, null, null, null, null);
+        return executeQuery(q, null, null, null, null, null, null);
     }
 
     public LuceneResponse executeQuery(Query query) throws Throwable {
         QueryData q = new QueryData();
         q.query = query;
-        return executeQuery(q, null, null, null, null, null);
+        return executeQuery(q, null, null, null, null, null, null);
     }
 
     public LuceneResponse executeQuery(Query query, int start, int stop) throws Throwable {
@@ -228,18 +228,24 @@ public class Lucene {
         q.query = query;
         q.start = start;
         q.stop = stop;
-        return executeQuery(q, null, null, null, null, null);
+        return executeQuery(q, null, null, null, null, null, null);
     }
 
     public LuceneResponse executeQuery(Query query, List<FacetRequest> facets) throws Throwable {
         QueryData q = new QueryData();
         q.query = query;
         q.facets = facets;
-        return executeQuery(q, null, null, null, null, null);
+        return executeQuery(q, null, null, null, null, null, null);
     }
 
-    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Query> filters, List<AggregateScoreSuperCollector> scoreCollectors,
-            Collection<KeySuperCollector> keyCollectors) throws Throwable {
+    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Query> filters,
+            List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws Throwable {
+        // Previous public executeQuery
+        return executeQuery(q, filterQueries, drilldownQueries, filters, null, scoreCollectors, keyCollectors);
+    }
+
+    public LuceneResponse executeQuery(QueryData q, List<Query> filterQueries, List<String[]> drilldownQueries, List<Query> filters, List<Query> excludeFilters,
+            List<AggregateScoreSuperCollector> scoreCollectors, Collection<KeySuperCollector> keyCollectors) throws Throwable {
         List<LuceneResponse.Hit> hits;
         Collectors collectors;
         Map<String, Long> times = new HashMap<>();
@@ -264,7 +270,7 @@ public class Lucene {
 
         Query filter = filtersFor(filterQueries, filters == null ? null : filters.toArray(new Query[0]));
 
-        Query query = mergeQueryAndFilter(q.query, filter);
+        Query query = mergeQueryAndFilter(q.query, filter, excludeFilters);
         if (drilldownQueries != null) {
             query = createDrilldownQuery(query, drilldownQueries);
         }
@@ -342,14 +348,18 @@ public class Lucene {
         }
     }
 
-    private Query mergeQueryAndFilter(Query query, Query filter) {
-        if (filter == null) {
+    private Query mergeQueryAndFilter(Query query, Query filter, List<Query> excludeFilters) {
+        if (filter == null && excludeFilters == null) {
             return query;
         }
-        return new BooleanQuery.Builder()
-                .add(query, BooleanClause.Occur.MUST)
-                .add(filter, BooleanClause.Occur.FILTER)
-                .build();
+        BooleanQuery.Builder bob = new BooleanQuery.Builder();
+        bob.add(query, BooleanClause.Occur.MUST);
+        if (filter != null)
+            bob.add(filter, BooleanClause.Occur.FILTER);
+        if (excludeFilters != null)
+            for (Query f: excludeFilters)
+                bob.add(f, BooleanClause.Occur.MUST_NOT);
+        return bob.build();
     }
 
     private List<Hit> clusterTopDocsResponse(QueryData q, Collectors collectors, Map<String, Long> times, IndexReader indexReader, ClusterConfig clusterConfig) throws Exception {
@@ -481,7 +491,7 @@ public class Lucene {
             Query query = new MatchAllDocsQuery();
             if (drilldownQueries != null)
                 query = createDrilldownQuery(query, drilldownQueries);
-            ((SuperIndexSearcher) reference.searcher).search(mergeQueryAndFilter(query, filter_), facetCollector);
+            ((SuperIndexSearcher) reference.searcher).search(mergeQueryAndFilter(query, filter_, null), facetCollector);
             return facetResult(facetCollector, facets);
         } finally {
             data.getManager().release(reference);
@@ -489,18 +499,21 @@ public class Lucene {
     }
 
     private Query filtersFor(List<Query> filterQueries, Query... filter) throws Exception {
-        List<Query> filters = new ArrayList<>();
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        int nr = 0;
         if (filterQueries != null)
-            for (Query query : filterQueries)
-                filters.add(query);
+            for (Query query : filterQueries){
+                builder.add(query, Occur.FILTER);
+                nr++;
+            }
         if (filter != null)
             for (Query f : filter)
-                if (f != null)
-                    filters.add(f);
-        if (filters.size() == 0)
+                if (f != null){
+                    builder.add(f, Occur.FILTER);
+                    nr++;
+                }
+        if (nr == 0)
             return null;
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        filters.forEach(f -> builder.add(f, Occur.FILTER));
         return builder.build();
     }
 
@@ -702,7 +715,7 @@ public class Lucene {
     public void search(Query query, Query filterQuery, Collector collector) throws Throwable {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
-            ((SuperIndexSearcher) reference.searcher).search(mergeQueryAndFilter(query, filterQuery), collector);
+            ((SuperIndexSearcher) reference.searcher).search(mergeQueryAndFilter(query, filterQuery, null), collector);
         } finally {
             data.getManager().release(reference);
         }
@@ -711,7 +724,7 @@ public class Lucene {
     public void search(Query query, Query filterQuery, SuperCollector<?> collector) throws Throwable {
         SearcherAndTaxonomy reference = data.getManager().acquire();
         try {
-            ((SuperIndexSearcher) reference.searcher).search(mergeQueryAndFilter(query, filterQuery), collector);
+            ((SuperIndexSearcher) reference.searcher).search(mergeQueryAndFilter(query, filterQuery, null), collector);
         } finally {
             data.getManager().release(reference);
         }

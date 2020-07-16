@@ -4,7 +4,7 @@
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
  * Copyright (C) 2015-2016, 2018-2020 Seecr (Seek You Too B.V.) https://seecr.nl
- * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+ * Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -424,6 +424,21 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(1, lucene.executeQuery(new QueryData(), new ArrayList<Query>() {{ add(f); }}, null, null, null, null).total);
     }
 
+    @Test
+    public void testQueryWithExcludeFilterQuery() throws Throwable {
+        for (int i=1; i <= 5; i++) {
+            Document doc = new Document();
+            doc.add(new StringField("field1", String.format("value%s", i), Store.NO));
+            lucene.addDocument(String.format("id%s", i), doc);
+        }
+
+        assertEquals(5, lucene.executeQuery(new MatchAllDocsQuery(), 0, 0).total);
+        final Query f1 = new TermQuery(new Term("field1", "value1"));
+        assertEquals(4, lucene.executeQuery(new QueryData(), null, null, null, new ArrayList<Query>() {{ add(f1); }}, null, null).total);
+        final Query f2 = new TermQuery(new Term("field1", "value2"));
+        assertEquals(3, lucene.executeQuery(new QueryData(), null, null, null, new ArrayList<Query>() {{ add(f1); add(f2); }}, null, null).total);
+    }
+
     @SuppressWarnings("serial")
     @Test
     public void testQueryWithKeyCollectors() throws Throwable {
@@ -712,7 +727,7 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(Arrays.asList(2, 3, 5), hits);
 
         @SuppressWarnings("unchecked")
-		List<String>[] hitIds = new List[3];
+        List<String>[] hitIds = new List[3];
         collect_hit_ids(hit0, hits, hitIds);
         collect_hit_ids(hit1, hits, hitIds);
         collect_hit_ids(hit2, hits, hitIds);
@@ -723,15 +738,15 @@ public class LuceneTest extends SeecrTestCase {
 
     }
 
-	private void collect_hit_ids(ClusterHit hit, List<Integer> hit_counts, List<String>[] hitIds) {
-		List<String> hit_ids = new ArrayList<>();
+    private void collect_hit_ids(ClusterHit hit, List<Integer> hit_counts, List<String>[] hitIds) {
+        List<String> hit_ids = new ArrayList<>();
         for (DocScore scoreDoc : hit.topDocs) {
-        	hit_ids.add(scoreDoc.identifier);
+            hit_ids.add(scoreDoc.identifier);
         }
         Collections.sort(hit_ids);
         int indexOf = hit_counts.indexOf(hit_ids.size());
-		hitIds[indexOf] = hit_ids;
-	}
+        hitIds[indexOf] = hit_ids;
+    }
 
 
     @Test

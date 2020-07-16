@@ -3,8 +3,8 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) https://seecr.nl
- * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+ * Copyright (C) 2015-2016, 2020 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -80,6 +80,7 @@ public class MultiLucene {
         }
         query.queryData.query = resultCoreQuery;
         query.queryData.facets = query.facetsFor(resultCoreName);
+        //TODO: add excludeFilterQueries
         return this.lucenes.get(resultCoreName).executeQuery(query.queryData, query.filterQueries.get(resultCoreName), query.drilldownQueriesFor(resultCoreName), null, null, null);
     }
 
@@ -100,6 +101,11 @@ public class MultiLucene {
         List<Query> resultFilters = new ArrayList<>();
         for (String keyName : finalKeys.keySet()) {
             resultFilters.add(new KeyFilter(finalKeys.get(keyName), keyName));
+        }
+        Map<String, FixedBitSet> finalExcludeKeys = this.excludeFilterKeys(query);
+        List<Query> excludeFilters = new ArrayList<>();
+        for (String keyName : finalExcludeKeys.keySet()) {
+            excludeFilters.add(new KeyFilter(finalExcludeKeys.get(keyName), keyName));
         }
 
         Query resultCoreQuery = this.luceneQueryForCore(resultCoreName, query);
@@ -144,6 +150,7 @@ public class MultiLucene {
                 null,  // TODO: filterQueries??
                 query.drilldownQueriesFor(resultCoreName),
                 resultFilters,
+                excludeFilters,
                 aggregateScoreCollectors,
                 keyCollectors.values()
                 );
@@ -198,6 +205,25 @@ public class MultiLucene {
 
         for (String core : query.filterQueries.keySet()) {
             for (Query q : query.filterQueries.get(core)) {
+                String keyNameResult = query.keyName(query.resultsFrom, core);
+                String keyNameOther = query.keyName(core, query.resultsFrom);
+                FixedBitSet collectedKeys = this.collectKeys(core, q, keyNameOther);
+                if (keys.containsKey(keyNameResult)) {
+                    keys.get(keyNameResult).and(collectedKeys);
+                }
+                else {
+                    keys.put(keyNameResult, collectedKeys.clone());
+                }
+            }
+        }
+        return keys;
+    }
+
+    private Map<String, FixedBitSet> excludeFilterKeys(ComposedQuery query) throws Throwable {
+        Map<String, FixedBitSet> keys = new HashMap<String, FixedBitSet>();
+
+        for (String core : query.excludeFilterQueries.keySet()) {
+            for (Query q : query.excludeFilterQueries.get(core)) {
                 String keyNameResult = query.keyName(query.resultsFrom, core);
                 String keyNameOther = query.keyName(core, query.resultsFrom);
                 FixedBitSet collectedKeys = this.collectKeys(core, q, keyNameOther);

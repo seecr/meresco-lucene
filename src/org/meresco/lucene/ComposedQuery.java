@@ -4,8 +4,8 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016, 2018-2019 Seecr (Seek You Too B.V.) https://seecr.nl
- * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+ * Copyright (C) 2015-2016, 2018-2020 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -52,6 +52,7 @@ public class ComposedQuery {
     private Map<String, Query> queries = new HashMap<String, Query>();
     public Query relationalFilter;
     public Map<String, List<Query>> filterQueries = new HashMap<String, List<Query>>();
+    public Map<String, List<Query>> excludeFilterQueries = new HashMap<String, List<Query>>();
     private Map<String, List<FacetRequest>> facets = new HashMap<String, List<FacetRequest>>();
     private Map<String, List<String[]>> drilldownQueries = new HashMap<String, List<String[]>>();
     private Map<String, List<Query>> otherCoreFacetsFilter = new HashMap<String, List<Query>>();
@@ -68,6 +69,7 @@ public class ComposedQuery {
             "queries=" + queries + ",\n    " +
             "relationalFilter=" + relationalFilter + ",\n    " +
             "filterQueries=" + filterQueries + ",\n    " +
+            "excludeFilterQueries=" + excludeFilterQueries + ",\n    " +
             "facets=" + facets + ",\n    " +
             "drilldownQueries=" + drilldownQueries + ",\n    " +
             "otherCoreFacetsFilter=" + otherCoreFacetsFilter + ",\n    " +
@@ -141,6 +143,15 @@ public class ComposedQuery {
                 JsonArray queries = filterQueries.getJsonArray(coreName);
                 for (int i = 0; i < queries.size(); i++) {
                     cq.addFilterQuery(coreName, queryConverters.get(coreName).convertToQuery(queries.getJsonObject(i)));
+                }
+            }
+        }
+        if (json.containsKey("_excludeFilterQueries")) {
+            JsonObject excludeFilterQueries = json.getJsonObject("_excludeFilterQueries");
+            for (String coreName : excludeFilterQueries.keySet()) {
+                JsonArray queries = excludeFilterQueries.getJsonArray(coreName);
+                for (int i = 0; i < queries.size(); i++) {
+                    cq.addExcludeFilterQuery(coreName, queryConverters.get(coreName).convertToQuery(queries.getJsonObject(i)));
                 }
             }
         }
@@ -293,6 +304,16 @@ public class ComposedQuery {
             List<Query> queries = new ArrayList<Query>();
             queries.add(query);
             filterQueries.put(coreName, queries);
+        }
+    }
+
+    public void addExcludeFilterQuery(String coreName, Query query) {
+        if (excludeFilterQueries.containsKey(coreName))
+            excludeFilterQueries.get(coreName).add(query);
+        else {
+            List<Query> queries = new ArrayList<Query>();
+            queries.add(query);
+            excludeFilterQueries.put(coreName, queries);
         }
     }
 

@@ -3,8 +3,8 @@
  * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) https://seecr.nl
- * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+ * Copyright (C) 2015-2016, 2020 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -159,6 +159,26 @@ public class MultiLuceneTest extends SeecrTestCase {
         LuceneResponse result = this.multiLucene.executeComposedQuery(q);
         assertEquals(4, result.total);
         LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A-MQU");
+    }
+
+    @Test
+    public void testJoinQueryWithExcludeFilters() throws Throwable {
+        ComposedQuery q = new ComposedQuery("coreA");
+        q.addFilterQuery("coreC", new TermQuery(new Term("S", "true")));
+        q.addMatch("coreA", "coreC", "A", "C");
+
+        LuceneResponse result = this.multiLucene.executeComposedQuery(q);
+        assertEquals(1, result.total);
+        LuceneTest.compareHits(result, "A-MQU");
+
+
+        q = new ComposedQuery("coreA");
+        q.addExcludeFilterQuery("coreC", new TermQuery(new Term("S", "true")));
+        q.addMatch("coreA", "coreC", "A", "C");
+
+        result = this.multiLucene.executeComposedQuery(q);
+        assertEquals(7, result.total);
+        LuceneTest.compareHits(result, "A-M", "A-MU", "A-MQ", "A", "A-U", "A-Q", "A-QU");
     }
 
     @Test

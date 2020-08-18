@@ -2,10 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2016, 2020 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -297,6 +297,17 @@ class ComposedQueryTest(SeecrTestCase):
         cq.addFacet('coreA', 'F0')
         cq.addDrilldownQuery('coreA', 'drilldownQuery')
         cq.addOtherCoreFacetFilter('coreA', 'q')
+
+    def testExcludeFilter(self):
+        cq = ComposedQuery('coreA')
+        cq.addExcludeFilterQuery('coreA', 'excludeMe')
+        self.assertEqual({"coreA":["excludeMe"]}, cq.excludeFilterQueries)
+        cq2 = ComposedQuery.fromDict(cq.asDict())
+        self.assertEqual({"coreA":["excludeMe"]}, cq2.excludeFilterQueries)
+
+        cq.convertWith(coreA=lambda q, **kwargs: "converted_" + q)
+        self.assertEqual({"coreA":["converted_excludeMe"]}, cq.excludeFilterQueries)
+        self.assertEqual({"coreA":["converted_excludeMe"]}, cq.asDict()['_excludeFilterQueries'])
 
     def testRepr(self):
         class AQuery(object):

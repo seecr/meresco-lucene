@@ -2,10 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2016, 2019-2020 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -67,6 +67,7 @@ class ComposedQuery(object):
     unqualifiedTermFields = _makeProperty('_unqualifiedTermFields')
     rankQueryScoreRatio = _makeProperty('_rankQueryScoreRatio')
     relationalFilterJson = _makeProperty('_relationalFilterJson')
+    excludeFilterQueries = _makeProperty('_excludeFilterQueries', {})
 
     del _makeProperty
 
@@ -85,6 +86,11 @@ class ComposedQuery(object):
     def addFilterQuery(self, core, query):
         self.cores.add(core)
         self._filterQueries.setdefault(core, []).append(query)
+        return self
+
+    def addExcludeFilterQuery(self, core, query):
+        self.cores.add(core)
+        self.excludeFilterQueries.setdefault(core, []).append(query)
         return self
 
     def addFacet(self, core, facet):
@@ -221,6 +227,7 @@ class ComposedQuery(object):
             return convertFunction(query)
         self._queries = dict((core, convertQuery(core, v)) for core, v in self._queries.items())
         self._filterQueries = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._filterQueries.items())
+        self._excludeFilterQueries = dict((core, [convertQuery(core, v) for v in values]) for core, values in self.excludeFilterQueries.items())
         self._rankQueries = dict((core, convertQuery(core, v)) for core, v in self._rankQueries.items())
         for unite in self._unites:
             unite.convertQuery(convertQuery)

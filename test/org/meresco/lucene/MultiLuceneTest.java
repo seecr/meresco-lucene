@@ -190,6 +190,18 @@ public class MultiLuceneTest extends SeecrTestCase {
     }
 
     @Test
+    public void testExcludeFilterWithSingleCoreQuery() throws Throwable {
+        ComposedQuery q = new ComposedQuery("coreA", new MatchAllDocsQuery());
+        // For exclude filters is a key necessary. Currently, this is the only way to ensure a key
+        // on itself.
+        q.addMatch("coreA", "coreA", "A", "A");
+        q.addExcludeFilterQuery("coreA", new TermQuery(new Term("Q", "true")));
+        LuceneResponse result = this.multiLucene.executeComposedQuery(q);
+        assertEquals(4, result.total);
+        LuceneTest.compareHits(result, "A", "A-U", "A-M", "A-MU");
+    }
+
+    @Test
     public void testJoinWithFacetInResultCore() throws Throwable {
         ComposedQuery q = new ComposedQuery("coreA", new TermQuery(new Term("Q", "true")));
         q.setCoreQuery("coreB", new TermQuery(new Term("O", "true")));

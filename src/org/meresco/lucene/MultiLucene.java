@@ -80,8 +80,21 @@ public class MultiLucene {
         }
         query.queryData.query = resultCoreQuery;
         query.queryData.facets = query.facetsFor(resultCoreName);
-        //TODO: add excludeFilterQueries
-        return this.lucenes.get(resultCoreName).executeQuery(query.queryData, query.filterQueries.get(resultCoreName), query.drilldownQueriesFor(resultCoreName), null, null, null);
+
+        Map<String, FixedBitSet> finalExcludeKeys = this.excludeFilterKeys(query);
+        List<Query> excludeFilters = new ArrayList<>();
+        for (String keyName : finalExcludeKeys.keySet()) {
+            excludeFilters.add(new KeyFilter(finalExcludeKeys.get(keyName), keyName));
+        }
+
+        return this.lucenes.get(resultCoreName).executeQuery(
+                query.queryData,
+                query.filterQueries.get(resultCoreName),
+                query.drilldownQueriesFor(resultCoreName),
+                null,
+                excludeFilters,
+                null,
+                null);
     }
 
     public LuceneResponse multipleCoreQuery(ComposedQuery query, String exportKey) throws Throwable {

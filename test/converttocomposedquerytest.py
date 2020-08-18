@@ -2,10 +2,10 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2016, 2019-2020 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -95,6 +95,14 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals('keyOther', cq.keyName('otherCore', 'defaultCore'))
         self.assertEquals([cqlToExpression("prefix:field=value")], cq.queriesFor('otherCore'))
         self.assertEquals([cqlToExpression('*')], cq.queriesFor('defaultCore'))
+
+    def testExcludeFilterQuery(self):
+        consume(self.tree.any.executeQuery(query=cqlToExpression('*'), excludeFilterQueries=[('otherCore', 'prefix:field=value')], facets=[], start=1))
+        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
+        cq = self.observer.calledMethods[0].kwargs['query']
+        cq.validate()
+        self.assertEquals([cqlToExpression("prefix:field=value")], cq.excludeFilterQueries['otherCore'])
+
 
     def testMatchesOptional(self):
         self.tree = be(

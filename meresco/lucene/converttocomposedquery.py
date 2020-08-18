@@ -2,11 +2,11 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
 #
-# Copyright (C) 2013-2016, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2016, 2019-2020 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Drents Archief http://www.drentsarchief.nl
 # Copyright (C) 2015-2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -53,7 +53,7 @@ class ConvertToComposedQuery(Observable):
     def updateConfig(self, config, indexConfig=None, **kwargs):
         self._clusteringEnabled = 'clustering' not in config.get('features_disabled', [])
 
-    def executeQuery(self, query=None, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, sortKeys=None, **kwargs):
+    def executeQuery(self, query=None, extraArguments=None, facets=None, drilldownQueries=None, filterQueries=None, excludeFilterQueries=None, sortKeys=None, **kwargs):
         if 'cqlAbstractSyntaxTree' in kwargs:
             query = kwargs.pop('cqlAbstractSyntaxTree')
         query = cqlToExpression(query)
@@ -83,6 +83,8 @@ class ConvertToComposedQuery(Observable):
             cq.addFilterQuery(core=core, query=filterQuery)
         for core, filterQuery in filterQueries or []:
             cq.addFilterQuery(core=core, query=cqlToExpression(filterQuery))
+        for core, excludeFilterQuery in excludeFilterQueries or []:
+            cq.addExcludeFilterQuery(core=core, query=cqlToExpression(excludeFilterQuery))
 
         rankQueries = extraArguments.get('x-rank-query', [])
         if rankQueries:

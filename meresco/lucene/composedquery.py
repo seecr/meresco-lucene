@@ -35,6 +35,7 @@ class ComposedQuery(object):
         self.cores = set()
         self._queries = {}
         self._filterQueries = {}
+        self._excludeFilterQueries = {}
         self._facets = {}
         self._drilldownQueries = {}
         self._otherCoreFacetFilters = {}
@@ -67,7 +68,6 @@ class ComposedQuery(object):
     unqualifiedTermFields = _makeProperty('_unqualifiedTermFields')
     rankQueryScoreRatio = _makeProperty('_rankQueryScoreRatio')
     relationalFilterJson = _makeProperty('_relationalFilterJson')
-    excludeFilterQueries = _makeProperty('_excludeFilterQueries', {})
 
     del _makeProperty
 
@@ -90,7 +90,7 @@ class ComposedQuery(object):
 
     def addExcludeFilterQuery(self, core, query):
         self.cores.add(core)
-        self.excludeFilterQueries.setdefault(core, []).append(query)
+        self._excludeFilterQueries.setdefault(core, []).append(query)
         return self
 
     def addFacet(self, core, facet):
@@ -143,6 +143,9 @@ class ComposedQuery(object):
 
     def queryFor(self, core):
         return self._queries.get(core)
+
+    def excludeFilterQueriesFor(self, core):
+        return self._excludeFilterQueries.get(core, [])
 
     def filterQueriesFor(self, core):
         return self._filterQueries.get(core, [])
@@ -227,7 +230,7 @@ class ComposedQuery(object):
             return convertFunction(query)
         self._queries = dict((core, convertQuery(core, v)) for core, v in self._queries.items())
         self._filterQueries = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._filterQueries.items())
-        self._excludeFilterQueries = dict((core, [convertQuery(core, v) for v in values]) for core, values in self.excludeFilterQueries.items())
+        self._excludeFilterQueries = dict((core, [convertQuery(core, v) for v in values]) for core, values in self._excludeFilterQueries.items())
         self._rankQueries = dict((core, convertQuery(core, v)) for core, v in self._rankQueries.items())
         for unite in self._unites:
             unite.convertQuery(convertQuery)

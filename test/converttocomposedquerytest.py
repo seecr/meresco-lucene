@@ -101,7 +101,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
         cq = self.observer.calledMethods[0].kwargs['query']
         cq.validate()
-        self.assertEquals([cqlToExpression("prefix:field=value")], cq.excludeFilterQueries['otherCore'])
+        self.assertEquals([cqlToExpression("prefix:field=value")], cq.excludeFilterQueriesFor('otherCore'))
 
 
     def testMatchesOptional(self):

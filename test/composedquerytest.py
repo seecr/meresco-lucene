@@ -301,12 +301,12 @@ class ComposedQueryTest(SeecrTestCase):
     def testExcludeFilter(self):
         cq = ComposedQuery('coreA')
         cq.addExcludeFilterQuery('coreA', 'excludeMe')
-        self.assertEqual({"coreA":["excludeMe"]}, cq.excludeFilterQueries)
+        self.assertEqual(["excludeMe"], cq.excludeFilterQueriesFor('coreA'))
         cq2 = ComposedQuery.fromDict(cq.asDict())
-        self.assertEqual({"coreA":["excludeMe"]}, cq2.excludeFilterQueries)
+        self.assertEqual(["excludeMe"], cq2.excludeFilterQueriesFor('coreA'))
 
         cq.convertWith(coreA=lambda q, **kwargs: "converted_" + q)
-        self.assertEqual({"coreA":["converted_excludeMe"]}, cq.excludeFilterQueries)
+        self.assertEqual(["converted_excludeMe"], cq.excludeFilterQueriesFor('coreA'))
         self.assertEqual({"coreA":["converted_excludeMe"]}, cq.asDict()['_excludeFilterQueries'])
 
     def testRepr(self):
@@ -336,6 +336,7 @@ class ComposedQueryTest(SeecrTestCase):
                 "drilldownQueries": {},
                 "facets": {"coreA": ["F0", "F1"]},
                 "filterQueries": {"coreA": ["Q1", "Q2"]},
+                "excludeFilterQueries": {},
                 "matches": {"coreA->coreB": [{"core": "coreA", "uniqueKey": "keyA"}, {"core": "coreB", "key": "keyB"}]},
                 "otherCoreFacetFilters": {},
                 "queries": {"coreA": "Q0", "coreB": "Q3"},

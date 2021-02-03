@@ -1,10 +1,13 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) https://seecr.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2015-2016, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -83,9 +86,9 @@ class SuggestionIndexComponentTest(SeecrTestCase):
         self.assertEqual('/suggest', self.post[0]['path'])
         self.assertEqual({"value": "ha", "trigram": False, "filters": [], "keySetName": None, "limit": None}, loads(self.post[0]['data']))
 
-        self.assertEquals([u"hallo", u"harry"], [s.suggestion for s in suggestions])
-        self.assertEquals([u"uri:book", None], [s.type for s in suggestions])
-        self.assertEquals([u"by:me", None], [s.creator for s in suggestions])
+        self.assertEqual(["hallo", "harry"], [s.suggestion for s in suggestions])
+        self.assertEqual(["uri:book", None], [s.type for s in suggestions])
+        self.assertEqual(["by:me", None], [s.creator for s in suggestions])
 
     def testTimestampNgramIndex(self):
         self.response = '1461923096982'
@@ -98,13 +101,13 @@ class SuggestionIndexComponentTest(SeecrTestCase):
             {"suggestion": "harry", "type": None, "creator": None, "score": 1.0}
         ])
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], minScore=["0"]))).split(CRLF*2)
-        self.assertEquals("""HTTP/1.0 200 OK\r
+        self.assertEqual("""HTTP/1.0 200 OK\r
 Content-Type: application/x-suggestions+json\r
 Access-Control-Allow-Origin: *\r
 Access-Control-Allow-Headers: X-Requested-With\r
 Access-Control-Allow-Methods: GET, POST, OPTIONS\r
 Access-Control-Max-Age: 86400""", header)
-        self.assertEquals('["ha", ["hallo", "harry"]]', body)
+        self.assertEqual('["ha", ["hallo", "harry"]]', body)
 
     def testHandleRequestWithTypesAndCreators(self):
         self.response = dumps([
@@ -112,13 +115,13 @@ Access-Control-Max-Age: 86400""", header)
             {"suggestion": "harry", "type": "uri:book", "creator": "rowling", "score": 1.0}
         ])
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments=dict(value=["ha"], minScore=["0"], concepts=["True"]))).split(CRLF*2)
-        self.assertEquals("""HTTP/1.0 200 OK\r
+        self.assertEqual("""HTTP/1.0 200 OK\r
 Content-Type: application/x-suggestions+json\r
 Access-Control-Allow-Origin: *\r
 Access-Control-Allow-Headers: X-Requested-With\r
 Access-Control-Allow-Methods: GET, POST, OPTIONS\r
 Access-Control-Max-Age: 86400""", header)
-        self.assertEquals('["ha", ["hallo", "harry"], [["hallo", "uri:book", "by:me"], ["harry", "uri:book", "rowling"]]]', body)
+        self.assertEqual('["ha", ["hallo", "harry"], [["hallo", "uri:book", "by:me"], ["harry", "uri:book", "rowling"]]]', body)
 
     def testHandleRequestWithDebug(self):
         self.response = dumps([
@@ -126,17 +129,17 @@ Access-Control-Max-Age: 86400""", header)
             {"suggestion": "harry", "type": "uri:book", "creator": "rowling", "score": 0.80111}
         ])
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "x-debug": ["true"], "minScore": ["0"]})).split(CRLF*2)
-        self.assertEquals("""HTTP/1.0 200 OK\r
+        self.assertEqual("""HTTP/1.0 200 OK\r
 Content-Type: application/x-suggestions+json\r
 Access-Control-Allow-Origin: *\r
 Access-Control-Allow-Headers: X-Requested-With\r
 Access-Control-Allow-Methods: GET, POST, OPTIONS\r
 Access-Control-Max-Age: 86400""", header)
         json = loads(body)
-        self.assertEquals('ha', json['value'])
+        self.assertEqual('ha', json['value'])
         self.assertTrue("time" in json, json)
         suggestions = [(s[0], dict((k,round(v, 3)) for k,v in s[3].items())) for s in json['suggestions']]
-        self.assertEquals(sorted([
+        self.assertEqual(sorted([
             ("hallo", {"distanceScore": 0.653, "score": 0.801, "sortScore": 0.839, "matchScore": 1.0}),
             ("harry", {"distanceScore": 0.653, "score": 0.801, "sortScore": 0.839, "matchScore": 1.0}),
             ]), sorted(suggestions))
@@ -144,7 +147,7 @@ Access-Control-Max-Age: 86400""", header)
     def testHandleRequestWithEmptyValue(self):
         self.response = dumps([])
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={})).split(CRLF*2)
-        self.assertEquals('[]', body)
+        self.assertEqual('[]', body)
 
     def testCommit(self):
         self.sic.commit()

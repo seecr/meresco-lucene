@@ -1,11 +1,14 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2014-2016, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2014-2016, 2018, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016, 2018 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2016, 2018, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -35,7 +38,7 @@ class FieldRegistryTest(SeecrTestCase):
     def testDefault(self):
         registry = FieldRegistry()
         field = registry.createField('__id__', 'id:1')
-        self.assertEquals({
+        self.assertEqual({
                 "type": "StringField",
                 "name": "__id__",
                 "value": "id:1",
@@ -45,14 +48,14 @@ class FieldRegistryTest(SeecrTestCase):
     def testSpecificField(self):
         registry = FieldRegistry()
         field = registry.createField('fieldname', 'value')
-        self.assertEquals({
+        self.assertEqual({
                 "type": "TextField",
                 "name": "fieldname",
                 "value": "value",
             }, field)
         registry.register('fieldname', STRINGFIELD_STORED)
         field = registry.createField('fieldname', 'value')
-        self.assertEquals({
+        self.assertEqual({
                 "type": "StringField",
                 "name": "fieldname",
                 "value": "value",
@@ -63,7 +66,7 @@ class FieldRegistryTest(SeecrTestCase):
         registry = FieldRegistry()
         registry.register('fieldname', NO_TERMS_FREQUENCY_FIELD)
         field = registry.createField('fieldname', 'value')
-        self.assertEquals({
+        self.assertEqual({
                 "type": "NoTermsFrequencyField",
                 "name": "fieldname",
                 "value": "value",
@@ -73,7 +76,7 @@ class FieldRegistryTest(SeecrTestCase):
         registry = FieldRegistry()
         registry.register('fieldname', NUMERICFIELD)
         field = registry.createField('fieldname', 2010)
-        self.assertEquals({
+        self.assertEqual({
                 "type": "NumericField",
                 "name": "fieldname",
                 "value": 2010,
@@ -128,7 +131,7 @@ class FieldRegistryTest(SeecrTestCase):
     def testDefaultDefinition(self):
         registry = FieldRegistry()
         field = registry.createField('aField', 'id:1')
-        self.assertEquals({
+        self.assertEqual({
                 "type": "TextField",
                 "name": "aField",
                 "value": "id:1",
@@ -137,7 +140,7 @@ class FieldRegistryTest(SeecrTestCase):
 
         registry = FieldRegistry(defaultDefinition=STRINGFIELD)
         field = registry.createField('aField', 'id:1')
-        self.assertEquals({
+        self.assertEqual({
                 "type": "StringField",
                 "name": "aField",
                 "value": "id:1",
@@ -150,21 +153,21 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertTrue(registry.isTermVectorField('field2'))
         self.assertFalse(registry.isTermVectorField('field3'))
         field = registry.createField('field1', 'id:1')
-        self.assertEquals({
+        self.assertEqual({
                 "type": "TextField",
                 "name": "field1",
                 "value": "id:1",
                 "termVectors": True,
             }, field)
         field = registry.createField('field2', 'id:1')
-        self.assertEquals({
+        self.assertEqual({
                 "type": "TextField",
                 "name": "field2",
                 "value": "id:1",
                 "termVectors": True,
             }, field)
         field = registry.createField('field3', 'id:1')
-        self.assertEquals({
+        self.assertEqual({
                 "type": "TextField",
                 "name": "field3",
                 "value": "id:1",
@@ -193,7 +196,7 @@ class FieldRegistryTest(SeecrTestCase):
         registry.register("intfield", fieldDefinition=INTFIELD)
         q, t = registry.rangeQueryAndType('longfield')
         self.assertEqual("Long", q)
-        self.assertEqual(long, t)
+        self.assertEqual(int, t)
         q, t = registry.rangeQueryAndType('intfield')
         self.assertEqual("Int", q)
         self.assertEqual(int, t)

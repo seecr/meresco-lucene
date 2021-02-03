@@ -1,10 +1,13 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) https://seecr.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2015-2016, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -26,7 +29,7 @@
 
 from math import log
 from time import time
-from urllib import urlencode
+from urllib.parse import urlencode
 
 from Levenshtein import distance
 
@@ -35,7 +38,7 @@ from meresco.core import Observable
 from meresco.components.http.utils import CRLF, ContentTypeHeader, Ok, serverErrorPlainText
 from meresco.components.json import JsonList, JsonDict
 
-from _connect import _Connect
+from ._connect import _Connect
 
 
 class SuggestionIndexComponent(Observable):
@@ -94,7 +97,7 @@ class SuggestionIndexComponent(Observable):
             t0 = time()
             try:
                 suggest = yield self.suggest(value, trigram=trigram, filters=filters, keySetName=apikey)
-            except Exception, e:
+            except Exception as e:
                 yield serverErrorPlainText
                 yield str(e)
                 return

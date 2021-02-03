@@ -1,10 +1,13 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) https://seecr.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2015-2016, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -39,11 +42,11 @@ class ConversionTest(SeecrTestCase):
     def testConversion(self):
         kwargs = {'q': parseString('CQL'), 'attr': {'qs':[parseString('qs')]}}
         dump = Conversion().jsonDumpMessage(message='aMessage', **kwargs)
-        self.assertEquals(str, type(dump))
+        self.assertEqual(str, type(dump))
         message, kwargs = Conversion().jsonLoadMessage(dump)
-        self.assertEquals('aMessage', message)
-        self.assertEquals(parseString('CQL'), kwargs['q'])
-        self.assertEquals([parseString('qs')], kwargs['attr']['qs'])
+        self.assertEqual('aMessage', message)
+        self.assertEqual(parseString('CQL'), kwargs['q'])
+        self.assertEqual([parseString('qs')], kwargs['attr']['qs'])
 
     def testConversionOfComposedQuery(self):
         conversion = Conversion()
@@ -57,19 +60,19 @@ class ConversionTest(SeecrTestCase):
 
         kwargs = {'q': cq}
         dump = conversion.jsonDumpMessage(message='aMessage', **kwargs)
-        self.assertEquals(str, type(dump))
+        self.assertEqual(str, type(dump))
         message, kwargs = conversion.jsonLoadMessage(dump)
-        self.assertEquals('aMessage', message)
+        self.assertEqual('aMessage', message)
         cq2 = kwargs['q']
-        self.assertEquals(parseString('Q0'), cq2.queryFor('coreA'))
+        self.assertEqual(parseString('Q0'), cq2.queryFor('coreA'))
 
     def testQueryExpression(self):
         conversion = Conversion()
         kwargs = {'q': QueryExpression.searchterm(term='term')}
         dump = conversion.jsonDumpMessage(message='aMessage', **kwargs)
         loadedMessage, loadedKwargs = conversion.jsonLoadMessage(dump)
-        self.assertEquals('aMessage', loadedMessage)
-        self.assertEquals({'q': QueryExpression.searchterm(term='term')}, loadedKwargs)
+        self.assertEqual('aMessage', loadedMessage)
+        self.assertEqual({'q': QueryExpression.searchterm(term='term')}, loadedKwargs)
 
     def testQueryExpressionWithOperands(self):
         conversion = Conversion()
@@ -78,8 +81,8 @@ class ConversionTest(SeecrTestCase):
         kwargs = {'q': qe}
         dump = conversion.jsonDumpMessage(message='aMessage', **kwargs)
         loadedMessage, loadedKwargs = conversion.jsonLoadMessage(dump)
-        self.assertEquals('aMessage', loadedMessage)
-        self.assertEquals({'q': qe}, loadedKwargs)
+        self.assertEqual('aMessage', loadedMessage)
+        self.assertEqual({'q': qe}, loadedKwargs)
 
     def testSpecialObject(self):
         class MyObject():
@@ -87,14 +90,14 @@ class ConversionTest(SeecrTestCase):
                 return {"this":"dict"}
             @classmethod
             def fromDict(cls, aDict):
-                self.assertEquals({"this": "dict"}, aDict)
+                self.assertEqual({"this": "dict"}, aDict)
                 return cls()
 
         conversion = Conversion()
         conversion._addObject('__MyObject__', MyObject, MyObject.asDict, MyObject.fromDict)
         kwargs = {'q': "query", 'object': MyObject()}
         dump = conversion.jsonDumpMessage(message='aMessage', **kwargs)
-        self.assertEquals({
+        self.assertEqual({
                 'kwargs': {
                     'object': {
                         '__MyObject__': '{"this": "dict"}'

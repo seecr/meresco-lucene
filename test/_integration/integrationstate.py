@@ -1,11 +1,14 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2013-2017, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2017, 2019, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -46,9 +49,9 @@ class IntegrationState(SeecrIntegrationState):
         if not fastMode:
             system('rm -rf ' + self.integrationTempdir)
             system('mkdir --parents '+ self.integrationTempdir)
-        self.suggestionServerPort = PortNumberGenerator.next()
-        self.luceneServerPort = PortNumberGenerator.next()
-        self.httpPort = PortNumberGenerator.next()
+        self.suggestionServerPort = PortNumberGenerator.nextPort()
+        self.luceneServerPort = PortNumberGenerator.nextPort()
+        self.httpPort = PortNumberGenerator.nextPort()
         self.testdataDir = join(dirname(mydir), "data")
         self.JAVA_BIN = "/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin"
         if not isdir(self.JAVA_BIN):
@@ -67,17 +70,17 @@ class IntegrationState(SeecrIntegrationState):
 
     def _createDatabase(self):
         if self.fastMode:
-            print "Reusing database in", self.integrationTempdir
+            print("Reusing database in", self.integrationTempdir)
             return
         start = time()
-        print "Creating database in", self.integrationTempdir
+        print("Creating database in", self.integrationTempdir)
         try:
             self._runExecutable(join(self.testdataDir, 'upload.py'), processName='IntegrationUpload', cwd=self.testdataDir, port=self.httpPort, redirect=False, timeoutInSeconds=60)
             sleepWheel(5)
             postRequest(self.luceneServerPort, "/default/settings/", data=JsonDict(commitCount=1).dumps(), parse=False)
-            print "Finished creating database in %s seconds" % (time() - start)
+            print("Finished creating database in %s seconds" % (time() - start))
         except Exception:
-            print 'Error received while creating database for', self.stateName
+            print('Error received while creating database for', self.stateName)
             print_exc()
             exit(1)
 

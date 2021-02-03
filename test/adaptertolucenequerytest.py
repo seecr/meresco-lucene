@@ -1,10 +1,14 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2015, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -56,9 +60,9 @@ class AdapterToLuceneQueryTest(TestCase):
         q.addUnite(dict(core='A', query=cqlToExpression('fieldUA exact valueUA')), dict(core='B', query=cqlToExpression('fieldUB exact valueUB')))
         q.validate()
         consume(self.dna.any.executeComposedQuery(query=q))
-        self.assertEquals(['executeComposedQuery'], self.observer.calledMethodNames())
-        self.assertEquals("{'type': 'TermQuery', 'term': {'field': 'fieldA', 'value': u'valueaq'}, 'boost': 1.0}", repr(q.queryFor('A')))
-        self.assertEquals("{'type': 'TermQuery', 'term': {'field': 'fieldB', 'value': u'valuebq'}, 'boost': 1.0}", repr(q.queryFor('B')))
+        self.assertEqual(['executeComposedQuery'], self.observer.calledMethodNames())
+        self.assertEqual("{'type': 'TermQuery', 'term': {'field': 'fieldA', 'value': u'valueaq'}, 'boost': 1.0}", repr(q.queryFor('A')))
+        self.assertEqual("{'type': 'TermQuery', 'term': {'field': 'fieldB', 'value': u'valuebq'}, 'boost': 1.0}", repr(q.queryFor('B')))
 
 
 def executeQueryMock(luceneQuery, *args, **kwargs):

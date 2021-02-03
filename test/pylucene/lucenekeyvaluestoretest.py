@@ -1,11 +1,14 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2014-2017 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2014-2017, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -39,30 +42,30 @@ class LuceneKeyValueStoreTest(SeecrTestCase):
         store['1'] = 'noot'
         store['2'] = 'mies'
         del store['2']
-        self.assertEquals('noot', store['1'])
-        self.assertEquals('noot', store.get('1'))
+        self.assertEqual('noot', store['1'])
+        self.assertEqual('noot', store.get('1'))
 
         self.assertRaises(KeyError, lambda: store['2'])
         try:
             store['3']
             self.fail()
-        except KeyError, e:
-            self.assertEquals("KeyError('3',)", repr(e))
-        self.assertEquals(None, store.get('2'))
-        self.assertEquals('mies', store.get('3', 'mies'))
+        except KeyError as e:
+            self.assertEqual("KeyError('3',)", repr(e))
+        self.assertEqual(None, store.get('2'))
+        self.assertEqual('mies', store.get('3', 'mies'))
 
         store.close()
         store = None
 
         store = LuceneKeyValueStore(join(self.tempdir, 'kv'))
-        self.assertEquals('noot', store['1'])
+        self.assertEqual('noot', store['1'])
         self.assertRaises(KeyError, lambda: store['2'])
 
     def testAllStringified(self):
         store = LuceneKeyValueStore(join(self.tempdir, 'kv'))
         store[1] = None
-        self.assertEquals('None', store[1])
-        self.assertEquals('None', store['1'])
+        self.assertEqual('None', store[1])
+        self.assertEqual('None', store['1'])
 
     def testUnimplemented(self):
         store = LuceneKeyValueStore(join(self.tempdir, 'kv'))

@@ -1,11 +1,14 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2013-2016 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2016, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -114,11 +117,11 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields = observer.calledMethods[0].kwargs['fields']
 
         searchFields = [f for f in fields if not "path" in f]
-        self.assertEquals(['field1', 'sorted.field3', 'untokenized.field7'], [f['name'] for f in searchFields])
+        self.assertEqual(['field1', 'sorted.field3', 'untokenized.field7'], [f['name'] for f in searchFields])
 
         facetsFields = [f for f in fields if "path" in f]
-        self.assertEquals(6, len(facetsFields))
-        self.assertEquals([
+        self.assertEqual(6, len(facetsFields))
+        self.assertEqual([
                 ('untokenized.field8', ['grandparent', 'parent', 'child']),
                 ('untokenized.field8', ['parent2', 'child']),
                 ('untokenized.field6', ['value5/value6']),
@@ -142,7 +145,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         consume(fields2LuceneDoc.commit('unused'))
         fields = observer.calledMethods[0].kwargs['fields']
         facetsFields = [f for f in fields if "path" in f]
-        self.assertEquals(1, len(facetsFields))
+        self.assertEqual(1, len(facetsFields))
 
     def testOnlyOneSortValueAllowed(self):
         fields2LuceneDoc = Fields2LuceneDoc('tsname',
@@ -156,7 +159,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc.addField('sorted.field', 'value2')
         consume(fields2LuceneDoc.commit('unused'))
         fields = observer.calledMethods[0].kwargs['fields']
-        self.assertEquals(1, len(fields))
+        self.assertEqual(1, len(fields))
         self.assertEqual({'sort': True, 'type': 'StringField', 'name': 'sorted.field', 'value': 'value1'}, fields[0])
 
     def testAddDocument(self):
@@ -168,8 +171,8 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc.addField('field', 'value')
         consume(fields2LuceneDoc.commit('unused'))
 
-        self.assertEquals(['addDocument'], observer.calledMethodNames())
-        self.assertEquals('identifier', observer.calledMethods[0].kwargs['identifier'])
+        self.assertEqual(['addDocument'], observer.calledMethodNames())
+        self.assertEqual('identifier', observer.calledMethods[0].kwargs['identifier'])
 
     def testRewriteIdentifier(self):
         fields2LuceneDoc = Fields2LuceneDoc('tsname',
@@ -182,8 +185,8 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc.addField('field', 'value')
         consume(fields2LuceneDoc.commit('unused'))
 
-        self.assertEquals(['addDocument'], observer.calledMethodNames())
-        self.assertEquals('test:identifier', observer.calledMethods[0].kwargs['identifier'])
+        self.assertEqual(['addDocument'], observer.calledMethodNames())
+        self.assertEqual('test:identifier', observer.calledMethods[0].kwargs['identifier'])
 
     def testRewriteFields(self):
         def rewriteFields(fields):
@@ -197,7 +200,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc.addField('field1', 'value1')
         fields2LuceneDoc.addField('field2', 'value2')
         consume(fields2LuceneDoc.commit('unused'))
-        self.assertEquals(['addDocument'], observer.calledMethodNames())
+        self.assertEqual(['addDocument'], observer.calledMethodNames())
         fields = observer.calledMethods[0].kwargs['fields']
-        self.assertEquals(set(['field1', 'field2', 'keys']), set([f['name'] for f in fields]))
-        self.assertEquals(['field1', 'field2'], [f['value'] for f in fields if f['name'] == 'keys'])
+        self.assertEqual(set(['field1', 'field2', 'keys']), set([f['name'] for f in fields]))
+        self.assertEqual(['field1', 'field2'], [f['value'] for f in fields if f['name'] == 'keys'])

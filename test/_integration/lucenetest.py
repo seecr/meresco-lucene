@@ -1,11 +1,14 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2013-2016, 2018-2019 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2016, 2018-2019, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016, 2018 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2018, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -46,62 +49,62 @@ class LuceneTest(IntegrationTestCase):
         postRequest(self.httpPort, '/update_main', ADD_RECORD, parse=False)
         sleep(1.1)
         try:
-            self.assertEquals(1, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
+            self.assertEqual(1, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
         finally:
             postRequest(self.httpPort, '/update_main', DELETE_RECORD, parse=False)
         sleep(1.1)
-        self.assertEquals(0, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
+        self.assertEqual(0, self.numberOfRecords(query='__id__ exact "testrecord:1"'))
 
     def testQuery(self):
-        self.assertEquals(10, self.numberOfRecords(query='field2=value2'))
-        self.assertEquals(2, self.numberOfRecords(query='field1=value1'))
-        self.assertEquals(100, self.numberOfRecords(query='*'))
+        self.assertEqual(10, self.numberOfRecords(query='field2=value2'))
+        self.assertEqual(2, self.numberOfRecords(query='field1=value1'))
+        self.assertEqual(100, self.numberOfRecords(query='*'))
 
     def testQueryViaRemote(self):
-        self.assertEquals(10, self.numberOfRecords(query='field2=value2', path='/via-remote-sru'))
-        self.assertEquals(2, self.numberOfRecords(query='field1=value1', path='/via-remote-sru'))
-        self.assertEquals(100, self.numberOfRecords(query='*', path='/via-remote-sru'))
+        self.assertEqual(10, self.numberOfRecords(query='field2=value2', path='/via-remote-sru'))
+        self.assertEqual(2, self.numberOfRecords(query='field1=value1', path='/via-remote-sru'))
+        self.assertEqual(100, self.numberOfRecords(query='*', path='/via-remote-sru'))
 
     def testRecordIds(self):
         body = self.doSruQuery('*', maximumRecords=100)
         records = xpath(body, '//srw:recordIdentifier/text()')
-        self.assertEquals(100, len(records))
-        self.assertEquals(set(['record:%s' % i for i in xrange(1,101)]), set(records))
+        self.assertEqual(100, len(records))
+        self.assertEqual(set(['record:%s' % i for i in range(1,101)]), set(records))
 
     def testMaximumRecords(self):
         body = self.doSruQuery('*', maximumRecords=20)
         records = xpath(body, '//srw:record')
-        self.assertEquals(20, len(records))
+        self.assertEqual(20, len(records))
 
         body = self.doSruQuery('*', maximumRecords=0, path='/via-remote-sru')
         records = xpath(body, '//srw:record')
-        self.assertEquals(0, len(records))
+        self.assertEqual(0, len(records))
         diag = xpathFirst(body, '//diag:diagnostic/diag:details/text()')
-        self.assertEquals(None, diag)
+        self.assertEqual(None, diag)
 
     def testStartRecord(self):
         body = self.doSruQuery('*', maximumRecords=100)
         records = xpath(body, '//srw:recordIdentifier/text()')
         body = self.doSruQuery('*', maximumRecords=10, startRecord=51)
-        self.assertEquals(records[50:60], xpath(body, '//srw:recordIdentifier/text()'))
+        self.assertEqual(records[50:60], xpath(body, '//srw:recordIdentifier/text()'))
 
     def testSortKeys(self):
         body = self.doSruQuery('*', sortKeys='sorted.intfield1,,1')
         records = xpath(body, '//srw:recordIdentifier/text()')
-        self.assertEquals(['record:%s' % i for i in xrange(1,11)], records)
+        self.assertEqual(['record:%s' % i for i in range(1,11)], records)
 
         body = self.doSruQuery('*', sortKeys='sorted.intfield1,,0')
         records = xpath(body, '//srw:recordIdentifier/text()')
-        self.assertEquals(['record:%s' % i for i in xrange(100,90, -1)], records)
+        self.assertEqual(['record:%s' % i for i in range(100,90, -1)], records)
 
     def testSortKeysWithMissingValues(self):
         body = self.doSruQuery('*', sortKeys='sorted.field4,,1')
         records = xpath(body, '//srw:recordIdentifier/text()')
-        self.assertEquals('record:1', records[0])
+        self.assertEqual('record:1', records[0])
 
         body = self.doSruQuery('*', sortKeys='sorted.field4,,0')
         records = xpath(body, '//srw:recordIdentifier/text()')
-        self.assertEquals('record:1', records[0])
+        self.assertEqual('record:1', records[0])
 
         body = self.doSruQuery('field_missing=test', sortKeys='sorted.intfield_missing,,0')
         self.assertEqual('10', xpathFirst(body, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))
@@ -117,24 +120,24 @@ class LuceneTest(IntegrationTestCase):
     def testFacet(self):
         body = self.doSruQuery('*', facet='untokenized.field2')
         ddItems = xpath(body, "//drilldown:term-drilldown/drilldown:navigator[@name='untokenized.field2']/drilldown:item")
-        self.assertEquals(
+        self.assertEqual(
             set([('value0', '10'), ('value9', '10'), ('value8', '10'), ('value7', '10'), ('value6', '10'), ('value5', '10'), ('value4', '10'), ('value3', '10'), ('value2', '10'), ('value1', '9')]),
             set([(i.attrib['value'], i.attrib['count']) for i in ddItems]))
 
     def testFacet2Copy(self):
         body = self.doSruQuery('*', facet='untokenized.field2.copy')
         ddItems = xpath(body, "//drilldown:term-drilldown/drilldown:navigator[@name='untokenized.field2.copy']/drilldown:item")
-        self.assertEquals(
+        self.assertEqual(
             set([('value0', '10'), ('value9', '10'), ('value8', '10'), ('value7', '10'), ('value6', '10'), ('value5', '10'), ('value4', '10'), ('value3', '10'), ('value2', '10'), ('value1', '9')]),
             set([(i.attrib['value'], i.attrib['count']) for i in ddItems]))
 
     def testAutocomplete(self):
         header, body = getRequest(port=self.httpPort, path='/autocomplete', arguments={'field': 'field2', 'prefix': 'va'}, parse=False)
         prefix, completions = loads(body)
-        self.assertEquals("va", prefix)
+        self.assertEqual("va", prefix)
 
-        self.assertEquals(set(["value0", "value2", "value3", "value4", "value1"]), set(completions))
-        self.assertEquals('value1', completions[-1])
+        self.assertEqual(set(["value0", "value2", "value3", "value4", "value1"]), set(completions))
+        self.assertEqual('value1', completions[-1])
 
     def testJoin(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
@@ -145,14 +148,14 @@ class LuceneTest(IntegrationTestCase):
         q.addFilterQuery(core='main', query=cqlToExpression('field2=value0 OR field2=value1'))
         q.addFacet(core='main2', facet=dict(fieldname='untokenized.field2', maxTerms=5))
         response = remote.executeComposedQuery(query=q)
-        self.assertEquals(19, response.total)
-        self.assertEquals(set([
+        self.assertEqual(19, response.total)
+        self.assertEqual(set([
                 'record:10', 'record:11', 'record:20', 'record:21', 'record:30',
                 'record:31', 'record:40', 'record:41', 'record:50', 'record:51',
                 'record:60', 'record:61', 'record:70', 'record:71', 'record:80',
                 'record:81', 'record:90', 'record:91', 'record:100'
             ]), set([hit.id for hit in response.hits]))
-        self.assertEquals([{
+        self.assertEqual([{
                 'fieldname': 'untokenized.field2',
                 'path': [],
                 'terms': [
@@ -183,7 +186,7 @@ class LuceneTest(IntegrationTestCase):
         response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('*'), dedupField="__key__.field", core="main", stop=3)
         self.assertEqual(100, response.total)
         self.assertEqual(100, response.totalWithDuplicates)
-        self.assertEquals(
+        self.assertEqual(
             [1, 1, 1],
             [hit.duplicateCount['__key__.field'] for hit in response.hits]
         )
@@ -192,7 +195,7 @@ class LuceneTest(IntegrationTestCase):
         self.assertEqual(3, len(response.hits))
         self.assertEqual(10, response.total)
         self.assertEqual(1000, response.totalWithDuplicates)
-        self.assertEquals(
+        self.assertEqual(
             [100] * 3,
             [hit.duplicateCount['__key__.groupfield'] for hit in response.hits]
         )
@@ -201,7 +204,7 @@ class LuceneTest(IntegrationTestCase):
         self.assertEqual(10, len(response.hits))
         self.assertEqual(10, response.total)
         self.assertEqual(1000, response.totalWithDuplicates)
-        self.assertEquals(
+        self.assertEqual(
             [100] * 10,
             [hit.duplicateCount['__key__.groupfield'] for hit in response.hits]
         )
@@ -210,39 +213,39 @@ class LuceneTest(IntegrationTestCase):
         self.assertEqual(1, len(response.hits))
         self.assertEqual(1, response.total)
         self.assertEqual(100, response.totalWithDuplicates)
-        self.assertEquals(['main2:record:199'], [hit.id for hit in response.hits]
+        self.assertEqual(['main2:record:199'], [hit.id for hit in response.hits]
         )
 
         response = remote.executeQuery(cqlAbstractSyntaxTree=parseString('groupfield=1'), dedupField="__key__.groupfield", dedupSortField=["__numeric__.sort2","__numeric__.sort1"], core="main2", stop=10000)
         self.assertEqual(1, len(response.hits))
         self.assertEqual(1, response.total)
         self.assertEqual(100, response.totalWithDuplicates)
-        self.assertEquals(['main2:record:199'], [hit.id for hit in response.hits]
+        self.assertEqual(['main2:record:199'], [hit.id for hit in response.hits]
         )
 
     def testDutchStemming(self):
-        self.assertEquals(1, self.numberOfRecords("field5=katten"))
-        self.assertEquals(1, self.numberOfRecords("field4=kat"))
+        self.assertEqual(1, self.numberOfRecords("field5=katten"))
+        self.assertEqual(1, self.numberOfRecords("field4=kat"))
 
     def testFieldHierarchicalDrilldown(self):
         response = self.doSruQuery('*', facet='untokenized.fieldHier', drilldownFormat='json')
         json = xpathFirst(response, '/srw:searchRetrieveResponse/srw:extraResponseData/drilldown:drilldown/drilldown:term-drilldown/drilldown:json/text()')
         result = loads(json)
-        self.assertEquals(1, len(result))
+        self.assertEqual(1, len(result))
         drilldown = result[0]
-        self.assertEquals('untokenized.fieldHier', drilldown['fieldname'])
-        self.assertEquals(set([('parent0', 50), ('parent1', 50)]), set([(t['term'], t['count']) for t in drilldown['terms']]))
-        self.assertEquals(set([('child0', 17), ('child1', 17), ('child2', 16)]), set([(t['term'], t['count']) for t in drilldown['terms'][0]['subterms']]))
+        self.assertEqual('untokenized.fieldHier', drilldown['fieldname'])
+        self.assertEqual(set([('parent0', 50), ('parent1', 50)]), set([(t['term'], t['count']) for t in drilldown['terms']]))
+        self.assertEqual(set([('child0', 17), ('child1', 17), ('child2', 16)]), set([(t['term'], t['count']) for t in drilldown['terms'][0]['subterms']]))
 
     def testFieldHierarchicalSearch(self):
         response = self.doSruQuery('untokenized.fieldHier exact "parent0>child1>grandchild2"', facet='untokenized.fieldHier', drilldownFormat='json')
-        self.assertEquals('3', xpathFirst(response, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))
+        self.assertEqual('3', xpathFirst(response, '/srw:searchRetrieveResponse/srw:numberOfRecords/text()'))
 
     def testQueryAfterRestartDoesReInitSettings(self):
-        self.assertEquals(10, self.numberOfRecords(query='field2=value2'))
+        self.assertEqual(10, self.numberOfRecords(query='field2=value2'))
         self.stopServer("lucene-server")
         self.startLuceneServer()
-        self.assertEquals(10, self.numberOfRecords(query='field2=value2'))
+        self.assertEqual(10, self.numberOfRecords(query='field2=value2'))
 
     def doSruQuery(self, query, maximumRecords=None, startRecord=None, sortKeys=None, facet=None, path='/sru', drilldownFormat='xml'):
         arguments={'version': '1.2',

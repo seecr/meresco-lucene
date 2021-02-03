@@ -1,11 +1,14 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2014-2019 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2014-2019, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016, 2018 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2016, 2018, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -68,7 +71,7 @@ class FieldRegistry(object):
 
     def isNumeric(self, fieldname):
         fieldType = self._getFieldDefinition(fieldname).pythonType
-        return fieldType in [long, int, float]
+        return fieldType in [int, int, float]
 
     def registerDrilldownField(self, fieldname, hierarchical=False, multiValued=True, indexFieldName=None):
         self.drilldownFieldNames[fieldname] = dict(
@@ -99,7 +102,7 @@ class FieldRegistry(object):
             query = "Int"
         elif pythonType == float:
             query = "Double"
-        elif pythonType == long:
+        elif pythonType == int:
             query = "Long"
         return query, definition.pythonType
 
@@ -112,7 +115,7 @@ class FieldRegistry(object):
             return "Int"
         elif pythonType == float:
             return "Double"
-        elif pythonType == long:
+        elif pythonType == int:
             return "Long"
 
     def defaultMissingValueForSort(self, fieldname, sortDescending):
@@ -200,13 +203,13 @@ INTPOINT = _FieldDefinition("IntPoint",
     phraseQueryPossible=False,
     missingValuesForSort=(JAVA_MAX_INT, JAVA_MIN_INT))
 LONGFIELD = _FieldDefinition("LongField",
-    pythonType=long,
+    pythonType=int,
     isUntokenized=False,
     phraseQueryPossible=False,
     missingValuesForSort=(JAVA_MAX_LONG, JAVA_MIN_LONG))
 LONGFIELD_STORED = LONGFIELD.clone(stored=True)
 LONGPOINT = _FieldDefinition("LongPoint",
-    pythonType=long,
+    pythonType=int,
     isUntokenized=False,
     phraseQueryPossible=False,
     missingValuesForSort=(JAVA_MAX_LONG, JAVA_MIN_LONG))
@@ -220,7 +223,7 @@ DOUBLEPOINT = _FieldDefinition("DoublePoint",
     isUntokenized=False,
     phraseQueryPossible=False)
 NUMERICFIELD = _FieldDefinition("NumericField",
-    pythonType=long,
+    pythonType=int,
     isUntokenized=False,
     phraseQueryPossible=False)
 KEYFIELD = _FieldDefinition("KeyField",

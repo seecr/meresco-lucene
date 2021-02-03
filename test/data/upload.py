@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2013, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013, 2019, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -40,7 +44,7 @@ def main(port, **kwargs):
         uploadUpdateRequests(mypath, port)
     finally:
         t1 = time()
-        print 'Took %s seconds' % (t1 - t0)
+        print('Took %s seconds' % (t1 - t0))
 
 def uploadUpdateRequests(datadir, uploadPort):
     for core in ['main', 'main2']:
@@ -48,7 +52,7 @@ def uploadUpdateRequests(datadir, uploadPort):
         uploadPath = '/update_%s' % basename(coreDir)
         requests = (join(coreDir, r) for r in sorted(listdir(coreDir)) if r.endswith('.updateRequest'))
         for filename in requests:
-            print 'http://localhost:%s%s' % (uploadPort, uploadPath), '<-', basename(filename)[:-len('.updateRequest')]
+            print('http://localhost:%s%s' % (uploadPort, uploadPath), '<-', basename(filename)[:-len('.updateRequest')])
             updateRequest = open(filename).read()
             _uploadUpdateRequest(updateRequest, uploadPath, uploadPort)
 
@@ -56,10 +60,10 @@ def _uploadUpdateRequest(updateRequest, uploadPath, uploadPort):
     XML(updateRequest)
     header, body = postRequest(uploadPort, uploadPath, updateRequest)
     if '200 OK' not in header:
-        print 'No 200 OK response, but:\n', header
+        print('No 200 OK response, but:\n', header)
         exit(123)
     if "srw:diagnostics" in tostring(body):
-        print tostring(body)
+        print(tostring(body))
         exit(1234)
 
 if __name__ == '__main__':
@@ -68,11 +72,11 @@ if __name__ == '__main__':
     parser.add_option("", "--pid", action="store_true", default=False)
     options, arguments = parser.parse_args()
     if options.port is None:
-        print """Usage: %s --port <portnumber> [--start <number>]
+        print("""Usage: %s --port <portnumber> [--start <number>]
         This will upload all requests in this directory to the given server on localhost.
         If used with random will create <number> new random records starting with start number (default 1)
-        """ % argv[0]
+        """ % argv[0])
         exit(1)
     if options.pid:
-        print '>> pid :', getpid()
+        print('>> pid :', getpid())
     main(**vars(options))

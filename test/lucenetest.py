@@ -1,10 +1,13 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2016, 2018 Seecr (Seek You Too B.V.) https://seecr.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2015-2016, 2018, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -34,7 +37,7 @@ from weightless.core import consume, retval
 from cqlparser import cqlToExpression
 from simplejson import loads
 
-from lucenesettingstest import DEFAULTS
+from .lucenesettingstest import DEFAULTS
 
 
 class LuceneTest(SeecrTestCase):
@@ -67,14 +70,14 @@ class LuceneTest(SeecrTestCase):
         self._lucene.observer_init()
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/settings/', self.post[0]['path'])
-        self.assertEquals(DEFAULTS, loads(self.post[0]['data']))
+        self.assertEqual(DEFAULTS, loads(self.post[0]['data']))
 
     def testInitialize(self):
         self.assertEqual([], self.post)
         consume(self._lucene.initialize())
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/settings/', self.post[0]['path'])
-        self.assertEquals(DEFAULTS, loads(self.post[0]['data']))
+        self.assertEqual(DEFAULTS, loads(self.post[0]['data']))
 
     def testAdd(self):
         registry = FieldRegistry()
@@ -160,10 +163,10 @@ class LuceneTest(SeecrTestCase):
     def testPrefixSearch(self):
         self.response = JsonList([["value0", 1], ["value1", 2]]).dumps()
         response = retval(self._lucene.prefixSearch(fieldname='field1', prefix='valu'))
-        self.assertEquals(['value1', 'value0'], response.hits)
+        self.assertEqual(['value1', 'value0'], response.hits)
 
         response = retval(self._lucene.prefixSearch(fieldname='field1', prefix='valu', showCount=True))
-        self.assertEquals([('value1', 2), ('value0', 1)], response.hits)
+        self.assertEqual([('value1', 2), ('value0', 1)], response.hits)
 
     def testNumDocs(self):
         self.response = "150"
@@ -195,7 +198,7 @@ class LuceneTest(SeecrTestCase):
         self.response = JsonDict(numberOfConcurrentTasks=6, similarity="BM25(k1=1.2,b=0.75)", clustering=JsonDict(clusterMoreRecords=100, clusteringEps=0.4, clusteringMinPoints=1))
         settings = retval(self._lucene.getSettings())
         self.assertEqual(['/settings/'], self.read)
-        self.assertEquals({'numberOfConcurrentTasks': 6, 'similarity': u'BM25(k1=1.2,b=0.75)', 'clustering': {'clusterMoreRecords': 100, 'clusteringEps': 0.4, 'clusteringMinPoints': 1}}, settings)
+        self.assertEqual({'numberOfConcurrentTasks': 6, 'similarity': 'BM25(k1=1.2,b=0.75)', 'clustering': {'clusterMoreRecords': 100, 'clusteringEps': 0.4, 'clusteringMinPoints': 1}}, settings)
 
         clusterFields = [
             {"filterValue": None, "fieldname": "untokenized.dcterms:isFormatOf.uri", "weight": 0}
@@ -260,8 +263,8 @@ class LuceneTest(SeecrTestCase):
         response = retval(lucene.executeQuery(
             luceneQuery=query, start=1, stop=5,
         ))
-        self.assertEquals(887, response.total)
-        self.assertEquals(['luceneServer', 'httprequest1_1'], observer.calledMethodNames())
+        self.assertEqual(887, response.total)
+        self.assertEqual(['luceneServer', 'httprequest1_1'], observer.calledMethodNames())
 
 
 HTTP_RESPONSE = okJson + CRLF * 2 + '''{

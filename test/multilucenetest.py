@@ -1,11 +1,14 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2013-2016, 2018, 2020 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2016, 2018, 2020-2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2016, 2020-2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -41,7 +44,7 @@ from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 
-from lucenetest import HTTP_RESPONSE
+from .lucenetest import HTTP_RESPONSE
 
 
 class MultiLuceneTest(SeecrTestCase):
@@ -72,7 +75,7 @@ class MultiLuceneTest(SeecrTestCase):
         q.addFilterQuery('coreB', query='N=true')
         q.addMatch(dict(core='coreA', uniqueKey='A'), dict(core='coreB', key='B'))
         result = retval(self._multiLucene.executeComposedQuery(q))
-        self.assertEquals({
+        self.assertEqual({
             'query': {
                 'cores': ['coreB', 'coreA'],
                 'drilldownQueries': {},
@@ -149,7 +152,7 @@ class MultiLuceneTest(SeecrTestCase):
 
     def testCoreInfo(self):
         infos = asList(self._multiLucene.coreInfo())
-        self.assertEquals(1, len(infos))
+        self.assertEqual(1, len(infos))
 
     def testLuceneServerHostPortDynamic(self):
         multiLucene = MultiLucene(defaultCore='core1')
@@ -163,5 +166,5 @@ class MultiLuceneTest(SeecrTestCase):
         multiLucene.addObserver(observer)
         query = QueryExpressionToLuceneQueryDict([], LuceneSettings()).convert(cqlToExpression("field=value"))
         response = retval(multiLucene.executeComposedQuery(ComposedQuery('core1', query)))
-        self.assertEquals(887, response.total)
-        self.assertEquals(['luceneServer', 'httprequest1_1'], observer.calledMethodNames())
+        self.assertEqual(887, response.total)
+        self.assertEqual(['luceneServer', 'httprequest1_1'], observer.calledMethodNames())

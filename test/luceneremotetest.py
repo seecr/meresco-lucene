@@ -1,10 +1,14 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2013-2015 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2015, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015 Koninklijke Bibliotheek (KB) http://www.kb.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -59,20 +63,20 @@ class LuceneRemoteTest(SeecrTestCase):
         cq.setCoreQuery(core='coreB', query=parseString('query=test'))
         cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         result = returnValueFromGenerator(observable.any.executeComposedQuery(query=cq))
-        self.assertEquals(5, result.total)
-        self.assertEquals([Hit("1"), Hit("2"), Hit("3", duplicateCount=2), Hit("4"), Hit("5")], result.hits)
+        self.assertEqual(5, result.total)
+        self.assertEqual([Hit("1"), Hit("2"), Hit("3", duplicateCount=2), Hit("4"), Hit("5")], result.hits)
 
-        self.assertEquals(['httppost'], http.calledMethodNames())
+        self.assertEqual(['httppost'], http.calledMethodNames())
         m = http.calledMethods[0]
-        self.assertEquals('host', m.kwargs['host'])
-        self.assertEquals(1234, m.kwargs['port'])
-        self.assertEquals('/path/__lucene_remote__', m.kwargs['request'])
-        self.assertEquals('application/json', m.kwargs['headers']['Content-Type'])
+        self.assertEqual('host', m.kwargs['host'])
+        self.assertEqual(1234, m.kwargs['port'])
+        self.assertEqual('/path/__lucene_remote__', m.kwargs['request'])
+        self.assertEqual('application/json', m.kwargs['headers']['Content-Type'])
         message, kwargs = Conversion().jsonLoadMessage(m.kwargs['body'])
         query = kwargs['query']
-        self.assertEquals('executeComposedQuery', message)
-        self.assertEquals('coreA', query.resultsFrom)
-        self.assertEquals([{'fieldname': 'field', 'maxTerms':5}], query.facetsFor('coreA'))
+        self.assertEqual('executeComposedQuery', message)
+        self.assertEqual('coreA', query.resultsFrom)
+        self.assertEqual([{'fieldname': 'field', 'maxTerms':5}], query.facetsFor('coreA'))
 
     def testRemoteExecuteQueryWithNoneValues(self):
         http = CallTrace('http')
@@ -94,15 +98,15 @@ class LuceneRemoteTest(SeecrTestCase):
                 joinQueries=None,
             )
         )
-        self.assertEquals(5, result.total)
-        self.assertEquals([Hit("1"), Hit("2"), Hit("3"), Hit("4"), Hit("5")], result.hits)
+        self.assertEqual(5, result.total)
+        self.assertEqual([Hit("1"), Hit("2"), Hit("3"), Hit("4"), Hit("5")], result.hits)
 
-        self.assertEquals(['httppost'], http.calledMethodNames())
+        self.assertEqual(['httppost'], http.calledMethodNames())
         m = http.calledMethods[0]
-        self.assertEquals('host', m.kwargs['host'])
-        self.assertEquals(1234, m.kwargs['port'])
-        self.assertEquals('/path/__lucene_remote__', m.kwargs['request'])
-        self.assertEquals('application/json', m.kwargs['headers']['Content-Type'])
+        self.assertEqual('host', m.kwargs['host'])
+        self.assertEqual(1234, m.kwargs['port'])
+        self.assertEqual('/path/__lucene_remote__', m.kwargs['request'])
+        self.assertEqual('application/json', m.kwargs['headers']['Content-Type'])
         self.assertDictEquals({
                 'message': 'executeQuery',
                 'kwargs':{
@@ -125,7 +129,7 @@ class LuceneRemoteTest(SeecrTestCase):
         observable.addObserver(remote)
         observable.addObserver(Other())
         result = returnValueFromGenerator(observable.any.aMessage())
-        self.assertEquals('Thanks', result)
+        self.assertEqual('Thanks', result)
 
     def testRemotePrefixSearch(self):
         http = CallTrace('http')
@@ -139,11 +143,11 @@ class LuceneRemoteTest(SeecrTestCase):
         remote._httppost = http.httppost
 
         result = returnValueFromGenerator(observable.any.prefixSearch(prefix='aap', fieldname='field', limit=10))
-        self.assertEquals(5, result.total)
-        self.assertEquals(['httppost'], http.calledMethodNames())
+        self.assertEqual(5, result.total)
+        self.assertEqual(['httppost'], http.calledMethodNames())
         m = http.calledMethods[0]
-        self.assertEquals('host', m.kwargs['host'])
-        self.assertEquals({
+        self.assertEqual('host', m.kwargs['host'])
+        self.assertEqual({
                 'message': 'prefixSearch',
                 'kwargs':{
                     'prefix':'aap',
@@ -164,11 +168,11 @@ class LuceneRemoteTest(SeecrTestCase):
         remote._httppost = http.httppost
 
         result = returnValueFromGenerator(observable.any.fieldnames())
-        self.assertEquals(2, result.total)
-        self.assertEquals(['httppost'], http.calledMethodNames())
+        self.assertEqual(2, result.total)
+        self.assertEqual(['httppost'], http.calledMethodNames())
         m = http.calledMethods[0]
-        self.assertEquals('host', m.kwargs['host'])
-        self.assertEquals({
+        self.assertEqual('host', m.kwargs['host'])
+        self.assertEqual({
                 'message': 'fieldnames',
                 'kwargs':{
                 }
@@ -198,16 +202,16 @@ class LuceneRemoteTest(SeecrTestCase):
         header, body = result.split('\r\n'*2)
         self.assertTrue('Content-Type: application/json' in header, header+body)
         response = LuceneResponse.fromJson(body)
-        self.assertEquals(2, response.total)
-        self.assertEquals(['aap', 'noot'], response.hits)
-        self.assertEquals(['executeQuery'], observer.calledMethodNames())
+        self.assertEqual(2, response.total)
+        self.assertEqual(['aap', 'noot'], response.hits)
+        self.assertEqual(['executeQuery'], observer.calledMethodNames())
         m = observer.calledMethods[0]
-        self.assertEquals(parseString('query AND field=value'), m.kwargs['cqlAbstractSyntaxTree'])
-        self.assertEquals(0, m.kwargs['start'])
-        self.assertEquals(10, m.kwargs['stop'])
-        self.assertEquals([{'fieldname': 'field', 'maxTerms':5}], m.kwargs['facets'])
-        self.assertEquals([parseString('query=fiets')], m.kwargs['filterQueries'])
-        self.assertEquals({'core1': parseString('query=test')}, m.kwargs['joinQueries'])
+        self.assertEqual(parseString('query AND field=value'), m.kwargs['cqlAbstractSyntaxTree'])
+        self.assertEqual(0, m.kwargs['start'])
+        self.assertEqual(10, m.kwargs['stop'])
+        self.assertEqual([{'fieldname': 'field', 'maxTerms':5}], m.kwargs['facets'])
+        self.assertEqual([parseString('query=fiets')], m.kwargs['filterQueries'])
+        self.assertEqual({'core1': parseString('query=test')}, m.kwargs['joinQueries'])
 
     def testServicePrefixSearch(self):
         observer = CallTrace('lucene')
@@ -229,13 +233,13 @@ class LuceneRemoteTest(SeecrTestCase):
         header, body = result.split('\r\n'*2)
         self.assertTrue('Content-Type: application/json' in header, header)
         response = LuceneResponse.fromJson(body)
-        self.assertEquals(2, response.total)
-        self.assertEquals(['aap', 'noot'], response.hits)
-        self.assertEquals(['prefixSearch'], observer.calledMethodNames())
+        self.assertEqual(2, response.total)
+        self.assertEqual(['aap', 'noot'], response.hits)
+        self.assertEqual(['prefixSearch'], observer.calledMethodNames())
         m = observer.calledMethods[0]
-        self.assertEquals('aap', m.kwargs['prefix'])
-        self.assertEquals(10, m.kwargs['limit'])
-        self.assertEquals('field', m.kwargs['fieldname'])
+        self.assertEqual('aap', m.kwargs['prefix'])
+        self.assertEqual(10, m.kwargs['limit'])
+        self.assertEqual('field', m.kwargs['fieldname'])
 
     def testServiceFieldnames(self):
         observer = CallTrace('lucene')
@@ -254,6 +258,6 @@ class LuceneRemoteTest(SeecrTestCase):
         header, body = result.split('\r\n'*2)
         self.assertTrue('Content-Type: application/json' in header, header)
         response = LuceneResponse.fromJson(body)
-        self.assertEquals(2, response.total)
-        self.assertEquals(['aap', 'noot'], response.hits)
-        self.assertEquals(['fieldnames'], observer.calledMethodNames())
+        self.assertEqual(2, response.total)
+        self.assertEqual(['aap', 'noot'], response.hits)
+        self.assertEqual(['fieldnames'], observer.calledMethodNames())

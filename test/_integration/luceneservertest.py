@@ -1,10 +1,13 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2016, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2015-2016, 2019, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -130,9 +133,9 @@ class LuceneServerTest(IntegrationTestCase):
         self.assertTrue("200 OK" in header.upper(), header)
         header, body2 = postRequest(self.luceneServerPort, '/numerate/', data='id0', parse=False)
         self.assertTrue("200 OK" in header.upper(), header)
-        self.assertEquals(body2, body)
+        self.assertEqual(body2, body)
         header, body3 = postRequest(self.luceneServerPort, '/numerate/', data='id1', parse=False)
-        self.assertNotEquals(body3, body)
+        self.assertNotEqual(body3, body)
 
     def testCommit(self):
         header, body = postRequest(self.luceneServerPort, self._path + '/settings/', data=JsonDict(commitCount=10).dumps())
@@ -166,7 +169,7 @@ class LuceneServerTest(IntegrationTestCase):
         header, body = postRequest(self.luceneServerPort, '/exportkeys/?exportKey=__key__.field', data=JsonDict(composedQuery.asDict()).dumps(), parse=False)
         self.assertTrue("200 OK" in header.upper(), header + 2 * CRLF + body)
         bitSet = readFixedBitSet(body)
-        for i in xrange(0, 102):
+        for i in range(0, 102):
             isSet = bitSet.get(i)
             if 2 < i < 101:
                 self.assertTrue(isSet, i)

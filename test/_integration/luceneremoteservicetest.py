@@ -1,11 +1,14 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2013-2016, 2018-2019 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2016, 2018-2019, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016, 2018 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2016, 2018, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -38,7 +41,7 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
     def testRemoteService(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/remote')
         response = remote.executeQuery(cqlToExpression('*'))
-        self.assertEquals(100, response.total)
+        self.assertEqual(100, response.total)
 
     def testRemoteServiceOnBadPath(self):
         remote = SynchronousRemote(host='localhost', port=self.httpPort, path='/does/not/exist')
@@ -69,7 +72,7 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         lists = bodyLxml.xpath('//ul')
         fieldList = lists[0]
         fields = fieldList.xpath('li/a/text()')
-        self.assertEquals(19, len(fields))
+        self.assertEqual(19, len(fields))
         self.assertEqual([
                 '$facets',
                 '__id__',
@@ -94,14 +97,14 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
 
         drilldownFieldList = lists[1]
         drilldownFields = drilldownFieldList.xpath('li/a/text()')
-        self.assertEquals(set(['untokenized.field2', 'untokenized.fieldHier', 'untokenized.field2.copy']), set(drilldownFields))
+        self.assertEqual(set(['untokenized.field2', 'untokenized.fieldHier', 'untokenized.field2.copy']), set(drilldownFields))
 
         # TODO: Show sorted fields
 
     def testRemoteInfoField(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__id__', name='main'), parse=False)
         self.assertFalse('Traceback' in body, body)
-        self.assertEquals(50, body.count(': 1'), body)
+        self.assertEqual(50, body.count(': 1'), body)
 
     def testRemoteInfoFieldWithPrefix(self):
         header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='field2', name='main', prefix='value8'), parse=False)
@@ -111,4 +114,4 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         header, body = getRequest(port=self.httpPort, path='/remote/info/drilldownvalues', arguments=dict(path='untokenized.field2', name='main'), parse=False)
         self.assertFalse('Traceback' in body, body)
         bodyLxml = HTML(body)
-        self.assertEquals(set(['value1', 'value0', 'value9', 'value8', 'value7', 'value6', 'value5', 'value4', 'value3', 'othervalue2', 'value2']), set(bodyLxml.xpath('//ul/li/a/text()')))
+        self.assertEqual(set(['value1', 'value0', 'value9', 'value8', 'value7', 'value6', 'value5', 'value4', 'value3', 'othervalue2', 'value2']), set(bodyLxml.xpath('//ul/li/a/text()')))

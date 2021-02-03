@@ -1,10 +1,13 @@
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
 # Copyright (C) 2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2016, 2018-2019 Seecr (Seek You Too B.V.) https://seecr.nl
-# Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+# Copyright (C) 2016, 2018-2019, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -24,7 +27,7 @@
 #
 ## end license ##
 
-from StringIO import StringIO
+from io import StringIO
 from struct import pack
 
 from simplejson import loads
@@ -168,6 +171,6 @@ def fixedBitSetAsBytes(bitSet):
     s.write(pack('>i', bitSet.length()))
     bits = bitSet.getBits()
     s.write(pack('>i', len(bits)))
-    for i in xrange(0, len(bits)):
+    for i in range(0, len(bits)):
         s.write(pack('>q', bits[i]))
     return s.getvalue()

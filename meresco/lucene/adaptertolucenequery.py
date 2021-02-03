@@ -46,9 +46,9 @@ class AdapterToLuceneQuery(Transparent):
         if filterQueries:
             filterQueries = [convertMethod(cqlToExpression(ast)) for ast in filterQueries]
         response = yield self.any.executeQuery(core=core, luceneQuery=convertMethod(expression), filterQueries=filterQueries, **kwargs)
-        raise StopIteration(response)
+        return response
 
     def executeComposedQuery(self, query):
         query.convertWith(**self._converts)
         response = yield self.any.executeComposedQuery(query=query)
-        raise StopIteration(response)
+        return response

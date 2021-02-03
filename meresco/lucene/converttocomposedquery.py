@@ -131,7 +131,7 @@ class ConvertToComposedQuery(Observable):
                 key=lambda d: facetOrder.index((d['fieldname'], d.get('path', [])))
             )
 
-        raise StopIteration(result)
+        return result
 
     def _coreQuery(self, query, cores):
         core, query = self._parseCorePrefix(query, cores)

@@ -70,7 +70,7 @@ class Lucene(Observable):
             yield self._connect().send(jsonDict=settingsDict, path="/settings/")
 
     def getSettings(self):
-        raise StopIteration((yield self._connect().read(path='/settings/')))
+        return (yield self._connect().read(path='/settings/'))
 
     def addDocument(self, fields, identifier=None):
         if self._readonly:
@@ -126,7 +126,7 @@ class Lucene(Observable):
                     **kwargs
                 ))
             }
-        raise StopIteration(response)
+        return response
         yield
 
     def prefixSearch(self, fieldname, prefix, showCount=False, limit=10, **kwargs):
@@ -139,12 +139,12 @@ class Lucene(Observable):
         responseDict = (yield self._connect().send(jsonDict=jsonDict, path='/prefixSearch/?{}'.format(args)))
         hits = [((term, count) if showCount else term) for term, count in sorted(responseDict, key=lambda t: t[1], reverse=True)]
         response = LuceneResponse(total=len(hits), hits=hits)
-        raise StopIteration(response)
+        return response
         yield
 
     def fieldnames(self, **kwargs):
         fieldnames = (yield self._connect().send(path='/fieldnames/'))
-        raise StopIteration(LuceneResponse(total=len(fieldnames), hits=fieldnames))
+        return LuceneResponse(total=len(fieldnames), hits=fieldnames)
         yield
 
     def drilldownFieldnames(self, path=None, limit=50, **kwargs):
@@ -154,21 +154,21 @@ class Lucene(Observable):
             args["path"] = path[1:]
         args = urlencode(args, doseq=True)
         fieldnames = (yield self._connect().send(path='/drilldownFieldnames/?{}'.format(args)))
-        raise StopIteration(LuceneResponse(total=len(fieldnames), hits=fieldnames))
+        return LuceneResponse(total=len(fieldnames), hits=fieldnames)
         yield
 
     def similarDocuments(self, identifier):
         args = urlencode(dict(identifier=identifier))
         responseDict = (yield self._connect().send(path='/similarDocuments/?{}'.format(args)))
         response = luceneResponseFromDict(responseDict)
-        raise StopIteration(response)
+        return response
         yield
 
     def getFieldRegistry(self):
         return self._fieldRegistry
 
     def numDocs(self):
-        raise StopIteration((yield self._connect().send(path='/numDocs/')))
+        return (yield self._connect().send(path='/numDocs/'))
 
     def coreInfo(self):
         yield self.LuceneInfo(self)

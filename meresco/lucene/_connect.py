@@ -44,7 +44,7 @@ class _Connect(object):
             body = yield post()
         if body and parse:
             body = loads(body)
-        raise StopIteration(body if body is not None else None)
+        return body if body is not None else None
 
     def read(self, path, parse=True):
         get = lambda: self._get(path=self._pathPrefix + path)
@@ -55,17 +55,17 @@ class _Connect(object):
             body = yield get()
         if body and parse:
             body = loads(body)
-        raise StopIteration(body if body is not None else None)
+        return body if body is not None else None
 
     def _post(self, path, data):
         statusAndHeaders, body = yield self._observable.any.httprequest1_1(method='POST', host=self._host, port=self._port, request=path, body=data)
         self._verify20x(statusAndHeaders, body)
-        raise StopIteration(body)
+        return body
 
     def _get(self, path):
         statusAndHeaders, body = yield self._observable.any.httprequest1_1(method='GET', host=self._host, port=self._port, request=path)
         self._verify20x(statusAndHeaders, body)
-        raise StopIteration(body)
+        return body
 
     def _verify20x(self, statusAndHeaders, body):
         if statusAndHeaders['StatusCode'] == "409":

@@ -49,7 +49,7 @@ class ConvertToComposedQueryTest(SeecrTestCase):
         self.observer = CallTrace('observer', emptyGeneratorMethods=['executeComposedQuery'])
         self.response = LuceneResponse()
         def executeComposedQuery(*args, **kwargs):
-            raise StopIteration(self.response)
+            return self.response
             yield
         self.observer.methods['executeComposedQuery'] = executeComposedQuery
         self.tree = be(

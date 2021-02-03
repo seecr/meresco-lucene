@@ -44,7 +44,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testRemoteExecuteQuery(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
-            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=[Hit("1"), Hit("2"), Hit("3", duplicateCount=2), Hit("4"), Hit("5")]).asJson())
+            return 'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=[Hit("1"), Hit("2"), Hit("3", duplicateCount=2), Hit("4"), Hit("5")]).asJson()
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
@@ -80,7 +80,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testRemoteExecuteQueryWithNoneValues(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
-            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=[Hit("1"), Hit("2"), Hit("3"), Hit("4"), Hit("5")]).asJson())
+            return 'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=[Hit("1"), Hit("2"), Hit("3"), Hit("4"), Hit("5")]).asJson()
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
@@ -121,7 +121,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testDeclineOtherMessages(self):
         class Other(object):
             def aMessage(self):
-                raise StopIteration('Thanks')
+                return 'Thanks'
                 yield
         remote = LuceneRemote(host='host', port=1234, path='/path')
         observable = Observable()
@@ -133,7 +133,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testRemotePrefixSearch(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
-            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=["1", "2", "3", "4", "5"]).asJson())
+            return 'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=["1", "2", "3", "4", "5"]).asJson()
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
@@ -158,7 +158,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testRemoteFieldnames(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
-            raise StopIteration('HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=2, hits=["field0", "field1"]).asJson())
+            return 'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=2, hits=["field0", "field1"]).asJson()
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
@@ -181,7 +181,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testServiceExecuteQuery(self):
         observer = CallTrace('lucene')
         def executeQuery(**kwargs):
-            raise StopIteration(LuceneResponse(total=2, hits=['aap','noot']))
+            return LuceneResponse(total=2, hits=['aap','noot'])
             yield
         observer.methods['executeQuery'] = executeQuery
         service = LuceneRemoteService(CallTrace('reactor'))
@@ -215,7 +215,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testServicePrefixSearch(self):
         observer = CallTrace('lucene')
         def prefixSearch(**kwargs):
-            raise StopIteration(LuceneResponse(total=2, hits=['aap','noot']))
+            return LuceneResponse(total=2, hits=['aap','noot'])
             yield
         observer.methods['prefixSearch'] = prefixSearch
         service = LuceneRemoteService(CallTrace('reactor'))
@@ -243,7 +243,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testServiceFieldnames(self):
         observer = CallTrace('lucene')
         def fieldnames(**kwargs):
-            raise StopIteration(LuceneResponse(total=2, hits=['aap','noot']))
+            return LuceneResponse(total=2, hits=['aap','noot'])
             yield
         observer.methods['fieldnames'] = fieldnames
         service = LuceneRemoteService(CallTrace('reactor'))

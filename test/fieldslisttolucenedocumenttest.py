@@ -45,7 +45,7 @@ class FieldsListToLuceneDocumentTest(SeecrTestCase):
                 self.untokenizedFieldnames = untokenizedFieldnames
 
             def fieldsFor(self, fieldname, value):
-                raise StopIteration([(fieldname, value)])
+                return [(fieldname, value)]
                 yield
         fieldFactory = Factory
 

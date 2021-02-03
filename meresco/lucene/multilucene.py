@@ -48,7 +48,7 @@ class MultiLucene(Observable):
     def executeQuery(self, core=None, **kwargs):
         coreName = self._defaultCore if core is None else core
         response = yield self.any[coreName].executeQuery(**kwargs)
-        raise StopIteration(response)
+        return response
 
     def executeComposedQuery(self, query):
         for sortKey in query.sortKeys:
@@ -57,7 +57,7 @@ class MultiLucene(Observable):
         responseDict = (yield self._connect().send(jsonDict=JsonDict(query.asDict()), path='/query/'))
         response = luceneResponseFromDict(responseDict)
         response.info = query.infoDict()
-        raise StopIteration(response)
+        return response
         yield
 
     def any_unknown(self, message, **kwargs):
@@ -66,7 +66,7 @@ class MultiLucene(Observable):
             if core is None:
                 core = self._defaultCore
             result = yield self.any[core].unknown(message=message, **kwargs)
-            raise StopIteration(result)
+            return result
         raise DeclineMessage()
 
     def coreInfo(self):

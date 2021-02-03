@@ -52,7 +52,7 @@ class QueryExpressionToLuceneQueryDict(Transparent):
 
     def executeQuery(self, query, **kwargs):
         response = yield self.any.executeQuery(luceneQuery=self.convert(query), **kwargs)
-        raise StopIteration(response)
+        return response
 
     def convert(self, expression, unqualifiedTermFields=None, composedQuery=None):
         if expression.must_not:

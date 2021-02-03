@@ -58,7 +58,7 @@ class MultiLuceneTest(SeecrTestCase):
         self.response = ""
         def mockPost(data, path, **kwargs):
             self.post.append(dict(data=data, path=path))
-            raise StopIteration(self.response)
+            return self.response
             yield
         connect = self._multiLucene._connect()
         connect._post = mockPost
@@ -157,7 +157,7 @@ class MultiLuceneTest(SeecrTestCase):
     def testLuceneServerHostPortDynamic(self):
         multiLucene = MultiLucene(defaultCore='core1')
         def httprequest1_1Mock(**kwargs):
-            raise StopIteration(parseResponse(HTTP_RESPONSE))
+            return parseResponse(HTTP_RESPONSE)
             yield
         observer = CallTrace(
             'observer',

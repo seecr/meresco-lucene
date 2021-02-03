@@ -44,14 +44,14 @@ class SuggestionIndexComponentTest(SeecrTestCase):
         self.response = ""
         def mockPost(data, path, **kwargs):
             self.post.append(dict(data=data, path=path))
-            raise StopIteration(self.response)
+            return self.response
             yield
         self.sic._connect._post = mockPost
 
         self.get = []
         def mockGet(path, **kwargs):
             self.get.append(path)
-            raise StopIteration(self.response)
+            return self.response
             yield
         self.sic._connect._get = mockGet
 

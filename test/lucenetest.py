@@ -52,7 +52,7 @@ class LuceneTest(SeecrTestCase):
         connect = self._lucene._connect()
         def mockPost(data, path, **kwargs):
             self.post.append(dict(data=data, path=path))
-            raise StopIteration(self.response)
+            return self.response
             yield
         connect._post = mockPost
 
@@ -60,7 +60,7 @@ class LuceneTest(SeecrTestCase):
         self.response = ""
         def mockRead(path, **kwargs):
             self.read.append(path)
-            raise StopIteration(self.response)
+            return self.response
             yield
         connect.read = mockRead
         self._lucene._connect = lambda: connect
@@ -252,7 +252,7 @@ class LuceneTest(SeecrTestCase):
     def testLuceneServerHostPortDynamic(self):
         lucene = Lucene(name='lucene', settings=LuceneSettings(), readonly=True)
         def httprequest1_1Mock(**kwargs):
-            raise StopIteration(parseResponse(HTTP_RESPONSE))
+            return parseResponse(HTTP_RESPONSE)
             yield
         observer = CallTrace(
             'observer',

@@ -75,7 +75,7 @@ class SynchronousRemote(object):
             while totalBytesSent != len(sendBuffer):
                 bytesSent = sok.send(sendBuffer[totalBytesSent:])
                 totalBytesSent += bytesSent
-            raise StopIteration(receiveFromSocket(sok))
+            return receiveFromSocket(sok)
             yield
         finally:
             sok.close()

@@ -67,7 +67,7 @@ staticPath = join(myPath, 'html', 'static')
 class RetrieveDataToGetData(Transparent):
     def retrieveData(self, **kwargs):
         data = self.call.getData(**kwargs)
-        raise StopIteration(data)
+        return data
         yield
 
 

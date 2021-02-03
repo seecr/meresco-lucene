@@ -63,23 +63,23 @@ class SuggestionIndexComponent(Observable):
 
     def suggest(self, value, trigram=False, filters=None, keySetName=None, limit=None):
         suggestions = yield self._connect.send("/suggest", JsonDict(value=value, trigram=trigram, filters=filters or [], keySetName=keySetName, limit=limit))
-        raise StopIteration([Suggestion(s) for s in suggestions])
+        return [Suggestion(s) for s in suggestions]
 
     def indexingState(self):
         indexingState = yield self._connect.read("/indexingState")
-        raise StopIteration(indexingState if indexingState else None)
+        return indexingState if indexingState else None
 
     def totalShingleRecords(self):
         total = yield self._connect.read("/totalRecords", parse=False)
-        raise StopIteration(int(total))
+        return int(total)
 
     def totalSuggestions(self):
         total = yield self._connect.read("/totalSuggestions", parse=False)
-        raise StopIteration(int(total))
+        return int(total)
 
     def ngramIndexTimestamp(self):
         timestamp = yield self._connect.read("/ngramIndexTimestamp", parse=False)
-        raise StopIteration(int(timestamp)/ 1000.0)
+        return int(timestamp)/ 1000.0
 
     def handleRequest(self, arguments, path, **kwargs):
         value = arguments.get("value", [None])[0]

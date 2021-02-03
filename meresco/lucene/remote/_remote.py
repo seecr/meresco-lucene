@@ -50,7 +50,7 @@ class LuceneRemote(Observable):
     def any_unknown(self, message, **kwargs):
         if message in self._ALLOWED_METHODS:
             result = yield self._send(message=message, **kwargs)
-            raise StopIteration(result)
+            return result
         raise DeclineMessage()
 
     def _luceneRemoteServer(self):
@@ -63,7 +63,7 @@ class LuceneRemote(Observable):
         response = yield self._httppost(host=host, port=port, request=self._path, body=body, headers=headers)
         header, responseBody = response.split("\r\n\r\n", 1)
         self._verify200(header, response)
-        raise StopIteration(LuceneResponse.fromJson(responseBody))
+        return LuceneResponse.fromJson(responseBody)
 
     def _httppost(self, **kwargs):
         return httppost(**kwargs)

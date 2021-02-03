@@ -45,7 +45,7 @@ class AdapterToLuceneQueryTest(TestCase):
         coreAConverter = QueryExpressionToLuceneQueryDict([('fieldA', 1.0)], luceneSettings=LuceneSettings())
         coreBConverter = QueryExpressionToLuceneQueryDict([('fieldB', 1.0)], luceneSettings=LuceneSettings())
         self.converter = AdapterToLuceneQuery(defaultCore='A', coreConverters=dict(A=coreAConverter, B=coreBConverter))
-        self.observer = CallTrace('Query responder', methods={'executeQuery': executeQueryMock})
+        self.observer = CallTrace('Query responder', emptyGeneratorMethods=['executeComposedQuery'])
         self.dna = be((Observable(),
             (self.converter,
                 (self.observer,),
@@ -61,8 +61,8 @@ class AdapterToLuceneQueryTest(TestCase):
         q.validate()
         consume(self.dna.any.executeComposedQuery(query=q))
         self.assertEqual(['executeComposedQuery'], self.observer.calledMethodNames())
-        self.assertEqual("{'type': 'TermQuery', 'term': {'field': 'fieldA', 'value': u'valueaq'}, 'boost': 1.0}", repr(q.queryFor('A')))
-        self.assertEqual("{'type': 'TermQuery', 'term': {'field': 'fieldB', 'value': u'valuebq'}, 'boost': 1.0}", repr(q.queryFor('B')))
+        self.assertEqual("{'type': 'TermQuery', 'term': {'field': 'fieldA', 'value': 'valueaq'}, 'boost': 1.0}", repr(q.queryFor('A')))
+        self.assertEqual("{'type': 'TermQuery', 'term': {'field': 'fieldB', 'value': 'valuebq'}, 'boost': 1.0}", repr(q.queryFor('B')))
 
 
 def executeQueryMock(luceneQuery, *args, **kwargs):

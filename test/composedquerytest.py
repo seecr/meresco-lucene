@@ -49,8 +49,8 @@ class ComposedQueryTest(SeecrTestCase):
         composedQuery = ComposedQuery('coreA')
         composedQuery.setCoreQuery(core='coreA', query='Q0')
         composedQuery.setCoreQuery(core='coreB', query='Q1')
-        composedQuery.setCoreQuery(core='coreC', query='Q2')
         self.assertValidateRaisesValueError(composedQuery, "No match set for cores ('coreA', 'coreB')")
+        composedQuery.setCoreQuery(core='coreC', query='Q2')
 
         composedQuery.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
         self.assertValidateRaisesValueError(composedQuery, "No match set for cores ('coreA', 'coreC')")
@@ -335,7 +335,7 @@ class ComposedQueryTest(SeecrTestCase):
         self.assertEqual({
             'type': 'ComposedQuery',
             'query': {
-                "cores": ["coreB", "coreA"],
+                "cores": ["coreA", "coreB"],
                 "drilldownQueries": {},
                 "facets": {"coreA": ["F0", "F1"]},
                 "filterQueries": {"coreA": ["Q1", "Q2"]},

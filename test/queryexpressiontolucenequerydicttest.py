@@ -322,11 +322,12 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
         pq = dict(type="PhraseQuery", terms=[])
         pq["terms"].append(dict(field="title", value="more"))
         pq["terms"].append(dict(field="title", value="e"))
-        self.assertEqual(pq, self._convert('title=More\xcc\x81e')) # Combined
+        self.assertEqual(pq, self._convert(b'title=More\xcc\x81e'.decode())) # Combined
         from unicodedata import normalize
+        self.assertEqual('title=Mor\xe9e', normalize('NFC', b'title=More\xcc\x81e'.decode()))
         self.assertEqual(
             termQuery('title', 'moree'),
-            self._convert(normalize('NFC', str('title=More\xcc\x81e'))))
+            self._convert(normalize('NFC', b'title=More\xcc\x81e'.decode())))
 
     def testIndexRelationTermOutput(self):
         self.assertEqual(

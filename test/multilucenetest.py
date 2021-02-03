@@ -77,7 +77,7 @@ class MultiLuceneTest(SeecrTestCase):
         result = retval(self._multiLucene.executeComposedQuery(q))
         self.assertEqual({
             'query': {
-                'cores': ['coreB', 'coreA'],
+                'cores': ['coreA', 'coreB'],
                 'drilldownQueries': {},
                 'facets': {},
                 'filterQueries': {'coreB': ['N=true']},
@@ -145,7 +145,7 @@ class MultiLuceneTest(SeecrTestCase):
                 "_drilldownQueries": {},
                 "_unites": [],
                 '_queries': {'coreB': {'term': {'field': 'field', 'value': 'value'}, 'type': 'TermQuery'}},
-                "cores": ["coreB", "coreA"],
+                "cores": ["coreA", "coreB"],
                 "_filterQueries": {},
                 "_excludeFilterQueries": {},
             }, loads(self.post[0]['data']))

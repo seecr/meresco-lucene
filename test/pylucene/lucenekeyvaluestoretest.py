@@ -50,7 +50,7 @@ class LuceneKeyValueStoreTest(SeecrTestCase):
             store['3']
             self.fail()
         except KeyError as e:
-            self.assertEqual("KeyError('3',)", repr(e))
+            self.assertEqual("KeyError('3')", repr(e))
         self.assertEqual(None, store.get('2'))
         self.assertEqual('mies', store.get('3', 'mies'))
 

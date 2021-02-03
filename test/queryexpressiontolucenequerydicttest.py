@@ -610,7 +610,7 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
         return settings
 
     def _makeExpression(self, input):
-        return cqlToExpression(parseCql(input)) if isinstance(input, basestring) else input
+        return cqlToExpression(parseCql(input)) if isinstance(input, str) else input
 
 
 def termQuery(field, value, boost=None):

@@ -51,7 +51,7 @@ class FieldsListToLuceneDocument(Observable):
     def _addFieldToLuceneDocument(self, fieldname, value, fields):
         if self._fieldRegistry.isDrilldownField(fieldname):
             path = value
-            if isinstance(value, basestring):
+            if isinstance(value, str):
                 path = [value]
             elif len(path) < 1:
                 return

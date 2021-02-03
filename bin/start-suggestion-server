@@ -1,11 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ## begin license ##
 #
-# "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+# "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
-# Copyright (C) 2015-2016, 2018-2020 Seecr (Seek You Too B.V.) https://seecr.nl
-# Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2015-2016, 2018-2021 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2016, 2020-2021 Stichting Kennisnet https://www.kennisnet.nl
+# Copyright (C) 2021 Data Archiving and Network Services https://dans.knaw.nl
+# Copyright (C) 2021 SURF https://www.surf.nl
+# Copyright (C) 2021 The Netherlands Institute for Sound and Vision https://beeldengeluid.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -56,10 +59,10 @@ if 'JAVA_BIN' in environ and environ['JAVA_BIN']:
     java = environ['JAVA_BIN'] + "/java"
 
 if system("%s -version 2>&1 | grep '1.8' > /dev/null" % java) != 0:
-    print "Java version should be java 8; You could specify a different java with JAVA_BIN"
+    print("Java version should be java 8; You could specify a different java with JAVA_BIN")
     exit(1)
 
-print java
+print(java)
 execv(
     java,
     [argv0] + XOptions + [

@@ -28,5 +28,8 @@ set -o errexit
 
 export LANG=en_US.UTF-8
 export PYTHONPATH=.:$PYTHONPATH
-python _integrationtest.py "$@"
+export WEIGHTLESS_COMPOSE_TEST="PYTHON"
+export PYTHONWARNINGS=default
+
+python3 _integrationtest.py "$@"
 

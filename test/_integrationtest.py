@@ -39,6 +39,11 @@ for path in glob(projectDir+'/deps.d/*'):                         #DO_NOT_DISTRI
     systemPath.insert(0, path)                                    #DO_NOT_DISTRIBUTE
 systemPath.insert(0, projectDir)                                  #DO_NOT_DISTRIBUTE
 
+
+from warnings import simplefilter, filterwarnings
+simplefilter('default')
+filterwarnings('ignore', message=r".*has no __module__ attribute.*", category=DeprecationWarning)
+
 from sys import argv
 
 from seecr.test.testrunner import TestRunner

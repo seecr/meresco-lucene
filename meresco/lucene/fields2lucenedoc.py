@@ -30,6 +30,7 @@
 
 from meresco.core import Observable
 from meresco.lucene import SORTED_PREFIX
+from itertools import chain
 
 from .fieldregistry import IDFIELD
 
@@ -76,7 +77,7 @@ class Fields2LuceneDoc(Observable):
     def _createFields(self, fieldValues, facet_fields=None):
         facet_fields = facet_fields or {}
         fields = []
-        for field, values in (fieldValues.items() + facet_fields.items()):
+        for field, values in chain(fieldValues.items(), facet_fields.items()):
             if self._fieldRegistry.isDrilldownField(field):
                 for value in values:
                     if hasattr(value, 'extend'):

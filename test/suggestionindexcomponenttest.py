@@ -186,9 +186,11 @@ Access-Control-Max-Age: 86400""", header)
             {"suggestion": "harry", "type": "uri:track", "creator": None, "score": 1.0},
         ])
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={"value": ["ha"], "concepts": "True", "minScore": ["0"], "filter": ["type=uri:track"]})).split(CRLF*2)
-        self.assertEqual('["ha", ["harry"], [["harry", "uri:track", null]]]', body)
+        self.assertEqual(["ha", ["harry"], [["harry", "uri:track", None]]], loads(body))
         self.assertEqual(1, len(self.post))
-        self.assertEqual({'data': '{"keySetName": null, "trigram": false, "limit": null, "filters": ["type=uri:track"], "value": "ha"}', 'path': '/suggest'}, self.post[0])
+        postdata = self.post[0]
+        self.assertEqual('/suggest', postdata['path'])
+        self.assertEqual({"keySetName": None, "trigram": False, "limit": None, "filters": ["type=uri:track"], "value": "ha"}, loads(postdata['data']))
 
     def testRegisterFilter(self):
         consume(self.sic.registerFilterKeySet("apikey-abc", 'an-open-bit-set'))
@@ -203,9 +205,11 @@ Access-Control-Max-Age: 86400""", header)
         ])
 
         header, body = asString(self.sic.handleRequest(path='/suggestion', arguments={"value": ["fi"], "apikey": ["apikey-abc"]})).split(CRLF*2)
-        self.assertEqual('["fi", ["fietsbel"]]', body)
+        self.assertEqual(["fi", ["fietsbel"]], loads(body))
         self.assertEqual(1, len(self.post))
-        self.assertEqual({'data': '{"keySetName": "apikey-abc", "trigram": false, "limit": null, "filters": [], "value": "fi"}', 'path': '/suggest'}, self.post[0])
+        postdata = self.post[0]
+        self.assertEqual('/suggest', postdata['path'])
+        self.assertEqual({"keySetName": "apikey-abc", "trigram": False, "limit": None, "filters": [], "value": "fi"}, loads(postdata['data']))
 
     def testIndexingState(self):
         self.response = dumps(dict(started=12345, count=12))

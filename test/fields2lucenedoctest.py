@@ -35,6 +35,8 @@ from weightless.core import consume
 from meresco.lucene.fieldregistry import FieldRegistry
 
 class Fields2LuceneDocTest(IntegrationTestCase):
+    maxDiff = None
+
     def testCreateDocument(self):
         fields = {
             'field1': ['value1'],
@@ -46,8 +48,22 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         }
         fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry())
         fields = fields2LuceneDoc._createFields(fields)
-
         self.assertEqual([
+                {
+                    "name": "__key__.field5",
+                    "type": "KeyField",
+                    "value": 12345
+                },
+                {
+                    "name": "__numeric__.field6",
+                    "type": "NumericField",
+                    "value": 12345
+                },
+                {
+                    "name": "field1",
+                    "type": "TextField",
+                    "value": "value1"
+                },
                 {
                     "name": "field2",
                     "type": "TextField",
@@ -59,32 +75,17 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                     "value": "value2.1"
                 },
                 {
-                    "name": "__key__.field5",
-                    "type": "KeyField",
-                    "value": 12345
-                },
-                {
-                    "name": "field1",
-                    "type": "TextField",
-                    "value": "value1"
-                },
-                {
                     "name": "sorted.field3",
                     "type": "StringField",
                     "value": "value3",
                     "sort": True,
                 },
                 {
-                    "name": "__numeric__.field6",
-                    "type": "NumericField",
-                    "value": 12345
-                },
-                {
                     "name": "untokenized.field4",
                     "type": "StringField",
                     "value": "value4"
-                }
-            ], fields)
+                },
+            ], sorted(fields, key=lambda d:(d['name'],d['value'])))
 
     def testCreateFacet(self):
         fields = {
@@ -104,7 +105,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                 DrilldownField('untokenized.field8', hierarchical=True),
             ])
         )
-        observer = CallTrace()
+        observer = callTraceObserver()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
         fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
@@ -122,12 +123,12 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         facetsFields = [f for f in fields if "path" in f]
         self.assertEqual(6, len(facetsFields))
         self.assertEqual([
-                ('untokenized.field8', ['grandparent', 'parent', 'child']),
-                ('untokenized.field8', ['parent2', 'child']),
-                ('untokenized.field6', ['value5/value6']),
                 ('untokenized.field4', ['value4']),
                 ('untokenized.field5', ['value5']),
                 ('untokenized.field5', ['value6']),
+                ('untokenized.field6', ['value5/value6']),
+                ('untokenized.field8', ['grandparent', 'parent', 'child']),
+                ('untokenized.field8', ['parent2', 'child']),
             ], [(f['name'], f['path']) for f in facetsFields])
 
     def testAddFacetField(self):
@@ -136,7 +137,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
                 DrilldownField('untokenized.field'),
             ])
         )
-        observer = CallTrace()
+        observer = callTraceObserver()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
         fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
@@ -151,7 +152,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc = Fields2LuceneDoc('tsname',
             fieldRegistry=FieldRegistry()
         )
-        observer = CallTrace()
+        observer = callTraceObserver()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
         fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
@@ -164,7 +165,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
 
     def testAddDocument(self):
         fields2LuceneDoc = Fields2LuceneDoc('tsname', fieldRegistry=FieldRegistry())
-        observer = CallTrace()
+        observer = callTraceObserver()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
         fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
@@ -178,7 +179,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields2LuceneDoc = Fields2LuceneDoc('tsname',
             fieldRegistry=FieldRegistry(),
             identifierRewrite=lambda identifier: "test:" + identifier)
-        observer = CallTrace()
+        observer = callTraceObserver()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
         fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
@@ -193,7 +194,7 @@ class Fields2LuceneDocTest(IntegrationTestCase):
             fields['keys'] = list(sorted(fields.keys()))
             return fields
         fields2LuceneDoc = Fields2LuceneDoc('tsname', rewriteFields=rewriteFields, fieldRegistry=FieldRegistry())
-        observer = CallTrace()
+        observer = callTraceObserver()
         fields2LuceneDoc.addObserver(observer)
         fields2LuceneDoc.ctx.tx = Transaction('tsname')
         fields2LuceneDoc.ctx.tx.locals['id'] = 'identifier'
@@ -204,3 +205,5 @@ class Fields2LuceneDocTest(IntegrationTestCase):
         fields = observer.calledMethods[0].kwargs['fields']
         self.assertEqual(set(['field1', 'field2', 'keys']), set([f['name'] for f in fields]))
         self.assertEqual(['field1', 'field2'], [f['value'] for f in fields if f['name'] == 'keys'])
+
+callTraceObserver = lambda: CallTrace(emptyGeneratorMethods=['addDocument'])

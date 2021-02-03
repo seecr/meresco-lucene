@@ -157,7 +157,7 @@ class MultiLuceneTest(SeecrTestCase):
     def testLuceneServerHostPortDynamic(self):
         multiLucene = MultiLucene(defaultCore='core1')
         def httprequest1_1Mock(**kwargs):
-            return parseResponse(HTTP_RESPONSE)
+            return list(parseResponse(HTTP_RESPONSE))
             yield
         observer = CallTrace(
             'observer',

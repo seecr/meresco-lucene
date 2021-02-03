@@ -85,7 +85,7 @@ class LuceneTest(SeecrTestCase):
         consume(self._lucene.addDocument(identifier='id1', fields=fields))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/update/?identifier=id1', self.post[0]['path'])
-        self.assertEqual('[{"type": "TextField", "name": "id", "value": "id1"}]', self.post[0]['data'])
+        self.assertEqual([{"type": "TextField", "name": "id", "value": "id1"}], loads(self.post[0]['data']))
 
     def testAddWithoutIdentifier(self):
         registry = FieldRegistry()
@@ -93,7 +93,7 @@ class LuceneTest(SeecrTestCase):
         consume(self._lucene.addDocument(fields=fields))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/update/?', self.post[0]['path'])
-        self.assertEqual('[{"type": "TextField", "name": "id", "value": "id1"}]', self.post[0]['data'])
+        self.assertEqual([{"type": "TextField", "name": "id", "value": "id1"}], loads(self.post[0]['data']))
 
     def testDelete(self):
         consume(self._lucene.delete(identifier='id1'))
@@ -106,7 +106,7 @@ class LuceneTest(SeecrTestCase):
         consume(self._lucene.delete(luceneQuery=query))
         self.assertEqual(1, len(self.post))
         self.assertEqual('/lucene/delete/', self.post[0]['path'])
-        self.assertEqual('{"query": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"}}', self.post[0]['data'])
+        self.assertEqual({"query": {"term": {"field": "field", "value": "value"}, "type": "TermQuery"}}, loads(self.post[0]['data']))
 
     def testExecuteQuery(self):
         self.response = JsonDict({
@@ -252,7 +252,7 @@ class LuceneTest(SeecrTestCase):
     def testLuceneServerHostPortDynamic(self):
         lucene = Lucene(name='lucene', settings=LuceneSettings(), readonly=True)
         def httprequest1_1Mock(**kwargs):
-            return parseResponse(HTTP_RESPONSE)
+            return list(parseResponse(HTTP_RESPONSE))
             yield
         observer = CallTrace(
             'observer',

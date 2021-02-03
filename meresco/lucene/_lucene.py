@@ -152,7 +152,7 @@ class Lucene(Observable):
         if path:
             args["dim"] = path[0]
             args["path"] = path[1:]
-        args = urlencode(args, doseq=True)
+        args = urlencode(sorted(args.items()), doseq=True)
         fieldnames = (yield self._connect().send(path='/drilldownFieldnames/?{}'.format(args)))
         return LuceneResponse(total=len(fieldnames), hits=fieldnames)
         yield

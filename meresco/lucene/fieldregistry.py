@@ -93,30 +93,12 @@ class FieldRegistry(object):
         return not self.isDrilldownField(fieldname) or self.isTermVectorField(fieldname)
 
     def rangeQueryAndType(self, fieldname):
-        if not self.isNumeric(fieldname):
-            return "String", str
         definition = self._getFieldDefinition(fieldname)
-        query = "Long"
-        pythonType = definition.pythonType
-        if pythonType == int:
-            query = "Int"
-        elif pythonType == float:
-            query = "Double"
-        elif pythonType == int:
-            query = "Long"
-        return query, definition.pythonType
+        return definition.queryType, definition.pythonType
 
     def sortFieldType(self, fieldname):
-        if not self.isNumeric(fieldname):
-            return "String"
         definition = self._getFieldDefinition(fieldname)
-        pythonType = definition.pythonType
-        if pythonType == int:
-            return "Int"
-        elif pythonType == float:
-            return "Double"
-        elif pythonType == int:
-            return "Long"
+        return definition.queryType
 
     def defaultMissingValueForSort(self, fieldname, sortDescending):
         if fieldname == 'score':
@@ -144,9 +126,10 @@ class FieldRegistry(object):
 # These names should be the same in the meresco-lucene-server code.
 
 class _FieldDefinition(object):
-    def __init__(self, type, pythonType, isUntokenized, phraseQueryPossible, stored=False, missingValuesForSort=(None, None)):
+    def __init__(self, type, pythonType, isUntokenized, phraseQueryPossible, queryType="String", stored=False, missingValuesForSort=(None, None)):
         self.type = type
         self.pythonType = pythonType
+        self.queryType = queryType
         self._transformValue = (lambda x:x) if pythonType is None else (lambda x:pythonType(x))
         self.phraseQueryPossible = phraseQueryPossible
         self.isUntokenized = isUntokenized
@@ -193,33 +176,39 @@ NO_TERMS_FREQUENCY_FIELD = _FieldDefinition("NoTermsFrequencyField",
     missingValuesForSort=('STRING_LAST', 'STRING_FIRST'))
 INTFIELD = _FieldDefinition("IntField",
     pythonType=int,
+    queryType="Int",
     isUntokenized=False,
     phraseQueryPossible=False,
     missingValuesForSort=(JAVA_MAX_INT, JAVA_MIN_INT))
 INTFIELD_STORED = INTFIELD.clone(stored=True)
 INTPOINT = _FieldDefinition("IntPoint",
     pythonType=int,
+    queryType="Int",
     isUntokenized=False,
     phraseQueryPossible=False,
     missingValuesForSort=(JAVA_MAX_INT, JAVA_MIN_INT))
 LONGFIELD = _FieldDefinition("LongField",
     pythonType=int,
+    queryType="Long",
     isUntokenized=False,
     phraseQueryPossible=False,
     missingValuesForSort=(JAVA_MAX_LONG, JAVA_MIN_LONG))
 LONGFIELD_STORED = LONGFIELD.clone(stored=True)
 LONGPOINT = _FieldDefinition("LongPoint",
     pythonType=int,
+    queryType="Long",
     isUntokenized=False,
     phraseQueryPossible=False,
     missingValuesForSort=(JAVA_MAX_LONG, JAVA_MIN_LONG))
 DOUBLEFIELD = _FieldDefinition("DoubleField",
     pythonType=float,
+    queryType="Double",
     isUntokenized=False,
     phraseQueryPossible=False)
 DOUBLEFIELD_STORED = DOUBLEFIELD.clone(stored=True)
 DOUBLEPOINT = _FieldDefinition("DoublePoint",
     pythonType=float,
+    queryType="Double",
     isUntokenized=False,
     phraseQueryPossible=False)
 NUMERICFIELD = _FieldDefinition("NumericField",

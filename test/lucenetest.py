@@ -37,7 +37,7 @@ from weightless.core import consume, retval
 from cqlparser import cqlToExpression
 from simplejson import loads
 
-from .lucenesettingstest import DEFAULTS
+from lucenesettingstest import DEFAULTS
 
 
 class LuceneTest(SeecrTestCase):

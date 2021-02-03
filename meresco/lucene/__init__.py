@@ -29,13 +29,15 @@
 ## end license ##
 
 from os.path import dirname, abspath, join, isfile                               #DO_NOT_DISTRIBUTE
+from glob import glob                                                            #DO_NOT_DISTRIBUTE
 from os import stat, system, walk                                                #DO_NOT_DISTRIBUTE
 from sys import exit, path as sysPath                                            #DO_NOT_DISTRIBUTE
 from itertools import chain                                                      #DO_NOT_DISTRIBUTE
 mydir = dirname(abspath(__file__))                                               #DO_NOT_DISTRIBUTE
 srcDir = join(dirname(dirname(mydir)), 'src_pylucene')                           #DO_NOT_DISTRIBUTE
 libDir = join(dirname(dirname(mydir)), 'lib')                                    #DO_NOT_DISTRIBUTE
-sofile = join(libDir, 'meresco_lucene', '_meresco_lucene.so')                    #DO_NOT_DISTRIBUTE
+sofile = glob(join(libDir, 'meresco_lucene', '_meresco_lucene.*.so'))            #DO_NOT_DISTRIBUTE
+sofile = sofile[0] if sofile else ""                                             #DO_NOT_DISTRIBUTE
 merescoLuceneFiles = chain(*[[join(d,f) for f in fs if f.endswith(".java")]      #DO_NOT_DISTRIBUTE
                         for d, _, fs in walk(join(srcDir, 'org'))])              #DO_NOT_DISTRIBUTE
 lastMtime = max(stat(f).st_mtime for f in merescoLuceneFiles)                    #DO_NOT_DISTRIBUTE

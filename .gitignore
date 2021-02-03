@@ -5,3 +5,4 @@ meresco-lucene.jar
 /ecl-bin/
 .classpath
 .project
+deps.d

@@ -32,30 +32,28 @@ from seecrdeps import includeParentAndDeps       #DO_NOT_DISTRIBUTE
 includeParentAndDeps(__file__)                   #DO_NOT_DISTRIBUTE
 
 import unittest
-from sys import version
-if version >= '2.7':
-    from warnings import simplefilter
-    simplefilter('default')
+from warnings import simplefilter, filterwarnings
+simplefilter('default')
+filterwarnings('ignore', message=r".*has no __module__ attribute.*", category=DeprecationWarning)
 
+from composedquerytest import ComposedQueryTest
+from conversiontest import ConversionTest
+from converttocomposedquerytest import ConvertToComposedQueryTest
+from extractfilterqueriestest import ExtractFilterQueriesTest
+from fieldregistrytest import FieldRegistryTest
+from fields2lucenedoctest import Fields2LuceneDocTest
+from fieldslisttolucenedocumenttest import FieldsListToLuceneDocumentTest
+from lucenequerycomposertest import LuceneQueryComposerTest
+from luceneremotetest import LuceneRemoteTest
+from luceneresponsetest import LuceneResponseTest
+from lucenesettingstest import LuceneSettingsTest
+from lucenetest import LuceneTest
+from adaptertolucenequerytest import AdapterToLuceneQueryTest
+from multilucenetest import MultiLuceneTest
+from queryexpressiontolucenequerydicttest import QueryExpressionToLuceneQueryDictTest
+from suggestionindexcomponenttest import SuggestionIndexComponentTest
 
-from .composedquerytest import ComposedQueryTest
-from .conversiontest import ConversionTest
-from .converttocomposedquerytest import ConvertToComposedQueryTest
-from .extractfilterqueriestest import ExtractFilterQueriesTest
-from .fieldregistrytest import FieldRegistryTest
-from .fields2lucenedoctest import Fields2LuceneDocTest
-from .fieldslisttolucenedocumenttest import FieldsListToLuceneDocumentTest
-from .lucenequerycomposertest import LuceneQueryComposerTest
-from .luceneremotetest import LuceneRemoteTest
-from .luceneresponsetest import LuceneResponseTest
-from .lucenesettingstest import LuceneSettingsTest
-from .lucenetest import LuceneTest
-from .adaptertolucenequerytest import AdapterToLuceneQueryTest
-from .multilucenetest import MultiLuceneTest
-from .queryexpressiontolucenequerydicttest import QueryExpressionToLuceneQueryDictTest
-from .suggestionindexcomponenttest import SuggestionIndexComponentTest
-
-from .pylucene.lucenekeyvaluestoretest import LuceneKeyValueStoreTest
+from pylucene.lucenekeyvaluestoretest import LuceneKeyValueStoreTest
 
 if __name__ == '__main__':
     unittest.main()

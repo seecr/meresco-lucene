@@ -42,7 +42,7 @@ fi
 
 RUNJAVATESTS="False"
 RUNJAVATESTS="True"   #DO_NOT_DISTRIBUTE
-if [ "${RUNJAVATESTS}" == "False" ]; then
+if [ "${RUNJAVATESTS}" == "False" -o "${SKIP_JAVA_TEST}" == "True" ]; then
     exit 0
 fi
 

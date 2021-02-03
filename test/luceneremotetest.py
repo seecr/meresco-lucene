@@ -35,8 +35,7 @@ from meresco.lucene.hit import Hit
 from meresco.core import Observable
 from seecr.test import SeecrTestCase, CallTrace
 from cqlparser import parseString
-from weightless.core import compose
-from seecr.utils.generatorutils import returnValueFromGenerator
+from weightless.core import compose, retval
 from simplejson import loads, dumps
 from meresco.lucene.remote._conversion import Conversion
 
@@ -62,7 +61,7 @@ class LuceneRemoteTest(SeecrTestCase):
             )
         cq.setCoreQuery(core='coreB', query=parseString('query=test'))
         cq.addMatch(dict(core='coreA', uniqueKey='keyA'), dict(core='coreB', key='keyB'))
-        result = returnValueFromGenerator(observable.any.executeComposedQuery(query=cq))
+        result = retval(observable.any.executeComposedQuery(query=cq))
         self.assertEqual(5, result.total)
         self.assertEqual([Hit("1"), Hit("2"), Hit("3", duplicateCount=2), Hit("4"), Hit("5")], result.hits)
 
@@ -89,7 +88,7 @@ class LuceneRemoteTest(SeecrTestCase):
         observable.addObserver(remote)
         remote._httppost = http.httppost
 
-        result = returnValueFromGenerator(observable.any.executeQuery(
+        result = retval(observable.any.executeQuery(
                 cqlAbstractSyntaxTree=parseString('query AND  field=value'),
                 start=0,
                 stop=10,
@@ -128,7 +127,7 @@ class LuceneRemoteTest(SeecrTestCase):
         observable = Observable()
         observable.addObserver(remote)
         observable.addObserver(Other())
-        result = returnValueFromGenerator(observable.any.aMessage())
+        result = retval(observable.any.aMessage())
         self.assertEqual('Thanks', result)
 
     def testRemotePrefixSearch(self):
@@ -142,7 +141,7 @@ class LuceneRemoteTest(SeecrTestCase):
         observable.addObserver(remote)
         remote._httppost = http.httppost
 
-        result = returnValueFromGenerator(observable.any.prefixSearch(prefix='aap', fieldname='field', limit=10))
+        result = retval(observable.any.prefixSearch(prefix='aap', fieldname='field', limit=10))
         self.assertEqual(5, result.total)
         self.assertEqual(['httppost'], http.calledMethodNames())
         m = http.calledMethods[0]
@@ -167,7 +166,7 @@ class LuceneRemoteTest(SeecrTestCase):
         observable.addObserver(remote)
         remote._httppost = http.httppost
 
-        result = returnValueFromGenerator(observable.any.fieldnames())
+        result = retval(observable.any.fieldnames())
         self.assertEqual(2, result.total)
         self.assertEqual(['httppost'], http.calledMethodNames())
         m = http.calledMethods[0]

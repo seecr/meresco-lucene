@@ -44,7 +44,7 @@ from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 
-from .lucenetest import HTTP_RESPONSE
+from lucenetest import HTTP_RESPONSE
 
 
 class MultiLuceneTest(SeecrTestCase):

@@ -123,7 +123,7 @@ class SuggestionIndexComponent(Observable):
                 scores = dict(distanceScore=distanceScore, score=score, sortScore=sortScore, matchScore=matchScore)
                 if sortScore > minScore:
                     suggestions.append((suggestion, recordType, creator, scores))
-            suggestions = sorted(suggestions, reverse=True, key=lambda (suggestion, recordType, creator, scores): scores['sortScore'])
+            suggestions = sorted(suggestions, reverse=True, key=lambda suggestion_recordType_creator_scores: suggestion_recordType_creator_scores[3]['sortScore'])
             if debug:
                 concepts = [(s, t, c) for s, t, c, _ in suggestions if t]
                 yield JsonDict(dict(value=value, suggestions=suggestions, concepts=concepts, time=tTotal)).dumps()

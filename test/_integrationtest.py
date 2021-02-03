@@ -42,7 +42,7 @@ systemPath.insert(0, projectDir)                                  #DO_NOT_DISTRI
 from sys import argv
 
 from seecr.test.testrunner import TestRunner
-from ._integration.integrationstate import IntegrationState
+from _integration.integrationstate import IntegrationState
 
 flags = ['--fast']
 

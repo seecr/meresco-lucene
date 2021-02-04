@@ -27,7 +27,7 @@
 #
 ## end license ##
 
-from io import StringIO
+from io import BytesIO
 from struct import pack
 
 from simplejson import loads
@@ -45,18 +45,18 @@ class SuggestionServerTest(IntegrationTestCase):
             "values": ["harry"], "types": ["uri:book"], "creators": ["rowling"]
         }"""
         try:
-            header, body = postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
-            self.assertTrue("200 OK" in header.upper(), header + body)
+            status, header, body = postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
+            self.assertEqual("200", status)
 
-            header, body = postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
+            status, header, body = postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
 
-            header, body = getRequest(self.suggestionServerPort, '/totalRecords', parse=False)
-            self.assertTrue("200 OK" in header.upper(), header + body)
-            self.assertEqual("1", body)
+            status, header, body = getRequest(self.suggestionServerPort, '/totalRecords', parse=False)
+            self.assertEqual("200", status)
+            self.assertEqual(b"1", body)
 
-            header, body = getRequest(self.suggestionServerPort, '/totalSuggestions', parse=False)
-            self.assertTrue("200 OK" in header.upper(), header + body)
-            self.assertEqual("0", body)
+            status, header, body = getRequest(self.suggestionServerPort, '/totalSuggestions', parse=False)
+            self.assertEqual("200", status)
+            self.assertEqual(b"0", body)
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
             postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
@@ -67,23 +67,23 @@ class SuggestionServerTest(IntegrationTestCase):
             "values": ["harry"], "types": [null], "creators": [null]
         }"""
         try:
-            header, body = postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
-            self.assertTrue("200 OK" in header.upper(), header + body)
+            status, header, body = postRequest(self.suggestionServerPort, '/add?identifier=id1', data=data, parse=False)
+            self.assertEqual("200", status)
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
             postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
 
     def testDelete(self):
-        header, body = postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
-        self.assertTrue("200 OK" in header.upper(), header + body)
+        status, header, body = postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
+        self.assertEqual("200", status)
 
     def testCreate(self):
-        header, body = postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex?wait=True', data=None, parse=False)
-        self.assertTrue("200 OK" in header.upper(), header + body)
+        status, header, body = postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex?wait=True', data=None, parse=False)
+        self.assertEqual("200", status)
 
     def testCommit(self):
-        header, body = postRequest(self.suggestionServerPort, '/commit', parse=False)
-        self.assertTrue("200 OK" in header.upper(), header)
+        status, header, body = postRequest(self.suggestionServerPort, '/commit', parse=False)
+        self.assertEqual("200", status)
 
     def testSuggest(self):
         data = """{
@@ -92,10 +92,10 @@ class SuggestionServerTest(IntegrationTestCase):
             "filters": [],
             "keySetName": null
         }"""
-        header, body = postRequest(self.suggestionServerPort, '/suggest', data=data, parse=False)
-        self.assertTrue("200 OK" in header.upper(), header + body)
-        self.assertTrue("Content-Type: application/json" in header, header)
-        self.assertEqual("[]", body)
+        status, header, body = postRequest(self.suggestionServerPort, '/suggest', data=data)
+        self.assertEqual("200", status)
+        self.assertEqual("application/json", header['Content-Type'].split(';')[0])
+        self.assertEqual([], body)
 
     def testAddCreateAndSuggest(self):
         data = """{
@@ -111,8 +111,8 @@ class SuggestionServerTest(IntegrationTestCase):
                 "filters": [],
                 "keySetName": null
             }"""
-            header, body = postRequest(self.suggestionServerPort, '/suggest', data=data, parse=False)
-            self.assertTrue("200 OK" in header.upper(), header + body)
+            status, header, body = postRequest(self.suggestionServerPort, '/suggest', data=data, parse=False)
+            self.assertEqual("200", status)
             self.assertEqual([
                 {"suggestion": "harry", "type": "uri:book", "creator": 'rowling', "score": 0.2615291476249695},
             ], loads(body))
@@ -134,10 +134,10 @@ class SuggestionServerTest(IntegrationTestCase):
         postRequest(self.suggestionServerPort, '/add?identifier=id2', data=data, parse=False)
         try:
             postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex?wait=True', data=None, parse=False)
-            header, body = getRequest(port=self.httpPort, path='/suggestion', arguments={'value': 'ha'}, parse=False)
+            status, header, body = getRequest(port=self.httpPort, path='/suggestion', arguments={'value': 'ha'}, parse=False)
             self.assertEqual(["ha", ["harry", "hallo"]], loads(body))
 
-            header, body = getRequest(port=self.httpPort, path='/suggestion', arguments={'value': 'ha', "filter": "type=uri:book"}, parse=False)
+            status, header, body = getRequest(port=self.httpPort, path='/suggestion', arguments={'value': 'ha', "filter": "type=uri:book"}, parse=False)
             self.assertEqual(["ha", ["harry"]], loads(body))
         finally:
             postRequest(self.suggestionServerPort, '/delete?identifier=id1', data=None, parse=False)
@@ -145,32 +145,29 @@ class SuggestionServerTest(IntegrationTestCase):
             postRequest(self.suggestionServerPort, '/commit', data=None, parse=False)
 
     def testIndexingState(self):
-        header, body = getRequest(self.suggestionServerPort, '/indexingState', parse=False)
-        self.assertTrue("200 OK" in header.upper(), header + body)
-        self.assertTrue("Content-Type: application/json" in header, header)
-        self.assertEqual("{}", body)
+        status, header, body = getRequest(self.suggestionServerPort, '/indexingState')
+        self.assertEqual("200", status)
+        self.assertEqual({}, body)
 
         postRequest(self.suggestionServerPort, '/createSuggestionNGramIndex', data=None, parse=False)
-        header, body = getRequest(self.suggestionServerPort, '/indexingState', parse=False)
-        self.assertTrue("200 OK" in header.upper(), header + body)
-        self.assertTrue("Content-Type: application/json" in header, header)
-        self.assertNotEqual("{}", body)
-        self.assertTrue("started" in loads(body), body)
-        self.assertTrue("count" in loads(body), body)
+        status, header, body = getRequest(self.suggestionServerPort, '/indexingState')
+        self.assertEqual("200", status)
+        self.assertTrue("started" in body, body)
+        self.assertTrue("count" in body, body)
 
     def testRegisterKeySet(self):
         keySet = FixedBitSet(3)
         keySet.set(2)
 
-        header, body = postRequest(self.suggestionServerPort, '/registerFilterKeySet?name=test', data=fixedBitSetAsBytes(keySet), parse=False)
-        self.assertTrue("200 OK" in header.upper(), header + body)
+        status, header, body = postRequest(self.suggestionServerPort, '/registerFilterKeySet?name=test', data=fixedBitSetAsBytes(keySet), parse=False)
+        self.assertEqual("200", status)
 
 
 def fixedBitSetAsBytes(bitSet):
-    s = StringIO()
-    s.write(pack('>i', bitSet.length()))
+    buf = BytesIO()
+    buf.write(pack('>i', bitSet.length()))
     bits = bitSet.getBits()
-    s.write(pack('>i', len(bits)))
+    buf.write(pack('>i', len(bits)))
     for i in range(0, len(bits)):
-        s.write(pack('>q', bits[i]))
-    return s.getvalue()
+        buf.write(pack('>q', bits[i]))
+    return buf.getvalue()

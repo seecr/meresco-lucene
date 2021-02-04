@@ -61,7 +61,7 @@ class LuceneRemote(Observable):
         headers={'Content-Type': 'application/json', 'Content-Length': len(body)}
         host, port = self._luceneRemoteServer() # WARNING: can return a different server each time.
         response = yield self._httppost(host=host, port=port, request=self._path, body=body, headers=headers)
-        header, responseBody = response.split("\r\n\r\n", 1)
+        header, responseBody = response.split(b"\r\n\r\n", 1)
         self._verify200(header, response)
         return LuceneResponse.fromJson(responseBody)
 
@@ -69,8 +69,8 @@ class LuceneRemote(Observable):
         return httppost(**kwargs)
 
     def _verify200(self, header, response):
-        if not header.startswith('HTTP/1.0 200'):
-            raise IOError("Expected status '200' from LuceneRemoteService, but got: " + response)
+        if not header.startswith(b'HTTP/1.0 200'):
+            raise IOError("Expected status '200' from LuceneRemoteService, but got: " + str(response))
 
     _ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames', 'drilldownFieldnames', 'executeComposedQuery', 'similarDocuments']
 

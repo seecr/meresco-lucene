@@ -31,6 +31,10 @@
 from seecrdeps import includeParentAndDeps       #DO_NOT_DISTRIBUTE
 includeParentAndDeps(__file__, scanForDeps=True) #DO_NOT_DISTRIBUTE
 
+from warnings import simplefilter, filterwarnings
+simplefilter('default')
+filterwarnings('ignore', message=r".*has no __module__ attribute.*", category=DeprecationWarning)
+
 from os.path import dirname, abspath, join, realpath
 from sys import stdout
 
@@ -38,8 +42,8 @@ from weightless.http import HttpRequest1_1, SocketPool
 from weightless.io import Reactor
 from weightless.core import compose, be
 from meresco.core import Observable, TransactionScope, Transparent
-from meresco.core.processtools import setSignalHandlers
-from meresco.components import Xml2Fields, Venturi, XmlPrintLxml, FilterField, RenameField, FilterMessages, TransformFieldValue, ParseArguments
+from meresco.core.processtools import setSignalHandlers, registerShutdownHandler
+from meresco.components import Xml2Fields, Venturi, XmlPrintLxml, FilterField, RenameField, FilterMessages, TransformFieldValue
 from meresco.components.http import StringServer, ObservableHttpServer, BasicHttpHandler, ApacheLogger, PathFilter, PathRename, FileServer
 from meresco.components.http.utils import ContentTypePlainText
 from meresco.components.sru import SruRecordUpdate, SruParser, SruHandler, SruDuplicateCount
@@ -311,20 +315,19 @@ def startServer(stateDir, **kwargs):
 
     server = be(dna)
     list(compose(server.once.observer_init()))
+    registerShutdownHandler(statePath=databasePath, server=server, reactor=reactor, shutdownMustSucceed=False)
 
     print("Ready to rumble")
     stdout.flush()
     reactor.loop()
 
 if __name__ == '__main__':
-    parser = ParseArguments()
-    parser.addOption('', '--port',
-        mandatory=True,
-        type='int',
-        help="Port at which webpages are served.")
-    parser.addOption('', '--stateDir', mandatory=True, type='str', help='Directory for state')
-    parser.addOption('', '--serverPort', mandatory=True, type='int', help='Lucene server port')
-    parser.addOption('', '--autocompletePort', mandatory=True, type='int', help='Autocomplete server port')
-    options, arguments = parser.parse()
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument('--port', type=int, required=True, help="Port at which webpages are served.")
+    parser.add_argument('--stateDir', required=True, help='Directory for state')
+    parser.add_argument('--serverPort', required=True, type=int, help='Lucene server port')
+    parser.add_argument('--autocompletePort', required=True, type=int, help='Autocomplete server port')
+    args = parser.parse_args()
 
-    startServer(**vars(options))
+    startServer(**vars(args))

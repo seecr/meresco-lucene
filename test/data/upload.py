@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ## begin license ##
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
@@ -28,13 +28,16 @@
 #
 ## end license ##
 
+from seecrdeps import includeParentAndDeps       #DO_NOT_DISTRIBUTE
+includeParentAndDeps(__file__, scanForDeps=True) #DO_NOT_DISTRIBUTE
+
 from os.path import dirname, abspath, join, basename
 from lxml.etree import XML, tostring
 from os import listdir, getpid
 from sys import argv, exit
 from seecr.test.utils import postRequest
-from optparse import OptionParser
 from time import time
+from seecr.utils import read_from_file
 
 mypath = dirname(abspath(__file__))
 
@@ -53,30 +56,26 @@ def uploadUpdateRequests(datadir, uploadPort):
         requests = (join(coreDir, r) for r in sorted(listdir(coreDir)) if r.endswith('.updateRequest'))
         for filename in requests:
             print('http://localhost:%s%s' % (uploadPort, uploadPath), '<-', basename(filename)[:-len('.updateRequest')])
-            updateRequest = open(filename).read()
+            updateRequest = read_from_file(filename)
             _uploadUpdateRequest(updateRequest, uploadPath, uploadPort)
 
 def _uploadUpdateRequest(updateRequest, uploadPath, uploadPort):
     XML(updateRequest)
-    header, body = postRequest(uploadPort, uploadPath, updateRequest)
-    if '200 OK' not in header:
-        print('No 200 OK response, but:\n', header)
+    status, header, body = postRequest(uploadPort, uploadPath, updateRequest)
+    if status != '200':
+        print('No 200 OK response, but:\n', status, header, body)
         exit(123)
-    if "srw:diagnostics" in tostring(body):
-        print(tostring(body))
+    if "srw:diagnostics" in tostring(body, encoding=str):
+        print(tostring(body, encoding=str))
         exit(1234)
 
 if __name__ == '__main__':
-    parser = OptionParser()
-    parser.add_option("-p", "--port", type=int)
-    parser.add_option("", "--pid", action="store_true", default=False)
-    options, arguments = parser.parse_args()
-    if options.port is None:
-        print("""Usage: %s --port <portnumber> [--start <number>]
-        This will upload all requests in this directory to the given server on localhost.
-        If used with random will create <number> new random records starting with start number (default 1)
-        """ % argv[0])
-        exit(1)
-    if options.pid:
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description="""This will upload all requests in this directory to the given server on localhost.
+        If used with random will create <number> new random records starting with start number (default 1)""")
+    parser.add_argument("-p", "--port", type=int, required=True)
+    parser.add_argument("--pid", action="store_true", default=False)
+    args = parser.parse_args()
+    if args.pid:
         print('>> pid :', getpid())
-    main(**vars(options))
+    main(**vars(args))

@@ -71,6 +71,7 @@ class IntegrationState(SeecrIntegrationState):
     def _createDatabase(self):
         if self.fastMode:
             print("Reusing database in", self.integrationTempdir)
+            # postRequest(self.luceneServerPort, "/default/settings/", data=JsonDict(commitCount=1).dumps(), parse=False)
             return
         start = time()
         print("Creating database in", self.integrationTempdir)
@@ -88,7 +89,7 @@ class IntegrationState(SeecrIntegrationState):
         self._startServer(
                 'suggestion-server',
                 self.binPath('start-suggestion-server'),
-                'http://localhost:{}/info'.format(self.suggestionServerPort),
+                'http://localhost:{}/indexingState'.format(self.suggestionServerPort),
                 port=self.suggestionServerPort,
                 stateDir=join(self.integrationTempdir, 'suggestion'),
                 env=environment(JAVA_BIN=self.JAVA_BIN, LANG="en_US.UTF-8")
@@ -98,7 +99,7 @@ class IntegrationState(SeecrIntegrationState):
         self._startServer(
                 'lucene-server',
                 self.binPath('start-lucene-server'),
-                'http://localhost:{}/info'.format(self.luceneServerPort),
+                'http://localhost:{}/empty-core/settings/'.format(self.luceneServerPort),
                 port=self.luceneServerPort,
                 stateDir=join(self.integrationTempdir, 'lucene-server'),
                 core=["main", "main2", "empty-core", "default"],
@@ -108,8 +109,8 @@ class IntegrationState(SeecrIntegrationState):
     def startExampleServer(self):
         self._startServer(
                 'meresco-lucene',
-                [self.binPath('python2.7'), 'server.py'],
-                'http://localhost:%s/' % self.httpPort,
+                [self.binPath('python3'), 'server.py'],
+                'http://localhost:%s/info/name' % self.httpPort,
                 cwd=join(mydir, 'helper'),
                 port=self.httpPort,
                 serverPort=self.luceneServerPort,

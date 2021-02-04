@@ -28,7 +28,7 @@
 #
 ## end license ##
 
-from lxml.etree import HTML
+from lxml.etree import HTML, tostring
 
 from seecr.test import IntegrationTestCase
 from seecr.test.utils import getRequest
@@ -52,24 +52,24 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         self.assertRaises(IOError, lambda: remote.executeQuery(cqlToExpression('*'), core='doesnotexist'))
 
     def testRemoteInfo(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info/index', parse=False)
+        status, header, body = getRequest(port=self.httpPort, path='/remote/info/index')
+        body = tostring(body, encoding=str)
         self.assertTrue('main' in body, body)
         self.assertTrue('empty-core' in body, body)
 
     def testRemoteInfoStatic(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info/static/lucene-info.css', parse=False)
-        self.assertTrue('200' in header, header)
+        status, header, body = getRequest(port=self.httpPort, path='/remote/info/static/lucene-info.css')
+        self.assertEqual('200', status)
 
     def testRemoteInfoRedirect(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info', parse=False)
-        headerLines = header.split('\r\n')
-        self.assertTrue('Location: /remote/info/index' in headerLines, header)
+        status, header, body = getRequest(port=self.httpPort, path='/remote/info')
+        self.assertEqual('/remote/info/index', header['Location'])
 
     def testRemoteInfoCore(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info/core', arguments=dict(name='main'), parse=False)
-        self.assertFalse('Traceback' in body, body)  # only tested for MultiLucene situation for now!
-        bodyLxml = HTML(body)
-        lists = bodyLxml.xpath('//ul')
+        status, header, body = getRequest(port=self.httpPort, path='/remote/info/core', arguments=dict(name='main'))
+        text = tostring(body, encoding=str)
+        self.assertFalse('Traceback' in text, text)
+        lists = body.xpath('//ul')
         fieldList = lists[0]
         fields = fieldList.xpath('li/a/text()')
         self.assertEqual(19, len(fields))
@@ -102,16 +102,18 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         # TODO: Show sorted fields
 
     def testRemoteInfoField(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__id__', name='main'), parse=False)
+        status, header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__id__', name='main'), parse=False)
+        body = body.decode()
         self.assertFalse('Traceback' in body, body)
         self.assertEqual(50, body.count(': 1'), body)
 
     def testRemoteInfoFieldWithPrefix(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='field2', name='main', prefix='value8'), parse=False)
+        status, header, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='field2', name='main', prefix='value8'), parse=False)
+        body = body.decode()
         self.assertTrue("<pre>0 value8: 10\n</pre>" in body, body)
 
     def testRemoteInfoDrilldownValues(self):
-        header, body = getRequest(port=self.httpPort, path='/remote/info/drilldownvalues', arguments=dict(path='untokenized.field2', name='main'), parse=False)
-        self.assertFalse('Traceback' in body, body)
-        bodyLxml = HTML(body)
-        self.assertEqual(set(['value1', 'value0', 'value9', 'value8', 'value7', 'value6', 'value5', 'value4', 'value3', 'othervalue2', 'value2']), set(bodyLxml.xpath('//ul/li/a/text()')))
+        status, header, body = getRequest(port=self.httpPort, path='/remote/info/drilldownvalues', arguments=dict(path='untokenized.field2', name='main'))
+        self.assertFalse('Traceback' in tostring(body, encoding=str), tostring(body, encoding=str))
+        self.assertEqual(set(['value1', 'value0', 'value9', 'value8', 'value7', 'value6', 'value5', 'value4', 'value3', 'othervalue2', 'value2']), set(body.xpath('//ul/li/a/text()')))
+

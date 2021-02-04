@@ -32,6 +32,7 @@ from .remote import LuceneRemote
 from meresco.core import Observable
 from socket import socket
 from weightless.core import retval
+from io import BytesIO
 
 class SynchronousRemote(object):
     def __init__(self, **kwargs):
@@ -69,7 +70,7 @@ class SynchronousRemote(object):
             ]
             lines += ["%s: %s" % (k, v) for k, v in headers.items()]
             lines += ['', '']
-            sendBuffer = ('\r\n'.join(lines) % locals()) + body
+            sendBuffer = (('\r\n'.join(lines) % locals()) + body).encode()
             totalBytesSent = 0
             bytesSent = 0
             while totalBytesSent != len(sendBuffer):
@@ -87,12 +88,12 @@ def _socket(host, port, timeOutInSeconds=None):
     return sok
 
 def receiveFromSocket(sok):
-    response = ''
-    part = sok.recv(1024)
-    response += part
-    while part != None:
+    with BytesIO() as response:
         part = sok.recv(1024)
-        if not part:
-            break
-        response += part
-    return response
+        response.write(part)
+        while part != None:
+            part = sok.recv(1024)
+            if not part:
+                break
+            response.write(part)
+        return response.getvalue()

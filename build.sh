@@ -44,7 +44,7 @@ CP="$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':')"
 
 JAVA_HOME=
 test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-test -f /etc/redhat_version && JAVA_HOME=/usr/lib/jvm/java
+test -f /etc/redhat-release && JAVA_HOME=/usr/lib/jvm/java
 if [ -z "${JAVA_HOME}" ]; then
     echo "Unable to determine JAVA_HOME"
     exit 0

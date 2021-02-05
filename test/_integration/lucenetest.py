@@ -132,7 +132,7 @@ class LuceneTest(IntegrationTestCase):
             set([(i.attrib['value'], i.attrib['count']) for i in ddItems]))
 
     def testAutocomplete(self):
-        status, header, body = getRequest(port=self.httpPort, path='/autocomplete', arguments={'field': 'field2', 'prefix': 'va'})
+        statusAndHeaders, body = getRequest(port=self.httpPort, path='/autocomplete', arguments={'field': 'field2', 'prefix': 'va'})
         prefix, completions = body
         self.assertEqual("va", prefix)
 
@@ -261,7 +261,7 @@ class LuceneTest(IntegrationTestCase):
         if facet is not None:
             arguments["x-term-drilldown"] = facet
         arguments['x-drilldown-format'] = drilldownFormat
-        status, header, body = getRequest(port=self.httpPort, path=path, arguments=arguments )
+        statusAndHeaders, body = getRequest(port=self.httpPort, path=path, arguments=arguments )
         return body
 
     def numberOfRecords(self, query, path='/sru'):

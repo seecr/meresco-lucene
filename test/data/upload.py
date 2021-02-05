@@ -61,8 +61,8 @@ def uploadUpdateRequests(datadir, uploadPort):
 
 def _uploadUpdateRequest(updateRequest, uploadPath, uploadPort):
     XML(updateRequest)
-    status, header, body = postRequest(uploadPort, uploadPath, updateRequest)
-    if status != '200':
+    statusAndHeaders, body = postRequest(uploadPort, uploadPath, updateRequest)
+    if statusAndHeaders['StatusCode'] != '200':
         print('No 200 OK response, but:\n', status, header, body)
         exit(123)
     if "srw:diagnostics" in tostring(body, encoding=str):

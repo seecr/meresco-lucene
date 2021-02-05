@@ -43,8 +43,7 @@ from os.path import dirname, abspath                         #DO_NOT_DISTRIBUTE
 projectdir = dirname(dirname(abspath(__file__)))             #DO_NOT_DISTRIBUTE
 status = system("cd %s; ./build.sh"  % projectdir)           #DO_NOT_DISTRIBUTE
 if status > 0:                                               #DO_NOT_DISTRIBUTE
-    import sys                                               #DO_NOT_DISTRIBUTE
-    sys.exit(status)                                         #DO_NOT_DISTRIBUTE
+    exit(status)                                             #DO_NOT_DISTRIBUTE
 MY_JARS = glob("%s/jars/*.jar" % projectdir) + glob("%s/*.jar" % projectdir)  #DO_NOT_DISTRIBUTE
 
 CP = ':'.join(MY_JARS + LUCENE_JARS)

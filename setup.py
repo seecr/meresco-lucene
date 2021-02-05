@@ -58,6 +58,9 @@ for path, dirs, files in walk('doc'):
     files = [f for f in files if f != 'license.conf']
     if files:
         data_files.append((path.replace('doc', '/usr/share/doc/%s' % name, 1), [join(path, f) for f in files]))
+for path, dirs, files in walk('jars'):
+    if files:
+        data_files.append((path.replace('jars', '/usr/share/java/%s' % name, 1), [join(path, f) for f in files]))
 
 
 setup(

@@ -44,7 +44,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testRemoteExecuteQuery(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
-            return 'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=[Hit("1"), Hit("2"), Hit("3", duplicateCount=2), Hit("4"), Hit("5")]).asJson()
+            return b'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=[Hit("1"), Hit("2"), Hit("3", duplicateCount=2), Hit("4"), Hit("5")]).asJson().encode()
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
@@ -80,7 +80,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testRemoteExecuteQueryWithNoneValues(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
-            return 'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=[Hit("1"), Hit("2"), Hit("3"), Hit("4"), Hit("5")]).asJson()
+            return b'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=[Hit("1"), Hit("2"), Hit("3"), Hit("4"), Hit("5")]).asJson().encode()
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
@@ -133,7 +133,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testRemotePrefixSearch(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
-            return 'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=["1", "2", "3", "4", "5"]).asJson()
+            return b'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=5, hits=["1", "2", "3", "4", "5"]).asJson().encode()
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
@@ -158,7 +158,7 @@ class LuceneRemoteTest(SeecrTestCase):
     def testRemoteFieldnames(self):
         http = CallTrace('http')
         def httppost(*args, **kwargs):
-            return 'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=2, hits=["field0", "field1"]).asJson()
+            return b'HTTP/1.0 200 Ok\r\n\r\n%s' % LuceneResponse(total=2, hits=["field0", "field1"]).asJson().encode()
             yield
         http.methods['httppost'] = httppost
         remote = LuceneRemote(host='host', port=1234, path='/path')
@@ -260,3 +260,4 @@ class LuceneRemoteTest(SeecrTestCase):
         self.assertEqual(2, response.total)
         self.assertEqual(['aap', 'noot'], response.hits)
         self.assertEqual(['fieldnames'], observer.calledMethodNames())
+

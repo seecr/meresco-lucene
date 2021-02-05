@@ -44,7 +44,7 @@ from meresco.lucene.fieldregistry import FieldRegistry
 from meresco.lucene.multilucene import MultiLucene
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 
-from lucenetest import HTTP_RESPONSE
+from lucenetest import RESPONSE
 
 
 class MultiLuceneTest(SeecrTestCase):
@@ -157,7 +157,7 @@ class MultiLuceneTest(SeecrTestCase):
     def testLuceneServerHostPortDynamic(self):
         multiLucene = MultiLucene(defaultCore='core1')
         def httprequest1_1Mock(**kwargs):
-            return list(parseResponse(HTTP_RESPONSE))
+            return [{"StatusCode": b"200", "Headers": {b"Content-Type": b"application/json"}}, RESPONSE]
             yield
         observer = CallTrace(
             'observer',

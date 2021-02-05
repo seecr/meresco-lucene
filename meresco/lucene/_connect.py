@@ -71,7 +71,7 @@ class _Connect(object):
         return body
 
     def _verify20x(self, statusAndHeaders, body):
-        if statusAndHeaders['StatusCode'] == "409":
+        if statusAndHeaders['StatusCode'] == b"409":
             raise UninitializedException()
         if not statusAndHeaders['StatusCode'].startswith(b'20'):
             raise IOError("Expected status '20x' from Lucene server, but got {} {}\n{}".format(statusAndHeaders['StatusCode'], statusAndHeaders['ReasonPhrase'], body))

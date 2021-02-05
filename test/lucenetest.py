@@ -252,7 +252,7 @@ class LuceneTest(SeecrTestCase):
     def testLuceneServerHostPortDynamic(self):
         lucene = Lucene(name='lucene', settings=LuceneSettings(), readonly=True)
         def httprequest1_1Mock(**kwargs):
-            return list(parseResponse(HTTP_RESPONSE))
+            return [{"StatusCode": b"200", "Headers": {b"Content-Type": b"application/json"}}, RESPONSE]
             yield
         observer = CallTrace(
             'observer',
@@ -267,7 +267,7 @@ class LuceneTest(SeecrTestCase):
         self.assertEqual(['luceneServer', 'httprequest1_1'], observer.calledMethodNames())
 
 
-HTTP_RESPONSE = okJson + CRLF * 2 + '''{
+RESPONSE = b'''{
     "total": 887,
     "queryTime": 6,
     "times": {"searchTime": 3},

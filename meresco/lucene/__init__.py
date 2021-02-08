@@ -28,25 +28,17 @@
 #
 ## end license ##
 
-from os.path import dirname, abspath, join, isfile                               #DO_NOT_DISTRIBUTE
-from glob import glob                                                            #DO_NOT_DISTRIBUTE
-from os import stat, system, walk                                                #DO_NOT_DISTRIBUTE
-from sys import exit, path as sysPath                                            #DO_NOT_DISTRIBUTE
-from itertools import chain                                                      #DO_NOT_DISTRIBUTE
-mydir = dirname(abspath(__file__))                                               #DO_NOT_DISTRIBUTE
-srcDir = join(dirname(dirname(mydir)), 'src_pylucene')                           #DO_NOT_DISTRIBUTE
-libDir = join(dirname(dirname(mydir)), 'lib')                                    #DO_NOT_DISTRIBUTE
-sofile = glob(join(libDir, 'meresco_lucene', '_meresco_lucene.*.so'))            #DO_NOT_DISTRIBUTE
-sofile = sofile[0] if sofile else ""                                             #DO_NOT_DISTRIBUTE
-merescoLuceneFiles = chain(*[[join(d,f) for f in fs if f.endswith(".java")]      #DO_NOT_DISTRIBUTE
-                        for d, _, fs in walk(join(srcDir, 'org'))])              #DO_NOT_DISTRIBUTE
-lastMtime = max(stat(f).st_mtime for f in merescoLuceneFiles)                    #DO_NOT_DISTRIBUTE
-if not isfile(sofile) or stat(sofile).st_mtime < lastMtime:                      #DO_NOT_DISTRIBUTE
-    result = system('cd %s; ./build.sh' % srcDir)                                #DO_NOT_DISTRIBUTE
-    if result:                                                                   #DO_NOT_DISTRIBUTE
-        exit(result)                                                             #DO_NOT_DISTRIBUTE
-sysPath.insert(0, libDir)                                                        #DO_NOT_DISTRIBUTE
-
+from seecr.tools.build import buildIfNeeded                         #DO_NOT_DISTRIBUTE
+from os.path import join, dirname, abspath                          #DO_NOT_DISTRIBUTE
+try:                                                                #DO_NOT_DISTRIBUTE
+    buildIfNeeded(                                                  #DO_NOT_DISTRIBUTE
+        srcDir="src_pylucene",                                      #DO_NOT_DISTRIBUTE
+        soFilename=join("meresco_lucene", "_meresco_lucene.*.so"),  #DO_NOT_DISTRIBUTE
+        buildCommand="cd {srcDir}; ./build.sh",                     #DO_NOT_DISTRIBUTE
+        findRootFor=abspath(__file__))                              #DO_NOT_DISTRIBUTE
+except RuntimeError as e:                                           #DO_NOT_DISTRIBUTE
+    print("Building failed!\n{}\n".format(str(e)))                  #DO_NOT_DISTRIBUTE
+    exit(1)                                                         #DO_NOT_DISTRIBUTE
 
 from meresco.pylucene import getJVM
 VM = getJVM()

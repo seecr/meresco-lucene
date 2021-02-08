@@ -1,6 +1,8 @@
 jcc-py3
 python-setuptools
 gcc
+seecr-tools (>= 1.0.4.1)
+seecr-tools (<< 1.1)
 python3-meresco-pylucene (>= 8.6.1)
 python3-meresco-pylucene (<< 8.7)
 #debian:openjdk-8-jdk

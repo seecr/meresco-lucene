@@ -61,6 +61,7 @@ class _Connect(object):
         return body if body is not None else None
 
     def _post(self, path, data):
+        data = bytes(data, encoding='utf-8') if type(data) is str else data
         statusAndHeaders, body = yield self._observable.any.httprequest1_1(method='POST', host=self._host, port=self._port, request=path, body=data)
         self._verify20x(statusAndHeaders, body)
         return body

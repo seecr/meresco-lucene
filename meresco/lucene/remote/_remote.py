@@ -34,6 +34,7 @@ from weightless.http import httppost
 from weightless.core import DeclineMessage
 
 from meresco.lucene import LuceneResponse
+from meresco.components.http.utils import parseResponse
 
 from ._conversion import Conversion
 
@@ -57,19 +58,19 @@ class LuceneRemote(Observable):
         return (self._host, self._port) if self._host else self.call.luceneRemoteServer()
 
     def _send(self, message, **kwargs):
-        body = self._conversion.jsonDumpMessage(message, **kwargs)
+        body = bytes(self._conversion.jsonDumpMessage(message, **kwargs), encoding="utf-8")
         headers={'Content-Type': 'application/json', 'Content-Length': len(body)}
         host, port = self._luceneRemoteServer() # WARNING: can return a different server each time.
         response = yield self._httppost(host=host, port=port, request=self._path, body=body, headers=headers)
-        header, responseBody = response.split(b"\r\n\r\n", 1)
+        header, body = parseResponse(response)
         self._verify200(header, response)
-        return LuceneResponse.fromJson(responseBody)
+        return LuceneResponse.fromJson(str(body, encoding="utf-8"))
 
     def _httppost(self, **kwargs):
         return httppost(**kwargs)
 
     def _verify200(self, header, response):
-        if not header.startswith(b'HTTP/1.0 200'):
+        if not header['StatusCode'] == "200":
             raise IOError("Expected status '200' from LuceneRemoteService, but got: " + str(response))
 
     _ALLOWED_METHODS = ['executeQuery', 'prefixSearch', 'fieldnames', 'drilldownFieldnames', 'executeComposedQuery', 'similarDocuments']

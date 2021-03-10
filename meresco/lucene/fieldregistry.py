@@ -151,7 +151,7 @@ class _FieldDefinition(object):
         return field
 
     def clone(self, **kwargs):
-        newArgs = dict(type=self.type, pythonType=self.pythonType, phraseQueryPossible=self.phraseQueryPossible, isUntokenized=self.isUntokenized, stored=self.stored, missingValuesForSort=self.missingValuesForSort)
+        newArgs = {k:v for k,v in self.__dict__.items() if k[0] != '_'}
         newArgs.update(**kwargs)
         return _FieldDefinition(**newArgs)
 

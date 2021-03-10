@@ -230,3 +230,17 @@ class FieldRegistryTest(SeecrTestCase):
 
         field = registry.createField('sorted.longfield', '1')
         self.assertEqual({'name': 'sorted.longfield', 'type': 'LongField', 'value': 1, 'sort': True}, field)
+
+    def testSortFieldAfterCloneOfType(self):
+        myIntField = INTFIELD.clone(missingValuesForSort=(0,0))
+        registry = FieldRegistry()
+        registry.register("standard.intfield", fieldDefinition=INTFIELD)
+        registry.register("my.intfield", fieldDefinition=myIntField)
+
+        self.assertEqual(JAVA_MIN_INT, registry.defaultMissingValueForSort("standard.intfield", True))
+        self.assertEqual(JAVA_MAX_INT, registry.defaultMissingValueForSort("standard.intfield", False))
+        self.assertEqual(0, registry.defaultMissingValueForSort("my.intfield", True))
+        self.assertEqual(0, registry.defaultMissingValueForSort("my.intfield", False))
+        self.assertEqual('Int', registry.sortFieldType('standard.intfield'))
+        self.assertEqual('Int', registry.sortFieldType('my.intfield'))
+

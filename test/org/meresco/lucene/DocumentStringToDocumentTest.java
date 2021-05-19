@@ -1,10 +1,10 @@
 /* begin license *
  *
- * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) https://seecr.nl
- * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+ * Copyright (C) 2015-2016, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -42,6 +42,7 @@ import javax.json.JsonValue;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -138,14 +139,14 @@ public class DocumentStringToDocumentTest {
 
     @Test
     public void testTextFieldWithTermVectors() {
-        JsonArray json = Json.createArrayBuilder()
-                .add(Json.createObjectBuilder()
-                    .add("type", "TextField")
-                    .add("termVectors", JsonValue.TRUE)
-                    .add("name", "name")
-                    .add("value", "value"))
-                .build();
-        Document result = convert(json.toString());
+        Document result = convert(String.join(" ",
+            "[{",
+                "'type':'TextField',",
+                "'termVectors': true,",
+                "'name':'name',",
+                "'value':'value'",
+            "}]"
+            ).replace("'","\""));
         IndexableFieldType fieldType = result.getField("name").fieldType();
         assertTrue(fieldType.storeTermVectors());
         assertEquals("value", result.getField("name").stringValue());
@@ -320,6 +321,20 @@ public class DocumentStringToDocumentTest {
         FacetField field = (FacetField) result.getFields().get(0);
         assertEquals("name", field.dim);
         assertArrayEquals(new String[] { "path", "sub"}, field.path);
+    }
+
+    @Test
+    public void testLatLonField() {
+        Document result = convert(String.join(" ",
+            "[{",
+                "'type':'LatLonField',",
+                "'name':'name',",
+                "'value':[52.03333, 5.65833]",
+            "}]"
+            ).replace("'","\""));
+        IndexableFieldType fieldType = result.getField("name").fieldType();
+        assertEquals(LatLonPoint.TYPE, result.getField("name").fieldType());
+        assertEquals("LatLonPoint <name:52.03332996927202,5.658329967409372>", result.getField("name").toString());
     }
 
     private Document convert(String documentString) {

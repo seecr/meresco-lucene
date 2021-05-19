@@ -1,10 +1,10 @@
 /* begin license *
  *
- * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2017, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
- * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+ * Copyright (C) 2015-2017, 2019, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -44,6 +44,7 @@ import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -148,6 +149,13 @@ public class DocumentStringToDocument {
                     path[i] = jsonArray.getString(i);
                 }
                 fields.add(new FacetField(name, path));
+                break;
+            case "LatLonField":
+                JsonArray latLonValue = jsonField.getJsonArray("value");
+                double lat = latLonValue.getJsonNumber(0).doubleValue();
+                double lon = latLonValue.getJsonNumber(1).doubleValue();
+                fields.add(new LatLonPoint(name, lat, lon));
+                break;
         }
         return fields;
     }

@@ -29,7 +29,7 @@
 ## end license ##
 
 from seecr.test import SeecrTestCase
-from meresco.lucene.fieldregistry import FieldRegistry, STRINGFIELD_STORED, NO_TERMS_FREQUENCY_FIELD, STRINGFIELD, TEXTFIELD, LONGFIELD, INTFIELD, NUMERICFIELD, JAVA_MAX_INT, JAVA_MIN_INT, JAVA_MAX_LONG, JAVA_MIN_LONG
+from meresco.lucene.fieldregistry import FieldRegistry, STRINGFIELD_STORED, NO_TERMS_FREQUENCY_FIELD, STRINGFIELD, TEXTFIELD, LONGFIELD, INTFIELD, NUMERICFIELD, JAVA_MAX_INT, JAVA_MIN_INT, JAVA_MAX_LONG, JAVA_MIN_LONG, LATLONFIELD
 from meresco.lucene import DrilldownField
 import warnings
 
@@ -243,4 +243,10 @@ class FieldRegistryTest(SeecrTestCase):
         self.assertEqual(0, registry.defaultMissingValueForSort("my.intfield", False))
         self.assertEqual('Int', registry.sortFieldType('standard.intfield'))
         self.assertEqual('Int', registry.sortFieldType('my.intfield'))
+
+    def testLatLonField(self):
+        registry = FieldRegistry()
+        registry.register('latlon', fieldDefinition=LATLONFIELD)
+        field = registry.createField('latlon', (52.03333, 5.65833))
+        self.assertEqual({'name': 'latlon', 'type': 'LatLonField', 'value': [52.03333, 5.65833]}, field)
 

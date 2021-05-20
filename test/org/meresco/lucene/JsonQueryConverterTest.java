@@ -1,10 +1,10 @@
 /* begin license *
  *
- * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016, 2018-2019 Seecr (Seek You Too B.V.) https://seecr.nl
- * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+ * Copyright (C) 2015-2016, 2018-2019, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -41,6 +41,7 @@ import javax.json.JsonValue;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
@@ -587,4 +588,21 @@ public class JsonQueryConverterTest {
                             new RelationalLuceneQuery("coreA", "__key__.A", "__key__.B", new TermQuery(new Term("field1", "value1"))))))),
             q.query);
     }
+
+    @Test
+    public void testDistanceQuery() {
+        String json = String.join(" ",
+            "{'query':{",
+                "'type':'DistanceQuery',",
+                "'field':'field',",
+                "'lat':52.03333,",
+                "'lon':5.65833,",
+                "'radius':42000",
+            "}}"
+            ).replace("'","\"");
+        QueryData q = new QueryData(new StringReader(json), queryConverter);
+        Query query = LatLonPoint.newDistanceQuery("field", 52.03333, 5.65833, 42000.0);
+        assertEquals(query, q.query);
+    }
+
 }

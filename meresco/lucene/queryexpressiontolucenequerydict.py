@@ -128,8 +128,9 @@ class _Converter(object):
         core, field = self._parseCorePrefix(expr.index)
         if not expr.relation in ['=', '==', 'exact', '>', '>=', '<=', '<']:
             raise UnsupportedCQL("'%s' not supported for the field '%s'" % (expr.relation, field))
-        if self._fieldRegistry.isNumeric(field):
-            query = self._termRangeQuery(field, expr.relation, expr.term)
+        method = self._QUERYTYPE_METHOD.get(self._fieldRegistry.getQueryType(field))
+        if not method is None:
+            query = method(self, field, expr.relation, expr.term)
         else:
             if expr.relation in ['==', 'exact'] or \
                     (expr.relation == '=' and self._fieldRegistry.isUntokenized(field)):  # TODO: use fieldRegistry for specific core...
@@ -183,6 +184,20 @@ class _Converter(object):
         includeLower, includeUpper = relation == '>=' or lowerTerm is None, relation == '<=' or upperTerm is None
         return rangeQuery(rangeQueryType, field, lowerTerm, upperTerm, includeLower, includeUpper)
 
+    def _distanceQuery(self, index, relation, termString):
+        field = index
+        parts = termString.split(',')
+        if len(parts) != 3:
+            raise UnsupportedCQL(f"Unsuppored format for '{field}', expected 50.2,5.6,42.0 (latitude,longitude,radius in km)")
+        if relation not in {'=', '==', 'exact'}:
+            raise UnsupportedCQL(f"Unsuppored relation '{relation}' for '{field}', expected '='")
+        try:
+            lat, lon, radius = [float(p) for p in parts]
+        except ValueError:
+            raise UnsupportedCQL(f"Unsuppored format for '{field}', expected 50.2,5.6,42.0 (latitude,longitude,radius in km)")
+        return dict(type="DistanceQuery", field=field, lat=lat, lon=lon, radius=radius * RADIUS_MULTIPLIER)
+
+
     def _pre_analyzeToken(self, index, token):
         if isinstance(self._analyzer, MerescoStandardAnalyzer):
             return list(self._analyzer.pre_analyse(index, token))
@@ -227,6 +242,14 @@ class _Converter(object):
             pass
         return core, field
 
+    _QUERYTYPE_METHOD = {
+        "Int": _termRangeQuery,
+        "Long": _termRangeQuery,
+        "Double": _termRangeQuery,
+        "Distance": _distanceQuery,
+    }
+
+RADIUS_MULTIPLIER = 1000.0 # radius is given in km, query expects meters
 
 def rangeQuery(rangeQueryType, field, lowerTerm, upperTerm, includeLower, includeUpper):
     return dict(type="RangeQuery", rangeType=rangeQueryType, field=field, lowerTerm=lowerTerm, upperTerm=upperTerm, includeLower=includeLower, includeUpper=includeUpper)

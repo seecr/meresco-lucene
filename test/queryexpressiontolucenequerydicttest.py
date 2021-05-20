@@ -36,7 +36,7 @@ from cqlparser.cqltoexpression import QueryExpression
 
 from meresco.lucene import LuceneSettings, DrilldownField
 from meresco.lucene.composedquery import ComposedQuery
-from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELD, FieldRegistry, LONGFIELD, INTFIELD, STRINGFIELD
+from meresco.lucene.fieldregistry import NO_TERMS_FREQUENCY_FIELD, FieldRegistry, LONGFIELD, INTFIELD, STRINGFIELD, LATLONFIELD
 from meresco.lucene.queryexpressiontolucenequerydict import QueryExpressionToLuceneQueryDict
 
 
@@ -240,6 +240,23 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
                     {"field": "unqualified", "value": "dogs"}
                 ]
             }, self._convert(QueryExpression.searchterm(term='"cats dogs"')))
+
+    def testLatLonField(self):
+        qe = QueryExpression.searchterm('latlonField', '=', '52.3,5.6,42')
+        self.assertDictEqual(
+            {
+                "type": "DistanceQuery",
+                "field": "latlonField",
+                "lat": 52.3,
+                "lon": 5.6,
+                "radius": 42000.0,
+            }, self._convert(qe))
+        def convert(value, relation='='):
+            self._convert(QueryExpression.searchterm('latlonField', relation, value))
+        self.assertRaises(UnsupportedCQL, convert, '52.3')
+        self.assertRaises(UnsupportedCQL, convert, '52.3,5.6')
+        self.assertRaises(UnsupportedCQL, convert, 'lat,lon,radius')
+        self.assertRaises(UnsupportedCQL, convert, '52.3,5.6,43', relation='>')
 
     # def testWhitespaceAnalyzer(self):
     #     self._analyzer = WhitespaceAnalyzer()
@@ -608,6 +625,7 @@ class QueryExpressionToLuceneQueryDictTest(SeecrTestCase):
             settings.fieldRegistry = FieldRegistry()
             settings.fieldRegistry.register("intField", fieldDefinition=INTFIELD)
             settings.fieldRegistry.register("longField", fieldDefinition=LONGFIELD)
+            settings.fieldRegistry.register("latlonField", fieldDefinition=LATLONFIELD)
         return settings
 
     def _makeExpression(self, input):

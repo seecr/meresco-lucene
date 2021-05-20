@@ -100,6 +100,8 @@ class FieldRegistry(object):
         definition = self._getFieldDefinition(fieldname)
         return definition.queryType
 
+    getQueryType = sortFieldType
+
     def defaultMissingValueForSort(self, fieldname, sortDescending):
         if fieldname == 'score':
             return None
@@ -221,6 +223,6 @@ KEYFIELD = _FieldDefinition("KeyField",
     phraseQueryPossible=False)
 LATLONFIELD = _FieldDefinition("LatLonField",
     pythonType=list,
-    queryType='WhatEver',
+    queryType='Distance',
     isUntokenized=True,
     phraseQueryPossible=False)

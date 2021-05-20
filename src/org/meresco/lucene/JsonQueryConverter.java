@@ -1,10 +1,10 @@
 /* begin license *
  *
- * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2018 Seecr (Seek You Too B.V.) https://seecr.nl
- * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
+ * Copyright (C) 2015-2018, 2021 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
  *
@@ -38,6 +38,7 @@ import javax.json.JsonValue;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
@@ -212,6 +213,9 @@ public class JsonQueryConverter {
             case "RangeQuery":
                 q = createRangeQuery(query);
                 break;
+            case "DistanceQuery":
+                q = createDistanceQuery(query);
+                break;
 
             case "RelationalLuceneQuery":
             case "JoinAndQuery":
@@ -324,6 +328,14 @@ public class JsonQueryConverter {
                 return DoublePoint.newRangeQuery(field, dLowerValue, dUpperValue);
         }
         return null;
+    }
+
+    private Query createDistanceQuery(JsonObject query) {
+        return LatLonPoint.newDistanceQuery(
+                query.getString("field"),
+                query.getJsonNumber("lat").doubleValue(),
+                query.getJsonNumber("lon").doubleValue(),
+                query.getJsonNumber("radius").doubleValue());
     }
 
     private Occur occurForString(String occur) {

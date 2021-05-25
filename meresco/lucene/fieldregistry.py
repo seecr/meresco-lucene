@@ -38,6 +38,7 @@ RANGE_INT_PREFIX = 'range.int.'
 
 class FieldRegistry(object):
     def __init__(self, drilldownFields=None, defaultDefinition=None, termVectorFields=None, isDrilldownFieldFunction=None):
+        self._fieldDefinitionsByFunction = []
         self._fieldDefinitions = {
             IDFIELD: STRINGFIELD_STORED,
         }
@@ -61,7 +62,10 @@ class FieldRegistry(object):
         return self.createField(IDFIELD, value)
 
     def register(self, fieldname, fieldDefinition):
-        self._fieldDefinitions[fieldname] = fieldDefinition
+        if callable(fieldname):
+            self._fieldDefinitionsByFunction.append((fieldname, fieldDefinition))
+        else:
+            self._fieldDefinitions[fieldname] = fieldDefinition
 
     def phraseQueryPossible(self, fieldname):
         return self._getFieldDefinition(fieldname).phraseQueryPossible
@@ -108,6 +112,10 @@ class FieldRegistry(object):
         return self._getFieldDefinition(fieldname).missingValuesForSort[1 if sortDescending else 0]
 
     def _getFieldDefinition(self, fieldname):
+        for fn, fieldDefinition in self._fieldDefinitionsByFunction:
+            if fn(fieldname):
+                return fieldDefinition
+
         fieldDefinition = self._fieldDefinitions.get(fieldname)
         if not fieldDefinition is None:
             return fieldDefinition

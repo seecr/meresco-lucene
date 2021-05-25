@@ -120,6 +120,11 @@ class FieldRegistryTest(SeecrTestCase):
                 "path": ["value"]
             }, field)
 
+    def testIsDrilldownFieldFn(self):
+        registry = FieldRegistry(isDrilldownFieldFunction=lambda name: 'drill' in name)
+        self.assertFalse(registry.isDrilldownField('vuur'))
+        self.assertTrue(registry.isDrilldownField('vuur.drill.'))
+
     def testGenericDrilldownFields(self):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")

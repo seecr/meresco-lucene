@@ -72,6 +72,7 @@ from queryexpressiontolucenequerydicttest import QueryExpressionToLuceneQueryDic
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
 
 from pylucene.lucenekeyvaluestoretest import LuceneKeyValueStoreTest
+from delegatinganalyzertest import DelegatingAnalyzerTest
 
 if __name__ == '__main__':
     unittest.main()

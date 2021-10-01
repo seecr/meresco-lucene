@@ -31,6 +31,8 @@ import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 
 public class DelegatingAnalyzer extends DelegatingAnalyzerWrapper {
 
+    // Plz use meresco.lucene.py_analysis.TextField when possible
+
     private int position_gap;
     private Analyzer delegate;
 

@@ -46,14 +46,14 @@ public class TextField implements IndexableField {
                 return stream.incrementToken();
             };
             @Override
-            public void end() throws IOException{
+            public void end() throws IOException {
                 super.end();
                 stream.end();
                 // When done, we feed the additional position gap, see IndexingChain
                 pia.setPositionIncrement(position_gap);
             };
             @Override
-            public void reset() throws IOException{
+            public void reset() throws IOException {
                 super.reset();
                 stream.reset();
             };

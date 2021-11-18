@@ -27,6 +27,14 @@
 
 VERSION=$1
 LUCENEVERSION=8.6.0
+if [ ! -z "$2" ]; then
+    LUCENEVERSION=$2
+fi
+JAVA_HOME=
+if [ ! -z "$3" ]; then
+    JAVA_HOME=$3
+fi
+
 JARS=$(find jars -type f -name "*.jar")
 LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*${LUCENEVERSION}.jar")
 
@@ -42,9 +50,10 @@ mkdir $BUILDDIR
 
 CP="$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':')"
 
-JAVA_HOME=
-test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-test -f /etc/redhat-release && JAVA_HOME=/usr/lib/jvm/java
+if [ -z "${JAVA_HOME}" ]; then
+    test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    test -f /etc/redhat-release && JAVA_HOME=/usr/lib/jvm/java
+fi
 if [ -z "${JAVA_HOME}" ]; then
     echo "Unable to determine JAVA_HOME"
     exit 0

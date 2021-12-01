@@ -64,42 +64,46 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         luceneB = new Lucene("B", this.tmpDir.resolve("b"));
         luceneB.initSettings(settings);
         multiLucene = new MultiLucene(Arrays.asList(luceneA, luceneB));
+
+        ////// BBBBBBBBBBBBBBBB ///////
         Document doc1 = new Document();
-        doc1.add(new SortedDocValuesField("sortfieldB", new BytesRef("a")));
-        doc1.add(new NumericDocValuesField("intSortfieldB", 1));
+        doc1.add(new SortedDocValuesField("sortfieldB", new BytesRef("f")));
+        doc1.add(new NumericDocValuesField("intSortfieldB", 11));
         doc1.add(new NumericDocValuesField("doubleSortfieldB", NumericUtils.doubleToSortableLong(1.0)));
-        doc1.add(new NumericDocValuesField("keyB", 1));
+        doc1.add(new NumericDocValuesField("keyB", 7));
         luceneB.addDocument(doc1);
 
         Document doc2 = new Document();
-        doc2.add(new SortedDocValuesField("sortfieldB", new BytesRef("b")));
-        doc2.add(new NumericDocValuesField("intSortfieldB", 2));
+        doc2.add(new SortedDocValuesField("sortfieldB", new BytesRef("e")));
+        doc2.add(new NumericDocValuesField("intSortfieldB", 12));
         doc2.add(new NumericDocValuesField("doubleSortfieldB", NumericUtils.doubleToSortableLong(2.0)));
-        doc2.add(new NumericDocValuesField("keyB", 2));
+        doc2.add(new NumericDocValuesField("keyB", 8));
         luceneB.addDocument(doc2);
 
         Document doc5 = new Document();
-        doc5.add(new SortedDocValuesField("sortfieldB", new BytesRef("c")));
-        doc5.add(new NumericDocValuesField("intSortfieldB", 3));
+        doc5.add(new SortedDocValuesField("sortfieldB", new BytesRef("d")));
+        doc5.add(new NumericDocValuesField("intSortfieldB", 13));
         doc5.add(new NumericDocValuesField("doubleSortfieldB", NumericUtils.doubleToSortableLong(3.0)));
         luceneB.addDocument(doc5);
 
+        ////// AAAAAAAAAAAAAAAA //////
         Document doc3 = new Document();
-        doc3.add(new NumericDocValuesField("keyA", 1));
+        doc3.add(new NumericDocValuesField("keyA", 7));
         doc3.add(new SortedDocValuesField("sortfieldA", new BytesRef("a")));
-        doc3.add(new NumericDocValuesField("intSortfieldA", 1));
+        doc3.add(new NumericDocValuesField("intSortfieldA", 21));
         doc3.add(new NumericDocValuesField("doubleSortfieldA", NumericUtils.doubleToSortableLong(1.0)));
         luceneA.addDocument("id3", doc3);
+
         Document doc4 = new Document();
-        doc4.add(new NumericDocValuesField("keyA", 2));
+        doc4.add(new NumericDocValuesField("keyA", 8));
         doc4.add(new SortedDocValuesField("sortfieldA", new BytesRef("b")));
-        doc4.add(new NumericDocValuesField("intSortfieldA", 2));
+        doc4.add(new NumericDocValuesField("intSortfieldA", 22));
         doc4.add(new NumericDocValuesField("doubleSortfieldA", NumericUtils.doubleToSortableLong(2.0)));
         luceneA.addDocument("id4", doc4);
         
         Document doc6 = new Document();
         doc6.add(new SortedDocValuesField("sortfieldA", new BytesRef("c")));
-        doc6.add(new NumericDocValuesField("intSortfieldA", 3));
+        doc6.add(new NumericDocValuesField("intSortfieldA", 23));
         doc6.add(new NumericDocValuesField("doubleSortfieldA", NumericUtils.doubleToSortableLong(3.0)));
         luceneA.addDocument("id6", doc6);
     }
@@ -118,17 +122,23 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         q.setCoreQuery("A", new MatchAllDocsQuery());
         q.queryData.sort = new Sort(new JoinSortField("sortfieldA", SortField.Type.STRING, false, "A"));
         LuceneResponse response = multiLucene.executeComposedQuery(q);
+        /* NB!
+         * This sorts id6 correctly although id6 has no key in field 'keyA'
+         * It works because the missing value is sorted last.
+         * (It DOES have 'c' in sortfieldA, but that isn't taken into acount because 
+         * we search via a match on keyA, and the key isn't there for id6.)
+         */
         assertEquals(3, response.total);
-        assertEquals("id6", response.hits.get(0).id);
-        assertEquals("id3", response.hits.get(1).id);
-        assertEquals("id4", response.hits.get(2).id);
+        assertEquals("id3", response.hits.get(0).id);
+        assertEquals("id4", response.hits.get(1).id);
+        assertEquals("id6", response.hits.get(2).id);
 
         q.queryData.sort = new Sort(new JoinSortField("sortfieldA", SortField.Type.STRING, true, "A"));
         response = multiLucene.executeComposedQuery(q);
         assertEquals(3, response.total);
-        assertEquals("id4", response.hits.get(0).id);
-        assertEquals("id3", response.hits.get(1).id);
-        assertEquals("id6", response.hits.get(2).id);
+        assertEquals("id6", response.hits.get(0).id);
+        assertEquals("id4", response.hits.get(1).id);
+        assertEquals("id3", response.hits.get(2).id);
     }
 
     @Test
@@ -139,16 +149,16 @@ public class JoinSortCollectorTest extends SeecrTestCase {
         q.queryData.sort = new Sort(new JoinSortField("sortfieldB", SortField.Type.STRING, false, "B"));
         LuceneResponse response = multiLucene.executeComposedQuery(q);
         assertEquals(3, response.total);
-        assertEquals("id6", response.hits.get(0).id);
+        assertEquals("id4", response.hits.get(0).id);
         assertEquals("id3", response.hits.get(1).id);
-        assertEquals("id4", response.hits.get(2).id);
+        assertEquals("id6", response.hits.get(2).id);
 
         q.queryData.sort = new Sort(new JoinSortField("sortfieldB", SortField.Type.STRING, true, "B"));
         response = multiLucene.executeComposedQuery(q);
         assertEquals(3, response.total);
-        assertEquals("id4", response.hits.get(0).id);
+        assertEquals("id6", response.hits.get(0).id);
         assertEquals("id3", response.hits.get(1).id);
-        assertEquals("id6", response.hits.get(2).id);
+        assertEquals("id4", response.hits.get(2).id);
     }
 
     @Test

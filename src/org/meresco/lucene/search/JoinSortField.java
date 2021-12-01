@@ -52,3 +52,4 @@ public class JoinSortField extends SortField {
         return this.coreName;
     }
 }
+

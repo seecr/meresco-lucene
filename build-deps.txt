@@ -1,9 +1,9 @@
 jcc-py3
-python-setuptools
+python3-setuptools
 gcc
-seecr-tools (>= 1.0.4.1)
+seecr-tools (>= 1.0.7.1)
 seecr-tools (<< 1.1)
-python3-meresco-pylucene (>= 8.6.1)
+python3-meresco-pylucene (>= 8.6.1.1)
 python3-meresco-pylucene (<< 8.7)
 #buster:openjdk-8-jdk
 #bullseye:openjdk-17-jdk

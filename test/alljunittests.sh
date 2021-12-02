@@ -40,11 +40,11 @@ fi
 
 JARS=
 test -d ../jars && JARS=$(find ../jars -type f -name "*.jar")
-LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*-8.6.*.jar")
+LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*-8.9.*.jar")
 
 CP="$JUNIT:$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':'):../build"
 
-JAVA_VERSION=8
+JAVA_VERSION=17
 java=/usr/lib/jvm/java-1.${JAVA_VERSION}.0/bin/java
 javac=/usr/lib/jvm/java-1.${JAVA_VERSION}.0/bin/javac
 if [ -f /etc/debian_version ]; then

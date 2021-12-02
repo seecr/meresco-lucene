@@ -28,23 +28,6 @@
 #
 ## end license ##
 
-from seecr.tools.build import buildIfNeeded                         #DO_NOT_DISTRIBUTE
-from os.path import join, dirname, abspath                          #DO_NOT_DISTRIBUTE
-try:                                                                #DO_NOT_DISTRIBUTE
-    buildIfNeeded(                                                  #DO_NOT_DISTRIBUTE
-        srcDir="src_pylucene",                                      #DO_NOT_DISTRIBUTE
-        soFilename=join("meresco_lucene", "_meresco_lucene.*.so"),  #DO_NOT_DISTRIBUTE
-        buildCommand="cd {srcDir}; ./build.sh",                     #DO_NOT_DISTRIBUTE
-        findRootFor=abspath(__file__))                              #DO_NOT_DISTRIBUTE
-except RuntimeError as e:                                           #DO_NOT_DISTRIBUTE
-    print("Building failed!\n{}\n".format(str(e)))                  #DO_NOT_DISTRIBUTE
-    exit(1)                                                         #DO_NOT_DISTRIBUTE
-
-from meresco.pylucene import getJVM
-VM = getJVM()
-from meresco_lucene import initVM
-VMM = initVM()
-
 from .fieldregistry import SORTED_PREFIX, UNTOKENIZED_PREFIX, KEY_PREFIX, NUMERIC_PREFIX, RANGE_DOUBLE_PREFIX
 from ._version import version
 from .luceneresponse import LuceneResponse

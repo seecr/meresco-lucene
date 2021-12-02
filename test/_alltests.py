@@ -31,6 +31,25 @@
 from seecrdeps import includeParentAndDeps       #DO_NOT_DISTRIBUTE
 includeParentAndDeps(__file__)                   #DO_NOT_DISTRIBUTE
 
+from seecr.tools.build import buildIfNeeded                         #DO_NOT_DISTRIBUTE
+from os.path import join, dirname, abspath                          #DO_NOT_DISTRIBUTE
+try:                                                                #DO_NOT_DISTRIBUTE
+    buildIfNeeded(                                                  #DO_NOT_DISTRIBUTE
+        srcDir="src_pylucene",                                      #DO_NOT_DISTRIBUTE
+        soFilename=join("meresco_lucene", "_meresco_lucene.*.so"),  #DO_NOT_DISTRIBUTE
+        buildCommand="cd {srcDir}; ./build.sh",                     #DO_NOT_DISTRIBUTE
+        findRootFor=abspath(__file__))                              #DO_NOT_DISTRIBUTE
+except RuntimeError as e:                                           #DO_NOT_DISTRIBUTE
+    print("Building failed!\n{}\n".format(str(e)))                  #DO_NOT_DISTRIBUTE
+    exit(1)                                                         #DO_NOT_DISTRIBUTE
+
+
+
+import lucene
+import meresco_lucene
+lucene.initVM(classpath=":".join([lucene.CLASSPATH, meresco_lucene.CLASSPATH]))
+
+
 import unittest
 from warnings import simplefilter, filterwarnings
 simplefilter('default')

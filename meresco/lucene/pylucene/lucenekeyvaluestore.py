@@ -25,35 +25,21 @@
 #
 ## end license ##
 
-imported = False
-def lazyImport():
-    global imported
-    if imported:
-        return
+from java.nio.file import Paths
+from org.apache.lucene.document import Document, StringField, Field, FieldType
+from org.apache.lucene.search import IndexSearcher, TermQuery
+from org.apache.lucene.index import DirectoryReader, Term, IndexWriter, IndexWriterConfig, IndexOptions
+from org.apache.lucene.store import FSDirectory
+from org.apache.lucene.util import Version
+from org.apache.lucene.analysis.core import WhitespaceAnalyzer
 
-    from meresco.pylucene import getJVM
-    getJVM()
-
-    from java.nio.file import Paths
-    from org.apache.lucene.document import Document, StringField, Field, FieldType
-    from org.apache.lucene.search import IndexSearcher, TermQuery
-    from org.apache.lucene.index import DirectoryReader, Term, IndexWriter, IndexWriterConfig, IndexOptions
-    from org.apache.lucene.store import FSDirectory
-    from org.apache.lucene.util import Version
-    from org.apache.lucene.analysis.core import WhitespaceAnalyzer
-
-    UNINDEXED_TYPE = FieldType()
-    UNINDEXED_TYPE.setIndexOptions(IndexOptions.NONE)
-    UNINDEXED_TYPE.setStored(True)
-    UNINDEXED_TYPE.setTokenized(False)
-
-    imported = True
-    globals().update(locals())
-
+UNINDEXED_TYPE = FieldType()
+UNINDEXED_TYPE.setIndexOptions(IndexOptions.NONE)
+UNINDEXED_TYPE.setStored(True)
+UNINDEXED_TYPE.setTokenized(False)
 
 class LuceneKeyValueStore(object):
     def __init__(self, path):
-        lazyImport()
         self._writer, self._reader, self._searcher = self._getLucene(path)
         self._latestModifications = {}
         self._doc = Document()

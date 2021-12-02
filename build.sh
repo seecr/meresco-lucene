@@ -26,15 +26,15 @@
 ## end license ##
 
 VERSION=$1
-LUCENEVERSION=8.6.0
+LUCENEVERSION=8.9.0
 if [ ! -z "$2" ]; then
     LUCENEVERSION=$2
 fi
 JAVA_HOME=
 if [ ! -z "$3" ]; then
-    JAVA_HOME=$3
+    JAVA_HOME="$3"
 fi
-
+echo ${JAVA_HOME}
 JARS=$(find jars -type f -name "*.jar")
 LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*${LUCENEVERSION}.jar")
 

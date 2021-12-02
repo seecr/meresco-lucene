@@ -94,15 +94,15 @@ class LuceneSettingsTest(SeecrTestCase):
     def testCreateDefaultAnalyzers(self):
         settings = LuceneSettings()
         analyzer = settings.createAnalyzer()
-        self.assertEqual("MerescoStandardAnalyzer", analyzer.class_.getSimpleName())
+        self.assertEqual("MerescoStandardAnalyzer", analyzer.getClass().getSimpleName())
 
     def testCreateNonDefaultAnalyzer(self):
         settings = LuceneSettings(analyzer=dict(type="MerescoDutchStemmingAnalyzer", stemmingFields=["field_a", "field_b"]))
         analyzer = settings.createAnalyzer()
-        self.assertEqual("MerescoDutchStemmingAnalyzer", analyzer.class_.getSimpleName())
+        self.assertEqual("MerescoDutchStemmingAnalyzer", analyzer.getClass().getSimpleName())
         self.assertEqual(["field_a", "field_b"], analyzer.getStemmingFields())
 
     def testCreateWhiteSpaceAnalyzer(self):
         settings = LuceneSettings(analyzer=dict(type="WhitespaceAnalyzer"))
         analyzer = settings.createAnalyzer()
-        self.assertEqual("WhitespaceAnalyzer", analyzer.class_.getSimpleName())
+        self.assertEqual("WhitespaceAnalyzer", analyzer.getClass().getSimpleName())

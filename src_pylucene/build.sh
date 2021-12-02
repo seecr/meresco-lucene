@@ -33,10 +33,11 @@ if [ ! -z "$1" ]; then
     target="$1"
 fi
 
-seecr-build-jcc \
+./seecr-build-jcc \
     --path=$(cd $(dirname $0); pwd) \
     --name=meresco-lucene \
     --package=org/meresco/lucene/py_analysis \
-    --jcc=3.8 \
-    --lucene=8.6.1 \
-    --target=${target}
+    --jcc=3.10 \
+    --lucene=8.9.0 \
+    --target=${target} \
+    --java_home=/usr/lib/jvm/java-17-openjdk-amd64

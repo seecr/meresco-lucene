@@ -36,6 +36,11 @@ from warnings import simplefilter, filterwarnings
 simplefilter('default')
 filterwarnings('ignore', message=r".*has no __module__ attribute.*", category=DeprecationWarning)
 
+import lucene
+import meresco_lucene
+lucene.initVM(classpath=":".join([lucene.CLASSPATH, meresco_lucene.CLASSPATH]))
+
+
 from sys import argv
 
 from seecr.test.testrunner import TestRunner

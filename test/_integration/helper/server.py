@@ -35,6 +35,8 @@ from warnings import simplefilter, filterwarnings
 simplefilter('default')
 filterwarnings('ignore', message=r".*has no __module__ attribute.*", category=DeprecationWarning)
 
+import seecr_initvm; seecr_initvm.initvm('meresco_lucene', 'meresco_sequentialstore')
+
 from os.path import dirname, abspath, join, realpath
 from sys import stdout
 

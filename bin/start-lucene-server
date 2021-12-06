@@ -33,7 +33,7 @@ from sys import argv
 from glob import glob
 
 USR_SHARE_JAVA_DIR='/usr/share/java'
-LUCENEVERSION = "8.6.0"
+LUCENEVERSION = "8.9.0"
 LUCENE_JARS = glob("{0}/lucene-*{1}.jar".format(USR_SHARE_JAVA_DIR, LUCENEVERSION))
 if 'SEECRTEST_USR_SHARE' in environ and environ['SEECRTEST_USR_SHARE']:
     USR_SHARE_JAVA_DIR = environ['SEECRTEST_USR_SHARE'] + '/java'
@@ -41,7 +41,7 @@ MY_JARS = glob('{0}/meresco-lucene/*.jar'.format(USR_SHARE_JAVA_DIR))
 
 from os.path import dirname, abspath                         #DO_NOT_DISTRIBUTE
 projectdir = dirname(dirname(abspath(__file__)))             #DO_NOT_DISTRIBUTE
-status = system("cd %s; ./build.sh"  % projectdir)           #DO_NOT_DISTRIBUTE
+status = system("cd %s; ./build.sh 1.7.x"  % projectdir)     #DO_NOT_DISTRIBUTE
 if status > 0:                                               #DO_NOT_DISTRIBUTE
     import sys                                               #DO_NOT_DISTRIBUTE
     sys.exit(status)                                         #DO_NOT_DISTRIBUTE
@@ -57,10 +57,6 @@ if not [arg for arg in XOptions if arg.startswith('-Xmx')]:
 java = '/usr/bin/java'
 if 'JAVA_BIN' in environ and environ['JAVA_BIN']:
     java = environ['JAVA_BIN'] + "/java"
-
-if system("%s -version 2>&1 | grep '1.8' > /dev/null" % java) != 0:
-    print("Java version should be java 8; You could specify a different java with JAVA_BIN")
-    exit(1)
 
 execv(
     java,

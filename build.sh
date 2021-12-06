@@ -51,7 +51,7 @@ mkdir $BUILDDIR
 CP="$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':')"
 
 if [ -z "${JAVA_HOME}" ]; then
-    test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
     test -f /etc/redhat-release && JAVA_HOME=/usr/lib/jvm/java
 fi
 if [ -z "${JAVA_HOME}" ]; then

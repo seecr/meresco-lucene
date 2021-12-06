@@ -1,3 +1,5 @@
 junit4
-python3-seecr-test (>= 2.1.2)
-python3-seecr-test (<< 2.2)
+python3-seecr-test (>= 2.2.3.3)
+python3-seecr-test (<< 2.3)
+python3-seecr-initvm (>= 0.9)
+python3-seecr-initvm (<< 0.10)

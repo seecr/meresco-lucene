@@ -53,11 +53,14 @@ class IntegrationState(SeecrIntegrationState):
         self.luceneServerPort = PortNumberGenerator.nextPort()
         self.httpPort = PortNumberGenerator.nextPort()
         self.testdataDir = join(dirname(mydir), "data")
-        self.JAVA_BIN = "/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre/bin"
-        if not isdir(self.JAVA_BIN):
-            self.JAVA_BIN = "/usr/lib/jvm/java-8-openjdk-amd64/jre/bin"
-        if not isdir(self.JAVA_BIN):
-            self.JAVA_BIN = "/usr/lib/jvm/java-1.8.0/bin"
+        self.JAVA_BIN = None
+        for java_bin in [
+                "/usr/lib/jvm/java-17-openjdk-amd64/bin",
+                "/usr/lib/jvm/java-8-openjdk-amd64/jre/bin",
+                "/usr/lib/jvm/java-1.8.0/bin",
+            ]:
+            if isdir(java_bin):
+                self.JAVA_BIN = java_bin
 
     def setUp(self):
         self.startSuggestionServer()

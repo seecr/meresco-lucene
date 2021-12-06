@@ -70,7 +70,8 @@ class SynchronousRemote(object):
             ]
             lines += ["%s: %s" % (k, v) for k, v in headers.items()]
             lines += ['', '']
-            sendBuffer = (('\r\n'.join(lines) % locals()) + body).encode()
+            sendBuffer = bytes('\r\n'.join(lines) % locals(), encoding='utf-8')
+            sendBuffer += body if isinstance(body, bytes) else bytes(body, encoding='utf-8')
             totalBytesSent = 0
             bytesSent = 0
             while totalBytesSent != len(sendBuffer):

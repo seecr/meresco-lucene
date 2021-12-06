@@ -105,7 +105,7 @@ class LuceneRemoteServiceTest(IntegrationTestCase):
         statusAndHeaders, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='__id__', name='main'), parse=False)
         body = body.decode()
         self.assertFalse('Traceback' in body, body)
-        self.assertEqual(50, body.count(': 1'), body)
+        self.assertEqual(50, body.count(': 1\n'), body)
 
     def testRemoteInfoFieldWithPrefix(self):
         statusAndHeaders, body = getRequest(port=self.httpPort, path='/remote/info/field', arguments=dict(fieldname='field2', name='main', prefix='value8'), parse=False)

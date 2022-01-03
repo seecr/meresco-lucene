@@ -1,9 +1,9 @@
 /* begin license *
  *
- * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2015-2016, 2021-2022 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"

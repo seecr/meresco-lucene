@@ -6,3 +6,4 @@ meresco-lucene-*.jar
 .classpath
 .project
 deps.d
+*\.egg-info/

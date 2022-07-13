@@ -73,4 +73,3 @@ if [ "$?" != "0" ]; then
 fi
 
 jar -cf $TARGET -C $BUILDDIR org
-

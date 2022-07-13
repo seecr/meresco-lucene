@@ -64,6 +64,10 @@ class MultiLuceneTest(SeecrTestCase):
         connect._post = mockPost
         self._multiLucene._connect = lambda: connect
 
+
+    def testImport(self):
+        from org.meresco.lucene import MultiLucene
+
     def testInfoOnQuery(self):
         self.response = JsonDict({
                 "total": 887,

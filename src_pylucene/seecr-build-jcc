@@ -123,15 +123,16 @@ classpath=${luceneJarDir}/lucene-core-${LUCENE_VERSION}.jar:${luceneJarDir}/luce
 rm -rf $buildDir $libDir
 mkdir --parents $buildDir $libDir
 
-${javac} -cp ${classpath} -d ${buildDir} ${PKGPATH}/*.java
-(cd $buildDir; jar -c org > $buildDir/${PKGNAME}.jar)
+#${javac} -cp ${classpath} -d ${buildDir} ${PKGPATH}/*.java
+#(cd $buildDir; jar -c org > $buildDir/${PKGNAME}.jar)
 
 python3 -m jcc.__main__ \
     --shared \
     --use_full_names \
     --import lucene \
     --arch x86_64 \
-    --jar ${buildDir}/${PKGNAME}.jar \
+    --jar ../${PKGNAME}.jar \
+    --classpath $(find ../jars -name "*.jar" | paste -sd:) \
     --python ${_PKGNAME} \
     --build \
     --install \

@@ -36,6 +36,10 @@ from warnings import simplefilter, filterwarnings
 simplefilter('default')
 filterwarnings('ignore', message=r".*has no __module__ attribute.*", category=DeprecationWarning)
 
+import sys
+sys.path.insert(0, "../lib")
+
+
 import lucene
 import meresco_lucene
 lucene.initVM(classpath=":".join([lucene.CLASSPATH, meresco_lucene.CLASSPATH]))

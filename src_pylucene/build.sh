@@ -33,6 +33,11 @@ if [ ! -z "$1" ]; then
     target="$1"
 fi
 
+if [ ! -f "../meresco-lucene.jar" ]; then
+    (cd ..; ./build.sh)
+fi
+
+
 ./seecr-build-jcc \
     --path=$(cd $(dirname $0); pwd) \
     --name=meresco-lucene \

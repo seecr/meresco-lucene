@@ -71,10 +71,10 @@ public class TextField implements IndexableField {
             };
             @Override
             public void end() throws IOException {
-                super.end();
-                stream.end();
                 // When done, we feed the additional position gap, see IndexingChain
                 pia.setPositionIncrement(position_gap);
+                super.end();
+                stream.end();
             };
             @Override
             public void reset() throws IOException {
@@ -124,6 +124,11 @@ public class TextField implements IndexableField {
     @Override
     public Number numericValue() {
         return this.delegate.numericValue();
+    };
+
+    @Override
+    public String toString() {
+        return this.delegate.toString();
     };
 
 }

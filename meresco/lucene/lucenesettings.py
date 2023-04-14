@@ -28,7 +28,7 @@
 #
 ## end license ##
 
-from org.meresco.lucene.py_analysis import MerescoStandardAnalyzer, MerescoDutchStemmingAnalyzer
+from org.meresco.lucene.analysis import MerescoStandardAnalyzer, MerescoDutchStemmingAnalyzer
 from org.apache.lucene.analysis.core import WhitespaceAnalyzer
 
 from meresco.components.json import JsonDict

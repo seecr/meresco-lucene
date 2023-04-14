@@ -67,7 +67,7 @@ class MultiLuceneTest(SeecrTestCase):
 
     def testImport(self):
         from org.meresco.lucene import MultiLucene
-        from org.meresco.lucene.py_analysis import TextField
+        from org.meresco.lucene.analysis import TextField
 
     def testInfoOnQuery(self):
         self.response = JsonDict({

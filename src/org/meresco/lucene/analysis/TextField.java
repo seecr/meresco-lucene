@@ -22,7 +22,7 @@
  *
  * end license */
 
-package org.meresco.lucene.py_analysis;
+package org.meresco.lucene.analysis;
 
 import java.io.IOException;
 

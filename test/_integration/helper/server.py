@@ -62,7 +62,7 @@ from meresco.lucene.fieldregistry import FieldRegistry, INTFIELD
 from meresco.lucene.adaptertolucenequery import AdapterToLuceneQuery
 from meresco.lucene.suggestionindexcomponent import SuggestionIndexComponent
 
-from org.meresco.lucene.py_analysis import MerescoDutchStemmingAnalyzer
+from org.meresco.lucene.analysis import MerescoDutchStemmingAnalyzer
 
 
 myPath = abspath(dirname(__file__))

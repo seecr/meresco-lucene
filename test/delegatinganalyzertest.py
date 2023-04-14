@@ -27,8 +27,8 @@ import unittest
 from org.apache.lucene.analysis import Analyzer
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 
-from org.meresco.lucene.py_analysis import DelegatingAnalyzer
-from org.meresco.lucene.py_analysis import DocumentUtil
+from org.meresco.lucene.analysis import DelegatingAnalyzer
+from org.meresco.lucene.analysis import DocumentUtil
 
 class DelegatingAnalyzerTest(unittest.TestCase):
 

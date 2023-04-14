@@ -25,7 +25,7 @@
  *
  * end license */
 
-package org.meresco.lucene.py_analysis;
+package org.meresco.lucene.analysis;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -42,7 +42,7 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 
 
-import org.meresco.lucene.py_analysis.TextField;
+import org.meresco.lucene.analysis.TextField;
 
 
 public class DocumentUtil {

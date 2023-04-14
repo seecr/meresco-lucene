@@ -35,7 +35,7 @@ from cqlparser.cqltoexpression import QueryExpression
 from weightless.core import Transparent
 
 from java.io import StringReader
-from org.meresco.lucene.py_analysis import MerescoStandardAnalyzer
+from org.meresco.lucene.analysis import MerescoStandardAnalyzer
 from meresco.components.json import JsonDict
 
 

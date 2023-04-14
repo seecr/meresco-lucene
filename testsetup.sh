@@ -37,7 +37,6 @@ source /usr/share/seecr-tools/functions.d/test
 VERSION="x.y.z"
 
 definePythonVars
-(cd $mydir/src_pylucene; ./build.sh ${SITEPACKAGES})
 (
     cd $mydir
     mkdir --parents tmp/usr/share/java/meresco-lucene

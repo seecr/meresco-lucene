@@ -1,6 +1,7 @@
 /bin/
 build
 lib
+meresco-lucene*.jar
 meresco-lucene-*.jar
 /ecl-bin/
 .classpath

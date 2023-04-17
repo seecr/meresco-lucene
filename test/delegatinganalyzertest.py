@@ -2,7 +2,7 @@
 #
 # "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
 #
-# Copyright (C) 2021-2022 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2021-2023 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Meresco Lucene"
 #
@@ -38,7 +38,3 @@ class DelegatingAnalyzerTest(unittest.TestCase):
 
         assert 10 == a.getPositionIncrementGap("field1")
 
-        self.fail()
-
-    def testDocumentUtil(self):
-        d = DocumentUtil()

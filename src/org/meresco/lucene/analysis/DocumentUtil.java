@@ -1,8 +1,8 @@
 /* begin license *
  *
- * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
  *
- * Copyright (C) 2013-2017 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2013-2017, 2023 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -67,7 +67,7 @@ public class DocumentUtil {
         for (int j=0; j<=i; j++) {
             String fieldname = prefixes[j] + tag;
             doc.add(new StringField(fieldname, value, store));
-            if (facets && !prefixes[j].isEmpty()) {
+            if (facets && !prefixes[j].isEmpty() && i == j) {
                 doc.add(new FacetField(fieldname + ".facet", value));
             }
         }
@@ -77,7 +77,7 @@ public class DocumentUtil {
         for (int j=0; j<=i; j++) {
             String fieldname = prefixes[j] + tag;
             doc.add(new TextField(fieldname, value, store, gap, analyzer));
-            if (facets && !prefixes[j].isEmpty()) {
+            if (facets && !prefixes[j].isEmpty() && i == j) {
                 doc.add(new FacetField(fieldname + ".facet", value));
             }
         }

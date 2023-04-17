@@ -28,6 +28,7 @@
 package org.meresco.lucene.analysis;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +57,23 @@ public class MerescoStandardAnalyzer extends Analyzer {
         tok = new LowerCaseFilter(tok);
         Analyzer.TokenStreamComponents tsc = new Analyzer.TokenStreamComponents(src, tok);
         return new Analyzer.TokenStreamComponents(src, post_analyzer(fieldName, tsc.getTokenStream()));
+    }
+
+    public List<String> pre_analyse(String fieldName, String string) throws IOException {
+        final ClassicTokenizer src = new ClassicTokenizer();
+        src.setReader(new StringReader(string));
+        TokenStream tok = new ClassicFilter(src);
+        tok = new ASCIIFoldingFilter(tok);
+        tok = new LowerCaseFilter(tok);
+        Analyzer.TokenStreamComponents tsc = new Analyzer.TokenStreamComponents(src, tok);
+        return this.readTokenStream(tok);
+    }
+
+    public List<String> post_analyse(String fieldName, String string) throws IOException {
+        ClassicTokenizer src = new ClassicTokenizer();
+        src.setReader(new StringReader(string));
+        TokenStream tok = this.post_analyzer(fieldName, src);
+        return this.readTokenStream(tok);
     }
 
     protected TokenStream post_analyzer(String fieldName, TokenStream tok) {

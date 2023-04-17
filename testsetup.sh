@@ -37,12 +37,12 @@ source /usr/share/seecr-tools/functions.d/test
 VERSION="x.y.z"
 
 definePythonVars
-(
-    cd $mydir
-    mkdir --parents tmp/usr/share/java/meresco-lucene
-    ./build.sh "${VERSION}"
-    mv meresco-lucene-${VERSION}.jar tmp/usr/share/java/meresco-lucene/
-)
+#(
+#    cd $mydir
+#    mkdir --parents tmp/usr/share/java/meresco-lucene
+#    ./build.sh "${VERSION}"
+#    mv meresco-lucene-${VERSION}.jar tmp/usr/share/java/meresco-lucene/
+#)
 ${PYTHON} setup.py install --root tmp
 
 cp -r test tmp/test
@@ -54,6 +54,7 @@ find tmp -name '*.py' -exec sed -r -e "
     " -i '{}' \;
 
 export SEECRTEST_USR_SHARE="${mydir}/tmp/usr/share"
+export SEECRTEST_USR_LOCAL="${mydir}/tmp/usr/local"
 
 if [ -z "$@" ]; then
     runtests "alltests.sh integrationtest.sh"

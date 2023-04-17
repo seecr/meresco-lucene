@@ -25,35 +25,64 @@
 #
 ## end license ##
 
-VERSION=$1
 LUCENEVERSION=8.9.0
-if [ ! -z "$2" ]; then
-    LUCENEVERSION=$2
+
+function show_usage {
+    echo "Usage: $(basename $0)
+    --target=<output path>
+    --version=<meresco-lucene version>"
+}
+
+TEMP=$(getopt \
+    --options "" \
+    --long target::,version:: \
+    -n "$0" -- "$@")
+
+eval set -- "$TEMP"
+while true
+do
+    case "$1" in
+        --target)
+            case "$2" in
+                "") show_usage ; exit 1 ;;
+                *) TARGET=$2 ; shift 2 ;;
+            esac ;;
+        --version)
+            case "$2" in
+                "") show_usage ; exit 1 ;;
+                *) VERSION=$2 ; shift 2 ;;
+            esac ;;
+        --) shift ; break ;;
+        *) echo "Unknown option specified." ; exit 1 ;;
+    esac
+done
+
+set -o errexit
+
+MYDIR=$(cd $(dirname $0);pwd)
+
+if [ -z "${TARGET}" ]; then
+    TARGET=${MYDIR}/lib
 fi
-JAVA_HOME=
-if [ ! -z "$3" ]; then
-    JAVA_HOME="$3"
-fi
-echo ${JAVA_HOME}
+
 JARS=$(find jars -type f -name "*.jar")
 LUCENE_JARS=$(find /usr/share/java -type f -name "lucene-*${LUCENEVERSION}.jar")
 
-mydir=$(cd $(dirname $0);pwd)
-BUILDDIR=${mydir}/build
-TARGET=meresco-lucene.jar
-if [ "${VERSION}" != "" ]; then
-    TARGET=meresco-lucene-${VERSION}.jar
+BUILDDIR=${MYDIR}/build
+
+test -d ${BUILDDIR} && rm -r ${BUILDDIR}
+mkdir ${BUILDDIR}
+
+JAR_FILE=meresco-lucene-${VERSION}.jar
+if [ -z "${VERSION}" ]; then
+    JAR_FILE=meresco-lucene.jar
 fi
 
-test -d $BUILDDIR && rm -r $BUILDDIR
-mkdir $BUILDDIR
+CP="$(echo ${JARS} | tr ' ' ':'):$(echo ${LUCENE_JARS} | tr ' ' ':')"
 
-CP="$(echo $JARS | tr ' ' ':'):$(echo $LUCENE_JARS | tr ' ' ':')"
+test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+test -f /etc/redhat-release && JAVA_HOME=/usr/lib/jvm/java
 
-if [ -z "${JAVA_HOME}" ]; then
-    test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-    test -f /etc/redhat-release && JAVA_HOME=/usr/lib/jvm/java
-fi
 if [ -z "${JAVA_HOME}" ]; then
     echo "Unable to determine JAVA_HOME"
     exit 0
@@ -63,13 +92,51 @@ if [ ! -d "${JAVA_HOME}" ]; then
     echo "${JAVA_HOME} does not exist"
     exit 0
 fi
-export JAVA_HOME
-javac=${JAVA_HOME}/bin/javac
 
-${javac} -d $BUILDDIR -cp $CP `find src/org -name "*.java"`
+export JAVA_HOME
+${JAVA_HOME}/bin/javac -d ${BUILDDIR} -cp ${CP} `find src/org -name "*.java"`
 if [ "$?" != "0" ]; then
     echo "Build failed"
     exit 1
 fi
 
-jar -cf $TARGET -C $BUILDDIR org
+jar -cf ${JAR_FILE} -C ${BUILDDIR} org
+
+test -d "${TARGET}" && rm -rf "${TARGET}"
+test -d "${TARGET}" || mkdir "${TARGET}"
+
+python3 -m jcc.__main__ \
+    --include ${MYDIR}/jars/commons-math3-3.4.1.jar \
+    --include ${MYDIR}/jars/javax.json-1.0.4.jar \
+    --include ${MYDIR}/jars/commons-cli-1.2.jar \
+    --include ${MYDIR}/jars/commons-collections4-4.1.jar \
+    --include ${MYDIR}/jars/trove-3.0.2.jar \
+    --include ${MYDIR}/jars/javax.servlet-api-3.1.0.jar \
+    --include ${MYDIR}/jars/jetty-all-9.2.14.v20151106.jar \
+    --shared \
+    --use_full_names \
+    --import lucene \
+    --arch x86_64 \
+    --jar ${JAR_FILE} \
+    --python meresco_lucene \
+    --build \
+    --install \
+    --root "${TARGET}" 
+
+    #--exclude org.meresco.lucene.http.PrefixSearchHandler \
+    #--exclude org.meresco.lucene.http.AbstractMerescoLuceneHandler \
+    #--exclude org.meresco.lucene.http.NumerateHandler \
+    #--exclude org.meresco.lucene.http.ComposedQueryHandler \
+    #--exclude org.meresco.lucene.http.OtherHandler \
+    #--exclude org.meresco.lucene.http.QueryParameters \
+    #--exclude org.meresco.lucene.http.SettingsHandler \
+    #--exclude org.meresco.lucene.http.ExportKeysHandler \
+    #--exclude org.meresco.lucene.http.CommitHandler \
+    #--exclude org.meresco.lucene.http.LuceneHttpServer \
+    #--exclude org.meresco.lucene.http.UpdateHandler \
+    #--exclude org.meresco.lucene.http.DeleteHandler \
+    #--exclude org.meresco.lucene.http.QueryHandler \
+    #--exclude org.meresco.lucene.LuceneShutdown \
+    #--exclude org.meresco.lucene.suggestion.SuggestionHandler \
+    #--exclude org.meresco.lucene.suggestion.SuggestionShutdown \
+    #--exclude org.meresco.lucene.suggestion.SuggestionHttpServer \

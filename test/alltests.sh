@@ -34,7 +34,13 @@ export PYTHONPATH=.:"$PYTHONPATH"
 export WEIGHTLESS_COMPOSE_TEST="PYTHON"
 #export PYTHONWARNINGS=default
 
-python3 _alltests.py "$@"
+LIBDIR=${SEECRTEST_USR_LOCAL}
+if [ -z "${LIBDIR}" ]; then
+    LIBDIR="../lib"
+fi
+
+COMPILED_DIST=$(realpath $(find ${LIBDIR} -type d -name "dist-packages" ))
+PYTHONPATH=${COMPILED_DIST} python3 _alltests.py "$@"
 STATUS=$?
 if [ ${STATUS} -ne 0 ] ; then
     exit

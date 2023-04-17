@@ -38,33 +38,51 @@
 version = '$Version: trunk$'[9:-1].strip()
 name='meresco-lucene'
 
-from distutils.core import setup
+from setuptools import setup
+from setuptools.command.install import install
+
 from os import walk
-from os.path import join
+from os.path import join, dirname
 
 scripts = []
 for path, dirs, files in walk('bin'):
     for file in files:
         scripts.append(join(path, file))
+
 packages = []
 for path, dirs, files in walk('meresco'):
     if '__init__.py' in files and path != 'meresco':
         packages.append(path.replace('/', '.'))
+
 data_files = []
 for path, dirs, files in walk('usr-share'):
     if files:
         data_files.append((path.replace('usr-share', '/usr/share/%s' % name, 1), [join(path, f) for f in files]))
+
 for path, dirs, files in walk('doc'):
     files = [f for f in files if f != 'license.conf']
     if files:
         data_files.append((path.replace('doc', '/usr/share/doc/%s' % name, 1), [join(path, f) for f in files]))
+
 for path, dirs, files in walk('jars'):
     if files:
         data_files.append((path.replace('jars', '/usr/share/java/%s' % name, 1), [join(path, f) for f in files]))
 
 
+class CompileJccExtension(install):
+    """Post-installation for installation mode."""
+    def run(self):
+        root = join(dirname(__file__), self.root)
+        import os
+        os.system(f"./build.sh --target={root} --version={version}")
+        install.run(self)
+
+
 setup(
     name=name,
+    cmdclass={
+        'install': CompileJccExtension,
+    },
     packages=[
         'meresco',                      #DO_NOT_DISTRIBUTE
     ] + packages,

@@ -72,9 +72,12 @@ for path, dirs, files in walk('jars'):
 class CompileJccExtension(install):
     """Post-installation for installation mode."""
     def run(self):
-        root = join(dirname(__file__), self.root)
         import os
-        os.system(f"./build.sh --target={root} --version={version}")
+        if 'VIRTUAL_ENV' in os.environ:
+            os.system(f"./build.sh --version={version} --prefix={self.prefix}")
+        else:
+            root = join(dirname(__file__), self.root)
+            os.system(f"./build.sh --target={root} --version={version}")
         install.run(self)
 
 

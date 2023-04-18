@@ -30,12 +30,13 @@ LUCENEVERSION=8.9.0
 function show_usage {
     echo "Usage: $(basename $0)
     --target=<output path>
+    --prefix=<optional prefix path>
     --version=<meresco-lucene version>"
 }
 
 TEMP=$(getopt \
     --options "" \
-    --long target::,version:: \
+    --long target::,version::,prefix:: \
     -n "$0" -- "$@")
 
 eval set -- "$TEMP"
@@ -51,6 +52,11 @@ do
             case "$2" in
                 "") show_usage ; exit 1 ;;
                 *) VERSION=$2 ; shift 2 ;;
+            esac ;;
+        --prefix)
+            case "$2" in
+                "") show_usage ; exit 1 ;;
+                *) PREFIX=$2 ; shift 2 ;;
             esac ;;
         --) shift ; break ;;
         *) echo "Unknown option specified." ; exit 1 ;;
@@ -102,8 +108,13 @@ fi
 
 jar -cf ${JAR_FILE} -C ${BUILDDIR} org
 
-test -d "${TARGET}" && rm -rf "${TARGET}"
-test -d "${TARGET}" || mkdir "${TARGET}"
+DIR_STMT="--root ${TARGET}"
+if [ ! -z "${PREFIX}" ]; then
+    DIR_STMT="--prefix ${PREFIX}"
+else
+    test -d "${TARGET}" && rm -rf "${TARGET}"
+    test -d "${TARGET}" || mkdir "${TARGET}"
+fi
 
 python3 -m jcc.__main__ \
     --include ${MYDIR}/jars/commons-math3-3.4.1.jar \
@@ -121,7 +132,7 @@ python3 -m jcc.__main__ \
     --python meresco_lucene \
     --build \
     --install \
-    --root "${TARGET}" 
+    ${DIR_STMT}
 
     #--exclude org.meresco.lucene.http.PrefixSearchHandler \
     #--exclude org.meresco.lucene.http.AbstractMerescoLuceneHandler \

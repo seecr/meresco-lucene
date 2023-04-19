@@ -73,6 +73,7 @@ from queryexpressiontolucenequerydicttest import QueryExpressionToLuceneQueryDic
 from suggestionindexcomponenttest import SuggestionIndexComponentTest
 
 from pylucene.lucenekeyvaluestoretest import LuceneKeyValueStoreTest
+from pylucene.pylucenetest import PyLuceneTest
 from delegatinganalyzertest import DelegatingAnalyzerTest
 from documentutiltest import DocumentUtilTest
 

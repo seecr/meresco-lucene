@@ -1,9 +1,9 @@
 /* begin license *
  *
- * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
  *
  * Copyright (C) 2015-2016, 2019 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2020 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2015-2020, 2023 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2016, 2020 Stichting Kennisnet https://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -597,7 +597,7 @@ public class Lucene {
     private List<DrilldownData> facetResult(FacetSuperCollector facetCollector, List<FacetRequest> facets) throws Exception {
         List<DrilldownData> drilldownData = new ArrayList<>();
         for (FacetRequest facet : facets) {
-            DrilldownData dd = new DrilldownData(facet.fieldname);
+            DrilldownData dd = new DrilldownData(this.name, facet.fieldname);
             dd.path = facet.path;
             List<DrilldownData.Term> terms = drilldownDataFromFacetResult(facetCollector, facet, facet.path, this.data.getFacetsConfig().getDimConfig(facet.fieldname).hierarchical);
             if (terms != null) {

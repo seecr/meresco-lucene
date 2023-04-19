@@ -1,9 +1,9 @@
 /* begin license *
  *
- * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016, 2019 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2015-2016, 2019, 2023 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -58,7 +58,7 @@ public class LuceneResponseToJsonTest {
         LuceneResponse response = new LuceneResponse(2);
         response.addHit(new LuceneResponse.Hit("id1", 0.1f));
         response.addHit(new LuceneResponse.Hit("id2", 0.2f));
-        LuceneResponse.DrilldownData dd = new DrilldownData("field");
+        LuceneResponse.DrilldownData dd = new DrilldownData("core", "field");
         List<DrilldownData.Term> terms = new ArrayList<>();
         terms.add(new DrilldownData.Term("value1", 1));
         DrilldownData.Term t = new DrilldownData.Term("value2", 5);
@@ -113,7 +113,7 @@ public class LuceneResponseToJsonTest {
     @Test
     public void testHierarchicalDrilldown() {
         LuceneResponse response = new LuceneResponse(2);
-        LuceneResponse.DrilldownData dd = new DrilldownData("field");
+        LuceneResponse.DrilldownData dd = new DrilldownData("core", "field");
         List<DrilldownData.Term> terms = new ArrayList<>();
         terms.add(new DrilldownData.Term("value1", 1));
         dd.path = new String[] {"subpath"};
@@ -124,6 +124,7 @@ public class LuceneResponseToJsonTest {
         JsonArray ddData = jsonResponse.getJsonArray("drilldownData");
         assertEquals(1, ddData.size());
         assertEquals("field", ddData.getJsonObject(0).getString("fieldname"));
+        assertEquals("core", ddData.getJsonObject(0).getString("core"));
         assertEquals("subpath", ddData.getJsonObject(0).getJsonArray("path").getString(0));
         JsonArray ddTerms = ddData.getJsonObject(0).getJsonArray("terms");
         assertEquals("value1", ddTerms.getJsonObject(0).getString("term"));

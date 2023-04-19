@@ -1,9 +1,9 @@
 /* begin license *
  *
- * "Meresco Lucene" is a set of components and tools to integrate Lucene (based on PyLucene) into Meresco
+ * "Meresco Lucene" is a set of components and tools to integrate Lucene into Meresco
  *
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
- * Copyright (C) 2015-2016, 2018-2019 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2015-2016, 2018-2019, 2023 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
  *
  * This file is part of "Meresco Lucene"
@@ -115,10 +115,12 @@ public class LuceneResponse {
 
     public static class DrilldownData {
         public String fieldname;
+        public String core;
         public String[] path = new String[0];
         public List<Term> terms;
 
-        public DrilldownData(String fieldname) {
+        public DrilldownData(String core, String fieldname) {
+            this.core = core;
             this.fieldname = fieldname;
         }
 
@@ -228,6 +230,7 @@ public class LuceneResponse {
                     path.add(p);
                 ddArray.add(Json.createObjectBuilder()
                         .add("fieldname", dd.fieldname)
+                        .add("core", dd.core)
                         .add("path", path)
                         .add("terms", jsonTermList(dd.terms)));
             }

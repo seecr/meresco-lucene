@@ -35,7 +35,7 @@
 #
 ## end license ##
 
-version = '$Version: trunk$'[9:-1].strip()
+version = '$Version: 0.0.1$'[9:-1].strip()
 name='meresco-lucene'
 
 from setuptools import setup

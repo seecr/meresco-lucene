@@ -41,7 +41,7 @@ public class TermNumerator {
     private DirectoryTaxonomyReader taxoReader;
 
     protected TermNumerator() {};  // for easier mocking by subclass
-    
+
     public TermNumerator(Path path) throws IOException {
         MMapDirectory taxoDirectory = new MMapDirectory(path);
         taxoDirectory.setUseUnmap(false);
@@ -71,8 +71,8 @@ public class TermNumerator {
     public void close() throws IOException {
         taxoWriter.close();
     }
-    
-    public int size() { 
+
+    public int size() {
         return taxoWriter.getSize() - 1;
     }
 }

@@ -24,7 +24,7 @@
 
 import unittest
 
-from metastreams_lucene import JArray
+from meresco_lucene import JArray
 
 from org.apache.lucene.document import Document
 from org.apache.lucene.document import Field

@@ -24,7 +24,7 @@
 
 import unittest
 
-from metastreams_lucene import JArray
+from meresco_lucene import JArray
 
 from org.apache.lucene.document import Document
 from org.apache.lucene.document import Field
@@ -39,88 +39,160 @@ class DocumentUtilTest(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.doc = Document()
-        self.fieldnames = JArray('string')(('base', 'middle', 'top'))
+        self.fieldnames = JArray("string")(("base", "middle", "top"))
         self.analyzer = StandardAnalyzer()
 
     def testAddStringField(self):
-        DocumentUtil.add_StringFields(self.doc, self.fieldnames, 2, '.tag', 'analyse value', Field.Store.NO, False)
+        DocumentUtil.add_StringFields(
+            self.doc, self.fieldnames, 2, ".tag", "analyse value", Field.Store.NO, False
+        )
         fields = [f for f in self.doc.getFields()]
-        self.assertEqual(['base.tag', 'middle.tag', 'top.tag'], [f.name() for f in fields])
-        self.assertEqual(['analyse value'], tokens(fields[0]))
-        self.assertEqual(['analyse value'], tokens(fields[1]))
+        self.assertEqual(
+            ["base.tag", "middle.tag", "top.tag"], [f.name() for f in fields]
+        )
+        self.assertEqual(["analyse value"], tokens(fields[0]))
+        self.assertEqual(["analyse value"], tokens(fields[1]))
 
     def testAddStringFieldPartly(self):
-        DocumentUtil.add_StringFields(self.doc, self.fieldnames, 1, '.tag', 'analyse value', Field.Store.NO, False)
+        DocumentUtil.add_StringFields(
+            self.doc, self.fieldnames, 1, ".tag", "analyse value", Field.Store.NO, False
+        )
         fields = [f for f in self.doc.getFields()]
-        self.assertEqual(['base.tag', 'middle.tag'], [f.name() for f in fields])
-        self.assertEqual(['analyse value'], tokens(fields[0]))
-        self.assertEqual(['analyse value'], tokens(fields[1]))
+        self.assertEqual(["base.tag", "middle.tag"], [f.name() for f in fields])
+        self.assertEqual(["analyse value"], tokens(fields[0]))
+        self.assertEqual(["analyse value"], tokens(fields[1]))
         self.assertFalse(fields[0].fieldType().stored())
 
     def testAddStringFieldStore(self):
-        DocumentUtil.add_StringFields(self.doc, self.fieldnames, 0, '.tag', 'analyse value', Field.Store.YES, False)
+        DocumentUtil.add_StringFields(
+            self.doc,
+            self.fieldnames,
+            0,
+            ".tag",
+            "analyse value",
+            Field.Store.YES,
+            False,
+        )
         fields = [f for f in self.doc.getFields()]
-        self.assertEqual(['base.tag'], [f.name() for f in fields])
-        self.assertEqual(['analyse value'], tokens(fields[0]))
+        self.assertEqual(["base.tag"], [f.name() for f in fields])
+        self.assertEqual(["analyse value"], tokens(fields[0]))
         self.assertTrue(fields[0].fieldType().stored())
 
     def testAddStringFieldFacets(self):
-        DocumentUtil.add_StringFields(self.doc, self.fieldnames, 0, '.tag', 'analyse value', Field.Store.NO, True)
+        DocumentUtil.add_StringFields(
+            self.doc, self.fieldnames, 0, ".tag", "analyse value", Field.Store.NO, True
+        )
         fields = [f for f in self.doc.getFields()]
-        self.assertEqual(['base.tag', 'dummy'], [f.name() for f in fields])
-        self.assertEqual(['analyse value'], tokens(fields[0]))
+        self.assertEqual(["base.tag", "dummy"], [f.name() for f in fields])
+        self.assertEqual(["analyse value"], tokens(fields[0]))
         facet = FacetField.cast_(fields[1])
-        self.assertEqual('base.tag.facet', facet.dim)
-        self.assertEqual(['analyse value'], list(facet.path))
+        self.assertEqual("base.tag.facet", facet.dim)
+        self.assertEqual(["analyse value"], list(facet.path))
 
     def testAddStringFieldFacetsTopFieldOnly(self):
-        DocumentUtil.add_StringFields(self.doc, self.fieldnames, 0, '.tag', 'analyse value', Field.Store.NO, True)
+        DocumentUtil.add_StringFields(
+            self.doc, self.fieldnames, 0, ".tag", "analyse value", Field.Store.NO, True
+        )
         fields = [f for f in self.doc.getFields()]
-        self.assertEqual(['base.tag', 'dummy'], [f.name() for f in fields])
-        self.assertEqual(['analyse value'], tokens(fields[0]))
+        self.assertEqual(["base.tag", "dummy"], [f.name() for f in fields])
+        self.assertEqual(["analyse value"], tokens(fields[0]))
         facet = FacetField.cast_(fields[1])
-        self.assertEqual('base.tag.facet', facet.dim)
-        self.assertEqual(['analyse value'], list(facet.path))
+        self.assertEqual("base.tag.facet", facet.dim)
+        self.assertEqual(["analyse value"], list(facet.path))
 
     def testAddTextField(self):
-        DocumentUtil.add_TextFields(self.doc, self.fieldnames, 2, '.tag', 'analyse value', Field.Store.NO, 10, self.analyzer, False)
+        DocumentUtil.add_TextFields(
+            self.doc,
+            self.fieldnames,
+            2,
+            ".tag",
+            "analyse value",
+            Field.Store.NO,
+            10,
+            self.analyzer,
+            False,
+        )
         fields = [f for f in self.doc.getFields()]
-        self.assertEqual(['base.tag', 'middle.tag', 'top.tag'], [f.name() for f in fields])
-        self.assertEqual(['analyse', 'value'], tokens(fields[0]))
-        self.assertEqual(['analyse', 'value'], tokens(fields[1]))
+        self.assertEqual(
+            ["base.tag", "middle.tag", "top.tag"], [f.name() for f in fields]
+        )
+        self.assertEqual(["analyse", "value"], tokens(fields[0]))
+        self.assertEqual(["analyse", "value"], tokens(fields[1]))
 
     def testAddTextFieldPartly(self):
-        DocumentUtil.add_TextFields(self.doc, self.fieldnames, 1, '.tag', 'analyse value', Field.Store.NO, 10, self.analyzer, False)
+        DocumentUtil.add_TextFields(
+            self.doc,
+            self.fieldnames,
+            1,
+            ".tag",
+            "analyse value",
+            Field.Store.NO,
+            10,
+            self.analyzer,
+            False,
+        )
         fields = [f for f in self.doc.getFields()]
-        self.assertEqual(['base.tag', 'middle.tag'], [f.name() for f in fields])
-        self.assertEqual(['analyse', 'value'], tokens(fields[0]))
-        self.assertEqual(['analyse', 'value'], tokens(fields[1]))
+        self.assertEqual(["base.tag", "middle.tag"], [f.name() for f in fields])
+        self.assertEqual(["analyse", "value"], tokens(fields[0]))
+        self.assertEqual(["analyse", "value"], tokens(fields[1]))
         self.assertFalse(fields[0].fieldType().stored())
 
     def testAddTextFieldStore(self):
-        DocumentUtil.add_TextFields(self.doc, self.fieldnames, 0, '.tag', 'analyse value', Field.Store.YES, 10, self.analyzer, False)
+        DocumentUtil.add_TextFields(
+            self.doc,
+            self.fieldnames,
+            0,
+            ".tag",
+            "analyse value",
+            Field.Store.YES,
+            10,
+            self.analyzer,
+            False,
+        )
         fields = [f for f in self.doc.getFields()]
-        self.assertEqual(['base.tag'], [f.name() for f in fields])
-        self.assertEqual(['analyse', 'value'], tokens(fields[0]))
+        self.assertEqual(["base.tag"], [f.name() for f in fields])
+        self.assertEqual(["analyse", "value"], tokens(fields[0]))
         self.assertTrue(fields[0].fieldType().stored())
 
     def testAddTextFieldFacets(self):
-        DocumentUtil.add_TextFields(self.doc, self.fieldnames, 0, '.tag', 'analyse value', Field.Store.NO, 10, self.analyzer, True)
+        DocumentUtil.add_TextFields(
+            self.doc,
+            self.fieldnames,
+            0,
+            ".tag",
+            "analyse value",
+            Field.Store.NO,
+            10,
+            self.analyzer,
+            True,
+        )
         fields = [f for f in self.doc.getFields()]
-        self.assertEqual(['base.tag', 'dummy'], [f.name() for f in fields])
-        self.assertEqual(['analyse', 'value'], tokens(fields[0]))
+        self.assertEqual(["base.tag", "dummy"], [f.name() for f in fields])
+        self.assertEqual(["analyse", "value"], tokens(fields[0]))
         facet = FacetField.cast_(fields[1])
-        self.assertEqual('base.tag.facet', facet.dim)
-        self.assertEqual(['analyse value'], list(facet.path))
+        self.assertEqual("base.tag.facet", facet.dim)
+        self.assertEqual(["analyse value"], list(facet.path))
 
     def testAddTextFieldFacetsTopFieldOnly(self):
-        DocumentUtil.add_TextFields(self.doc, self.fieldnames, 2, '.tag', 'analyse value', Field.Store.NO, 10, self.analyzer, True)
+        DocumentUtil.add_TextFields(
+            self.doc,
+            self.fieldnames,
+            2,
+            ".tag",
+            "analyse value",
+            Field.Store.NO,
+            10,
+            self.analyzer,
+            True,
+        )
         fields = [f for f in self.doc.getFields()]
-        self.assertEqual(['base.tag', 'middle.tag', 'top.tag', 'dummy'], [f.name() for f in fields])
-        self.assertEqual(['analyse', 'value'], tokens(fields[0]))
+        self.assertEqual(
+            ["base.tag", "middle.tag", "top.tag", "dummy"], [f.name() for f in fields]
+        )
+        self.assertEqual(["analyse", "value"], tokens(fields[0]))
         facet = FacetField.cast_(fields[-1])
-        self.assertEqual('top.tag.facet', facet.dim)
-        self.assertEqual(['analyse value'], list(facet.path))
+        self.assertEqual("top.tag.facet", facet.dim)
+        self.assertEqual(["analyse value"], list(facet.path))
 
 
 def tokens(field):

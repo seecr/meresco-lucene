@@ -52,6 +52,7 @@ import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.index.Term;
@@ -1161,6 +1162,51 @@ public class LuceneTest extends SeecrTestCase {
         assertEquals(2, response.hits.size());
         assertEquals("id:1", response.hits.get(0).id);
         assertEquals("id:2", response.hits.get(1).id);
+    }
+
+    @Test
+    public void testFeatureField() throws Throwable {
+        Document doc1 = new Document();
+        doc1.add(new TextField("field", "Tekst, meer tekst, en dan nog wat tekst", Store.NO));
+        doc1.add(new FeatureField("features", "age", 1234.0f));
+        doc1.add(new FeatureField("features", "pagerank", 8.1f));
+        lucene.addDocument("id:1", doc1);
+        Document doc2 = new Document();
+        doc2.add(new TextField("field", "beetje tekst", Store.NO));
+        doc2.add(new FeatureField("features", "age", 2345.0f));
+        doc2.add(new FeatureField("features", "pagerank", 17.0f));
+        lucene.addDocument("id:2", doc2);
+        Document doc3 = new Document();
+        doc3.add(new TextField("field", "tekst, tekst, tekst, tekst, tekst, tekst, tekst", Store.NO));
+        doc3.add(new FeatureField("features", "age", 3456.0f));
+        doc3.add(new FeatureField("features", "pagerank", 8.0f));
+        lucene.addDocument("id:3", doc3);
+
+        TermQuery tekst = new TermQuery(new Term("field", "tekst"));
+
+        LuceneResponse response = lucene.executeQuery(tekst);
+        assertEquals(3, response.hits.size());
+        assertEquals("id:3", response.hits.get(0).id);
+        assertEquals("id:1", response.hits.get(1).id);
+        assertEquals("id:2", response.hits.get(2).id);
+
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        builder.add(tekst, Occur.MUST);
+        builder.add(FeatureField.newSaturationQuery("features", "age"), Occur.SHOULD);
+        response = lucene.executeQuery(builder.build());
+        assertEquals(3, response.hits.size());
+        assertEquals("id:3", response.hits.get(0).id);
+        assertEquals("id:2", response.hits.get(1).id);
+        assertEquals("id:1", response.hits.get(2).id);
+
+        builder = new BooleanQuery.Builder();
+        builder.add(tekst, Occur.MUST);
+        builder.add(FeatureField.newSaturationQuery("features", "pagerank"), Occur.SHOULD);
+        response = lucene.executeQuery(builder.build());
+        assertEquals(3, response.hits.size());
+        assertEquals("id:2", response.hits.get(0).id);
+        assertEquals("id:3", response.hits.get(1).id);
+        assertEquals("id:1", response.hits.get(2).id);
     }
 
     public static void compareHits(LuceneResponse response, String... hitIds) {

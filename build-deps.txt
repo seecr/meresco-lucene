@@ -1,4 +1,5 @@
 python3-setuptools
+jcc
 gcc
 seecr-tools (>= 1.0.20)
 seecr-tools (<< 1.1)

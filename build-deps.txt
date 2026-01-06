@@ -1,14 +1,6 @@
-jcc-py3
 python3-setuptools
 gcc
-seecr-tools (>= 1.0.16)
+seecr-tools (>= 1.0.20)
 seecr-tools (<< 1.1)
-python3-meresco-pylucene (>= 8.7)
-python3-meresco-pylucene (<< 8.8)
-#buster:openjdk-8-jdk
-#bullseye:openjdk-17-jdk
-#debian:g++
-#debian:python3-dev
-#centos:gcc-c++
-#centos:python3-devel
-#centos:java-1.8.0-openjdk-devel
+g++
+python3-dev

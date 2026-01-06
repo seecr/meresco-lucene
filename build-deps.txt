@@ -1,5 +1,6 @@
 python3-setuptools
 jcc
+openjdk-21-jdk
 gcc
 seecr-tools (>= 1.0.20)
 seecr-tools (<< 1.1)

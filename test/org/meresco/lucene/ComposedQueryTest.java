@@ -188,7 +188,7 @@ public class ComposedQueryTest {
 
         Query rankQuery = q.rankQueryFor("coreA");
         assertEquals(new TermQuery(new Term("field", "value0")), rankQuery);
-        assertEquals(new Float(0.6f), q.rankQueryScoreRatio);
+        assertEquals(Float.valueOf(0.6f), q.rankQueryScoreRatio);
 
         assertEquals("field1", q.queryData.suggestionRequest.field);
         assertEquals(2, q.queryData.suggestionRequest.count);

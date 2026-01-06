@@ -86,7 +86,7 @@ fi
 
 CP="$(echo ${JARS} | tr ' ' ':'):$(echo ${LUCENE_JARS} | tr ' ' ':')"
 
-test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 test -f /etc/redhat-release && JAVA_HOME=/usr/lib/jvm/java
 
 if [ -z "${JAVA_HOME}" ]; then

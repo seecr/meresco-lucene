@@ -1,4 +1,5 @@
 python3-setuptools
+pylucene-py3
 jcc
 openjdk-21-jdk
 liblucene8-java (>= 1:8.9.0)
